@@ -2,3 +2,6 @@
 *.drawio.bkp
 *.drawio.tmp
 *.drawio.svg.bkp
+
+# Frontend and backend node modules
+node_modules/
