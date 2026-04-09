@@ -1,7 +1,12 @@
 const express=require('express');
 const cors=require('cors');
 
-const app=express();
+//dot env for environment variables
+const dotenv=require('dotenv');
+dotenv.config();
+const PORT = process.env.PORT || 5000;
+
+const app = express();
 app.use(cors());
 app.use('/images', express.static('public'));
 app.use(express.json());
@@ -344,7 +349,6 @@ app.get('/api/progress', (req, res) => {
 // ---------------------------------------------------------------------
 
 // Start Over
-const PORT =5000;
 app.listen(PORT, ()=>{
     console.log(`Server running on http://localhost:${PORT}`);
 })
