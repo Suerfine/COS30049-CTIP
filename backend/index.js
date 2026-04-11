@@ -263,6 +263,25 @@ app.put('/api/courses/:id', upload.single('image'), (req,res)=>{
     });
 });
 
+// Route to delete the course
+app.delete('/api/courses/:id', (req,res)=>{
+    const {id}=req.params;
+    const courseId=parseInt(id);
+    const courseIndex=courses.findIndex(c=>c.id === courseId);
+    if(courseIndex===-1){
+        return res.status(404).json({message: "Course not found"});
+    }
+
+    const fs=require('fs');
+    const path=require("path");
+    const fileName=courses[courseIndex].image.split('/').pop();
+    fs.unlinkSync(path.join(__dirname, 'public/courses', fileName));
+
+    courses.splice(courseIndex,1);
+
+    res.json({message: "Course deleted successfully", deletedId:courseId});
+});
+
 // Route to add a new module to a course
 app.post('/api/courses/:id/modules', (req,res)=>{
     const course=courses.find(c=> c.id ===parseInt(req.params.id));

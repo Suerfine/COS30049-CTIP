@@ -35,24 +35,27 @@ const CourseForm=({onSubmit, onCancel, isLoading, initialData})=>{
     return(
         <View style={styles.container}>
             <View style={[styles.header,styles.row]}>
-                <Text style={styles.title}>Create New Course</Text>
+                <Text style={styles.title}>{initialData ? 'Edit Course' : 'Create New Course'}</Text>
                 <Pressable onPress={onCancel}>
                     <X />
                 </Pressable>
             </View>
             <View style={styles.row}>
                 <View style={styles.content}>
+                    {/* Course Title */}
                     <View>
                         <Text style={styles.label}>Title:</Text>
-                        <TextInput style={styles.input} placeholder='Course Title' placeholderTextColor="#8f8f8f" onChangeText={(text)=> setForm({...form, courseTitle: text})}/>
+                        <TextInput style={styles.input} placeholder='Course Title' placeholderTextColor="#8f8f8f" value={form.courseTitle} onChangeText={(text)=> setForm({...form, courseTitle: text})}/>
                     </View>
-                    
+
+                    {/* Expiry Date */}
                     <View>
                         <Text style={styles.label}>Expiry Date:</Text>
                         <Pressable>
                             <View>
                                 <input 
                                     type="date" 
+                                    value={form.expiryDate.toISOString().split('T')[0]}
                                     style={styles.input}
                                     min={new Date().toISOString().split('T')[0]}
                                     onChange={(e) => {
@@ -63,18 +66,22 @@ const CourseForm=({onSubmit, onCancel, isLoading, initialData})=>{
                             </View>
                         </Pressable>
                     </View>
+                    {/* Duration */}
                     <View>
                         <Text style={styles.label}>Duration:</Text>
                         <TextInput 
-                            style={styles.input} 
+                            style={styles.input}
+                            value={form.duration} 
                             placeholder='e.g. 4 hours 30 min' 
                             placeholderTextColor="#8f8f8f" 
                             onChangeText={(text) => setForm({...form, duration: text})}
                         />
                     </View>
+
+                    {/* Description */}
                     <View>
                         <Text style={styles.label}>Description:</Text>
-                        <TextInput style={[styles.input, styles.desc]} placeholder='Enter description...' placeholderTextColor="#8f8f8f" multiline={true} onChangeText={(text)=> setForm({...form, description: text})}/>
+                        <TextInput style={[styles.input, styles.desc]} value={form.description} placeholder='Enter description...' placeholderTextColor="#8f8f8f" multiline={true} onChangeText={(text)=> setForm({...form, description: text})}/>
                     </View>
                 </View>
                 <View style={styles.upload}>
@@ -91,13 +98,23 @@ const CourseForm=({onSubmit, onCancel, isLoading, initialData})=>{
                     </Pressable>
                 </View>
             </View>
-            <Pressable 
-                style={styles.Btn} 
-                onPress={() => onSubmit(form)}
-                disabled={isLoading}
-            >
-                {isLoading ? <ActivityIndicator color="white" /> : <Text>Add</Text>}
-            </Pressable>
+            <View style={styles.row}>
+                <Pressable 
+                    style={styles.Btn} 
+                    onPress={() => onSubmit(form)}
+                    disabled={isLoading}
+                >
+                    {isLoading ? <ActivityIndicator color="white" /> : <Text>{initialData ? 'Update' : 'Add'}</Text>}
+                </Pressable>
+                {initialData && (
+                    <Pressable 
+                        style={[styles.Btn, styles.Publishbtn]}
+                    >
+                        <Text style={styles.publishText}>Publish</Text>
+                    </Pressable>
+                )}
+                
+            </View>
         </View>
     )
 }
@@ -109,9 +126,10 @@ const styles=StyleSheet.create({
     row:{
         flexDirection:'row',
         gap:5,
-        justifyContent:'space-between',
+        
     },
     header:{
+        justifyContent:'space-between',
         marginBottom:30
     },
     title:{
@@ -119,6 +137,7 @@ const styles=StyleSheet.create({
         fontSize:20
     },  
     content:{
+        justifyContent:'space-between',
         borderRightWidth:1,
         borderRightColor: '#ddd',
         paddingRight:20
@@ -182,10 +201,16 @@ const styles=StyleSheet.create({
         paddingHorizontal:20,
         paddingVertical:8,
         marginTop:15,
+    },
+    Publishbtn:{
+        backgroundColor:'#18704d'
+    },
+    publishText:{
+        color:'white'
     }
 })
 ;
 
 export default CourseForm;
 
-// Havent do the validation message, edit, delete
+// Havent do the validation message

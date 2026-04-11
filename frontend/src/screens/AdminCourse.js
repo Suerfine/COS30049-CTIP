@@ -33,6 +33,7 @@ const AdminCourse = ({navigation}) => {
         ? formData.expiryDate.toISOString().split('T')[0] 
         : formData.expiryDate;
         data.append('expiryDate', dateString);
+        data.append('description', formData.description);
         if(formData.image){
             const response = await fetch(formData.image);
             const blob = await response.blob();
@@ -116,6 +117,32 @@ const AdminCourse = ({navigation}) => {
         setIsEditing(true);
         setSelectedCourse(course);
         setModalVisible(true);
+    };
+
+    const handleDelete=async(courseId)=>{
+        const confirmDelete=window.confirm("Are you sure you want to delete this course?");
+        if(!confirmDelete){
+            return;
+        }
+
+        try{
+            const response=await fetch(`http://localhost:5000/api/courses/${courseId}`,{
+                method: 'DELETE',
+                headers:{
+                    'Accept': 'application/json',
+                },
+            });
+
+            if(response.ok){
+                setCourses(prevCourse=>prevCourse.filter(course=>course.id !== courseId));
+            }else{
+                const errorData=await response.json();
+                alert(`Delete failed: ${errorData.message}`);
+            }
+        }catch(err){
+            console.error("Error deleting course:", err);
+            alert("Network error. Could not delete course.");
+        }
     };
 
     return (
