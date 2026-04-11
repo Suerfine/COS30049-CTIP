@@ -46,8 +46,8 @@ const styles=StyleSheet.create({
     },
     courseImg:{
         width:250,
-        height:180,
-        resizeMode:'contain',
+        height:170,
+        resizeMode:'cover',
         alignSelf:'center'
     },
     CourseTitle:{
@@ -85,3 +85,5 @@ const styles=StyleSheet.create({
 });
 
 export default CourseCard;
+
+// Havent do the validation message

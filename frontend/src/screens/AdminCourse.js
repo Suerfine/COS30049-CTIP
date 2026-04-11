@@ -1,5 +1,5 @@
 import React,{useEffect, useState} from 'react';
-import { View, Text, StyleSheet, Pressable, TextInput,  ImageBackground, ScrollView} from 'react-native';
+import { View, Text, StyleSheet, Pressable, TextInput,  ImageBackground, ScrollView,Modal} from 'react-native';
 import {CopyPlus, Search, SlidersHorizontal} from 'lucide-react-native';
 
 // Import Components
@@ -11,20 +11,50 @@ const AdminCourse = ({navigation}) => {
     const [modalVisible, setModalVisible]=useState(false);
     const [loading, setLoading]=useState(false);
 
-    // const handleCreateSubmit=async(formData)=>{
-    //     setLoading(true);
-    //     try{
-
-    //     }
-    // }
-
     // Fetch courses from backend api
-    useEffect(()=>{
+    const fetchCourses=()=>{
         fetch('http://localhost:5000/api/courses')
         .then(res=>res.json())
         .then(data=>setCourses(data))
         .catch(err=>console.error(err));
+    };
+    useEffect(()=>{
+        fetchCourses();
     },[]);
+
+    const handleCreateSubmit=async(formData)=>{
+        setLoading(true);
+        const data=new FormData();
+        data.append('courseTitle', formData.courseTitle);
+        data.append('duration', formData.duration);
+        const dateString = formData.expiryDate instanceof Date 
+        ? formData.expiryDate.toISOString().split('T')[0] 
+        : formData.expiryDate;
+        data.append('expiryDate', dateString);
+        if(formData.image){
+            const response = await fetch(formData.image);
+            const blob = await response.blob();
+            data.append('image', blob, 'course_photo.jpg');
+        }
+        try{
+            const response=await fetch('http://localhost:5000/api/courses',{
+                method:'POST',
+                body:data,
+                headers:{
+                    'Accept': 'application/json',
+                },
+            });
+
+            if(response.ok){
+                setModalVisible(false);
+                fetchCourses();
+            }
+        }catch(err){
+            console.error('Upload failed:', err);
+        }finally{
+            setLoading(false);
+        }
+    };    
 
     return (
         <ScrollView style={styles.container}>
@@ -38,7 +68,7 @@ const AdminCourse = ({navigation}) => {
                         <Text style={styles.description}>Here you can find all courses</Text>
                         <Text style={styles.title}>All Courses</Text>
                     </View>
-                    <Pressable style={({ hovered }) => [
+                    <Pressable onPress={()=>setModalVisible((true))} style={({ hovered }) => [
                             styles.btn,
                             hovered && styles.btnHover, 
                         ]}>
@@ -47,6 +77,19 @@ const AdminCourse = ({navigation}) => {
                     </Pressable>
                 </View>
             </ImageBackground>
+
+            {/* Create Course Modal */}
+            <Modal animationType="fade" transparent={true} visible={modalVisible} onRequestClose={()=> setModalVisible(false)}>
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
+                        <CourseForm
+                            onSubmit={handleCreateSubmit}
+                            onCancel={()=>setModalVisible(false)}
+                            isLoading={loading}
+                        />
+                    </View>
+                </View>
+            </Modal>
 
             {/* Search and Filter */}
             <View style={styles.toolbar}>
@@ -168,6 +211,20 @@ const styles = StyleSheet.create({
         justifyContent:'space-between',
         flexDirection:'row',
         marginTop:20,
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 20
+    },
+    modalContent: {
+        width: '100%',
+        maxWidth: 750,
+        backgroundColor: 'white',
+        borderRadius: 20,
+        overflow: 'hidden'
     }
 
 });

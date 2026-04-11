@@ -44,7 +44,7 @@ const courses = [
         image: 'http://localhost:5000/images/first_aid.png',
         courseTitle: 'Basic First Aid',
         duration: '15 hours 30 mins',
-        expiryDate: '05-08-2027',
+        expiryDate: '2027-05-08',
         description: 'Learn the fundamentals of first aid, including wound care, CPR basics, and emergency response.',
         modules: [
         {
@@ -211,13 +211,18 @@ app.post('/api/courses', upload.single('image'), (req, res)=>{
         if(!req.file){
             return res.status(400).send({message: 'No file uploaded'});
         }
+        const newId=courses.length>0 ? Math.max(...courses.map(c=>c.id))+1 : 1;
         const imageUrl=`http://localhost:5000/images/${req.file.filename}`;
         const newCourse={
+            id: newId,
             courseTitle:req.body.courseTitle,
             duration:req.body.duration,
             expiryDate:req.body.expiryDate,
-            image:imageUrl
+            image:imageUrl,
+            description: req.body.description,
+            modules:[]
         };
+        courses.push(newCourse);
 
         res.status(201).json({
             message:"Course created",
