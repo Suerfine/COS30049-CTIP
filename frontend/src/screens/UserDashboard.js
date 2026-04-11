@@ -113,13 +113,14 @@ const UserDashboard = ({ navigation }) => {
                             <View style={styles.cardContainer}>
                                 {courses.map(course=>{
                                     const courseProgress = progressData.find(p => p.course === course.courseTitle);
+                                    const numModules=course.modules? course.modules.length :0;
                                     return(
                                         <CourseCard
                                             key={course.id}
                                             id={course.id}
                                             imagePath={{uri:course.image}}
                                             courseTitle={course.courseTitle}
-                                            numModules={course.numModules}
+                                            numModules={numModules}
                                             duration={course.duration}
                                             expiry={course.expiryDate}
                                             progress={courseProgress?.progress}

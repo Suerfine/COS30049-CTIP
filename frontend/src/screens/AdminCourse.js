@@ -4,9 +4,19 @@ import {CopyPlus, Search, SlidersHorizontal} from 'lucide-react-native';
 
 // Import Components
 import CourseCard from '../components/CourseCard.js';
+import CourseForm from '../components/CourseForm.js';
 
 const AdminCourse = ({navigation}) => {
     const [courses, setCourses]=useState([]);
+    const [modalVisible, setModalVisible]=useState(false);
+    const [loading, setLoading]=useState(false);
+
+    // const handleCreateSubmit=async(formData)=>{
+    //     setLoading(true);
+    //     try{
+
+    //     }
+    // }
 
     // Fetch courses from backend api
     useEffect(()=>{
@@ -54,18 +64,20 @@ const AdminCourse = ({navigation}) => {
 
             {/* Course Card */}
             <View style={styles.cardContainer}>
-                {courses.map(course=>(
+                {courses.map(course=>{
+                    const numModules=course.modules? course.modules.length :0;
+                    return(
                     <CourseCard
                         key={course.id}
                         id={course.id}
                         imagePath={{uri:course.image}}
                         courseTitle={course.courseTitle}
-                        numModules={course.numModules}
+                        numModules={numModules}
                         duration={course.duration}
                         expiry={course.expiryDate}
                         onPress={()=> navigation.navigate('Course Details', {id:course.id})}
-                    />
-                ))}
+                    />)
+                })}
             </View>
         </ScrollView>
     );

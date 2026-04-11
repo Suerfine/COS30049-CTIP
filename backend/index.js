@@ -1,5 +1,9 @@
 const express=require('express');
 const cors=require('cors');
+const router=express.Router();
+const multer=require('multer');
+const fstat=require('fs');
+const path=require('path');
 
 //dot env for environment variables
 const dotenv=require('dotenv');
@@ -8,8 +12,29 @@ const PORT = process.env.PORT || 5000;
 
 const app = express();
 app.use(cors());
-app.use('/images', express.static('public'));
 app.use(express.json());
+
+const uploadPath=path.join(__dirname, 'public', 'Courses');
+
+// Create folder if it is not exists
+if(!fstat.existsSync(uploadPath)){
+    fstat.mkdirSync(uploadPath, {recursive: true});
+}
+
+app.use('/images', express.static(uploadPath));
+
+// Storage Configuration of the file
+const storage=multer.diskStorage({
+    destination: (req, file, call)=>{
+        call(null, uploadPath);
+    },
+    filename:(req,file, call)=>{
+        const uniqueShuffix=Date.now()+'-'+Math.round(Math.random() * 1E9);
+        call(null,uniqueShuffix+path.extname(file.originalname));
+    }
+});
+
+const upload=multer({storage: storage});
 
 // ---------------------------------------------------------------------
 // Dummy course data
@@ -18,7 +43,6 @@ const courses = [
         id: 1,
         image: 'http://localhost:5000/images/first_aid.png',
         courseTitle: 'Basic First Aid',
-        numModules: 15,
         duration: '15 hours 30 mins',
         expiryDate: '05-08-2027',
         description: 'Learn the fundamentals of first aid, including wound care, CPR basics, and emergency response.',
@@ -130,7 +154,6 @@ const courses = [
         id: 2,
         image: 'http://localhost:5000/images/cpr.png',
         courseTitle: 'CPR Training',
-        numModules: 10,
         duration: '8 hours',
         expiryDate: '2026-06-30',
         description: 'Focused training on CPR techniques for adults, children, and infants.',
@@ -181,6 +204,29 @@ app.get('/api/course/:id/modules',(req,res)=>{
     }
     res.json(course.modules);
 })
+
+// Route to add a new course
+app.post('/api/courses', upload.single('image'), (req, res)=>{
+    try{
+        if(!req.file){
+            return res.status(400).send({message: 'No file uploaded'});
+        }
+        const imageUrl=`http://localhost:5000/images/${req.file.filename}`;
+        const newCourse={
+            courseTitle:req.body.courseTitle,
+            duration:req.body.duration,
+            expiryDate:req.body.expiryDate,
+            image:imageUrl
+        };
+
+        res.status(201).json({
+            message:"Course created",
+            course: newCourse
+        });
+    }catch(err){
+        res.status(500).json({error:err.message});
+    }
+});
 
 // Route to add a new module to a course
 app.post('/api/courses/:id/modules', (req,res)=>{
