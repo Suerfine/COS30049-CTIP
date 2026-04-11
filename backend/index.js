@@ -219,21 +219,21 @@ app.put('/api/courses/:id/modules/:moduleId', (req,res)=>{
 })
 
 // Route to edit page
-app.put('api/courses/:id/modules/:moduleId/pages/:pageId', (req,res)=>{
+app.put('/api/courses/:id/modules/:moduleId/pages/:pageId', (req,res)=>{
     const courseId=parseInt(req.params.id);
     const moduleId=parseInt(req.params.moduleId);
-    const pageId=parseInt(req.params.pageId);
+    const pageId=req.params.pageId;
     const {title}=req.body;
 
     const course=courses.find(c=>c.id===courseId);
     if(!course){
         return res.status(404).json({message:'Course not found'});
     }
-    const module=course.modules.find(m=>m.id===moduleId);
+    const module=course.modules.find(m=>m.moduleId===moduleId);
     if(!module){
         return res.status(404).json({message:'Module not found'});
     }
-    const page=module.pages.find(p=>p.pageId===pageId);
+    const page=module.pages.find(p=>String(p.pageId)===String(pageId));
     if(!page){
         return res.status(404).json({message:'Page not found'});
     }

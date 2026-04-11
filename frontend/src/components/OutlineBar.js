@@ -26,49 +26,57 @@ const OutlineBar=({course, onSelectPage, editable})=>{
         onSelectPage(item);
     }
 
-    const handleAddSection=()=>{
-        if(!editable){
-            return;
-        }
-        const hasPendingSection = newSections.some(s => s.title === "");
-        if (hasPendingSection) {
-            alert("Finish naming the current new section before adding another.");
-            return;
-        }
-        const existingIds=[
-            ...course.modules.map(m=>m.moduleId),
-            ...newSections.map(s=>s.moduleId)
-        ];
-        const nextId=existingIds.length>0 ? Math.max(...existingIds) + 1 :1;
+    const handleAddSection = () => {
+        if (!editable) return;
 
-        setNewSectons([...newSections, {moduleId:nextId, title:'', pages:[{pageId:'1.0', title:'Introduction'}]}]);
+        setNewSectons((prevSections) => {
+            const hasPendingSection = prevSections.some(s => s.title === "");
+            if (hasPendingSection) {
+                alert("Finish naming the current new section before adding another.");
+                return prevSections; 
+            }
+
+            const currentAllModules = [...modules, ...prevSections];
+            const maxId = currentAllModules.reduce((max, m) => Math.max(max, m.moduleId), 0);
+            const nextId = maxId + 1;
+
+            return [
+                ...prevSections, 
+                { moduleId: nextId, title: '', pages: [{ pageId: `${nextId}.0`, title: 'Introduction' }] }
+            ];
+        });
     };
 
-    const handleBlur=async(moduleId, value)=>{
-        if(!editable){
-            return;
-        }
+    const handleBlur = async (moduleId, value) => {
+        if (!editable || !value.trim()) return;
 
-        // Update local state
-        setNewSectons((prev)=>
-            prev.map((s)=>(s.moduleId===moduleId ? {...s, title: value} :s))    
+        setNewSectons((prev) =>
+            prev.map((s) => (s.moduleId === moduleId ? { ...s, title: value } : s))
         );
 
-        const newModule={
-            moduleId,
-            title:value,
-            pages:[]
-        };
-
-        // Call backend API to persist
         try {
-            await fetch(`http://localhost:5000/api/courses/${course.id}/modules`, {
+            const moduleResponse = await fetch(`http://localhost:5000/api/courses/${course.id}/modules`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(newModule),
+                body: JSON.stringify({
+                    moduleId: moduleId,
+                    title: value,
+                    pages: [] 
+                }),
             });
+
+            if (moduleResponse.ok) {
+                await fetch(`http://localhost:5000/api/courses/${course.id}/modules/${moduleId}/pages`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        pageId: `${moduleId}.0`,
+                        title: 'Introduction'
+                    }),
+                });
+            }
         } catch (err) {
-        console.error('Failed to update section:', err);
+            console.error('Failed to update section or create intro page:', err);
         }
     };
 
@@ -247,22 +255,22 @@ const OutlineBar=({course, onSelectPage, editable})=>{
             <FlatList
                 data={allModules}
                 keyExtractor={module => module.moduleId.toString()}
-                renderItem={({ item: module }) => (
-                    <View style={[
-                        (selectedItem?.type==='module' && selectedItem?.module?.moduleId===module.moduleId) || (selectedItem?.type==='page' && selectedItem?.module?.moduleId===module.moduleId) 
-                        ? styles.selectedModule : null]}>
+                renderItem={({ item: module }) => {
+                    const isNewSection=(editable && module.title==="");
+                    const isEditingExisting= (editingItem?.type==="module" && editingItem.id===module.moduleId);
+                    const isEditing=isNewSection || isEditingExisting;
+                    const isSelected=(selectedItem?.type==="module" && selectedItem?.module?.moduleId===module.moduleId) || (selectedItem?.type ==="page" && selectedItem?.module?.moduleId===module.moduleId);
+                    return (
+                    <View style={[isSelected ? styles.selectedModule : null]}>
 
-                        <Pressable style={[styles.moduleBlock,
-                             (selectedItem?.type==='module' && selectedItem?.module?.moduleId===module.moduleId) ||
-                             (selectedItem?.type==='page' && selectedItem?.module?.moduleId === module.moduleId)
-                              ? styles.selected : null]} 
+                        <Pressable style={[styles.moduleBlock, isSelected ? styles.selected : null]} 
                               onPress={()=> {
-                                if(editingItem?.id === module.moduleId){
+                                if(isEditing){
                                     return;
                                 }
                                 handleSelect({type:'module', module}); 
                                 toggleModule(module.moduleId);
-                                if(editable){
+                                if(editable && module.title !== ""){
                                     setEditingItem({type:'module', id:module.moduleId});
                                 };
                                 }}
@@ -271,13 +279,19 @@ const OutlineBar=({course, onSelectPage, editable})=>{
                               >
                             <Text style={styles.moduleTitle}>Module {module.moduleId}:{" "} 
                                 {/* Add New Section (blank title) */}
-                                {editable && module.title === "" ? (
+                                {isEditing ? (
                                     <TextInput
                                     style={styles.section}
                                     placeholder="Enter module name..."
                                     placeholderTextColor="#8f8f8f"
                                     defaultValue={module.title}
-                                    onBlur={(e) => handleBlur(module.moduleId, e.nativeEvent.text)}
+                                    onBlur={(e) => {
+                                        if (isNewSection) {
+                                            handleBlur(module.moduleId, e.nativeEvent.text);
+                                        } else {
+                                            handleModuleUpdate(module.moduleId, e.nativeEvent.text);
+                                        }
+                                    }}
                                     />
                                 ) : (
                                     // Show Module Title or Editing Input
@@ -285,8 +299,13 @@ const OutlineBar=({course, onSelectPage, editable})=>{
                                     <TextInput
                                         style={styles.section}
                                         defaultValue={module.title}
-                                        autoFocus
-                                        onBlur={(e) => handleModuleUpdate(module.moduleId, e.nativeEvent.text)}
+                                        onBlur={(e) => {
+                                        if (isNewSection) {
+                                            handleBlur(module.moduleId, e.nativeEvent.text);
+                                        } else {
+                                            handleModuleUpdate(module.moduleId, e.nativeEvent.text);
+                                        }
+                                    }}
                                     />
                                     ) : (
                                     <Text>{module.title}
@@ -297,7 +316,7 @@ const OutlineBar=({course, onSelectPage, editable})=>{
                             </Text>
                             {expandedModule === module.moduleId ? <ChevronDown size={15}/> : <ChevronRight size={15}/>}
                             {/* Delete Course Icon */}
-                            {editable && hoveredItem?.type==='module' && hoveredItem?.id===module.moduleId && (
+                            {editable && !isEditing && (hoveredItem?.id === module.moduleId || isSelected) && (
                                 <Pressable onPress={()=>handleDeleteModule(module.moduleId)}>
                                     <Trash2 size={16}/>
                                 </Pressable>
@@ -346,7 +365,7 @@ const OutlineBar=({course, onSelectPage, editable})=>{
                                                 <View style={styles.pageBlock}>
                                                     <Text>{page.title} </Text>
                                                     {/* Trash icon for page */}
-                                                    {editable && hoveredItem?.type==='page' && hoveredItem?.pageId===page.pageId && (
+                                                    {editable && hoveredItem?.type==='page' && hoveredItem?.pageId===page.pageId && Number(page.pageId) % 1 !== 0 && (
                                                         <Pressable onPress={()=>handleDeletePage(module.moduleId,page.pageId)}>
                                                             <Trash2 size={16}/>
                                                         </Pressable>
@@ -370,8 +389,8 @@ const OutlineBar=({course, onSelectPage, editable})=>{
 
                             </View>
                         )}
-                    </View>
-                )}
+                    </View>)
+                }}
             />
             
         </View>
