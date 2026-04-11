@@ -118,6 +118,7 @@ const AdminCourse = ({navigation}) => {
                         numModules={numModules}
                         duration={course.duration}
                         expiry={course.expiryDate}
+                        userType="admin"
                         onPress={()=> navigation.navigate('Course Details', {id:course.id})}
                     />)
                 })}

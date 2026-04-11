@@ -2,7 +2,7 @@ import { View, Pressable, Image, Text, StyleSheet} from 'react-native';
 import {BookOpenText, CheckCheck, Timer, ClockAlert} from 'lucide-react-native'
 import ProgressBar from './ProgressBar.js';
 
-const CourseCard=({id,imagePath, courseTitle, numModules,duration,expiry,userType, progress, onPress})=>{
+const CourseCard=({imagePath, courseTitle, numModules,duration,expiry,userType, progress, onPress})=>{
     return (
         // Title need change to course ID later
         <Pressable style={styles.card} onPress={onPress}>
@@ -86,4 +86,3 @@ const styles=StyleSheet.create({
 
 export default CourseCard;
 
-// Havent do the validation message
