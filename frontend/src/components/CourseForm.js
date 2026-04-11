@@ -1,7 +1,7 @@
-import React, {useState} from 'react';
-import { View, Text, TextInput, StyleSheet, Pressable, Image, ActivityIndicator, Platform} from 'react-native';
+import {useState} from 'react';
+import { View, Text, TextInput, StyleSheet, Pressable, Image, ActivityIndicator} from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import {X, Upload, Rss} from 'lucide-react-native';
+import {X} from 'lucide-react-native';
 
 const CourseForm=({onSubmit, onCancel, isLoading})=>{
     const [form, setForm]=useState({
@@ -98,7 +98,6 @@ const CourseForm=({onSubmit, onCancel, isLoading})=>{
             >
                 {isLoading ? <ActivityIndicator color="white" /> : <Text>Add</Text>}
             </Pressable>
-            
         </View>
     )
 }

@@ -1,5 +1,5 @@
 import { View, Pressable, Image, Text, StyleSheet} from 'react-native';
-import {BookOpenText, CheckCheck, Timer, ClockAlert} from 'lucide-react-native'
+import {BookOpenText, Timer, ClockAlert, SquarePen, Trash2} from 'lucide-react-native'
 import ProgressBar from './ProgressBar.js';
 
 const CourseCard=({imagePath, courseTitle, numModules,duration,expiry,userType, progress, onPress})=>{
@@ -23,10 +23,18 @@ const CourseCard=({imagePath, courseTitle, numModules,duration,expiry,userType, 
             </View>
             
             {userType === 'admin' ? (
-                <Pressable style={styles.Publishbtn}>
-                    <CheckCheck/>
-                    <Text>Published</Text>
-                </Pressable>
+                <View style={styles.icon}>
+                    <Pressable style={({ hovered }) => [
+                        hovered && styles.btnHover, 
+                    ]}>
+                        <SquarePen size={20}/>
+                    </Pressable>
+                    <Pressable style={({ hovered }) => [
+                        hovered && styles.btnHover, 
+                    ]}>
+                        <Trash2 size={20}/>
+                    </Pressable>
+                </View>
             ) : (
                 progress !== undefined && <ProgressBar progress={progress} />
                 
@@ -71,17 +79,16 @@ const styles=StyleSheet.create({
         color:'#3e3e3e',
         fontSize:14
     },
-    Publishbtn:{
+    icon:{
         flexDirection:'row',
-        gap:8,
-        alignItems:'center',
-        alignSelf:'center',
-        backgroundColor:'#ffb116',
-        borderRadius:10,
-        paddingHorizontal:20,
-        paddingVertical:8,
-        marginTop:15,
+        color:'#474747',
+        marginTop:10,
+        gap:10,
+        justifyContent:'flex-end',
     },
+    btnHover:{
+        color:'#efab21'
+    }
 });
 
 export default CourseCard;
