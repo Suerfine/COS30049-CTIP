@@ -233,6 +233,36 @@ app.post('/api/courses', upload.single('image'), (req, res)=>{
     }
 });
 
+// Route to update the existing course
+app.put('/api/courses/:id', upload.single('image'), (req,res)=>{
+    const {id}=req.params;
+    const courseIndex=courses.findIndex(c=> c.id===parseInt(id));
+
+    if(courseIndex===-1){
+        return res.status(404).json({message: "Course not found"});
+    }
+
+    let imageUrl=courses[courseIndex].image;
+    if(req.file){
+        imageUrl=`http://localhost:5000/images/${req.file.filename}`;
+    }
+    const updatedCourse={
+        ...courses[courseIndex],
+        courseTitle: req.body.courseTitle || courses[courseIndex].courseTitle,
+        duration:req.body.duration || courses[courseIndex].duration,
+        expiryDate:req.body.expiryDate || courses[courseIndex].expiryDate,
+        description: req.body.description || courses[courseIndex].description,
+        image:imageUrl
+    };
+
+    courses[courseIndex]=updatedCourse;
+
+    res.json({
+        message:'Course updated successfully.',
+        course:updatedCourse
+    });
+});
+
 // Route to add a new module to a course
 app.post('/api/courses/:id/modules', (req,res)=>{
     const course=courses.find(c=> c.id ===parseInt(req.params.id));

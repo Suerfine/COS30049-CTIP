@@ -3,13 +3,13 @@ import { View, Text, TextInput, StyleSheet, Pressable, Image, ActivityIndicator}
 import * as ImagePicker from 'expo-image-picker';
 import {X} from 'lucide-react-native';
 
-const CourseForm=({onSubmit, onCancel, isLoading})=>{
+const CourseForm=({onSubmit, onCancel, isLoading, initialData})=>{
     const [form, setForm]=useState({
-        courseTitle:'',
-        duration:'',
-        expiryDate:new Date(),
-        image:null,
-        description:'',
+        courseTitle: initialData?.courseTitle || '',
+        duration: initialData?.duration || '',
+        expiryDate:initialData?.expiryDate ?  new Date(initialData.expiryDate) : new Date(),
+        image:initialData?.image || null,
+        description:initialData?.description || '',
     });
 
     const pickImage=async()=>{

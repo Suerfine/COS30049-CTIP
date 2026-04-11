@@ -2,7 +2,7 @@ import { View, Pressable, Image, Text, StyleSheet} from 'react-native';
 import {BookOpenText, Timer, ClockAlert, SquarePen, Trash2} from 'lucide-react-native'
 import ProgressBar from './ProgressBar.js';
 
-const CourseCard=({imagePath, courseTitle, numModules,duration,expiry,userType, progress, onPress})=>{
+const CourseCard=({imagePath, courseTitle, numModules,duration,expiry,userType, progress, onPress, onEdit, onDelete})=>{
     return (
         // Title need change to course ID later
         <Pressable style={styles.card} onPress={onPress}>
@@ -24,12 +24,12 @@ const CourseCard=({imagePath, courseTitle, numModules,duration,expiry,userType, 
             
             {userType === 'admin' ? (
                 <View style={styles.icon}>
-                    <Pressable style={({ hovered }) => [
+                    <Pressable onPress={onEdit} style={({ hovered }) => [
                         hovered && styles.btnHover, 
                     ]}>
                         <SquarePen size={20}/>
                     </Pressable>
-                    <Pressable style={({ hovered }) => [
+                    <Pressable onPress={onDelete} style={({ hovered }) => [
                         hovered && styles.btnHover, 
                     ]}>
                         <Trash2 size={20}/>

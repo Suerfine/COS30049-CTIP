@@ -10,6 +10,8 @@ const AdminCourse = ({navigation}) => {
     const [courses, setCourses]=useState([]);
     const [modalVisible, setModalVisible]=useState(false);
     const [loading, setLoading]=useState(false);
+    const [isEditing, setIsEditing]=useState(false);
+    const [selectedCourse, setSelectedCourse]=useState(null);
 
     // Fetch courses from backend api
     const fetchCourses=()=>{
@@ -56,6 +58,66 @@ const AdminCourse = ({navigation}) => {
         }
     };    
 
+    const handleUpdateSubmit = async (formData) => {
+        setLoading(true);
+        const data = new FormData();
+        data.append('courseTitle', formData.courseTitle);
+        data.append('duration', formData.duration);
+        data.append('description', formData.description);
+
+        const dateString = formData.expiryDate instanceof Date 
+            ? formData.expiryDate.toISOString().split('T')[0] 
+            : formData.expiryDate;
+        data.append('expiryDate', dateString);
+
+        if (formData.image) {
+            if (formData.image.startsWith('blob:') || formData.image.startsWith('file:')) {
+                try {
+                    const response = await fetch(formData.image);
+                    const blob = await response.blob();
+                    data.append('image', blob, 'updated_course.jpg');
+                } catch (err) {
+                    console.error("Image conversion failed", err);
+                }
+            } else {
+                data.append('existingImage', formData.image);
+            }
+        }
+        try {
+            const response = await fetch(`http://localhost:5000/api/courses/${selectedCourse.id}`, {
+                method: 'PUT', 
+                body: data,
+                headers: {
+                    'Accept': 'application/json',
+                },
+            });
+
+            if (response.ok) {
+                setModalVisible(false);
+                fetchCourses();
+            } else {
+                const error = await response.json();
+                console.error("Update failed:", error);
+            }
+        } catch (err) {
+            console.error("Network error:", err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleAdd=()=>{
+        setIsEditing(false);
+        setSelectedCourse(null);
+        setModalVisible(true);
+    };
+
+    const handleEdit=(course)=>{
+        setIsEditing(true);
+        setSelectedCourse(course);
+        setModalVisible(true);
+    };
+
     return (
         <ScrollView style={styles.container}>
             {/* Background Image */}
@@ -68,7 +130,7 @@ const AdminCourse = ({navigation}) => {
                         <Text style={styles.description}>Here you can find all courses</Text>
                         <Text style={styles.title}>All Courses</Text>
                     </View>
-                    <Pressable onPress={()=>setModalVisible((true))} style={({ hovered }) => [
+                    <Pressable onPress={handleAdd} style={({ hovered }) => [
                             styles.btn,
                             hovered && styles.btnHover, 
                         ]}>
@@ -83,9 +145,10 @@ const AdminCourse = ({navigation}) => {
                 <View style={styles.modalOverlay}>
                     <View style={styles.modalContent}>
                         <CourseForm
-                            onSubmit={handleCreateSubmit}
+                            onSubmit={isEditing ? handleUpdateSubmit : handleCreateSubmit}
                             onCancel={()=>setModalVisible(false)}
                             isLoading={loading}
+                            initialData={selectedCourse}
                         />
                     </View>
                 </View>
@@ -120,6 +183,8 @@ const AdminCourse = ({navigation}) => {
                         expiry={course.expiryDate}
                         userType="admin"
                         onPress={()=> navigation.navigate('Course Details', {id:course.id})}
+                        onEdit={()=>handleEdit(course)}
+                        onDelete={()=>handleDelete(course.id)}
                     />)
                 })}
             </View>
