@@ -22,6 +22,7 @@ if(!fstat.existsSync(uploadPath)){
 }
 
 app.use('/images', express.static(uploadPath));
+app.use('/user-images', express.static(path.join(__dirname, 'public', 'Users')));
 
 // Storage Configuration of the file
 const storage=multer.diskStorage({
@@ -407,6 +408,154 @@ app.delete('/api/courses/:id/modules/:moduleId/pages/:pageId', (req, res) => {
         updatedPages: module.pages 
     });
 });
+// ---------------------------------------------------------------------
+
+// Dummy user data
+const users=[
+    {
+        id: 1,
+        fullName: 'John Doe',
+        username: 'johndoe_dev',
+        ic: '020512-13-4233',
+        email: 'johndoe@gmail.com',
+        status: 'Active',
+        joinedDate: '2025-10-15',
+        lastActive: '2 mins ago',
+        profileImage: 'http://localhost:5000/user-images/johndoe.png',
+    },
+    {
+        id: 2,
+        fullName: 'Jenny Sim',
+        username: 'jenny_dev',
+        ic: '0802-13-4433',
+        email: 'jenny@gmail.com',
+        status: 'Inactive',
+        joinedDate: '2026-01-20',
+        lastActive: '5 days ago',
+        profileImage: 'http://localhost:5000/user-images/jenny.png',
+    },
+    {
+        id: 3,
+        fullName: 'John Smith',
+        username: 'john_smith',
+        ic: '9102-11-2233',
+        email: 'johnsmith@gmail.com',
+        status: 'Active',
+        joinedDate: '2026-02-10',
+        lastActive: '2 days ago',
+        profileImage: 'http://localhost:5000/user-images/smith.png',
+    },
+    {
+        id: 4,
+        fullName: 'Olivia Bennett',
+        username: 'olivia_b',
+        ic: '9903-22-3344',
+        email: 'olivia.bennett@gmail.com',
+        status: 'Inactive',
+        joinedDate: '2026-01-25',
+        lastActive: '10 days ago',
+        profileImage: 'http://localhost:5000/user-images/olivia.png',
+    },
+    {
+        id: 5,
+        fullName: 'Daniel Warren',
+        username: 'daniel_w',
+        ic: '8704-33-4455',
+        email: 'daniel.warren@gmail.com',
+        status: 'Active',
+        joinedDate: '2026-03-01',
+        lastActive: '1 day ago',
+        profileImage: 'http://localhost:5000/user-images/daniel.png',
+    },
+    {
+        id: 6,
+        fullName: 'Chloe Hayes',
+        username: 'chloe_h',
+        ic: '9505-44-5566',
+        email: 'chloe.hayes@gmail.com',
+        status: 'Active',
+        joinedDate: '2026-02-15',
+        lastActive: '3 hours ago',
+        profileImage: 'http://localhost:5000/user-images/chloe.png',
+    },
+    {
+        id: 7,
+        fullName: 'Marcus Reed',
+        username: 'marcus_r',
+        ic: '8906-55-6677',
+        email: 'marcus.reed@gmail.com',
+        status: 'Inactive',
+        joinedDate: '2026-01-30',
+        lastActive: '15 days ago',
+        profileImage: 'http://localhost:5000/user-images/marcus.png',
+    },
+    {
+        id: 8,
+        fullName: 'Isabelle Clark',
+        username: 'isabelle_c',
+        ic: '9707-66-7788',
+        email: 'isabelle.clark@gmail.com',
+        status: 'Active',
+        joinedDate: '2026-03-05',
+        lastActive: '5 hours ago',
+        profileImage: 'http://localhost:5000/user-images/issabelle.png',
+    },
+    {
+        id: 9,
+        fullName: 'Lucas Mitchell',
+        username: 'lucas_m',
+        ic: '8608-77-8899',
+        email: 'lucas.mitchell@gmail.com',
+        status: 'Inactive',
+        joinedDate: '2026-02-20',
+        lastActive: '20 days ago',
+        profileImage: 'http://localhost:5000/user-images/lucas.png',
+    },
+    {
+        id: 10,
+        fullName: 'Mark Willburg',
+        username: 'mark_w',
+        ic: '9409-88-9900',
+        email: 'mark.willburg@gmail.com',
+        status: 'Active',
+        joinedDate: '2026-03-10',
+        lastActive: '12 hours ago',
+        profileImage: 'http://localhost:5000/user-images/mark.png',
+    },
+    {
+        id: 11,
+        fullName: 'Nicholas Agenn',
+        username: 'nicholas_a',
+        ic: '9810-99-0011',
+        email: 'nicholas.agenn@gmail.com',
+        status: 'Inactive',
+        joinedDate: '2026-01-28',
+        lastActive: '30 days ago',
+        profileImage: 'http://localhost:5000/user-images/nicholas.jpg',
+    },
+    {
+        id: 12,
+        fullName: 'Mia Nadinn',
+        username: 'mia_n',
+        ic: '9211-00-1122',
+        email: 'mia.nadinn@gmail.com',
+        status: 'Active',
+        joinedDate: '2026-03-15',
+        lastActive: '6 hours ago',
+        profileImage: 'http://localhost:5000/user-images/mia.png',
+    },
+    {
+        id: 13,
+        fullName: 'Noemi Villan',
+        username: 'noemi_v',
+        ic: '9312-11-2233',
+        email: 'noemi.villan@gmail.com',
+        status: 'Inactive',
+        joinedDate: '2026-02-05',
+        lastActive: '25 days ago',
+        profileImage: 'http://localhost:5000/user-images/noemi.png',
+    }
+]
 
 // ---------------------------------------------------------------------
 

@@ -10,6 +10,7 @@ import SideBar from './src/components/SideBar';
 import NavBar from './src/components/NavBar';
 import EditCourseDetails from './src/screens/EditCourseDetail';
 import UserDashboard from './src/screens/UserDashboard';
+import UserManagement from './src/screens/UserManagement';
 
 // Define
 const Stack=createStackNavigator();
@@ -22,6 +23,7 @@ export default function App() {
         'Course Management': 'courseManagement',
         'Course Details': 'course/:id',
         'User Dashboard': 'dashboard',
+        'User Management': 'userManagement',
       },
     },
   };
@@ -42,6 +44,7 @@ export default function App() {
               <Stack.Screen name="Course Management" component={AdminCourse} options={{headerShown: false}}/>
               <Stack.Screen name="Course Details" component={EditCourseDetails}/>
               <Stack.Screen name="User Dashboard" component={UserDashboard} options={{headerShown: false}}/>
+              <Stack.Screen name="User Management" component={UserManagement} options={{headerShown: false}}/>
             </Stack.Navigator>
           </View>
         </View>
