@@ -531,7 +531,7 @@ const users=[
         status: 'Inactive',
         joinedDate: '2026-01-28',
         lastActive: '30 days ago',
-        profileImage: 'http://localhost:5000/user-images/nicholas.jpg',
+        profileImage: 'http://localhost:5000/user-images/nicholas.png',
     },
     {
         id: 12,
@@ -556,6 +556,11 @@ const users=[
         profileImage: 'http://localhost:5000/user-images/noemi.png',
     }
 ]
+
+// Route to get all users
+app.get('/api/users',(req,res)=>{
+    res.json(users);
+})
 
 // ---------------------------------------------------------------------
 
