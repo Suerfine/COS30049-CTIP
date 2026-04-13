@@ -5,107 +5,14 @@ import {CopyPlus, Search, SlidersHorizontal} from 'lucide-react-native';
 // Import Components
 import CourseCard from '../components/CourseCard.js';
 import CourseForm from '../components/CourseForm.js';
+import { useCourses } from '../hooks/useCourses.js';
 
 const AdminCourse = ({navigation}) => {
-    const [courses, setCourses]=useState([]);
+    const {courses, loading, addCourse, editCourse, deleteCourse}=useCourses();
+
     const [modalVisible, setModalVisible]=useState(false);
-    const [loading, setLoading]=useState(false);
     const [isEditing, setIsEditing]=useState(false);
     const [selectedCourse, setSelectedCourse]=useState(null);
-
-    // Fetch courses from backend api
-    const fetchCourses=()=>{
-        fetch('http://localhost:5000/api/courses')
-        .then(res=>res.json())
-        .then(data=>setCourses(data))
-        .catch(err=>console.error(err));
-    };
-    useEffect(()=>{
-        fetchCourses();
-    },[]);
-
-    const handleCreateSubmit=async(formData)=>{
-        setLoading(true);
-        const data=new FormData();
-        data.append('courseTitle', formData.courseTitle);
-        data.append('duration', formData.duration);
-        const dateString = formData.expiryDate instanceof Date 
-        ? formData.expiryDate.toISOString().split('T')[0] 
-        : formData.expiryDate;
-        data.append('expiryDate', dateString);
-        data.append('description', formData.description);
-        if(formData.image){
-            const response = await fetch(formData.image);
-            const blob = await response.blob();
-            data.append('image', blob, 'course_photo.jpg');
-        }
-        try{
-            const response=await fetch('http://localhost:5000/api/courses',{
-                method:'POST',
-                body:data,
-                headers:{
-                    'Accept': 'application/json',
-                },
-            });
-
-            if(response.ok){
-                setModalVisible(false);
-                fetchCourses();
-            }
-        }catch(err){
-            console.error('Upload failed:', err);
-        }finally{
-            setLoading(false);
-        }
-    };    
-
-    const handleUpdateSubmit = async (formData) => {
-        setLoading(true);
-        const data = new FormData();
-        data.append('courseTitle', formData.courseTitle);
-        data.append('duration', formData.duration);
-        data.append('description', formData.description);
-
-        const dateString = formData.expiryDate instanceof Date 
-            ? formData.expiryDate.toISOString().split('T')[0] 
-            : formData.expiryDate;
-        data.append('expiryDate', dateString);
-
-        if (formData.image) {
-            if (formData.image.startsWith('blob:') || formData.image.startsWith('file:')) {
-                try {
-                    const response = await fetch(formData.image);
-                    const blob = await response.blob();
-                    data.append('image', blob, 'updated_course.jpg');
-                } catch (err) {
-                    console.error("Image conversion failed", err);
-                }
-            } else {
-                data.append('existingImage', formData.image);
-            }
-        }
-        try {
-            const response = await fetch(`http://localhost:5000/api/courses/${selectedCourse.id}`, {
-                method: 'PUT', 
-                body: data,
-                headers: {
-                    'Accept': 'application/json',
-                },
-            });
-
-            if (response.ok) {
-                setModalVisible(false);
-                fetchCourses();
-            } else {
-                const error = await response.json();
-                console.error("Update failed:", error);
-            }
-        } catch (err) {
-            console.error("Network error:", err);
-        } finally {
-            setLoading(false);
-        }
-    };
 
     const handleAdd=()=>{
         setIsEditing(false);
@@ -124,24 +31,19 @@ const AdminCourse = ({navigation}) => {
         if(!confirmDelete){
             return;
         }
+        await deleteCourse(courseId);
+    };
 
-        try{
-            const response=await fetch(`http://localhost:5000/api/courses/${courseId}`,{
-                method: 'DELETE',
-                headers:{
-                    'Accept': 'application/json',
-                },
-            });
+    const handleFormSubmit=async(FormData)=>{
+        let success=false;
+        if(isEditing){
+            success=await editCourse(selectedCourse.id, FormData);
+        }else{
+            success=await addCourse(FormData);
+        }
 
-            if(response.ok){
-                setCourses(prevCourse=>prevCourse.filter(course=>course.id !== courseId));
-            }else{
-                const errorData=await response.json();
-                alert(`Delete failed: ${errorData.message}`);
-            }
-        }catch(err){
-            console.error("Error deleting course:", err);
-            alert("Network error. Could not delete course.");
+        if(success){
+            setModalVisible(false);
         }
     };
 
@@ -172,7 +74,7 @@ const AdminCourse = ({navigation}) => {
                 <View style={styles.modalOverlay}>
                     <View style={styles.modalContent}>
                         <CourseForm
-                            onSubmit={isEditing ? handleUpdateSubmit : handleCreateSubmit}
+                            onSubmit={handleFormSubmit}
                             onCancel={()=>setModalVisible(false)}
                             isLoading={loading}
                             initialData={selectedCourse}

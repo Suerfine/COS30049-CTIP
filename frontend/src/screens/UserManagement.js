@@ -1,6 +1,6 @@
 import React, {useState} from 'react';
 import { StyleSheet } from 'react-native';
-import Checkbox from 'react-native-paper/lib/typescript/components/Checkbox/Checkbox';
+import {Checkbox} from 'react-native-paper';
 
 const UserManagement=()=>{
     const [isAllChecked, setIsAllChecked]=useState(false);
