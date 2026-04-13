@@ -1,235 +1,35 @@
-import React,{useState} from 'react';
+import React,{use, useState} from 'react';
 import {View, Text, StyleSheet, Pressable, FlatList,TextInput} from 'react-native';
 import {Plus, ChevronRight, ChevronDown,Search, Trash2} from 'lucide-react-native';
+import { useOutline } from '../hooks/useOutline';
 
 const OutlineBar=({course, onSelectPage, editable})=>{
+    const{
+        allModules,
+        expandedModule,
+        toggleModule,
+        addModule,
+        saveModule,
+        updateModuleTitle,
+        deleteModule,
+        addPage,
+        updatePageTitle,
+        deletePage
+    } =useOutline(course);
+
     // Set State
-    const [expandedModule, setExpandedModule]=useState(null);
     const [selectedItem, setSelectedItem]=useState({type:'overview'});
     const [hoveredItem, setHoveredItem]=useState(null);
-    const [newSections, setNewSectons]=useState([]);
     const [editingItem, setEditingItem]=useState(null);
-    const [modules, setModules]=useState(course.modules);
-    const allModules=[...modules, ...newSections];
 
     if(!course){
         return;
     }
 
-    // Function
-    const toggleModule=(moduleId)=>{
-        setExpandedModule(expandedModule===moduleId ? null :moduleId);
-    };
-
     const handleSelect=(item)=>{
         setSelectedItem(item);
         onSelectPage(item);
     }
-
-    const handleAddSection = () => {
-        if (!editable) return;
-
-        setNewSectons((prevSections) => {
-            const hasPendingSection = prevSections.some(s => s.title === "");
-            if (hasPendingSection) {
-                alert("Finish naming the current new section before adding another.");
-                return prevSections; 
-            }
-
-            const currentAllModules = [...modules, ...prevSections];
-            const maxId = currentAllModules.reduce((max, m) => Math.max(max, m.moduleId), 0);
-            const nextId = maxId + 1;
-
-            return [
-                ...prevSections, 
-                { moduleId: nextId, title: '', pages: [{ pageId: `${nextId}.0`, title: 'Introduction' }] }
-            ];
-        });
-    };
-
-    const handleBlur = async (moduleId, value) => {
-        if (!editable || !value.trim()) return;
-
-        setNewSectons((prev) =>
-            prev.map((s) => (s.moduleId === moduleId ? { ...s, title: value } : s))
-        );
-
-        try {
-            const moduleResponse = await fetch(`http://localhost:5000/api/courses/${course.id}/modules`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    moduleId: moduleId,
-                    title: value,
-                    pages: [] 
-                }),
-            });
-
-            if (moduleResponse.ok) {
-                await fetch(`http://localhost:5000/api/courses/${course.id}/modules/${moduleId}/pages`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        pageId: `${moduleId}.0`,
-                        title: 'Introduction'
-                    }),
-                });
-            }
-        } catch (err) {
-            console.error('Failed to update section or create intro page:', err);
-        }
-    };
-
-    const handleModuleUpdate=async(moduleId, newTitle)=>{
-        if(!newTitle.trim()){
-            setEditingItem(null);
-            return;
-        }
-        setModules(prev=>prev.map(m=>m.moduleId === moduleId ? {...m,title:newTitle} : m))
-        setNewSectons(prev=>prev.map(s=>(s.moduleId===moduleId ? {...s, title:newTitle} :s)));
-        setEditingItem(null);
-        try{
-            await fetch(`http://localhost:5000/api/courses/${course.id}/modules/${moduleId}`,{
-                method:'PUT',
-                headers:{'Content-Type': 'application/json'},
-                body: JSON.stringify({title:newTitle}),
-            });
-        }catch (err){
-            console.error('Failed to update module:', err);
-        }
-    };
-
-    const handleAddPage = (moduleId) => {
-        // Helper to add a page to a module object
-        const addPageToModule = (m) => {
-            if (m.moduleId === moduleId) {
-                const hasPendingPage = m.pages.some(p => p.title === "");
-                if (hasPendingPage) {
-                    return m;
-                }
-                const existingCount = m.pages.length;
-                const newPageId = `${moduleId}.${existingCount}`;
-                return {
-                    ...m,
-                    pages: [...m.pages, { pageId: newPageId, title: '' }]
-                };
-            }
-            return m;
-        };
-
-        // Update whichever state contains the module
-        setModules(prev => prev.map(addPageToModule));
-        setNewSectons(prev => prev.map(addPageToModule));
-    };
-
-    const handlePageBlur = async (moduleId, pageId, value) => {
-        if (!value.trim()) return; 
-
-        const updatePageInModule = (m) => {
-            if (m.moduleId === moduleId) {
-                return {
-                    ...m,
-                    pages: m.pages.map(p => p.pageId === pageId ? { ...p, title: value } : p)
-                };
-            }
-            return m;
-        };
-
-        setModules(prev => prev.map(updatePageInModule));
-        setNewSectons(prev => prev.map(updatePageInModule));
-
-        // API Call
-        try {
-            await fetch(`http://localhost:5000/api/courses/${course.id}/modules/${moduleId}/pages`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ pageId, title: value }),
-            });
-        } catch (err) {
-            console.error('Failed to add page', err);
-        }
-    };
-
-    const handlePageUpdate=async(moduleId, pageId, newTitle)=>{
-        setEditingItem(null);
-        if(!newTitle.trim()){
-            setEditingItem(null);
-            return;
-        }
-        setModules(prev=>prev.map(m=>{
-            if(m.moduleId===moduleId){
-                return{
-                    ...m, pages:m.pages.map(p=>p.pageId === pageId ? {...p, title:newTitle} :p)
-                };
-            }
-            return m;
-        }));
-
-        try{
-            await fetch(`http://localhost:5000/api/courses/${course.id}/modules/${moduleId}/pages/${pageId}`,{
-                method:'PUT',
-                headers:{'Content-Type': 'application/json'},
-                body: JSON.stringify({title:newTitle}),
-            });
-        } catch(err){
-            console.error('Failed to update page:', err);
-        }
-    }
-
-    const handleDeleteModule=async(moduleId)=>{
-        const confirmed=window.confirm(`Are you sure you want to delete this module and all its pages?`);
-        if(!confirmed){
-            return;
-        }
-        try{
-            await fetch(`http://localhost:5000/api/courses/${course.id}/modules/${moduleId}`,{
-                method:'DELETE',
-            });
-
-            setModules(prev=>prev.filter(m=>m.moduleId!==moduleId));
-            setNewSectons(prev=>prev.filter(s=>s.moduleId !== moduleId));
-        }catch(err){
-            console.error('Failed to delete module',err);
-        }
-    }
-
-    const handleDeletePage = async (moduleId, pageId) => {
-        const confirmed = window.confirm(`Are you sure you want to delete this page?`);
-        if (!confirmed) return;
-
-        try {
-            const response = await fetch(`http://localhost:5000/api/courses/${course.id}/modules/${moduleId}/pages/${pageId}`, {
-                method: 'DELETE',
-            });
-
-            if (!response.ok) {
-                console.error('Server error during deletion');
-                return;
-            }
-
-            // Logic to update the list
-            const filterPage = (prevList) => 
-                prevList.map((m) => {
-                    // Ensure we compare IDs correctly (cast both to String to be safe)
-                    if (String(m.moduleId) === String(moduleId)) {
-                        return { 
-                            ...m, 
-                            pages: m.pages.filter((p) => String(p.pageId) !== String(pageId)) 
-                        };
-                    }
-                    return m;
-                });
-            setModules(prev => filterPage(prev));
-            setNewSectons(prev => filterPage(prev)); 
-
-            if (selectedItem?.page?.pageId === pageId) {
-                setSelectedItem({ type: 'overview' });
-            }
-
-        } catch (err) {
-            console.error('Failed to delete page:', err);
-        }
-    };
 
     return(
         <View style={styles.outlinebar}>
@@ -246,7 +46,7 @@ const OutlineBar=({course, onSelectPage, editable})=>{
             >
                 <Text style={styles.overview}>Course Overview</Text>
                 {editable && hoveredItem?.type==='overview' && (
-                    <Pressable onPress={handleAddSection}>
+                    <Pressable onPress={addModule}>
                         <Plus size={16}/>
                     </Pressable>
                 )}
@@ -286,10 +86,12 @@ const OutlineBar=({course, onSelectPage, editable})=>{
                                     placeholderTextColor="#8f8f8f"
                                     defaultValue={module.title}
                                     onBlur={(e) => {
+                                        const val=e.nativeEvent.text;
                                         if (isNewSection) {
-                                            handleBlur(module.moduleId, e.nativeEvent.text);
+                                            saveModule(module.moduleId,val);
                                         } else {
-                                            handleModuleUpdate(module.moduleId, e.nativeEvent.text);
+                                            updateModuleTitle(module.moduleId,val);
+                                            setEditingItem(null);
                                         }
                                     }}
                                     />
@@ -300,11 +102,13 @@ const OutlineBar=({course, onSelectPage, editable})=>{
                                         style={styles.section}
                                         defaultValue={module.title}
                                         onBlur={(e) => {
-                                        if (isNewSection) {
-                                            handleBlur(module.moduleId, e.nativeEvent.text);
-                                        } else {
-                                            handleModuleUpdate(module.moduleId, e.nativeEvent.text);
-                                        }
+                                            const val=e.nativeEvent.text;
+                                            if (isNewSection) {
+                                                saveModule(module.moduleId,val);
+                                            } else {
+                                                updateModuleTitle(module.moduleId,val);
+                                                setEditingItem(null);
+                                            }
                                     }}
                                     />
                                     ) : (
@@ -317,7 +121,7 @@ const OutlineBar=({course, onSelectPage, editable})=>{
                             {expandedModule === module.moduleId ? <ChevronDown size={15}/> : <ChevronRight size={15}/>}
                             {/* Delete Course Icon */}
                             {editable && !isEditing && (hoveredItem?.id === module.moduleId || isSelected) && (
-                                <Pressable onPress={()=>handleDeleteModule(module.moduleId)}>
+                                <Pressable onPress={()=>deleteModule(module.moduleId)}>
                                     <Trash2 size={16}/>
                                 </Pressable>
                             )}
@@ -338,7 +142,10 @@ const OutlineBar=({course, onSelectPage, editable})=>{
                                                 placeholder="Enter page title..."
                                                 placeholderTextColor="#8f8f8f"
                                                 defaultValue={page.title}
-                                                onBlur={(e) => handlePageBlur(module.moduleId, page.pageId, e.nativeEvent.text)}
+                                                onBlur={(e) => {
+                                                                updatePageTitle(module.moduleId, page.pageId, e.nativeEvent.text);
+                                                                setEditingItem(null);
+                                                            }}
                                             />
                                         </View>
                                     ):(
@@ -359,14 +166,17 @@ const OutlineBar=({course, onSelectPage, editable})=>{
                                                     style={styles.section}
                                                     defaultValue={page.title}
                                                     autoFocus
-                                                    onBlur={(e) => handlePageUpdate(module.moduleId, page.pageId, e.nativeEvent.text)}
+                                                    onBlur={(e) => {
+                                                                updatePageTitle(module.moduleId, page.pageId, e.nativeEvent.text);
+                                                                setEditingItem(null);
+                                                            }}
                                                 />
                                             ) : (
                                                 <View style={styles.pageBlock}>
                                                     <Text>{page.title} </Text>
                                                     {/* Trash icon for page */}
                                                     {editable && hoveredItem?.type==='page' && hoveredItem?.pageId===page.pageId && Number(page.pageId) % 1 !== 0 && (
-                                                        <Pressable onPress={()=>handleDeletePage(module.moduleId,page.pageId)}>
+                                                        <Pressable onPress={()=>deletePage(module.moduleId, page.pageId)}>
                                                             <Trash2 size={16}/>
                                                         </Pressable>
                                                     )}
@@ -380,7 +190,7 @@ const OutlineBar=({course, onSelectPage, editable})=>{
                                 {/* Show + Add New Page when hovering */}
                                 {editable && hoveredItem?.type === 'page' && hoveredItem.moduleId === module.moduleId && (
                                     <Pressable
-                                    onPress={() => handleAddPage(module.moduleId)}
+                                    onPress={() => addPage(module.moduleId)}
                                     style={styles.pageItem}
                                     >
                                         <Text style={styles.addPage}>+ Add New Page</Text>

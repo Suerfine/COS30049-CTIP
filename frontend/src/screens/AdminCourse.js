@@ -1,4 +1,4 @@
-import React,{useEffect, useState} from 'react';
+import React,{useState} from 'react';
 import { View, Text, StyleSheet, Pressable, TextInput,  ImageBackground, ScrollView,Modal} from 'react-native';
 import {CopyPlus, Search, SlidersHorizontal} from 'lucide-react-native';
 

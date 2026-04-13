@@ -32,7 +32,7 @@ export const pageService={
     },
 
     // DELETE: delete the existing page
-    delete: async(courseId, moduleId)=>{
+    delete: async(courseId, moduleId, pageId)=>{
         try{
             const res=await fetch(`${BASE_URL}/${courseId}/modules/${moduleId}/pages/${pageId}`,{
                 method:'DELETE',
