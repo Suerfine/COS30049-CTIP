@@ -4,7 +4,8 @@ import {CopyPlus, Search, SlidersHorizontal} from 'lucide-react-native';
 
 // Import Components
 import CourseCard from '../components/CourseCard.js';
-import CourseForm from '../components/CourseForm.js';
+import CourseFormContent from '../components/CourseFormContent.js';
+import ModalLayout from '../components/ModalLayout.js';
 import { useCourses } from '../hooks/useCourses.js';
 
 const AdminCourse = ({navigation}) => {
@@ -70,18 +71,14 @@ const AdminCourse = ({navigation}) => {
             </ImageBackground>
 
             {/* Create Course Modal */}
-            <Modal animationType="fade" transparent={true} visible={modalVisible} onRequestClose={()=> setModalVisible(false)}>
-                <View style={styles.modalOverlay}>
-                    <View style={styles.modalContent}>
-                        <CourseForm
-                            onSubmit={handleFormSubmit}
-                            onCancel={()=>setModalVisible(false)}
-                            isLoading={loading}
-                            initialData={selectedCourse}
-                        />
-                    </View>
-                </View>
-            </Modal>
+            <ModalLayout visible={modalVisible} onClose={()=>setModalVisible(false)}>
+                <CourseFormContent
+                    onSubmit={handleFormSubmit}
+                    onCancel={()=>setModalVisible(false)}
+                    isLoading={loading}
+                    initialData={selectedCourse}
+                />
+            </ModalLayout>
 
             {/* Search and Filter */}
             <View style={styles.toolbar}>
@@ -207,21 +204,6 @@ const styles = StyleSheet.create({
         flexDirection:'row',
         marginTop:20,
     },
-    modalOverlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.5)',
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: 20
-    },
-    modalContent: {
-        width: '100%',
-        maxWidth: 750,
-        backgroundColor: 'white',
-        borderRadius: 20,
-        overflow: 'hidden'
-    }
-
 });
 
 export default AdminCourse;

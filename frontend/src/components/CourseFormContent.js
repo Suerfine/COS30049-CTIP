@@ -2,8 +2,9 @@ import {useState} from 'react';
 import { View, Text, TextInput, StyleSheet, Pressable, Image, ActivityIndicator} from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import {X} from 'lucide-react-native';
+import { ModalStyle as styles } from './ModalStyle';
 
-const CourseForm=({onSubmit, onCancel, isLoading, initialData})=>{
+const CourseFormContent=({onSubmit, onCancel, isLoading, initialData})=>{
     const [form, setForm]=useState({
         courseTitle: initialData?.courseTitle || '',
         duration: initialData?.duration || '',
@@ -81,7 +82,7 @@ const CourseForm=({onSubmit, onCancel, isLoading, initialData})=>{
                     {/* Description */}
                     <View>
                         <Text style={styles.label}>Description:</Text>
-                        <TextInput style={[styles.input, styles.desc]} value={form.description} placeholder='Enter description...' placeholderTextColor="#8f8f8f" multiline={true} onChangeText={(text)=> setForm({...form, description: text})}/>
+                        <TextInput style={[styles.input, localStyles.desc]} value={form.description} placeholder='Enter description...' placeholderTextColor="#8f8f8f" multiline={true} onChangeText={(text)=> setForm({...form, description: text})}/>
                     </View>
                 </View>
                 <View style={styles.upload}>
@@ -90,9 +91,9 @@ const CourseForm=({onSubmit, onCancel, isLoading, initialData})=>{
                         {form.image ? (
                             <Image source={{uri: form.image}} style={styles.previewImage}/>
                         ): (
-                            <View style={styles.uploadPlaceholder}>
-                                <Image source={require('../../assets/upload_placeholder.png')} accessibilityLabel='Upload Placeholder Image' style={styles.placeholder}/>
-                                <Text style={styles.muted}>Select your image</Text>
+                            <View style={localStyles.uploadPlaceholder}>
+                                <Image source={require('../../assets/upload_placeholder.png')} accessibilityLabel='Upload Placeholder Image' style={localStyles.placeholder}/>
+                                <Text style={localStyles.muted}>Select your image</Text>
                             </View>
                         )}
                     </Pressable>
@@ -108,9 +109,9 @@ const CourseForm=({onSubmit, onCancel, isLoading, initialData})=>{
                 </Pressable>
                 {initialData && (
                     <Pressable 
-                        style={[styles.Btn, styles.Publishbtn]}
+                        style={[styles.Btn, localStyles.Publishbtn]}
                     >
-                        <Text style={styles.publishText}>Publish</Text>
+                        <Text style={localStyles.publishText}>Publish</Text>
                     </Pressable>
                 )}
                 
@@ -119,65 +120,9 @@ const CourseForm=({onSubmit, onCancel, isLoading, initialData})=>{
     )
 }
 
-const styles=StyleSheet.create({
-    container:{
-        padding:25,
-    },
-    row:{
-        flexDirection:'row',
-        gap:5,
-        
-    },
-    header:{
-        justifyContent:'space-between',
-        marginBottom:30
-    },
-    title:{
-        fontWeight:'bold',
-        fontSize:20
-    },  
-    content:{
-        justifyContent:'space-between',
-        borderRightWidth:1,
-        borderRightColor: '#ddd',
-        paddingRight:20
-    },
-    input:{
-        borderWidth:1, 
-        borderColor:'#ddd',
-        borderRadius:10,
-        padding:12,
-        marginBottom:15,
-        minWidth:370,
-    },
-    label:{
-        marginBottom:10,
-        fontWeight:550
-    },
+const localStyles=StyleSheet.create({
     desc:{
         minHeight:120,
-    },
-    upload:{
-        padding:20,
-        flex:1
-    },
-    imagePicker: { 
-        height: 170, 
-        backgroundColor: '#fcfdfe', 
-        borderRadius: 10, 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        marginBottom: 15, 
-        borderStyle: 'dashed', 
-        borderWidth: 1, 
-        borderColor: '#ccc',
-        marginTop:15
-    },
-    previewImage: { 
-        width: '100%', 
-        height: '100%', 
-        borderRadius: 10,
-        resizeMode:'fill'
     },
     placeholder:{
         width:70,
@@ -193,15 +138,6 @@ const styles=StyleSheet.create({
     muted:{
         color:"#646464"
     },
-    Btn:{
-        maxWidth:100,
-        alignItems:'center',
-        backgroundColor:'#ffc95c',
-        borderRadius:5,
-        paddingHorizontal:20,
-        paddingVertical:8,
-        marginTop:15,
-    },
     Publishbtn:{
         backgroundColor:'#18704d'
     },
@@ -211,6 +147,6 @@ const styles=StyleSheet.create({
 })
 ;
 
-export default CourseForm;
+export default CourseFormContent;
 
 // Havent do the validation message

@@ -1,13 +1,18 @@
-import { CircleCheck, SquarePen, CircleMinus, Trash2, Search, Plus, Circle} from 'lucide-react-native';
+import { CircleCheck, SquarePen, CircleMinus, Trash2, Search, Plus, Circle, ChevronLeft, ChevronsLeft, ChevronRight, ChevronsRight} from 'lucide-react-native';
 import React, {useState} from 'react';
 import { Pressable, StyleSheet, FlatList, View,Text, Image, TextInput} from 'react-native';
 import {Checkbox} from 'react-native-paper';
 import { useUserManagement } from '../hooks/useUserManagement';
+import ModalLayout from '../components/ModalLayout';
+import UsersFormContent from '../components/UsersFormContent';
 
 const UserManagement=()=>{
-    const {users}=useUserManagement();
-
+    const {users, loading}=useUserManagement();
+    const [currentPage, setCurrentPage]=useState(1);
+    const itemsPerPage=10;
     const [isAllChecked, setIsAllChecked]=useState(false);
+    const [modalVisible, setModalVisible]=useState(false);
+    
     // Toggle user status
     const toggleStatus=(id)=>{
         setUsers(users.map(u => 
@@ -15,17 +20,28 @@ const UserManagement=()=>{
         ));
     };
 
+    const handleAdd=()=>{
+        setModalVisible(true);
+    };
+
+    // Caluculate the pagination
+    const indexOfLastItem=currentPage*itemsPerPage;
+    const indexOfFirstItem=indexOfLastItem-itemsPerPage;
+    const currentUsers=users.slice(indexOfFirstItem, indexOfLastItem);
+    const totalPages=Math.ceil(users.length/itemsPerPage);
+
     const renderHeader=()=>(
         <View style={[styles.tableHeader,styles.row]}>
             <View style={styles.checkbox}><Checkbox status={isAllChecked ? 'checked' : 'unchecked'} onPress={()=>setIsAllChecked(!isAllChecked)} uncheckedColor="white" color="#ffd47e"/></View>
-            <Text style={[styles.headerText, { flex:2 }]}>Full Name</Text>
+            <Text style={[styles.headerText, { flex:3 }]}>Full Name</Text>
             <Text style={[styles.headerText, { flex:2 }]}>Username</Text>
             <Text style={[styles.headerText, { flex:2}]}>IC.</Text>
             <Text style={[styles.headerText, { flex:3 }]}>Email</Text>
             <Text style={[styles.headerText, { flex:2}]}>Status</Text>
+            <Text style={[styles.headerText, { flex:2}]}>Role</Text>
             <Text style={[styles.headerText, { flex:2 }]}>Joined Date</Text>
             <Text style={[styles.headerText, { flex:2 }]}>Last Active</Text>
-            <Text style={[styles.headerText, { flex:1 }]}>Actions</Text>
+            {/* <Text style={[styles.headerText, { flex:2 }]}>Actions</Text> */}
         </View>
     );
 
@@ -37,13 +53,13 @@ const UserManagement=()=>{
             </View>
 
             {/* Full Name and profile image */}
-            <View style={[{flex:2}, styles.userInfo, styles.row]}>
+            <View style={[{flex:3}, styles.userInfo, styles.row]}>
                 <Image source={{uri:item.profileImage}} style={styles.avatar} accessibilityLabel={`Profile Image of ${item.fullName}`}/>
                 <Text>{item.fullName}</Text>
             </View>
 
             {/* Username */}
-            <Text style={{flex:2 }}>{item.username}</Text>
+            <Text style={{flex:2}}>{item.username}</Text>
             {/* IC */}
             <Text style={{flex:2}}>{item.ic}</Text>
             {/* Email */}
@@ -53,13 +69,14 @@ const UserManagement=()=>{
                 {item.status==="Active" ? (<Circle size={10} stroke="green" fill="green"/>):(<Circle size={10} stroke="grey" fill="grey"/>)}
                 <Text>{item.status}</Text>
             </View>
-            
+            {/* Role */}
+            <Text style={{flex:2}}>{item.role==='parkguide' ? 'Park Guide' : 'Admin'}</Text>
             {/* Joined Date */}
             <Text style={{flex:2}}>{item.joinedDate}</Text>
             {/* Last Active */}
             <Text style={{flex:2}}>{item.lastActive}</Text>
-            {/* Actions */}
-            <View style={[{flex:1}, styles.actionIcon, styles.row]}>
+            {/* Actions
+            <View style={[{flex:2}, styles.actionIcon, styles.row]}>
                 {item.status==="Active" ? (
                     <Pressable><CircleMinus size={18} color="red"/></Pressable>
                 ) : (
@@ -67,9 +84,44 @@ const UserManagement=()=>{
                 )}
                 <Pressable><SquarePen size={18} color="#525252"/></Pressable>
                 <Pressable><Trash2 size={18} color="red"/></Pressable>
-            </View>
+            </View> */}
         </View>
     );
+    
+    const renderPagination=()=>{
+        const pageNumbers=[];
+        for (let i=1; i<=totalPages;i++){
+            pageNumbers.push(i);
+        }
+        return (
+            <View style={[styles.paginationContainer, styles.row]}> 
+                <Text style={styles.pageInfo}>
+                    Showing {users.length>0 ? indexOfFirstItem+1 : 0} to {Math.min(indexOfLastItem, users.length)} of {users.length} users
+                </Text>
+                <View style={styles.row}>
+                    <Pressable disabled={currentPage==1} onPress={()=>setCurrentPage(1)} style={[styles.pageBtn, currentPage==1 && styles.btnDisabled]}>
+                        <Text style={[currentPage==1 ? styles.disabledText : styles.pageBtnText,styles.arrowBtn]}><ChevronsLeft size={20}/></Text>
+                    </Pressable>
+                    <Pressable disabled={currentPage==1} onPress={()=>setCurrentPage(prev=>prev-1)} style={[styles.pageBtn, currentPage==1 && styles.btnDisabled]}>
+                        <Text style={[currentPage==1 ? styles.disabledText : styles.pageBtnText,styles.arrowBtn]}><ChevronLeft size={20}/></Text>
+                    </Pressable>
+                    {pageNumbers.map((number)=>(
+                        <Pressable key={number} onPress={()=>setCurrentPage(number)} style={[styles.pageBtn, currentPage === number && styles.activePageBtn]}>
+                            <Text style={[styles.pageBtnText, currentPage===number && styles.activePageBtn]}>{number}</Text>
+                        </Pressable>
+                    ))}
+                    <Pressable disabled={currentPage==totalPages} onPress={()=>setCurrentPage(prev=>prev+1)} style={[styles.pageBtn, currentPage==totalPages && styles.btnDisabled]}>
+                        <Text style={[currentPage==totalPages ? styles.disabledText : styles.pageBtnText, styles.arrowBtn]}><ChevronRight size={20}/></Text>
+                    </Pressable>
+                    <Pressable disabled={currentPage==totalPages} onPress={()=>setCurrentPage(totalPages)} style={[styles.pageBtn, currentPage==totalPages && styles.btnDisabled]}>
+                        <Text style={[currentPage==totalPages ? styles.disabledText : styles.pageBtnText, styles.arrowBtn]}><ChevronsRight size={20}/></Text>
+                    </Pressable>
+                </View>
+
+            </View>
+        )
+    };
+
     // Loading
     return(
         <View style={styles.container}>
@@ -79,7 +131,7 @@ const UserManagement=()=>{
                     <Search size={18}/>
                     <TextInput style={styles.input} placeholder='Search...' placeholderTextColor="#8f8f8f"/>
                 </View>
-                <Pressable style={({ hovered }) => [
+                <Pressable onPress={handleAdd} style={({ hovered }) => [
                         styles.btn,
                         hovered && styles.btnHover, 
                     ]}>
@@ -87,12 +139,24 @@ const UserManagement=()=>{
                     <Text style={styles.btnText}>Add User</Text>
                 </Pressable>
             </View>
-            <FlatList style={styles.table} 
-                data={users}
-                ListHeaderComponent={renderHeader}
-                renderItem={renderUserItem}
-                keyExtractor={item=>item.id.toString()}
-            />
+
+            {/* Create Users Modal */}
+            <ModalLayout visible={modalVisible} onClose={()=>setModalVisible(false)}>
+                <UsersFormContent
+                    onCancel={()=>setModalVisible(false)}
+                    isLoading={loading}
+                />
+            </ModalLayout>
+
+            <View style={styles.tableContainer}>
+                <FlatList style={styles.table} 
+                    data={currentUsers}
+                    ListHeaderComponent={renderHeader}
+                    renderItem={renderUserItem}
+                    keyExtractor={item=>item.id.toString()}
+                />
+            </View>
+            {renderPagination()}
         </View>
     );
 }
@@ -116,6 +180,9 @@ const styles = StyleSheet.create({
     },
     table:{
         backgroundColor:"white",
+    },
+    tableContainer:{
+        flex:1
     },
     title:{
         fontSize:25,
@@ -173,8 +240,8 @@ const styles = StyleSheet.create({
         flexDirection:'row'
     },
     avatar:{
-        width:30,
-        height:30,
+        width:35,
+        height:35,
         borderRadius:50,
     },
     userInfo:{
@@ -187,6 +254,53 @@ const styles = StyleSheet.create({
     },
     actionIcon:{
         gap:7,
+        justifyContent:'center'
+    },
+    paginationContainer:{
+        justifyContent:'space-between',
+        alignItems:"center",
+        paddingVertical:15,
+        paddingHorizontal:20,
+        backgroundColor:'white'
+    },
+    pageInfo: {
+        color: '#666',
+        fontSize: 14,
+    },
+    pageBtn: {
+        width:32,
+        height:32,
+        borderRadius: '50%',
+        backgroundColor: 'white',
+        borderWidth: 1,
+        borderColor: '#ccc',
+        alignItems:'center',
+        justifyContent:'center',
+        marginLeft:10
+    },
+    pageBtnText: {
+        color: '#ecaa25',
+        fontWeight: '600',
+    },
+    btnDisabled: {
+        backgroundColor: '#f0f0f0',
+        borderColor: '#eee',
+    },
+    disabledText: {
+        color: '#bbb',
+    },
+    currentPageText: {
+        alignSelf: 'center',
+        fontWeight: 'bold',
+        color: '#333',
+    },
+    arrowBtn:{
+        paddingTop:2
+    },
+    activePageBtn:{
+        backgroundColor:'#ffc758',
+        border:0,
+        color:'white'
     }
 });
 

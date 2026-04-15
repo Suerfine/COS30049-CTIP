@@ -3,7 +3,7 @@ import { userService } from '../services/userService';
 
 export const useUserManagement=()=>{
     const [users, setUsers]=useState([]);
-    const [loading, setLoading]=useState(true);
+    const [loading, setLoading]=useState(false);
 
     // Fetch all users
     const fetchUsers=async()=>{
@@ -22,5 +22,6 @@ export const useUserManagement=()=>{
 
     return {
         users,
+        loading,
     }
 }
