@@ -18,7 +18,7 @@ const EditCourseDetail = () => {
         .catch(err=>console.error('Error when fetching the course: ',err));
     }, [id]);
     
-    if (!course) return <Text>Course not found</Text>;;
+    if (!course) return <Text>Course not found</Text>;
 
     return (
         <View style={styles.rowContainer}>
