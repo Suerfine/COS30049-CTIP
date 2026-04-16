@@ -594,7 +594,6 @@ app.get('/api/todos', (req, res) => {
 
 // ---------------------------------------------------------------------
 
-
 // Dummy user progress data
 const userType = 'user'; // or 'admin'
 
@@ -605,8 +604,8 @@ app.get('/api/userType', (req, res) => {
 
 // Correction: Later progress can add inside course api
 const progress = [
-  { id: 1, course: 'Basic First Aid', progress: 0.7 },
-  { id: 2, course: 'CPR Training', progress: 0.4 },
+  { courseId: 1, progress: 0.7 },
+  { courseId: 2, progress: 0.4 },
 ];
 
 // Route to get all progress

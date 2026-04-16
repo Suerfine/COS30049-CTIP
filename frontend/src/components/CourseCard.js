@@ -2,7 +2,7 @@ import { View, Pressable, Image, Text, StyleSheet} from 'react-native';
 import {BookOpenText, Timer, ClockAlert, SquarePen, Trash2} from 'lucide-react-native'
 import ProgressBar from './ProgressBar.js';
 
-const CourseCard=({imagePath, courseTitle, numModules,duration,expiry,userType, progress, onPress, onEdit, onDelete})=>{
+const CourseCard=({imagePath, courseTitle, numModules,duration,expiry,userType, progress, onPress, onEdit, onDelete, onEnroll})=>{
     return (
         // Title need change to course ID later
         <Pressable style={styles.card} onPress={onPress}>
@@ -22,7 +22,7 @@ const CourseCard=({imagePath, courseTitle, numModules,duration,expiry,userType, 
                 <Text style={styles.DetailsText}>{expiry}</Text>
             </View>
             
-            {userType === 'admin' ? (
+            {userType === 'admin' && (
                 <View style={styles.icon}>
                     <Pressable onPress={onEdit} style={({ hovered }) => [
                         hovered && styles.btnHover, 
@@ -35,9 +35,21 @@ const CourseCard=({imagePath, courseTitle, numModules,duration,expiry,userType, 
                         <Trash2 size={20}/>
                     </Pressable>
                 </View>
-            ) : (
-                progress !== undefined && <ProgressBar progress={progress} />
-                
+            )}
+            {userType !== 'admin' && (
+                <View style={styles.icon}>
+                    {onEnroll ? (
+                        <Pressable style={styles.enrollBtn} onPress={onEnroll}>
+                            <Text style={{ color: 'white', textAlign: 'center' }}>
+                                Enroll
+                            </Text>
+                        </Pressable>
+                    ) : (
+                        progress !== undefined && (
+                            <ProgressBar progress={progress} />
+                        )
+                    )}
+                </View>
             )}
         </Pressable>
     )
@@ -88,6 +100,12 @@ const styles=StyleSheet.create({
     },
     btnHover:{
         color:'#efab21'
+    },
+    enrollBtn: {
+        marginTop: 10,
+        backgroundColor: '#4CAF50',
+        padding: 8,
+        borderRadius: 6,
     }
 });
 

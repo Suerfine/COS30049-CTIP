@@ -22,7 +22,7 @@ const NavBar = () => {
                         navigation.dispatch(
                             CommonActions.reset({
                                 index: 0,
-                                routes: [{ name: 'UserDashboard' }],
+                                routes: [{ name: 'User Dashboard' }],
                             })
                         );
                     }}
