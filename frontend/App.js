@@ -26,7 +26,7 @@ export default function App() {
         'Course Details': 'course/:id',
         'User Dashboard': 'dashboard',
         'User Management': 'userManagement',
-        'User Module':'userModule/:courseId',
+        'User Module':'userModule/:id',
         'User Course':'usercourse',
       },
     },
