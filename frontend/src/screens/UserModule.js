@@ -31,12 +31,7 @@ const UserModule = ({ navigation }) => {
             {/* Outlinebar */}
             <OutlineBar course={course} onSelectPage={setSelectedPage} editable={false}/>
             {/* Content */}
-            <ScrollView style={styles.container}>
-                {selectedPage?.type === 'page' ? (
-                    <Text>Editing: {selectedPage.page.title}</Text>
-                ) : (
-                    <Text>Welcome to {course?.courseTitle} Overview</Text>
-                )}
+            <ScrollView style={styles.container}>   
             </ScrollView>
         </View>
     );
