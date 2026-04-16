@@ -598,6 +598,7 @@ app.get('/api/todos', (req, res) => {
 // Dummy user progress data
 const userType = 'user'; // or 'admin'
 
+// Route to get user type
 app.get('/api/userType', (req, res) => {
   res.json(userType);
 });

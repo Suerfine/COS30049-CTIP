@@ -1,76 +1,16 @@
-import React,{useEffect, useState} from 'react';
+import {useState} from 'react';
 import { View, Text, StyleSheet, Pressable, ScrollView} from 'react-native';
-import { ListPlus, ChevronRight } from 'lucide-react-native';
+import { ListPlus, ChevronRight, ChevronLeft } from 'lucide-react-native';
 import Checkbox from 'expo-checkbox';
-import { Calendar } from 'react-native-calendars';
 
-// Import Components
 import CourseCard from '../components/CourseCard.js';
-import NavBar from '../components/NavBar.js';
+import { useUserDashboard } from '../hooks/useUserDashboard';
 
 const UserDashboard = ({ navigation }) => {
-    const [courses, setCourses]=useState([]);
+    const {courses,todos,userType,progressData,loading,setTodos} = useUserDashboard();
     const [selectedDate, setSelectedDate] = useState(null);
-    const [todos, setTodos] = useState([]);
-    const [userType, setUserType] = useState('');
-    const [progressData, setProgressData] = useState([]);
     const [filter, setFilter] = useState("all");
-    
-    // Fetch user type
-    useEffect(() => {
-        fetch('http://localhost:5000/api/userType')
-        .then(res => {
-            console.log("Response status:", res.status);
-            return res.json();
-        })
-        .then(data => {
-            console.log("User type received:", data);
-            setUserType(data);
-        })
-        .catch(err => console.error("Fetch error:", err));
-    }, []);
-
-    // Fetch progress data
-    useEffect(() => {
-        fetch('http://localhost:5000/api/progress')
-        .then(res => {
-            console.log("Response status:", res.status);
-            return res.json();
-        })
-        .then(data => {
-            console.log("Progress received:", data);
-            setProgressData(data);
-        })
-        .catch(err => console.error("Fetch error:", err));
-    }, []);
-
-    // Fetch courses
-    useEffect(()=>{
-        fetch('http://localhost:5000/api/courses')
-        .then(res => {
-            console.log("Response status:", res.status);
-            return res.json();
-        })
-        .then(data => {
-            console.log("Courses received:", data);
-            setCourses(data);
-        })
-        .catch(err => console.error("Fetch error:", err));
-    },[]);
-
-    // Fetch todos
-    useEffect(() => {
-        fetch('http://localhost:5000/api/todos')
-        .then(res => {
-            console.log("Response status:", res.status);
-            return res.json();
-        })
-        .then(data => {
-            console.log("Todos received:", data);
-            setTodos(data);
-        })
-        .catch(err => console.error("Fetch error:", err));
-    }, []);
+    const [currentDate, setCurrentDate] = useState(new Date());
 
     // Toggle checkbox
     const toggleTodo = (id) => {
@@ -98,62 +38,124 @@ const UserDashboard = ({ navigation }) => {
         filteredTodos = filteredTodos.filter(todo => !todo.completed);
     }
 
+    // Get start of week (Sunday)
+    const getStartOfWeek = (date) => {
+        const d = new Date(date);
+        const day = d.getDay();
+        d.setDate(d.getDate() - day);
+        return d;
+    };
+
+    // Generate 7 days
+    const getWeekDates = (date) => {
+        const start = getStartOfWeek(date);
+        return Array.from({ length: 7 }).map((_, i) => {
+            const d = new Date(start);
+            d.setDate(start.getDate() + i);
+            return d;
+        });
+    };
+
+    const weekDates = getWeekDates(currentDate);
+
     return(
         <View style={{ flex: 1 }}>
-            {/* <NavBar/> */}
             <View style={styles.container}>
-                <View>
-                    <Text style={styles.dashboardTitle}>Dashboard</Text>
-                </View>
-
                 <View style={styles.topRow}>
                     {/* Left side */}
-                    <ScrollView style={{ flex: 3.2 }} >
-                        <View style={styles.leftColumn}>
-                            <View style={styles.cardContainer}>
-                                {courses.map(course=>{
-                                    const courseProgress = progressData.find(p => p.course === course.courseTitle);
-                                    const numModules=course.modules? course.modules.length :0;
-                                    return(
-                                        <CourseCard
-                                            key={course.id}
-                                            id={course.id}
-                                            imagePath={{uri:course.image}}
-                                            courseTitle={course.courseTitle}
-                                            numModules={numModules}
-                                            duration={course.duration}
-                                            expiry={course.expiryDate}
-                                            progress={courseProgress?.progress}
-                                            userType={userType}
-                                            onPress={()=> navigation.navigate('User Module', {id:course.id})}
-                                        />
-                                        );
-                                    }
-                                )}
-                            </View>
-                        </View> 
-                    </ScrollView>
+                    <View style={{flex: 3.2}}>
+                        <ScrollView>
+                            <Text style={styles.dashboardTitle}>Dashboard</Text>
+                            <View style={styles.leftColumn}>
+                                <View style={styles.cardContainer}>
+                                    {courses.map(course=>{
+                                        const courseProgress = progressData.find(p => p.course === course.courseTitle);
+                                        const numModules=course.modules? course.modules.length :0;
+                                        return(
+                                            <CourseCard
+                                                key={course.id}
+                                                id={course.id}
+                                                imagePath={{uri:course.image}}
+                                                courseTitle={course.courseTitle}
+                                                numModules={numModules}
+                                                duration={course.duration}
+                                                expiry={course.expiryDate}
+                                                progress={courseProgress?.progress}
+                                                userType={userType}
+                                                onPress={()=> navigation.navigate('User Module', {id:course.id})}
+                                            />
+                                            );
+                                        }
+                                    )}
+                                </View>
+                            </View> 
+                        </ScrollView>
+                    </View>
 
                     {/* Right side */}
                     <View style={styles.rightColumn}>
 
-                        {/* Calendar */}
                         <View style={styles.calendarContainer}>
-                            <Calendar style={{height: 320}}
-                                onDayPress={(day) => {
-                                    if(selectedDate === day.dateString){
-                                        setSelectedDate(null);
-                                    } else {
-                                        setSelectedDate(day.dateString);
-                                    }
-                                }}  
-                                markedDates={{
-                                    [selectedDate]: { selected: true }
-                                }}
-                            />
+                            <View style={styles.calendarHeader}>
+                                <Pressable onPress={() => {
+                                    const d = new Date(currentDate);
+                                    d.setDate(d.getDate() - 7);
+                                    setCurrentDate(d);
+                                }}>
+                                    <ChevronLeft style={styles.calendarBtn} />
+                                </Pressable>
+
+                                <Text style={styles.monthText}>
+                                    {currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })}
+                                </Text>
+
+                                <Pressable onPress={() => {
+                                    const d = new Date(currentDate);
+                                    d.setDate(d.getDate() + 7);
+                                    setCurrentDate(d);
+                                }}>
+                                    <ChevronRight style={styles.calendarBtn} />
+                                </Pressable>
+                            </View>
+
+                            {/* Days row */}
+                            <View style={styles.weekRow}>
+                                {weekDates.map((date, index) => {
+                                    const dateString = date.toISOString().split('T')[0];
+                                    const isSelected = selectedDate === dateString;
+
+                                    return (
+                                        <Pressable
+                                            key={index}
+                                            style={[
+                                                styles.dayContainer,
+                                                isSelected && styles.selectedDay
+                                            ]}
+                                            onPress={() => {
+                                                if (isSelected) {
+                                                    setSelectedDate(null);
+                                                } else {
+                                                    setSelectedDate(dateString);
+                                                }
+                                            }}
+                                        >
+                                            <Text style={styles.dayName}>
+                                                {date.toLocaleDateString('en-US', { weekday: 'short' })}
+                                            </Text>
+
+                                            <Text style={[
+                                                styles.dayNumber,
+                                                isSelected && styles.selectedText
+                                            ]}>
+                                                {date.getDate()}
+                                            </Text>
+                                        </Pressable>
+                                    );
+                                })}
+                            </View>
                         </View>
 
-                        {/* Todo tab for filter (All, Completed, Not completed)*/}
+                        {/* Todo tab for filter (All, Completed, Not completed) */}
                         <View style={styles.todoTab}>
                             <Pressable onPress={() => setFilter("all")}>
                                 <Text style={filter === "all" ? styles.activeTab : styles.tab}>
@@ -237,7 +239,6 @@ const styles = StyleSheet.create({
         flex: 1,
         flexDirection: 'row',
         gap: 20,
-        alignItems: 'stretch',
     },
     leftColumn:{
         flexDirection: 'row',
@@ -245,16 +246,60 @@ const styles = StyleSheet.create({
         gap: 20,
     },
     rightColumn:{
-        flex: 0.8,
+        flex: 1.1,
         flexDirection: 'column',
         maxHeight: '100%',
     },
     calendarContainer:{
         width: '100%',
-        borderRadius: 20,
         marginBottom: 10,
-        padding: 3,
+        paddingTop: 10,
+        paddingHorizontal: 5,
         overflow: 'hidden',
+        backgroundColor: 'white',
+    },
+    calendarHeader:{
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 10,
+    },
+    calendarBtn:{
+        fontSize: 20,
+        paddingHorizontal: 15,
+        color: '#2f6618fe',
+    },
+    monthText:{
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#2f6618fe',
+    },
+    weekRow:{
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+    },
+    dayContainer:{
+        flex: 1,
+        alignItems: 'center',
+        paddingVertical: 10,
+        borderRadius: 10,
+    },
+    dayName:{
+        fontSize: 12,
+        color: '#666',
+    },
+    dayNumber:{
+        fontSize: 16,
+        marginTop: 4,
+        padding: 6,
+    },
+    selectedText:{
+        color: 'white',
+        fontWeight: 'bold',
+        backgroundColor: '#2f6618fe',
+        padding: 6,
+        paddingHorizontal: 10,
+        borderRadius: 50,
     },
     todoList:{
         flex: 1,
@@ -300,14 +345,15 @@ const styles = StyleSheet.create({
     todoTab:{
         flexDirection: 'row',
         justifyContent: 'center',
-        marginBottom: 10,
-        gap: 20
+        marginTop: 10,
+        marginBottom: 20,
+        gap: 40
     },
     tab:{
         fontSize: 14,
-        color: '#888',
+        color: 'black',
         backgroundColor: '#9ee5a375',
-        padding: 5,
+        padding: 7,
         paddingHorizontal: 15,
         borderRadius: 50,
         borderBottomWidth: 2,
@@ -315,11 +361,10 @@ const styles = StyleSheet.create({
     },
     activeTab:{
         fontSize: 14,
-        fontWeight: 'bold',
-        color: '#000',
+        color: 'white',
         borderBottomWidth: 2,
-        backgroundColor: '#9ee5a375',
-        padding: 5,
+        backgroundColor: '#2f6618fe',
+        padding: 7,
         paddingHorizontal: 15,
         borderRadius: 50
     }

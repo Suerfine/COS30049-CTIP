@@ -1,33 +1,58 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Pressable, Image, TextInput } from 'react-native';
 import { Bell, Search } from 'lucide-react-native';
-import { useNavigation } from '@react-navigation/native';
+import { CommonActions, useNavigation } from '@react-navigation/native';
 
 const NavBar = () => {
     const navigation = useNavigation();
     const [searchQuery, setSearchQuery] = useState('');
 
-    // Dummy links
-    const navLinks = ['Courses', 'Badges', 'Anomaly'];
+    // Navigation Links
+    const navLinks = [
+        { name: 'Courses', route: 'User Course' },
+        { name: 'Badges', route: 'Badges' },
+        { name: 'Anomaly', route: 'Anomaly' }
+    ];
 
     return (
         <View style={styles.navbar}>
             <View style={styles.left}>
-                <Image source={require('../../assets/sfc_logo.png')} style={styles.logo} accessibilityLabel='Logo of SFC'/>
+                <Pressable
+                    onPress={() => {
+                        navigation.dispatch(
+                            CommonActions.reset({
+                                index: 0,
+                                routes: [{ name: 'UserDashboard' }],
+                            })
+                        );
+                    }}
+                >
+                    <Image source={require('../../assets/sfc_logo.png')} style={styles.logo} accessibilityLabel='Logo of SFC'/>
+                </Pressable>
             </View>
 
             <View style={styles.center}>
-                {navLinks.map(link => (
-                    <Pressable key={link} style={styles.link} onPress={() => console.log(link)}>
-                        <Text style={styles.linkText}>{link}</Text>
+                {navLinks.map(item => (
+                    <Pressable 
+                        key={item.name} 
+                        style={styles.link} 
+                        onPress={() => {
+                        navigation.dispatch(
+                            CommonActions.reset({
+                                index: 0,
+                                routes: [{ name: item.route }],
+                            })
+                        );
+                    }}>
+                        <Text style={styles.itemText}>{item.name}</Text>
                     </Pressable>
                 ))}
             </View>
 
             <View style={styles.right}>
-                <View style={styles.searchContainer}>
-                    <Search size={18} color="#8f8f8f" style={styles.searchIcon} />
-                    <TextInput style={styles.search} placeholder="Search..." placeholderTextColor="#8f8f8f" value={searchQuery} onChangeText={setSearchQuery} />
+                <View style={styles.search}>
+                    <Search size={18}/>
+                    <TextInput style={styles.input} placeholder='Search...' placeholderTextColor="#8f8f8f"/>
                 </View>
                 <Pressable style={styles.notificationBtn}>
                     <Bell size={20} />
@@ -68,11 +93,11 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         gap: 20
     },
-    link:{
+    item:{
         paddingHorizontal: 10,
         paddingVertical: 5,
     },
-    linkText:{
+    itemText:{
         fontSize: 16,
         fontWeight: '500',
         color: '#333'
@@ -84,24 +109,22 @@ const styles = StyleSheet.create({
         justifyContent: 'flex-end',
         gap: 15
     },
-    searchContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#f0f0f0',
-        borderRadius: 8,
-        paddingHorizontal: 10,
-        height: 36,
-        flex: 1,
-    },
-    searchIcon:{
-        marginRight: 8,
-    },
     search:{
-        flex: 1,
-        height: '100%',
-        fontSize: 14,
-        color: '#000',
-        paddingHorizontal: 10
+        flexDirection:'row',
+        gap:3,
+        borderWidth:1,
+        borderColor:'#8f8f8f',
+        paddingVertical:5,
+        paddingHorizontal:3,
+        backgroundColor:'white',
+        borderRadius:15,
+        alignItems:"center",
+        marginHorizontal:20,
+    },
+    input:{
+        flex:1,
+        maxWidth:140,
+        outlineStyle:'none'
     },
     notificationBtn:{
         padding: 5

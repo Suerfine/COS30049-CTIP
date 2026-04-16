@@ -128,8 +128,8 @@ const styles = StyleSheet.create({
         height:40,
         borderRadius:50,
         resizeMode:'contain',
-   },
-   admin:{
+},
+admin:{
         flex: 1,
         justifyContent:'space-between',
         alignItems:'flex-end',
@@ -137,22 +137,22 @@ const styles = StyleSheet.create({
         flexDirection:'row',
         gap:15,
         
-   },
-   logout:{
+},
+logout:{
     marginBottom:10,
     color:'#474747'
-   },
-   adminInfo:{
+},
+adminInfo:{
     flexDirection:'row',
     alignItems:'center',
     gap:5
-   },
-   hoverStyle:{
+},
+hoverStyle:{
     backgroundColor:"#eaefeb"
-   },
-   logoutHover:{
+},
+logoutHover:{
     color:'#efab21'
-   }
+}
 });
 
 export default SideBar;

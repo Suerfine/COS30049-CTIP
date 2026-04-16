@@ -12,6 +12,7 @@ import EditCourseDetails from './src/screens/EditCourseDetail';
 import UserDashboard from './src/screens/UserDashboard';
 import UserManagement from './src/screens/UserManagement';
 import UserModule from './src/screens/UserModule';
+import UserCourse from './src/screens/UserCourse';
 
 // Define
 const Stack=createStackNavigator();
@@ -25,7 +26,8 @@ export default function App() {
         'Course Details': 'course/:id',
         'User Dashboard': 'dashboard',
         'User Management': 'userManagement',
-        'User Module':'userModule/:courseId'
+        'User Module':'userModule/:courseId',
+        'User Course':'usercourse',
       },
     },
   };
@@ -37,8 +39,9 @@ export default function App() {
 
       <View style={styles.root}>
         <View style={styles.container}>
-          <SideBar navigation={navigation}/>
-          {/* <NavBar navigation={navigation}/> */}
+          {/* <SideBar navigation={navigation}/> */}
+          <NavBar navigation={navigation}/>
+          
           
           {/* Main Content Area */}
           <View style={styles.content}>
@@ -48,6 +51,7 @@ export default function App() {
               <Stack.Screen name="User Dashboard" component={UserDashboard} options={{headerShown: false}}/>
               <Stack.Screen name="User Management" component={UserManagement} options={{headerShown: false}}/>
               <Stack.Screen name="User Module" component={UserModule} options={{headerShown: false}}/>
+              <Stack.Screen name="User Course" component={UserCourse} options={{headerShown: false}}/>
             </Stack.Navigator>
           </View>
         </View>
@@ -67,8 +71,8 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,           
-    flexDirection: 'row', 
-    // flexDirection: 'column',
+    // flexDirection: 'row', 
+    flexDirection: 'column',
     backgroundColor: '#fff',
   },
   content: {
