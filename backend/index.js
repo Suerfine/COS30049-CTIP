@@ -500,7 +500,7 @@ const users=[
         id: 8,
         fullName: 'Isabelle Clark',
         username: 'isabelle_c',
-        ic: '9707-66-7788',
+        ic: '970766-13-7788',
         email: 'isabelle.clark@gmail.com',
         status: 'Active',
         role:'admin',

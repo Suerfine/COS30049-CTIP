@@ -1,4 +1,4 @@
-import { CircleCheck, SquarePen, CircleMinus, Trash2, Search, Plus, Circle, ChevronLeft, ChevronsLeft, ChevronRight, ChevronsRight} from 'lucide-react-native';
+import { Pen, Trash2, Search, Plus, Circle, ChevronLeft, ChevronsLeft, ChevronRight, ChevronsRight, X, User2, IdCard, Mail, ShieldUser, Calendar, FileUser, EllipsisVertical, ChevronDown, ChevronUp, CirclePlus, CircleMinus} from 'lucide-react-native';
 import React, {useState} from 'react';
 import { Pressable, StyleSheet, FlatList, View,Text, Image, TextInput} from 'react-native';
 import {Checkbox} from 'react-native-paper';
@@ -12,6 +12,11 @@ const UserManagement=()=>{
     const itemsPerPage=10;
     const [isAllChecked, setIsAllChecked]=useState(false);
     const [modalVisible, setModalVisible]=useState(false);
+    const [selectedUser, setSelectedUser]=useState(null);
+    const [activeMenuId, setActiveMenuId]=useState(null);
+    const [currentStatus, setCurrentStatus]=useState('Approved');
+    const [isOpen, setIsOpen]=useState(false);
+    const [isEditing, setIsEditing]=useState(false);
     
     // Toggle user status
     const toggleStatus=(id)=>{
@@ -41,15 +46,14 @@ const UserManagement=()=>{
             <Text style={[styles.headerText, { flex:2}]}>Role</Text>
             <Text style={[styles.headerText, { flex:2 }]}>Joined Date</Text>
             <Text style={[styles.headerText, { flex:2 }]}>Last Active</Text>
-            {/* <Text style={[styles.headerText, { flex:2 }]}>Actions</Text> */}
         </View>
     );
 
     const renderUserItem=({item})=>(
-        <View style={[styles.row,styles.tableRow]}>
+        <Pressable onPress={()=>setSelectedUser(item)} style={({hovered})=>[styles.row, styles.tableRow, hovered && {backgroundColor:'#f9f9f9'}, selectedUser?.id === item.id && {backgroundColor:'#fff8e1'}]}>
             {/* Checkbox */}
             <View style={styles.checkbox}>
-                <Checkbox status={item.selected ? 'checked' : 'unchecked'} color="#ffd47e"/>
+                <Checkbox status={item.selected ? 'checked' : 'unchecked'} color="#ffdf9f39"/>
             </View>
 
             {/* Full Name and profile image */}
@@ -75,17 +79,7 @@ const UserManagement=()=>{
             <Text style={{flex:2}}>{item.joinedDate}</Text>
             {/* Last Active */}
             <Text style={{flex:2}}>{item.lastActive}</Text>
-            {/* Actions
-            <View style={[{flex:2}, styles.actionIcon, styles.row]}>
-                {item.status==="Active" ? (
-                    <Pressable><CircleMinus size={18} color="red"/></Pressable>
-                ) : (
-                    <Pressable><CircleCheck size={18} color="green"/></Pressable>
-                )}
-                <Pressable><SquarePen size={18} color="#525252"/></Pressable>
-                <Pressable><Trash2 size={18} color="red"/></Pressable>
-            </View> */}
-        </View>
+        </Pressable>
     );
     
     const renderPagination=()=>{
@@ -117,7 +111,6 @@ const UserManagement=()=>{
                         <Text style={[currentPage==totalPages ? styles.disabledText : styles.pageBtnText, styles.arrowBtn]}><ChevronsRight size={20}/></Text>
                     </Pressable>
                 </View>
-
             </View>
         )
     };
@@ -127,9 +120,47 @@ const UserManagement=()=>{
         <View style={styles.container}>
             <Text style={styles.title}>User Management</Text>
             <View style={[styles.toolbar,styles.row]}>
-                <View style={[styles.search,styles.row]}>
-                    <Search size={18}/>
-                    <TextInput style={styles.input} placeholder='Search...' placeholderTextColor="#8f8f8f"/>
+                <View style={styles.row}>
+                    <View style={[styles.search,styles.row]}>
+                        <Search size={18}/>
+                        <TextInput style={styles.input} placeholder='Search...' placeholderTextColor="#8f8f8f"/>
+                    </View>
+                    {/* Status Dropdown */}
+                    <View style={styles.dropdownWrapper}>
+                        <Pressable 
+                            style={styles.pillTrigger} 
+                            onPress={() => setIsOpen(!isOpen)}
+                        > 
+                            <Text style={styles.pillText}>Status</Text>
+                            {isOpen ? (<ChevronUp size={16} color="#4b5563" />) : (<ChevronDown size={16} color="#4b5563" />)}
+                        </Pressable>
+
+                        {/* Dropdown Menu */}
+                        {isOpen && (
+                            <View style={styles.dropdownMenu}>
+                                {['Approved', 'Pending', 'Rejected'].map((status) => (
+                                    <Pressable 
+                                        key={status}
+                                        style={({hovered})=>[
+                                            styles.menuItem,
+                                            currentStatus === status && styles.menuItemActive,
+                                            (hovered && currentStatus!=status) && styles.menuItemHover 
+                                        ]}
+                                        onPress={() => {
+                                            setCurrentStatus(status);
+                                            setIsOpen(false);
+                                        }}
+                                    >
+                                        <Text style={[
+                                            currentStatus === status && styles.menuItemTextActive 
+                                        ]}>
+                                            {status}
+                                        </Text>
+                                    </Pressable>
+                                ))}
+                            </View>
+                        )}
+                    </View>
                 </View>
                 <Pressable onPress={handleAdd} style={({ hovered }) => [
                         styles.btn,
@@ -157,6 +188,137 @@ const UserManagement=()=>{
                 />
             </View>
             {renderPagination()}
+            {/* Side panel: show user details */}
+            {selectedUser && (
+                <View style={styles.sidePanel}>
+                    <View style={styles.panelHeader}>
+                        <View style={styles.row}>
+                            <Text style={styles.panelTitle}>
+                                User Information
+                            </Text>
+                            <View style={[styles.badge,styles.row]}>
+                                {selectedUser.status==="Active" ? (<Circle size={10} stroke="green" fill="green"/>):(<Circle size={10} stroke="grey" fill="grey"/>)}
+                                <Text>{selectedUser.status}</Text>
+                            </View>
+                        </View>
+                        <Pressable onPress={()=>setSelectedUser(null)}>
+                            <X size={18}/>
+                        </Pressable>
+                        
+                    </View>
+                    <View style={styles.panelContent}>
+                        {/* Actions Menu */}
+                        <View style={styles.actionMenu}>
+                            <Pressable onPress={()=>setActiveMenuId(activeMenuId===selectedUser.id ? null : selectedUser.id)}>
+                                <EllipsisVertical/>
+                            </Pressable>
+                            {activeMenuId===selectedUser.id && (
+                                <View style={styles.floatingMenu}>
+                                    <Pressable style={({hovered})=>[styles.menuItem, hovered && styles.menuItemHover]}>
+                                        {selectedUser.status === 'Active' ? (
+                                            <View style={[styles.row, styles.option]}>
+                                            <CircleMinus size={16} color="orange" /><Text style={styles.menuText}>Deactivate</Text>
+                                            </View>
+                                        ) : (<View style={[styles.row, styles.option]}>
+                                            <CirclePlus size={16} color="orange" /><Text style={styles.menuText}>Activate</Text>
+                                            </View>)}
+                                    </Pressable>
+                                    <Pressable style={({hovered})=>[styles.menuItem, hovered && styles.menuItemHover]} onPress={()=>{setIsEditing(true); setActiveMenuId(null)}}>
+                                        <View style={[styles.row, styles.option]}>
+                                        <Pen size={16} color="orange" /><Text style={styles.menuText}>Edit</Text>
+                                        </View>
+                                    </Pressable>
+                                    <Pressable style={({hovered})=>[styles.menuItem, hovered && styles.menuItemHover]}>
+                                        <View style={[styles.row, styles.option]}>
+                                        <Trash2 size={16} color="orange" /><Text style={styles.menuText}>Delete</Text>
+                                        </View>
+                                    </Pressable>
+                                </View>
+                            )}
+                        </View>
+                        <Image source={{uri:selectedUser.profileImage}} style={styles.largeAvatar}/>
+                        <Text style={styles.fullname}>{selectedUser.fullName}</Text>
+                        <View style={styles.user}>
+                            {/* Username */}
+                            <View style={styles.details}>
+                                <View style={styles.row}>
+                                    <User2 size={18} color="#4f4f4f"/>
+                                    <Text style={styles.panelLabel}>Username:</Text>
+                                </View>
+                                {isEditing ? (<TextInput
+                                style={[styles.userDetails,styles.inputEditing]}
+                                value={selectedUser.username}
+                            />) : (<Text style={styles.userDetails}>{selectedUser.username}</Text>)}
+                                
+                            </View>
+                            {/* IC */}
+                            <View style={styles.details}>
+                                <View style={styles.row}>
+                                    <IdCard size={18} color="#4f4f4f"/>
+                                    <Text style={styles.panelLabel}>Passport/IC:</Text>
+                                </View>
+                                {isEditing ? (<TextInput
+                                style={[styles.userDetails,styles.inputEditing]}
+                                value={selectedUser.ic}
+                            />) : (<Text style={styles.userDetails}>{selectedUser.ic}</Text>)}
+                                
+                            </View>
+                            {/* Email */}
+                            <View style={styles.details}>
+                                <View style={styles.row}>
+                                    <Mail size={18} color="#4f4f4f"/>
+                                    <Text style={styles.panelLabel}>Email:</Text>
+                                </View>
+                                {isEditing ? (<TextInput
+                                style={[styles.userDetails,styles.inputEditing]}
+                                value={selectedUser.email}
+                            />) : (<Text style={styles.userDetails}>{selectedUser.email}</Text>)}
+                            </View>
+                            <View style={[styles.row, {justifyContent:'space-between'}]}>
+                                {/* Role */}
+                                <View style={styles.details}>
+                                    <View style={styles.row}>
+                                        <ShieldUser size={18} color="#4f4f4f"/>
+                                        <Text style={styles.panelLabel}>Role:</Text>
+                                    </View>
+                                    <Text style={styles.userDetails}>{selectedUser.role === "admin" ? 'Admin' :'Park Guide'}</Text>
+                                </View>
+
+                                {/* Joined Date */}
+                                <View style={styles.details}>
+                                    <View style={styles.row}>
+                                        <Calendar size={18} color="#4f4f4f"/>
+                                        <Text style={styles.panelLabel}>Joined Date:</Text>
+                                    </View>
+                                    <Text style={styles.userDetails}>{selectedUser.joinedDate}</Text>
+                                </View>
+                            </View>
+
+                            {/* CV Section */}
+                            <View style={styles.details}>
+                                <View style={styles.row}>
+                                    <FileUser size={18} color="#4f4f4f"/>
+                                    <Text style={styles.panelLabel}>Resume:</Text>
+                                </View>
+                                <Pressable style={styles.userDetails}>View CV PDF</Pressable>
+                            </View>
+                        </View>
+                        {isEditing &&(<View style={[styles.row, styles.actionBtn]}>
+                            <Pressable onPress={()=>setIsEditing(false)}
+                                style={styles.Btn} 
+                            >
+                                <Text>Cancel</Text>
+                            </Pressable>
+                            <Pressable 
+                                style={styles.Btn} 
+                            >
+                                <Text>Save</Text>
+                            </Pressable>
+                        </View>)}
+                        
+                    </View>
+                </View>
+            )}
         </View>
     );
 }
@@ -208,6 +370,7 @@ const styles = StyleSheet.create({
     toolbar:{
         justifyContent:'space-between',
         marginVertical:20,
+        zIndex:500
     },
     btn:{
         flexDirection:'row',
@@ -218,7 +381,7 @@ const styles = StyleSheet.create({
         borderRadius:50,
         color:'white',
         paddingHorizontal:23,
-        paddingVertical:13,
+        paddingVertical:10,
     },
     btnText:{
         color:'white',
@@ -251,10 +414,6 @@ const styles = StyleSheet.create({
     badge:{
         alignItems:"center",
         gap:5,
-    },
-    actionIcon:{
-        gap:7,
-        justifyContent:'center'
     },
     paginationContainer:{
         justifyContent:'space-between',
@@ -301,6 +460,155 @@ const styles = StyleSheet.create({
         backgroundColor:'#ffc758',
         border:0,
         color:'white'
+    },
+    sidePanel:{
+        width:350,
+        backgroundColor:'white',
+        height:'100%',
+        position:'absolute',
+        right:0,
+        top:0,
+        bottom:0,
+        shadowColor: '#000',
+        shadowOffset: { width: -2, height: 0 },
+        shadowOpacity: 0.1,
+        shadowRadius: 10,
+        zIndex:600
+    },
+    panelHeader:{
+        flexDirection:"row",
+        justifyContent:'space-between',
+        borderBottomWidth:1,
+        borderBottomColor:'#4f4f4f49',
+        paddingVertical:15,
+        paddingHorizontal:20,
+        alignItems:'center'
+    },
+    panelTitle:{
+        fontSize:18,
+        fontWeight:500,
+        marginRight:15
+    },
+    largeAvatar:{
+        width:130,
+        height:130,
+        alignSelf:'center',
+    },
+    panelContent:{
+        padding:20
+    },
+    fullname:{
+        fontSize:16,
+        fontWeight:500,
+        textAlign:'center',
+        marginTop:15
+    },
+    details:{
+        marginTop:20,
+        gap:10,
+    },
+    panelLabel:{
+        fontWeight:500,
+        marginLeft:15
+    },
+    userDetails:{
+        marginLeft:35
+    },
+    user:{
+        paddingHorizontal:10,
+        marginTop:15,
+        paddingRight:30
+    },
+    actionMenu:{
+        alignSelf:'flex-end',
+        position:'absolute',
+        zIndex:400
+    },
+    pillTrigger:{
+        border:'1px solid #0a6340',
+        width:100,
+        flexDirection:"row",
+        gap:10,
+        height:35,
+        marginTop:2,
+        justifyContent:'center',
+        alignItems:'center',
+        marginLeft:15,
+        borderRadius:20,
+        userSelect:'none',
+        backgroundColor:'white',
+        paddingLeft:4
+    },
+    dropdownMenu:{
+        position:'absolute',
+        top:37,
+        left:20,
+        backgroundColor:'white',
+        shadowColor: '#000',
+        shadowOpacity: 0.1,
+        shadowRadius: 10,
+        elevation: 5,
+        borderWidth: 1,
+        borderColor: '#f0f0f0',
+    },
+    dropdownWrapper:{
+        position:'relative',
+    },
+    pillText: {
+        fontSize: 14,
+        color: '#374151',
+        fontWeight: '500',
+    },
+    menuItem:{
+        padding:14,
+        alignItems:'center'
+    },
+    menuItemActive:{
+        backgroundColor:"#7d9f7a"
+    },
+    menuItemTextActive:{
+        color:'white'
+    },
+    menuItemHover:{
+        backgroundColor:"#f9f9f9"
+    },
+    floatingMenu:{
+        position:'absolute',
+        right:7,
+        top:30,
+        backgroundColor:'white',
+        shadowColor: '#000',
+        shadowOpacity: 0.1,
+        shadowRadius: 10,
+        elevation: 5,
+        borderWidth: 1,
+        borderColor: '#f0f0f0',
+        userSelect:"none"
+    },
+    option:{
+        gap:8,
+        alignSelf:'flex-start'
+    },
+    inputEditing:{
+        borderWidth:1, 
+        borderColor:'#ddd',
+        borderRadius:10,
+        padding:12,
+        flex:1,
+        minWidth:220
+    },
+    Btn:{
+        minWidth:100,
+        alignItems:'center',
+        backgroundColor:'#ffc95c',
+        borderRadius:5,
+        paddingHorizontal:20,
+        paddingVertical:8,
+        marginTop:15,
+    },
+    actionBtn:{
+        gap:15,
+        justifyContent:'flex-end'
     }
 });
 

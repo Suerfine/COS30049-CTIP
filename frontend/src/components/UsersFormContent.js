@@ -111,15 +111,13 @@ const UsersFormContent=({onSubmit, onCancel, isLoading})=>{
                     </Pressable>
                 </View>
             </View>
-            <View style={styles.row}>
-                <Pressable 
-                    style={styles.Btn} 
-                    onPress={() => onSubmit(form)}
-                    disabled={isLoading}
-                >
-                    {isLoading ? <ActivityIndicator color="white" /> : <Text>Add User</Text>}
-                </Pressable>  
-            </View>
+            <Pressable 
+                style={styles.Btn} 
+                onPress={() => onSubmit(form)}
+                disabled={isLoading}
+            >
+                {isLoading ? <ActivityIndicator color="white" /> : <Text>Add User</Text>}
+            </Pressable>  
         </View>
     )
 }
