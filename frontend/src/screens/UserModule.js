@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Pressable, ScrollView} from 'react-native';
 import { ListPlus, ChevronRight } from 'lucide-react-native';
 import Checkbox from 'expo-checkbox';
 import { Calendar } from 'react-native-calendars';
+import {useRoute} from '@react-navigation/native';
 
 // Import Components
 import CourseCard from '../components/CourseCard.js';
