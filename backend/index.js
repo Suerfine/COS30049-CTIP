@@ -44,6 +44,7 @@ const courses = [
         id: 1,
         image: 'http://localhost:5000/images/first_aid.png',
         courseTitle: 'Basic First Aid',
+        level: 'basic',
         duration: '15 hours 30 mins',
         expiryDate: '2027-05-08',
         description: 'Learn the fundamentals of first aid, including wound care, CPR basics, and emergency response.',
@@ -155,6 +156,7 @@ const courses = [
         id: 2,
         image: 'http://localhost:5000/images/cpr.png',
         courseTitle: 'CPR Training',
+        level: 'basic',
         duration: '8 hours',
         expiryDate: '2026-06-30',
         description: 'Focused training on CPR techniques for adults, children, and infants.',
@@ -184,6 +186,7 @@ const courses = [
         id: 3,
         image: 'http://localhost:5000/images/plantconservation.jpg',
         courseTitle: 'Plant Conservation',
+        level: 'advanced',
         duration: '10 hours',
         expiryDate: '2026-08-30',
         description: 'Gain insights and practical knowlegdge on how to properly conserve plants',
@@ -623,7 +626,7 @@ app.get('/api/todos', (req, res) => {
 
 // ---------------------------------------------------------------------
 
-// Dummy user progress data
+// hardcode usertype
 const userType = 'user'; // or 'admin'
 
 // Route to get user type

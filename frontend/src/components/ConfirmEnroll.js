@@ -19,16 +19,16 @@ const ConfirmEnroll = ({ visible, course, onClose, onConfirm }) => {
                 {/* Content */}
                 <View style={styles.content}>
                     <Text style={styles.label}>Course</Text>
-                    <Text>{course.title}</Text>
+                    <Text>{course.courseTitle}</Text>
 
                     <Text style={styles.label}>Duration</Text>
                     <Text>{course.duration}</Text>
 
                     <Text style={styles.label}>Expiry</Text>
-                    <Text>{course.expiry}</Text>
+                    <Text>{course.expiryDate}</Text>
 
                     <Text style={styles.label}>Modules</Text>
-                    <Text>{course.modules}</Text>
+                    <Text>{course.modules?.length ?? 0}</Text>
                 </View>
 
                 {/* Buttons */}

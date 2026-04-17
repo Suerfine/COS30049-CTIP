@@ -34,12 +34,7 @@ export const useUserDashboard = () => {
         fetchDashboardData();
     }, []);
 
-    return {
-        courses,
-        todos,
-        userType,
-        progressData,
-        loading,
-        setTodos
+    return { courses, todos, userType, progressData, loading, setTodos 
+        
     };
 };

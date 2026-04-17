@@ -1,100 +1,116 @@
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import CourseCard from '../components/CourseCard';
 import { useUserDashboard } from '../hooks/useUserDashboard';
 import { useMemo } from 'react';
 import ConfirmEnroll from '../components/ConfirmEnroll';
 import { useState } from 'react';
+import { ListFilter, SignalZero } from 'lucide-react-native'
+import FilterSidebar from '../components/FilterSidebar';
 
 const UserCourse = ({ navigation }) => {
     const { courses, progressData, userType } = useUserDashboard();
     const [selectedCourse, setSelectedCourse] = useState(null);
     const [modalVisible, setModalVisible] = useState(false);
-    // categorize courses
-    const { inProgressCourses, completedCourses, notEnrolledCourses } = useMemo(() => {
+    const [filterVisible, setFilterVisible] = useState(false);
 
-        const inProgress = [];
-        const completed = [];
-        const notEnrolled = [];
+    const [filters, setFilters] = useState({
+        level: 'all',
+        status: 'all',
+    });
 
-        courses.forEach(course => {
+    const [tempFilters, setTempFilters] = useState(filters);
+
+    const coursesWithStatus = useMemo(() => {
+        return courses.map(course => {
             const progressObj = progressData.find(
                 p => p.courseId === course.id
             );
+
             const progress = progressObj ? progressObj.progress : null;
 
-            if (progress === null || progress === 0) {
-                notEnrolled.push({ ...course, progress });
-            } else if (progress === 1) {
-                completed.push({ ...course, progress });
-            } else {
-                inProgress.push({ ...course, progress });
+            let status = 'notEnrolled';
+            if (typeof progress === 'number') {
+                if (progress >= 1) status = 'completed';
+                else if (progress > 0) status = 'inProgress';
             }
+
+            return {
+                ...course,
+                progress,
+                status,
+            };
         });
-
-        return {
-            inProgressCourses: inProgress,
-            completedCourses: completed,
-            notEnrolledCourses: notEnrolled
-        };
-
     }, [courses, progressData]);
 
-    const renderCourseList = (list, showEnroll = false) => (
-        <View style={styles.cardContainer}>
-            {list.map(course => (
-                <CourseCard
-                    key={course.id}
-                    id={course.id}
-                    imagePath={{ uri: course.image }}
-                    courseTitle={course.courseTitle}
-                    numModules={course.modules ? course.modules.length : 0}
-                    duration={course.duration}
-                    expiry={course.expiryDate}
-                    progress={course.progress}
-                    userType={userType}
-                    onPress={() =>
-                        navigation.navigate('User Module', { id: course.id })
-                    }
-                    // Prompt user to confirm enrolment
-                    onEnroll={
-                        showEnroll
-                            ? () => {
-                                setSelectedCourse({
-                                    id: course.id,
-                                    title: course.courseTitle,
-                                    duration: course.duration,
-                                    expiry: course.expiryDate,
-                                    modules: course.modules?.length || 0
-                                })
-                                setModalVisible(true);
-                            }
-                            : undefined
-                    }
-                />
-            ))}
-        </View>
-    );
-    // console.log("RAW progressData:", progressData);
+    // filter by level/status
+    const filteredCourses = useMemo(() => {
+        if (!coursesWithStatus) return [];
+        return coursesWithStatus.filter(course => {
+            const matchLevel =
+                filters.level === 'all' ||
+                course.level?.trim().toLowerCase() === filters.level.toLowerCase();
+
+            const matchStatus =
+                filters.status === 'all' || course.status === filters.status;
+
+            return matchLevel && matchStatus;
+        });
+    }, [coursesWithStatus, filters]);
 
     return (
-        <ScrollView style={styles.container}>
-            <Text style={styles.title}>Courses</Text>
-            <View style={styles.sectionContainer}>
-                <View style={styles.sectionCard}>
-                    <Text style={styles.sectionTitle}>In Progress</Text>
-                    {renderCourseList(inProgressCourses)}
-                </View>
+        <View style={{ flex: 1}}>
+            <ScrollView style={styles.container}>
+                <Text style={styles.title}>Courses</Text>
+                <View style={styles.courseContainer}>
+                    <Pressable
+                        onPress={() => {
+                            setTempFilters(filters);
+                            setFilterVisible(true);
+                        }}
+                    >
+                        <Text style={styles.filterBtn}>Filter<ListFilter/></Text>
+                    </Pressable>
 
-                <View style={styles.sectionCard}>
-                    <Text style={styles.sectionTitle}>Completed</Text>
-                    {renderCourseList(completedCourses)}
+                    <View style={styles.cardContainer}>
+                        {filteredCourses.map(course => (
+                            <CourseCard
+                                key={course.id}
+                                id={course.id}
+                                imagePath={{ uri: course.image }}
+                                courseTitle={course.courseTitle}
+                                numModules={course.modules ? course.modules.length : 0}
+                                duration={course.duration}
+                                expiry={course.expiryDate}
+                                progress={course.progress}
+                                userType={userType}
+                                onPress={() =>
+                                    navigation.navigate('User Module', { id: course.id })
+                                }
+                                onEnroll={() => {
+                                    setSelectedCourse(course);
+                                    setModalVisible(true);
+                                }}
+                            />
+                        ))}
+                    </View>
                 </View>
-                
-                <View style={styles.sectionCard}>
-                    <Text style={styles.sectionTitle}>Not Enrolled</Text>
-                    {renderCourseList(notEnrolledCourses, true)}
-                </View>
-            </View>
+            </ScrollView>
+
+            <FilterSidebar
+                visible={filterVisible}
+                tempFilters={tempFilters}
+                setTempFilters={setTempFilters}
+                onClose={() => setFilterVisible(false)}
+                onApply={() => {
+                    setFilters(tempFilters);
+                    setFilterVisible(false);
+                }}
+                onReset={() => {
+                    const reset = { level: 'all', status: 'all' };
+                    setTempFilters(reset);
+                    setFilters(reset);
+                }}
+            />
 
             <ConfirmEnroll
                 visible={modalVisible}
@@ -103,12 +119,12 @@ const UserCourse = ({ navigation }) => {
                 onConfirm={() => {
                     console.log("Enrolled:", selectedCourse.id);
 
-                    // TODO: call API here later
+                    // call api
 
                     setModalVisible(false);
                 }}
             />
-        </ScrollView>
+        </View>
     );
 };
 
@@ -122,7 +138,7 @@ const styles = StyleSheet.create({
         marginBottom: 30,
         fontSize: 30,
     },
-    sectionContainer:{
+    courseContainer:{
         marginHorizontal: 40,
     },
     sectionCard:{
@@ -141,8 +157,13 @@ const styles = StyleSheet.create({
     },
     cardContainer: {
         flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: 20,
+        gap: 80,
+        marginBottom: 20,
+    },
+    filterBtn:{
+        fontSize: 20,
+        flexDirection: 'row',
+        alignItems: 'center',
     },
 });
 

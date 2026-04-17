@@ -38,7 +38,7 @@ const UserDashboard = ({ navigation }) => {
         filteredTodos = filteredTodos.filter(todo => !todo.completed);
     }
 
-    // Get start of week (Sunday)
+    // get start of week (Sunday)
     const getStartOfWeek = (date) => {
         const d = new Date(date);
         const day = d.getDay();
@@ -58,6 +58,14 @@ const UserDashboard = ({ navigation }) => {
 
     const weekDates = getWeekDates(currentDate);
 
+    // get in progress courses
+    const inProgressCourses = courses.filter(course => {
+        const progressObj = progressData.find(p => p.courseId === course.id);
+        const progress = progressObj ? progressObj.progress : null;
+
+        return progress !== null && progress > 0 && progress < 1;
+    });
+
     return(
         <View style={{ flex: 1 }}>
             <View style={styles.container}>
@@ -67,26 +75,27 @@ const UserDashboard = ({ navigation }) => {
                         <ScrollView>
                             <Text style={styles.dashboardTitle}>Dashboard</Text>
                             <View style={styles.leftColumn}>
+                                {/* only display in progress courses */}
                                 <View style={styles.cardContainer}>
-                                    {courses.map(course=>{
+                                    {inProgressCourses.map(course => {
                                         const courseProgress = progressData.find(p => p.courseId === course.id);
-                                        const numModules=course.modules? course.modules.length :0;
-                                        return(
+                                        const numModules = course.modules ? course.modules.length : 0;
+
+                                        return (
                                             <CourseCard
                                                 key={course.id}
                                                 id={course.id}
-                                                imagePath={{uri:course.image}}
+                                                imagePath={{ uri: course.image }}
                                                 courseTitle={course.courseTitle}
                                                 numModules={numModules}
                                                 duration={course.duration}
                                                 expiry={course.expiryDate}
                                                 progress={courseProgress?.progress}
                                                 userType={userType}
-                                                onPress={()=> navigation.navigate('User Module', {id:course.id})}
+                                                onPress={() => navigation.navigate('User Module', { id: course.id })}
                                             />
-                                            );
-                                        }
-                                    )}
+                                        );
+                                    })}
                                 </View>
                             </View> 
                         </ScrollView>
