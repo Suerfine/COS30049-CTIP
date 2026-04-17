@@ -91,7 +91,7 @@ const styles = StyleSheet.create({
         flex: 2,
         flexDirection: 'row',
         justifyContent: 'center',
-        gap: 20
+        gap: 80
     },
     item:{
         paddingHorizontal: 10,

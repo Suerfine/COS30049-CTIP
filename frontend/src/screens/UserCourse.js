@@ -58,7 +58,7 @@ const UserCourse = ({ navigation }) => {
     }, [coursesWithStatus, filters]);
 
     return (
-        <View style={{ flex: 1}}>
+        <View style={{ flex: 1 }}>
             <ScrollView style={styles.container}>
                 <Text style={styles.title}>Courses</Text>
                 <View style={styles.courseContainer}>
@@ -68,7 +68,10 @@ const UserCourse = ({ navigation }) => {
                             setFilterVisible(true);
                         }}
                     >
-                        <Text style={styles.filterBtn}>Filter<ListFilter/></Text>
+                        <View style={styles.filterBtn}>
+                            <Text style={styles.filterText}>Filter</Text>
+                            <ListFilter size={18} />
+                        </View>
                     </Pressable>
 
                     <View style={styles.cardContainer}>
@@ -141,30 +144,31 @@ const styles = StyleSheet.create({
     courseContainer:{
         marginHorizontal: 40,
     },
-    sectionCard:{
-        paddingHorizontal: 30,
-        paddingBottom: 30,
-        marginBottom: 30,
-        borderRadius: 20,
-        backgroundColor: '#9ee5a375',
-        boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.2)'
-    },
-    sectionTitle: {
-        fontSize: 20,
-        fontWeight: '600',
-        marginTop: 20,
-        marginBottom: 20,
-    },
     cardContainer: {
         flexDirection: 'row',
         gap: 80,
         marginBottom: 20,
     },
     filterBtn:{
-        fontSize: 20,
+        borderRadius: 10,
+        color: "white",
+        backgroundColor: "#2f6618fe",
+        width: 90,
+        marginStart: 5,
+        marginBottom: 14,
+        padding: 10,
+        fontSize: 10,
         flexDirection: 'row',
         alignItems: 'center',
+        justifyContent: 'center',
+        gap: 6,
     },
+    filterText:{
+        fontSize: 16,
+        color: "white",
+        alignItems: 'center',
+        justifyContent: 'center',
+    }
 });
 
 export default UserCourse;

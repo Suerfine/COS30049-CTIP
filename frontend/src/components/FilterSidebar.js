@@ -136,7 +136,7 @@ const styles = StyleSheet.create({
         gap: 10,
     },
     applyBtn: {
-        backgroundColor: 'green',
+        backgroundColor: '#2f6618fe',
         padding: 10,
         borderRadius: 8,
         alignItems: 'center',
