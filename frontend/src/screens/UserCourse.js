@@ -75,7 +75,11 @@ const UserCourse = ({ navigation }) => {
                     </Pressable>
 
                     <View style={styles.cardContainer}>
-                        {filteredCourses.map(course => (
+                        {filteredCourses.length === 0?(
+                            <View style={styles.emptyContainer}>
+                                <Text style={styles.emptyText}>No courses found</Text>
+                            </View>
+                        ) : ( filteredCourses.map(course => (
                             <CourseCard
                                 key={course.id}
                                 id={course.id}
@@ -94,7 +98,8 @@ const UserCourse = ({ navigation }) => {
                                     setModalVisible(true);
                                 }}
                             />
-                        ))}
+                        ))
+                    )}
                     </View>
                 </View>
             </ScrollView>
@@ -168,7 +173,18 @@ const styles = StyleSheet.create({
         color: "white",
         alignItems: 'center',
         justifyContent: 'center',
-    }
+    },
+    emptyContainer:{
+        width: '100%',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginTop: 100,
+    },
+
+    emptyText:{
+        fontSize: 20,
+        color: '#666',
+    },
 });
 
 export default UserCourse;
