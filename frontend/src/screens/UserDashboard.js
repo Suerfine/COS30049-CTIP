@@ -69,7 +69,7 @@ const UserDashboard = ({ navigation }) => {
                             <View style={styles.leftColumn}>
                                 <View style={styles.cardContainer}>
                                     {courses.map(course=>{
-                                        const courseProgress = progressData.find(p => p.course === course.courseTitle);
+                                        const courseProgress = progressData.find(p => p.courseId === course.id);
                                         const numModules=course.modules? course.modules.length :0;
                                         return(
                                             <CourseCard

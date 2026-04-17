@@ -179,6 +179,35 @@ const courses = [
             ]
         }
         ]
+    },
+    {
+        id: 3,
+        image: 'http://localhost:5000/images/plantconservation.jpg',
+        courseTitle: 'Plant Conservation',
+        duration: '10 hours',
+        expiryDate: '2026-08-30',
+        description: 'Gain insights and practical knowlegdge on how to properly conserve plants',
+        modules: [
+        {
+            moduleId: 1,
+            title: 'Plant Conservation Law in Malaysia',
+            pages: [
+            {
+                pageId: 1.0,
+                title: 'Introduction',
+                sections: [
+                { type: 'text', content: 'Welcome to Plant Conservation Law.' },
+                { type: 'quiz', question: 'What is the Conservation Law of Section 92?', options: ['aaaa', 'bbbb'], answer: 'aaaa' }
+                ]
+            },
+            {
+                pageId: 2.1,
+                title: 'Conservation Restraints',
+                sections: [] 
+            }
+            ]
+        }
+        ]
     }
 ];
 
@@ -579,12 +608,12 @@ app.get('/api/users',(req,res)=>{
 
 // Dummy todo data
 const todos = [
-  { id: 1, title: "Finish Module 1", course: "Basic First Aid", date: "2026-06-30", completed: false },
-  { id: 2, title: "Finish Module 1", course: "CPR Training", date: "2027-06-30", completed: true },
+  { id: 1, title: "Finish Module 1", course: "Basic First Aid", date: "2026-04-30", completed: true },
+  { id: 2, title: "Finish Module 1", course: "CPR Training", date: "2026-05-06", completed: true },
   { id: 3, title: "Finish Module 2", course: "Basic First Aid", date: "2026-08-05", completed: false },
-  { id: 4, title: "Finish Module 2", course: "CPR Training", date: "2027-08-06", completed: false },
-  { id: 5, title: "Finish Module 2", course: "CPR Training", date: "2027-08-06", completed: false },
-  { id: 6, title: "Finish Module 2", course: "CPR Training", date: "2027-08-06", completed: false }
+  { id: 4, title: "Finish Module 2", course: "CPR Training", date: "2026-05-30", completed: false },
+  { id: 5, title: "Finish Module 2", course: "CPR Training", date: "2026-05-30", completed: false },
+  { id: 6, title: "Finish Module 2", course: "CPR Training", date: "2026-06-01", completed: false }
 ];
 
 // Route to get all todos
@@ -604,8 +633,9 @@ app.get('/api/userType', (req, res) => {
 
 // Correction: Later progress can add inside course api
 const progress = [
-  { courseId: 1, progress: 0.7 },
+  { courseId: 1, progress: 1 },
   { courseId: 2, progress: 0.4 },
+  { courseId: 3, progress: 0 },
 ];
 
 // Route to get all progress

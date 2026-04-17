@@ -2,10 +2,13 @@ import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import CourseCard from '../components/CourseCard';
 import { useUserDashboard } from '../hooks/useUserDashboard';
 import { useMemo } from 'react';
+import ConfirmEnroll from '../components/ConfirmEnroll';
+import { useState } from 'react';
 
 const UserCourse = ({ navigation }) => {
     const { courses, progressData, userType } = useUserDashboard();
-
+    const [selectedCourse, setSelectedCourse] = useState(null);
+    const [modalVisible, setModalVisible] = useState(false);
     // categorize courses
     const { inProgressCourses, completedCourses, notEnrolledCourses } = useMemo(() => {
 
@@ -15,7 +18,7 @@ const UserCourse = ({ navigation }) => {
 
         courses.forEach(course => {
             const progressObj = progressData.find(
-                p => p.id === course.id
+                p => p.courseId === course.id
             );
             const progress = progressObj ? progressObj.progress : null;
 
@@ -52,16 +55,26 @@ const UserCourse = ({ navigation }) => {
                     onPress={() =>
                         navigation.navigate('User Module', { id: course.id })
                     }
+                    // Prompt user to confirm enrolment
                     onEnroll={
                         showEnroll
-                            ? () => console.log('Enroll:', course.id)
+                            ? () => {
+                                setSelectedCourse({
+                                    id: course.id,
+                                    title: course.courseTitle,
+                                    duration: course.duration,
+                                    expiry: course.expiryDate,
+                                    modules: course.modules?.length || 0
+                                })
+                                setModalVisible(true);
+                            }
                             : undefined
                     }
                 />
             ))}
         </View>
     );
-    console.log("RAW progressData:", progressData);
+    // console.log("RAW progressData:", progressData);
 
     return (
         <ScrollView style={styles.container}>
@@ -82,6 +95,19 @@ const UserCourse = ({ navigation }) => {
                     {renderCourseList(notEnrolledCourses, true)}
                 </View>
             </View>
+
+            <ConfirmEnroll
+                visible={modalVisible}
+                course={selectedCourse}
+                onClose={() => setModalVisible(false)}
+                onConfirm={() => {
+                    console.log("Enrolled:", selectedCourse.id);
+
+                    // TODO: call API here later
+
+                    setModalVisible(false);
+                }}
+            />
         </ScrollView>
     );
 };
