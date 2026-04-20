@@ -4,6 +4,14 @@ import Module from "./Module";
 import Page from "./Page";
 import Element from "./Element";
 import Enrollment from "./Enrollment";
+import Registration from "./Registration";
+import Submission from "./Submissions";
+import Discussion from "./Discussion";
+import Message from "./Messages";
+import Tag from "./Tag";
+import CourseTag from "./CourseTag";
+import PrerequisiteGroup from "./PrerequisiteGroup";
+import Prerequisite from "./Prerequisite";
 
 // Associations
 Course.hasMany(Module, { foreignKey: "course_id", as: "modules" });
@@ -22,4 +30,46 @@ Course.belongsToMany(User, { through: Enrollment, foreignKey: "course_id", other
 Course.hasMany(Enrollment, { foreignKey: "course_id", as: "enrollments" });
 Enrollment.belongsTo(Course, { foreignKey: "course_id", as: "course" });
 
-export { User, Course, Module, Page, Element, Enrollment };
+User.hasMany(Registration, { foreignKey: "reviewed_by_user_id", as: "reviewed_registrations" });
+Registration.belongsTo(User, { foreignKey: "reviewed_by_user_id", as: "reviewed_by" });
+
+User.hasMany(Registration, { foreignKey: "user_id", as: "registrations" });
+Registration.belongsTo(User, { foreignKey: "user_id", as: "user" });
+
+Enrollment.hasMany(Submission, { foreignKey: "enrollment_id", as: "submissions" });
+Submission.belongsTo(Enrollment, { foreignKey: "enrollment_id", as: "enrollment" });
+
+Element.hasMany(Submission, { foreignKey: "element_id", as: "submissions" });
+Submission.belongsTo(Element, { foreignKey: "element_id", as: "element" });
+
+Submission.hasMany(Submission, { foreignKey: "submission_id", as: "child_submissions" });
+Submission.belongsTo(Submission, { foreignKey: "submission_id", as: "parent_submission" });
+
+User.hasMany(Submission, { foreignKey: "marked_by_user_id", as: "marked_submissions" });
+Submission.belongsTo(User, { foreignKey: "marked_by_user_id", as: "marked_by" });
+
+Course.hasMany(Discussion, { foreignKey: "course_id", as: "discussions" });
+Discussion.belongsTo(Course, { foreignKey: "course_id", as: "course" });
+
+User.hasMany(Discussion, { foreignKey: "user_id", as: "discussions" });
+Discussion.belongsTo(User, { foreignKey: "user_id", as: "user" });
+
+Discussion.hasMany(Message, { foreignKey: "discussion_id", as: "messages" });
+Message.belongsTo(Discussion, { foreignKey: "discussion_id", as: "discussion" });
+
+User.hasMany(Message, { foreignKey: "user_id", as: "messages" });
+Message.belongsTo(User, { foreignKey: "user_id", as: "user" });
+
+Course.belongsToMany(Tag, { through: CourseTag, foreignKey: "course_id", otherKey: "tag_id", as: "tags" });
+Tag.belongsToMany(Course, { through: CourseTag, foreignKey: "tag_id", otherKey: "course_id", as: "courses" });
+
+Course.hasMany(PrerequisiteGroup, { foreignKey: "course_id", as: "prerequisite_groups" });
+PrerequisiteGroup.belongsTo(Course, { foreignKey: "course_id", as: "course" });
+
+PrerequisiteGroup.hasMany(Prerequisite, { foreignKey: "prerequisite_group_id", as: "prerequisites" });
+Prerequisite.belongsTo(PrerequisiteGroup, { foreignKey: "prerequisite_group_id", as: "prerequisite_group" });
+
+Prerequisite.belongsTo(Course, { foreignKey: "course_id", as: "prerequisite_course" });
+Course.hasMany(Prerequisite, { foreignKey: "course_id", as: "prerequisite_of" });
+
+export { User, Course, Module, Page, Element, Enrollment, Registration, Submission, Discussion, Message, Tag, CourseTag, PrerequisiteGroup, Prerequisite };

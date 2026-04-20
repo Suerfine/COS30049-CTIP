@@ -24,6 +24,7 @@ class Enrollment extends Model<
   declare reviewed_by_user_id: CreationOptional<ForeignKey<User["id"]> | null>;
   declare review_date: CreationOptional<Date | null>;
   declare review_comment: CreationOptional<string | null>;
+  declare expired_date: CreationOptional<Date | null>;
   declare created_at: CreationOptional<Date>;
   declare updated_at: CreationOptional<Date>;
   declare deleted_at: CreationOptional<Date | null>;
@@ -87,6 +88,10 @@ Enrollment.init(
     review_comment: {
         type: DataTypes.TEXT,
         allowNull: true,
+    },
+    expired_date: {
+      type: DataTypes.DATE,
+      allowNull: true,
     },
     created_at: {
       type: DataTypes.DATE,
