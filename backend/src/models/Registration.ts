@@ -69,14 +69,12 @@ Registration.init(
       allowNull: false,
     },
     identification: {
-      type: DataTypes.STRING(100),
+      type: DataTypes.STRING(30),
       allowNull: false,
-      unique: true,
     },
     personal_email: {
       type: DataTypes.STRING(255),
       allowNull: false,
-      unique: true,
     },
     tel: {
       type: DataTypes.STRING(30),

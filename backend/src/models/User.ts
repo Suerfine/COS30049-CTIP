@@ -12,6 +12,8 @@ import { UserRoles } from "../enum/UserRoles";
 class User extends Model<InferAttributes<User>, InferCreationAttributes<User>> {
   declare id: CreationOptional<number>;
   declare username: string;
+  declare identification: string;
+  declare personal_email: string;
   declare role: UserRoles;
   declare password_hash: string;
   declare created_at: CreationOptional<Date>;
@@ -28,6 +30,16 @@ User.init(
     },
     username: {
       type: DataTypes.STRING(30),
+      allowNull: false,
+      unique: true,
+    },
+    identification: {
+      type: DataTypes.STRING(30),
+      allowNull: false,
+      unique: true,
+    },
+    personal_email: {
+      type: DataTypes.STRING(255),
       allowNull: false,
       unique: true,
     },
@@ -67,19 +79,33 @@ User.init(
         if (typeof user.username === "string") {
           user.username = user.username.trim();
         }
+        if (typeof user.identification === "string") {
+          user.identification = user.identification.trim();
+        }
+        if (typeof user.personal_email === "string") {
+          user.personal_email = user.personal_email.trim().toLowerCase();
+        }
       },
       beforeSave: async (user) => {
-        if (!user.changed("username")) {
-          return;
-        }
+        const uniqueFields = [
+          { field: "username", value: user.username, message: "Username already exists" },
+          { field: "identification", value: user.identification, message: "Identification already exists" },
+          { field: "personal_email", value: user.personal_email, message: "Personal email already exists" },
+        ] as const;
 
-        const existingUser = await User.findOne({
-          where: { username: user.username },
-          paranoid: false,
-        });
+        for (const uniqueField of uniqueFields) {
+          if (!user.changed(uniqueField.field)) {
+            continue;
+          }
 
-        if (existingUser && existingUser.id !== user.id) {
-          throw new ValidationError("Username already exists", []);
+          const existingUser = await User.findOne({
+            where: { [uniqueField.field]: uniqueField.value },
+            paranoid: false,
+          });
+
+          if (existingUser && existingUser.id !== user.id) {
+            throw new ValidationError(uniqueField.message, []);
+          }
         }
       },
     },
