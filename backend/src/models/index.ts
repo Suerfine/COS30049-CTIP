@@ -12,6 +12,7 @@ import Tag from "./Tag";
 import CourseTag from "./CourseTag";
 import PrerequisiteGroup from "./PrerequisiteGroup";
 import Prerequisite from "./Prerequisite";
+import { RegistrationStatus } from "../enum/RegistrationStatus";
 
 // Associations
 Course.hasMany(Module, { foreignKey: "course_id", as: "modules" });
@@ -35,6 +36,7 @@ Registration.belongsTo(User, { foreignKey: "reviewed_by_user_id", as: "reviewed_
 
 User.hasMany(Registration, { foreignKey: "user_id", as: "registrations" });
 Registration.belongsTo(User, { foreignKey: "user_id", as: "user" });
+User.hasOne(Registration, { foreignKey: "user_id", as: "accepted_registration", scope: { status: RegistrationStatus.APPROVED } });
 
 Enrollment.hasMany(Submission, { foreignKey: "enrollment_id", as: "submissions" });
 Submission.belongsTo(Enrollment, { foreignKey: "enrollment_id", as: "enrollment" });
