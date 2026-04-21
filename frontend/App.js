@@ -4,8 +4,6 @@ import { StyleSheet, Text, View } from 'react-native';
 import { NavigationContainer} from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 
-import "./global.css";
-
 // Import Screens
 import AdminCourse from './src/screens/AdminCourse';
 import SideBar from './src/components/SideBar';

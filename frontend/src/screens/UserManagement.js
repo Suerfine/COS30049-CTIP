@@ -38,7 +38,7 @@ const UserManagement=()=>{
     const totalPages=Math.ceil(users.length/itemsPerPage);
 
     const renderHeader=()=>(
-        <View className="flex-row bg-[#0a6340]">
+        <View style={[styles.tableHeader, styles.row]}>
             <View style={styles.checkbox}><Checkbox status={isAllChecked ? 'checked' : 'unchecked'} onPress={()=>setIsAllChecked(!isAllChecked)} uncheckedColor="white" color="#ffd47e"/></View>
             <Text style={[styles.headerText, { flex:3 }]}>Full Name</Text>
             <Text style={[styles.headerText, { flex:2 }]}>Username</Text>
