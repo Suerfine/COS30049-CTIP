@@ -1,6 +1,7 @@
 import express, { Application, Request, Response } from "express";
 import sequelize from "./config/Database";
 import "./models";
+import routes from "./routes";
 
 const app: Application = express();
 const port = Number(process.env.PORT) || 5000;
@@ -16,13 +17,13 @@ app.get("/", (req: Request, res: Response) => {
   res.send("Hello, TypeScript + Express!");
 });
 
+// Mount ALL routes on /api
+app.use("/api", routes);
+
 const startServer = async (): Promise<void> => {
   try {
     await sequelize.authenticate();
     console.log("Database connection has been established successfully.");
-
-    await sequelize.sync({ alter: true });
-    console.log("Database synchronized successfully.");
 
     app.listen(port, () => {
       console.log(`Server is running on http://localhost:${port}`);
