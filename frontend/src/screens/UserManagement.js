@@ -2,6 +2,7 @@ import { Pen, Trash2, Search, Plus, Circle, ChevronLeft, ChevronsLeft, ChevronRi
 import React, {useState} from 'react';
 import { Pressable, StyleSheet, FlatList, View,Text, Image, TextInput} from 'react-native';
 import {Checkbox} from 'react-native-paper';
+
 import { useUserManagement } from '../hooks/useUserManagement';
 import ModalLayout from '../components/ModalLayout';
 import UsersFormContent from '../components/UsersFormContent';
@@ -10,6 +11,7 @@ const UserManagement=()=>{
     const {users, loading}=useUserManagement();
     const [currentPage, setCurrentPage]=useState(1);
     const itemsPerPage=10;
+
     const [isAllChecked, setIsAllChecked]=useState(false);
     const [modalVisible, setModalVisible]=useState(false);
     const [selectedUser, setSelectedUser]=useState(null);
@@ -36,7 +38,7 @@ const UserManagement=()=>{
     const totalPages=Math.ceil(users.length/itemsPerPage);
 
     const renderHeader=()=>(
-        <View style={[styles.tableHeader,styles.row]}>
+        <View className="flex-row bg-[#0a6340]">
             <View style={styles.checkbox}><Checkbox status={isAllChecked ? 'checked' : 'unchecked'} onPress={()=>setIsAllChecked(!isAllChecked)} uncheckedColor="white" color="#ffd47e"/></View>
             <Text style={[styles.headerText, { flex:3 }]}>Full Name</Text>
             <Text style={[styles.headerText, { flex:2 }]}>Username</Text>

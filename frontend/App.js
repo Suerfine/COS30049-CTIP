@@ -4,6 +4,8 @@ import { StyleSheet, Text, View } from 'react-native';
 import { NavigationContainer} from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 
+import "./global.css";
+
 // Import Screens
 import AdminCourse from './src/screens/AdminCourse';
 import SideBar from './src/components/SideBar';
@@ -39,8 +41,8 @@ export default function App() {
 
       <View style={styles.root}>
         <View style={styles.container}>
-          {/* <SideBar navigation={navigation}/> */}
-          <NavBar navigation={navigation}/>
+          <SideBar navigation={navigation}/>
+          {/* <NavBar navigation={navigation}/> */}
           
           
           {/* Main Content Area */}
@@ -71,8 +73,8 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,           
-    // flexDirection: 'row', 
-    flexDirection: 'column',
+    flexDirection: 'row', 
+    // flexDirection: 'column',
     backgroundColor: '#fff',
   },
   content: {
