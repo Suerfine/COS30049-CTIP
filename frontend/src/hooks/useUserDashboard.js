@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { userDashboardService } from '../services/userDashboardService';
+import { useAuth } from '../context/AuthContext';
 
 export const useUserDashboard = () => {
+    const { currentUser } = useAuth();
     const [courses, setCourses] = useState([]);
     const [todos, setTodos] = useState([]);
     const [userType, setUserType] = useState('');
@@ -11,14 +13,13 @@ export const useUserDashboard = () => {
     const fetchDashboardData = async () => {
         setLoading(true);
         try {
-            const [userType, progress, courses, todos] = await Promise.all([
-                userDashboardService.getUserType(),
+            const [progress, courses, todos] = await Promise.all([
                 userDashboardService.getProgress(),
                 userDashboardService.getCourses(),
                 userDashboardService.getTodos()
             ]);
 
-            setUserType(userType);
+            setUserType(currentUser?.role || 'parkguide');
             setProgressData(progress);
             setCourses(courses);
             setTodos(todos);
@@ -32,7 +33,7 @@ export const useUserDashboard = () => {
 
     useEffect(() => {
         fetchDashboardData();
-    }, []);
+    }, [currentUser?.role]);
 
     return {
         courses,

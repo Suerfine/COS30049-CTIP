@@ -604,6 +604,37 @@ app.get('/api/users',(req,res)=>{
     res.json(users);
 })
 
+let currentLoggedInUser = null;
+
+// Dummy login endpoint for role-based routing.
+// Demo password for all users: password123
+app.post('/api/login', (req, res) => {
+    const { email, password } = req.body || {};
+
+    if (!email || !password) {
+        return res.status(400).json({ message: 'Email and password are required.' });
+    }
+
+    const normalizedEmail = String(email).trim().toLowerCase();
+    const user = users.find(u => u.email.toLowerCase() === normalizedEmail);
+
+    if (!user || password !== 'password123') {
+        return res.status(401).json({ message: 'Invalid email or password.' });
+    }
+
+    currentLoggedInUser = {
+        id: user.id,
+        fullName: user.fullName,
+        email: user.email,
+        role: user.role,
+    };
+
+    return res.json({
+        message: 'Login successful',
+        user: currentLoggedInUser,
+    });
+});
+
 // ---------------------------------------------------------------------
 
 // Dummy todo data
@@ -624,11 +655,14 @@ app.get('/api/todos', (req, res) => {
 // ---------------------------------------------------------------------
 
 // Dummy user progress data
-const userType = 'user'; // or 'admin'
 
 // Route to get user type
 app.get('/api/userType', (req, res) => {
-  res.json(userType);
+    if (!currentLoggedInUser) {
+        return res.json('parkguide');
+    }
+
+    res.json(currentLoggedInUser.role);
 });
 
 // Correction: Later progress can add inside course api
