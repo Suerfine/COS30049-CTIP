@@ -9,6 +9,7 @@ const router = Router();
 /*=============================
 =         USER ROUTES         =
 =============================*/
-router.get("/users", UserController.getAllUsers);
+router.get("/users", auth, UserController.getAllUsers);
+// router.get("/users/:id", auth, UserController.getUserById);
 
 export default router;

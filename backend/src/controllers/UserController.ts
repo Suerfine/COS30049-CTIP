@@ -1,25 +1,37 @@
-import {Request, Response, NextFunction} from "express";
-import User from "../models/User";
+import { Request, Response, NextFunction } from "express";
+import { User } from "../models";
+import { GetAllUserRequest, UserResponse } from "../types/User";
+import { formatPaginateResponse, paginateModel } from "../utils/paginate";
+import { PaginateResponse } from "../types/common";
 
-export const getAllUsers = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const getAllUsers = async (
+  req: Request<GetAllUserRequest>,
+  res: Response<PaginateResponse<UserResponse>>,
+  next: NextFunction,
+) => {
   try {
-    const users = await User.findAll();
-    res.json(users);
-    } catch (error) {
-    next(error);
-  }
-};
-
-export const getUserById = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-  try {
-    const userId = Number(req.params.id);
-    const user = await User.findByPk(userId);
-    if (!user) {
-      res.status(404).json({ message: "User not found" });
-      return;
-    }
-    res.json(user);
-    } catch (error) {
-    next(error);
+    const users = await paginateModel(User, req.query);
+    const baseUrl = `${req.protocol}://${req.get("host")}${req.originalUrl}`;
+    const formattedResponse = formatPaginateResponse(
+      users.data.map((user) => ({
+        id: user.id,
+        username: user.username,
+        role: user.role,
+        created_at: user.created_at,
+        updated_at: user.updated_at,
+      })),
+      req.query,
+      true,
+      {
+        page: users.page,
+        size: users.size,
+        totalElements: users.totalElements,
+        totalPages: users.totalPages,
+        baseUrl,
+      }
+    );
+    res.json(formattedResponse);
+  } catch (err) {
+    next(err);
   }
 };
