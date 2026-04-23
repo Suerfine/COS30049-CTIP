@@ -179,7 +179,7 @@ const RegistrationManagement=()=>{
                     keyExtractor={item=>item.id.toString()}
                 />
             </View>
-            {renderPagination()}
+            {totalPages>1 ? renderPagination() : null}
             {/* Side panel: show user details */}
             {selectedUser && (
                 <View style={styles.sidePanel}>
@@ -247,7 +247,7 @@ const RegistrationManagement=()=>{
                             <View style={styles.details}>
                                 <View style={styles.row}>
                                     <Phone size={18} color="#4f4f4f"/>
-                                    <Text style={styles.panelLabel}>Telefon:</Text>
+                                    <Text style={styles.panelLabel}>Telephone:</Text>
                                 </View>
                                 <Text style={styles.userDetails}>{selectedUser.telefon}</Text>
                             </View>
@@ -286,10 +286,6 @@ const RegistrationManagement=()=>{
 }
 
 const styles = StyleSheet.create({
-    checkbox:{
-        width:50,
-        alignItems:'center',
-    },
     container:{
         flex:1,
         paddingVertical:20,
@@ -489,11 +485,6 @@ const styles = StyleSheet.create({
         marginTop:15,
         paddingRight:30
     },
-    actionMenu:{
-        alignSelf:'flex-end',
-        position:'absolute',
-        zIndex:400
-    },
     pillTrigger:{
         border:'1px solid #0a6340',
         width:100,
@@ -541,31 +532,6 @@ const styles = StyleSheet.create({
     },
     menuItemHover:{
         backgroundColor:"#f9f9f9"
-    },
-    floatingMenu:{
-        position:'absolute',
-        right:7,
-        top:30,
-        backgroundColor:'white',
-        shadowColor: '#000',
-        shadowOpacity: 0.1,
-        shadowRadius: 10,
-        elevation: 5,
-        borderWidth: 1,
-        borderColor: '#f0f0f0',
-        userSelect:"none"
-    },
-    option:{
-        gap:8,
-        alignSelf:'flex-start'
-    },
-    inputEditing:{
-        borderWidth:1, 
-        borderColor:'#ddd',
-        borderRadius:10,
-        padding:12,
-        flex:1,
-        minWidth:220
     },
     Btn:{
         width:120,
