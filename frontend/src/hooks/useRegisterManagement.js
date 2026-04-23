@@ -1,14 +1,14 @@
 import {useState, useEffect} from 'react';
-import { userService } from '../services/userService';
+import { RegisterService} from '../services/RegisterService';
 
-export const useUserManagement=()=>{
+export const useRegisterManagement=()=>{
     const [users, setUsers]=useState([]);
     const [loading, setLoading]=useState(false);
 
     // Fetch all users
     const fetchUsers=async()=>{
         try{
-            const data=await userService.getAll();
+            const data=await RegisterService.getAll();
             const initializedData=data.map(u=>({...u, selected:false}));
             setUsers(initializedData);
         }catch(err){
