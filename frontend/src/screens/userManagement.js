@@ -7,7 +7,7 @@ import { useRegisterManagement } from '../hooks/useRegisterManagement';
 import ModalLayout from '../components/ModalLayout';
 import UsersFormContent from '../components/UsersFormContent';
 
-const RegistrationManagement=()=>{
+const UserManagement=()=>{
     const {users, loading}=useRegisterManagement();
     const [currentPage, setCurrentPage]=useState(1);
     const itemsPerPage=10;
@@ -34,11 +34,10 @@ const RegistrationManagement=()=>{
             <Text style={[styles.headerText, { flex:3 }]}>Full Name</Text>
             <Text style={[styles.headerText, { flex:2 }]}>Username</Text>
             <Text style={[styles.headerText, { flex:2}]}>IC.</Text>
-            <Text style={[styles.headerText, { flex:2 }]}>Status</Text>
             <Text style={[styles.headerText, { flex:3 }]}>Email</Text>
             <Text style={[styles.headerText, { flex:2}]}>Telefon</Text>
             <Text style={[styles.headerText, { flex:2 }]}>Register On</Text>
-            
+            <Text style={[styles.headerText, { flex:2 }]}>Status</Text>
         </View>
     );
 
@@ -53,6 +52,12 @@ const RegistrationManagement=()=>{
             <Text style={{flex:2}}>{item.username}</Text>
             {/* IC */}
             <Text style={{flex:2}}>{item.ic}</Text>
+            {/* Email */}
+            <Text style={{flex:3}}>{item.email}</Text>
+            {/* Telefon */}
+            <Text style={{flex:2}}>{item.telefon}</Text>
+            {/* Register On */}
+            <Text style={{flex:2}}>{item.registerDate}</Text>
             {/* Status */}
             <View style={[styles.row,styles.badge,{flex:2}]}>
                {item.status === "Approved" ? (
@@ -64,13 +69,6 @@ const RegistrationManagement=()=>{
                 )}
                 <Text>{item.status}</Text>
             </View>
-            {/* Email */}
-            <Text style={{flex:3}}>{item.email}</Text>
-            {/* Telefon */}
-            <Text style={{flex:2}}>{item.telefon}</Text>
-            {/* Register On */}
-            <Text style={{flex:2}}>{item.registerDate}</Text>
-            
         </Pressable>
     );
     
@@ -192,7 +190,12 @@ const RegistrationManagement=()=>{
                         </Pressable>
                     </View>
                     <View style={styles.panelContent}>
-                        
+                        {/* Status Pill */}
+                        <View style={[styles.statusPill, selectedUser.status === "Approved" ? styles.approved : selectedUser.status === "Pending" ? styles.pending : styles.rejected]}>
+                            <Text style={styles.statusText}>
+                                {selectedUser.status}
+                            </Text>
+                        </View>
                         <Image source={{uri:selectedUser.profileImage}} style={styles.largeAvatar}/>
                         <Text style={styles.fullname}>{selectedUser.fname + " " + selectedUser.lname}</Text>
                         
@@ -262,9 +265,7 @@ const RegistrationManagement=()=>{
                         </View>
                         {selectedUser.status==='Pending' &&(
                         <Pressable 
-                           style={({ hovered }) => [styles.Btn,
-                                hovered && styles.btnHover, 
-                            ]} 
+                            style={styles.Btn} 
                         >
                             <Text style={styles.btnText}>Approve</Text>
                         </Pressable>
@@ -450,7 +451,8 @@ const styles = StyleSheet.create({
         alignSelf:'center',
     },
     panelContent:{
-        padding:20,
+        paddingHorizontal:20,
+        paddingVertical:8,
         position:'relative',
         flex:1,
     },
@@ -562,8 +564,8 @@ const styles = StyleSheet.create({
     Btn:{
         width:120,
         alignItems:'center',
-        backgroundColor:'#2e9333',
-        borderRadius:10,
+        backgroundColor:'#207624',
+        borderRadius:5,
         paddingHorizontal:20,
         paddingVertical:8,
         marginTop:15,
@@ -571,7 +573,22 @@ const styles = StyleSheet.create({
         bottom:15,
         right:15
     },
+    statusPill: {
+        borderRadius: 15,
+        alignSelf: 'end',
+        marginBottom:10,
+    },
+    statusText: {
+        fontSize: 12,
+        fontWeight: '600',
+        color: '#fff',
+        paddingVertical: 7,
+        paddingHorizontal: 12,
+    },
+    approved: { backgroundColor: 'green' },
+    pending: { backgroundColor: 'orange' },
+    rejected: { backgroundColor: 'red' },
 
 });
 
-export default RegistrationManagement;
+export default UserManagement;

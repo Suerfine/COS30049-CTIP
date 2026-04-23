@@ -13,6 +13,7 @@ import UserDashboard from './src/screens/UserDashboard';
 import RegistrationManagement from './src/screens/RegistrationManagement';
 import UserModule from './src/screens/UserModule';
 import UserCourse from './src/screens/UserCourse';
+// import UserManagement from './src/screens/UserManagement';
 
 // Define
 const Stack=createStackNavigator();
