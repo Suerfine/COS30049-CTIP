@@ -1,4 +1,4 @@
-import { Pen, Trash2, Search, Plus, Circle, ChevronLeft, ChevronsLeft, ChevronRight, ChevronsRight, X, User2, IdCard, Mail, ShieldUser, Calendar, FileUser, EllipsisVertical, ChevronDown, ChevronUp, CirclePlus, CircleMinus,  MessageSquare} from 'lucide-react-native';
+import { Pen, Trash2, Search, Plus, Circle, ChevronLeft, ChevronsLeft, ChevronRight, ChevronsRight, X, User2, IdCard, Mail, ShieldUser, Calendar, FileUser, EllipsisVertical, ChevronDown, ChevronUp, CirclePlus, CircleMinus,  MessageSquare, Phone} from 'lucide-react-native';
 import React, {useState} from 'react';
 import { Pressable, StyleSheet, FlatList, View,Text, Image, TextInput} from 'react-native';
 
@@ -242,6 +242,14 @@ const RegistrationManagement=()=>{
                                     </View>
                                     <Text style={styles.userDetails}>{selectedUser.registerDate}</Text>
                                 </View>
+                            </View>
+                            {/* Telefon Section */}
+                            <View style={styles.details}>
+                                <View style={styles.row}>
+                                    <Phone size={18} color="#4f4f4f"/>
+                                    <Text style={styles.panelLabel}>Telefon:</Text>
+                                </View>
+                                <Text style={styles.userDetails}>{selectedUser.telefon}</Text>
                             </View>
                             {/* Remark Section */}
                             <View style={styles.remark}>

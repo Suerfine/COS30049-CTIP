@@ -9,7 +9,7 @@ const SideBar = () => {
     const menuItems= [
         {name:'Dashboard', icon: LayoutDashboard, route:'User Dashboard'},
         {name: 'Registration', icon: UserPlus, route:'Registration Management'},
-        {name: 'User', icon: User2, route:'User Management'},
+        {name: 'Accounts', icon: User2, route:'Account Management'},
         {name: 'Courses', icon: Book, route:'Course Management'},
         {name: 'Enrollment', icon: ClipboardList},
         {name:'Payment', icon: CreditCard},

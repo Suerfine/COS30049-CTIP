@@ -620,6 +620,51 @@ app.get('/api/users',(req,res)=>{
     res.json(users);
 })
 
+// Accounts (1,4,6,8,10,12)
+const accounts=[
+    {
+        id: 1,
+        reg_id:1,
+        joinedDate: '2025-10-15',
+        lastLogin: '5 minutes ago',
+    },
+    {
+        id: 2,
+        reg_id:4,
+        joinedDate: '2024-10-5',
+        lastLogin: '2 minutes ago',
+    },
+    {
+        id: 3,
+        reg_id:6,
+        joinedDate: '2024-04-12',
+        lastLogin: '5 days ago',
+    },
+    {
+        id: 4,
+        reg_id:8,
+        joinedDate: '2023-06-04',
+        lastLogin: '3 minutes ago',
+    },
+    {
+        id: 5,
+        reg_id:10,
+        joinedDate: '2024-10-07',
+        lastLogin: '10 days ago',
+    },
+    {
+        id: 6,
+        reg_id:12,
+        joinedDate: '2025-10-15',
+        lastLogin: '5 minutes ago',
+    }
+]   
+
+// Route to get all accounts
+app.get('/api/accounts',(req,res)=>{
+    res.json(accounts);
+})
+
 // ---------------------------------------------------------------------
 
 // Dummy todo data

@@ -7,7 +7,7 @@ import { useRegisterManagement } from '../hooks/useRegisterManagement';
 import ModalLayout from '../components/ModalLayout';
 import UsersFormContent from '../components/UsersFormContent';
 
-const UserManagement=()=>{
+const AccountManagement=()=>{
     const {users, loading}=useRegisterManagement();
     const [currentPage, setCurrentPage]=useState(1);
     const itemsPerPage=10;
@@ -33,11 +33,9 @@ const UserManagement=()=>{
         <View style={[styles.tableHeader, styles.row]}>
             <Text style={[styles.headerText, { flex:3 }]}>Full Name</Text>
             <Text style={[styles.headerText, { flex:2 }]}>Username</Text>
-            <Text style={[styles.headerText, { flex:2}]}>IC.</Text>
-            <Text style={[styles.headerText, { flex:3 }]}>Email</Text>
-            <Text style={[styles.headerText, { flex:2}]}>Telefon</Text>
-            <Text style={[styles.headerText, { flex:2 }]}>Register On</Text>
-            <Text style={[styles.headerText, { flex:2 }]}>Status</Text>
+            <Text style={[styles.headerText, { flex:3 }]}>Work Email</Text>
+            <Text style={[styles.headerText, { flex:2}]}>Joined On</Text>
+            <Text style={[styles.headerText, { flex:2 }]}>Last Login</Text>
         </View>
     );
 
@@ -108,57 +106,14 @@ const UserManagement=()=>{
     // Loading
     return(
         <View style={styles.container}>
-            <Text style={styles.title}>Registration Management</Text>
-            <View style={[styles.toolbar,styles.row]}>
+            <Text style={styles.title}>Account Management</Text>
+            <View style={styles.toolbar}>
                 <View style={styles.row}>
                     <View style={[styles.search,styles.row]}>
                         <Search size={18}/>
                         <TextInput style={styles.input} placeholder='Search...' placeholderTextColor="#8f8f8f"/>
                     </View>
-                    {/* Status Dropdown */}
-                    <View style={styles.dropdownWrapper}>
-                        <Pressable 
-                            style={styles.pillTrigger} 
-                            onPress={() => setIsOpen(!isOpen)}
-                        > 
-                            <Text style={styles.pillText}>Status</Text>
-                            {isOpen ? (<ChevronUp size={16} color="#4b5563" />) : (<ChevronDown size={16} color="#4b5563" />)}
-                        </Pressable>
-
-                        {/* Dropdown Menu */}
-                        {isOpen && (
-                            <View style={styles.dropdownMenu}>
-                                {['All','Approved','Pending', 'Rejected'].map((status) => (
-                                    <Pressable 
-                                        key={status}
-                                        style={({hovered})=>[
-                                            styles.menuItem,
-                                            currentStatus === status && styles.menuItemActive,
-                                            (hovered && currentStatus!=status) && styles.menuItemHover 
-                                        ]}
-                                        onPress={() => {
-                                            setCurrentStatus(status);
-                                            setIsOpen(false);
-                                        }}
-                                    >
-                                        <Text style={[
-                                            currentStatus === status && styles.menuItemTextActive 
-                                        ]}>
-                                            {status}
-                                        </Text>
-                                    </Pressable>
-                                ))}
-                            </View>
-                        )}
-                    </View>
                 </View>
-                <Pressable onPress={handleAdd} style={({ hovered }) => [
-                        styles.btn,
-                        hovered && styles.btnHover, 
-                    ]}>
-                    <Plus size={16}/>
-                    <Text style={styles.btnText}>Add User</Text>
-                </Pressable>
             </View>
 
             {/* Create Users Modal */}
@@ -327,17 +282,6 @@ const styles = StyleSheet.create({
         marginVertical:20,
         zIndex:500
     },
-    btn:{
-        flexDirection:'row',
-        gap:4,
-        alignItems:'center',
-        alignSelf:'center',
-        backgroundColor:"#217837",
-        borderRadius:50,
-        color:'white',
-        paddingHorizontal:23,
-        paddingVertical:10,
-    },
     btnText:{
         color:'white',
         fontSize:14
@@ -488,53 +432,9 @@ const styles = StyleSheet.create({
         position:'absolute',
         zIndex:400
     },
-    pillTrigger:{
-        border:'1px solid #0a6340',
-        width:100,
-        flexDirection:"row",
-        gap:10,
-        height:35,
-        marginTop:2,
-        justifyContent:'center',
-        alignItems:'center',
-        marginLeft:15,
-        borderRadius:20,
-        userSelect:'none',
-        backgroundColor:'white',
-        paddingLeft:4
-    },
-    dropdownMenu:{
-        position:'absolute',
-        top:37,
-        left:20,
-        backgroundColor:'white',
-        shadowColor: '#000',
-        shadowOpacity: 0.1,
-        shadowRadius: 10,
-        elevation: 5,
-        borderWidth: 1,
-        borderColor: '#f0f0f0',
-    },
-    dropdownWrapper:{
-        position:'relative',
-    },
-    pillText: {
-        fontSize: 14,
-        color: '#374151',
-        fontWeight: '500',
-    },
     menuItem:{
         padding:14,
         alignItems:'center'
-    },
-    menuItemActive:{
-        backgroundColor:"#7d9f7a"
-    },
-    menuItemTextActive:{
-        color:'white'
-    },
-    menuItemHover:{
-        backgroundColor:"#f9f9f9"
     },
     floatingMenu:{
         position:'absolute',
@@ -591,4 +491,4 @@ const styles = StyleSheet.create({
 
 });
 
-export default UserManagement;
+export default AccountManagement;
