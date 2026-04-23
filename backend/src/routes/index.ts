@@ -1,15 +1,11 @@
 import { Router } from "express";
-
-import * as UserController from "../controllers/UserController";
-
-import {auth} from "../middelware/Auth";
+import userRouter from "./UserRoute";
 
 const router = Router();
 
 /*=============================
 =         USER ROUTES         =
 =============================*/
-router.get("/users", auth, UserController.getAllUsers);
-// router.get("/users/:id", auth, UserController.getUserById);
+router.use("/users", userRouter);
 
 export default router;
