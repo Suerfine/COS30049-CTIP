@@ -11,6 +11,7 @@ export type DiscussionFactoryAttributes = {
   id?: number;
   course_id?: number;
   user_id?: number;
+  title: string;
   is_public: boolean;
   created_at?: Date;
   updated_at?: Date;
@@ -57,6 +58,7 @@ export const buildDiscussion = (options: BuildDiscussionOptions): DiscussionFact
   const defaultDiscussion: DiscussionFactoryAttributes = {
     course_id: course.id,
     user_id: discussionCreatorId,
+    title: faker.lorem.sentence({ min: 3, max: 8 }),
     is_public: faker.datatype.boolean(),
   };
 

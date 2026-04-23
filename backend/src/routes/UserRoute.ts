@@ -4,13 +4,20 @@ import { auth } from "../middelware/Auth";
 
 const userRouter = Router();
 
-// Create user
+/**
+ * @swagger
+ * /api/users:
+ *  post:
+ *   summary: Create a new user
+ *  tags: [Users]
+ *
+ */
 userRouter.post("/", (_req: Request, res: Response) => {
-	res.status(501).json({ message: "Not implemented" });
+  res.status(501).json({ message: "Not implemented" });
 });
 
 // Read all users
-userRouter.get("/",auth, UserController.getAllUsers);
+userRouter.get("/", auth, UserController.getAllUsers);
 
 // Read single user
 userRouter.get("/:id", auth, UserController.getUserById);
@@ -20,8 +27,7 @@ userRouter.put("/:id", auth, UserController.upsertUser);
 
 // Delete user
 userRouter.delete("/:id", auth, (_req: Request, res: Response) => {
-	res.status(501).json({ message: "Not implemented" });
+  res.status(501).json({ message: "Not implemented" });
 });
 
 export default userRouter;
-

@@ -9,9 +9,11 @@ import {
 import sequelize from "../config/Database";
 import { RegistrationStatus } from "../enum/RegistrationStatus";
 import User from "./User";
-import { on } from "node:cluster";
 
-class Registration extends Model<InferAttributes<Registration>, InferCreationAttributes<Registration>> {
+class Registration extends Model<
+  InferAttributes<Registration>,
+  InferCreationAttributes<Registration>
+> {
   declare id: CreationOptional<number>;
   declare user_id: ForeignKey<User["id"]>;
   declare reviewed_by_user_id: CreationOptional<ForeignKey<User["id"]> | null>;
@@ -21,8 +23,8 @@ class Registration extends Model<InferAttributes<Registration>, InferCreationAtt
   declare identification: string;
   declare personal_email: string;
   declare tel: string;
-  declare document_url: string;
-  declare remark: CreationOptional<string | null>;
+  declare admin_remark: CreationOptional<string | null>;
+  declare reviewed_at: CreationOptional<Date | null>;
   declare created_at: CreationOptional<Date>;
   declare updated_at: CreationOptional<Date>;
   declare deleted_at: CreationOptional<Date | null>;
@@ -38,12 +40,12 @@ Registration.init(
     user_id: {
       type: DataTypes.INTEGER,
       allowNull: false,
-        references: {
+      references: {
         model: "users",
         key: "id",
       },
-        onUpdate: "CASCADE",
-        onDelete: "CASCADE",
+      onUpdate: "CASCADE",
+      onDelete: "CASCADE",
     },
     reviewed_by_user_id: {
       type: DataTypes.INTEGER,
@@ -80,12 +82,12 @@ Registration.init(
       type: DataTypes.STRING(30),
       allowNull: false,
     },
-    document_url: {
-      type: DataTypes.STRING(2048),
-      allowNull: false,
-    },
-    remark: {
+    admin_remark: {
       type: DataTypes.TEXT,
+      allowNull: true,
+    },
+    reviewed_at: {
+      type: DataTypes.DATE,
       allowNull: true,
     },
     created_at: {
@@ -115,4 +117,3 @@ Registration.init(
 );
 
 export default Registration;
-

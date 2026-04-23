@@ -10,6 +10,7 @@ import sequelize from "../config/Database";
 class Tag extends Model<InferAttributes<Tag>, InferCreationAttributes<Tag>> {
   declare id: CreationOptional<number>;
   declare title: string;
+  declare type: string;
   declare created_at: CreationOptional<Date>;
   declare updated_at: CreationOptional<Date>;
   declare deleted_at: CreationOptional<Date | null>;
@@ -25,7 +26,10 @@ Tag.init(
     title: {
       type: DataTypes.STRING(255),
       allowNull: false,
-      unique: true,
+    },
+    type: {
+      type: DataTypes.STRING(100),
+      allowNull: false,
     },
     created_at: {
       type: DataTypes.DATE,
@@ -50,6 +54,12 @@ Tag.init(
     updatedAt: "updated_at",
     paranoid: true,
     deletedAt: "deleted_at",
+    indexes: [
+      {
+        unique: true,
+        fields: ["title", "type"],
+      },
+    ],
   },
 );
 

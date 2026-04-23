@@ -21,8 +21,8 @@ export type RegistrationFactoryAttributes = {
   identification: string;
   personal_email: string;
   tel: string;
-  document_url: string;
-  remark: string | null;
+  admin_remark: string | null;
+  reviewed_at: Date | null;
   created_at?: Date;
   updated_at?: Date;
   deleted_at?: Date | null;
@@ -72,8 +72,8 @@ const buildRegistrationData = (): Omit<RegistrationFactoryAttributes, "id" | "us
     identification: faker.string.alphanumeric(10).toUpperCase(),
     personal_email: faker.internet.email().toLowerCase(),
     tel: faker.phone.number(),
-    document_url: faker.internet.url(),
-    remark: faker.datatype.boolean() ? faker.lorem.sentence() : null,
+    admin_remark: faker.datatype.boolean() ? faker.lorem.sentence() : null,
+    reviewed_at: null,
   };
 };
 
@@ -95,6 +95,10 @@ export const buildRegistration = (
   const resolvedStatus = registrationOverrides.status ?? status;
   const reviewedByUserId =
     resolvedStatus === RegistrationStatus.PENDING ? null : adminUser.id;
+  const reviewedAt =
+    resolvedStatus === RegistrationStatus.PENDING
+      ? null
+      : addDays(createdAt, faker.number.int({ min: 0, max: 3 }));
 
   const baseRegistration: RegistrationFactoryAttributes = {
     user_id: user.id,
@@ -109,6 +113,7 @@ export const buildRegistration = (
     user_id: user.id,
     reviewed_by_user_id: reviewedByUserId,
     status: resolvedStatus,
+    reviewed_at: registrationOverrides.reviewed_at === undefined ? reviewedAt : registrationOverrides.reviewed_at,
     created_at: createdAt,
     updated_at: registrationOverrides.updated_at instanceof Date ? registrationOverrides.updated_at : createdAt,
   };

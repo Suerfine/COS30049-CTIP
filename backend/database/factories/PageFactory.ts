@@ -19,6 +19,7 @@ export type PageFactoryAttributes = {
   title: string;
   description?: string | null;
   passing_score: number;
+  max_tries?: number | null;
   created_at?: Date;
   updated_at?: Date;
   deleted_at?: Date | null;
@@ -55,6 +56,7 @@ export const buildPage = (overrides: PageFactoryInput = {}): PageFactoryAttribut
     title: buildUniquePageTitle(),
     description: faker.lorem.sentences(2),
     passing_score: 1,
+    max_tries: 3,
   };
 
   const resolvedPage = {

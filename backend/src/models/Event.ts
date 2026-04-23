@@ -1,45 +1,35 @@
 import {
   CreationOptional,
   DataTypes,
-  ForeignKey,
   InferAttributes,
   InferCreationAttributes,
   Model,
 } from "sequelize";
 import sequelize from "../config/Database";
-import Course from "./Course";
-import User from "./User";
 
-class Discussion extends Model<
-  InferAttributes<Discussion>,
-  InferCreationAttributes<Discussion>
+class Event extends Model<
+  InferAttributes<Event>,
+  InferCreationAttributes<Event>
 > {
   declare id: CreationOptional<number>;
-  declare course_id: ForeignKey<Course["id"]>;
-  declare user_id: ForeignKey<User["id"]>;
+  declare user_id: number;
   declare title: string;
-  declare is_public: CreationOptional<boolean>;
+  declare description: string;
+  declare event_start_at: Date;
+  declare event_end_at: CreationOptional<Date | null>;
+  declare period_frequency: number;
+  declare period_unit: "day" | "week" | "month";
   declare created_at: CreationOptional<Date>;
   declare updated_at: CreationOptional<Date>;
   declare deleted_at: CreationOptional<Date | null>;
 }
 
-Discussion.init(
+Event.init(
   {
     id: {
       type: DataTypes.INTEGER,
       primaryKey: true,
       autoIncrement: true,
-    },
-    course_id: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      references: {
-        model: "courses",
-        key: "id",
-      },
-      onUpdate: "CASCADE",
-      onDelete: "CASCADE",
     },
     user_id: {
       type: DataTypes.INTEGER,
@@ -52,13 +42,30 @@ Discussion.init(
       onDelete: "CASCADE",
     },
     title: {
-      type: DataTypes.STRING(255),
+      type: DataTypes.STRING,
       allowNull: false,
     },
-    is_public: {
-      type: DataTypes.BOOLEAN,
+    description: {
+      type: DataTypes.TEXT,
       allowNull: false,
-      defaultValue: true,
+    },
+    event_start_at: {
+      type: DataTypes.DATE,
+      allowNull: false,
+    },
+    event_end_at: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+    period_frequency: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0,
+    },
+    period_unit: {
+      type: DataTypes.ENUM("day", "week", "month"),
+      allowNull: false,
+      defaultValue: "day",
     },
     created_at: {
       type: DataTypes.DATE,
@@ -77,7 +84,7 @@ Discussion.init(
   },
   {
     sequelize,
-    tableName: "discussions",
+    tableName: "events",
     timestamps: true,
     createdAt: "created_at",
     updatedAt: "updated_at",
@@ -85,5 +92,4 @@ Discussion.init(
     deletedAt: "deleted_at",
   },
 );
-
-export default Discussion;
+export default Event;

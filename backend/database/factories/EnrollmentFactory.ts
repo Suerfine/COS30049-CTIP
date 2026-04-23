@@ -19,12 +19,12 @@ export type EnrollmentFactoryAttributes = {
   user_id: number;
   course_id: number;
   status: EnrollmentStatus;
-  enrolled_date: Date;
-  completed_date: Date | null;
+  enrolled_at: Date;
+  completed_at: Date | null;
   reviewed_by_user_id: number | null;
-  review_date: Date | null;
+  reviewed_at: Date | null;
   review_comment: string | null;
-  expired_date: Date | null;
+  badge_expire_at: Date | null;
   created_at?: Date;
   updated_at?: Date;
   deleted_at?: Date | null;
@@ -105,9 +105,9 @@ export const buildEnrollment = async (
   const status = enrollmentOverrides.status ?? EnrollmentStatus.IN_PROGRESS;
   const baseEnrollmentDate = getLatestDate([user.created_at, course.created_at]);
   const enrolledDate =
-    enrollmentOverrides.enrolled_date instanceof Date
-      ? enrollmentOverrides.enrolled_date > baseEnrollmentDate
-        ? enrollmentOverrides.enrolled_date
+    enrollmentOverrides.enrolled_at instanceof Date
+      ? enrollmentOverrides.enrolled_at > baseEnrollmentDate
+        ? enrollmentOverrides.enrolled_at
         : getRandomDateBetween(addDays(baseEnrollmentDate, 1), addDays(baseEnrollmentDate, 30))
       : getRandomDateBetween(addDays(baseEnrollmentDate, 1), addDays(baseEnrollmentDate, 30));
 
@@ -116,12 +116,12 @@ export const buildEnrollment = async (
     user_id: user.id,
     course_id: course.id,
     status,
-    enrolled_date: enrolledDate,
-    completed_date: null,
+    enrolled_at: enrolledDate,
+    completed_at: null,
     reviewed_by_user_id: null,
-    review_date: null,
+    reviewed_at: null,
     review_comment: faker.lorem.sentence(),
-    expired_date: expiredDate,
+    badge_expire_at: expiredDate,
   };
 
   const enrollment: EnrollmentFactoryAttributes = {
@@ -129,19 +129,19 @@ export const buildEnrollment = async (
     ...enrollmentOverrides,
     user_id: user.id,
     course_id: course.id,
-    enrolled_date: enrolledDate,
-    expired_date: expiredDate,
+    enrolled_at: enrolledDate,
+    badge_expire_at: expiredDate,
   };
 
   if (status === EnrollmentStatus.COMPLETED) {
     const adminUser = await resolveAdminUser(adminUsers);
     const reviewDate =
-      enrollmentOverrides.review_date instanceof Date && enrollmentOverrides.review_date > enrolledDate
-        ? enrollmentOverrides.review_date
+      enrollmentOverrides.reviewed_at instanceof Date && enrollmentOverrides.reviewed_at > enrolledDate
+        ? enrollmentOverrides.reviewed_at
         : getRandomDateBetween(addDays(enrolledDate, 1), addDays(enrolledDate, 30));
     const completedDate =
-      enrollmentOverrides.completed_date instanceof Date && enrollmentOverrides.completed_date > reviewDate
-        ? enrollmentOverrides.completed_date
+      enrollmentOverrides.completed_at instanceof Date && enrollmentOverrides.completed_at > reviewDate
+        ? enrollmentOverrides.completed_at
         : getRandomDateBetween(addDays(reviewDate, 1), addDays(reviewDate, 60));
 
     return {
@@ -150,8 +150,8 @@ export const buildEnrollment = async (
         ...enrollment,
         status: EnrollmentStatus.COMPLETED,
         reviewed_by_user_id: adminUser.id,
-        review_date: reviewDate,
-        completed_date: completedDate,
+        reviewed_at: reviewDate,
+        completed_at: completedDate,
       },
     };
   }
@@ -161,8 +161,8 @@ export const buildEnrollment = async (
       ...enrollment,
       status: EnrollmentStatus.IN_PROGRESS,
       reviewed_by_user_id: null,
-      review_date: null,
-      completed_date: null,
+      reviewed_at: null,
+      completed_at: null,
     },
   };
 };

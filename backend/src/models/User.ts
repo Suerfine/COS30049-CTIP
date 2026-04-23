@@ -45,8 +45,8 @@ User.init(
       unique: true,
     },
     role: {
-        type: DataTypes.ENUM(...Object.values(UserRoles)),
-        allowNull: false,
+      type: DataTypes.ENUM(...Object.values(UserRoles)),
+      allowNull: false,
     },
     password_hash: {
       type: DataTypes.STRING,
@@ -55,7 +55,7 @@ User.init(
     last_login_at: {
       type: DataTypes.DATE,
       allowNull: true,
-      defaultValue: DataTypes.NOW,
+      defaultValue: null,
     },
     created_at: {
       type: DataTypes.DATE,
@@ -94,9 +94,21 @@ User.init(
       },
       beforeSave: async (user) => {
         const uniqueFields = [
-          { field: "username", value: user.username, message: "Username already exists" },
-          { field: "identification", value: user.identification, message: "Identification already exists" },
-          { field: "personal_email", value: user.personal_email, message: "Personal email already exists" },
+          {
+            field: "username",
+            value: user.username,
+            message: "Username already exists",
+          },
+          {
+            field: "identification",
+            value: user.identification,
+            message: "Identification already exists",
+          },
+          {
+            field: "personal_email",
+            value: user.personal_email,
+            message: "Personal email already exists",
+          },
         ] as const;
 
         for (const uniqueField of uniqueFields) {

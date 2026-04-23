@@ -19,12 +19,12 @@ class Enrollment extends Model<
   declare user_id: ForeignKey<User["id"]>;
   declare course_id: ForeignKey<Course["id"]>;
   declare status: EnrollmentStatus;
-  declare enrolled_date: CreationOptional<Date>;
-  declare completed_date: CreationOptional<Date | null>;
+  declare enrolled_at: CreationOptional<Date>;
+  declare completed_at: CreationOptional<Date | null>;
   declare reviewed_by_user_id: CreationOptional<ForeignKey<User["id"]> | null>;
-  declare review_date: CreationOptional<Date | null>;
+  declare reviewed_at: CreationOptional<Date | null>;
   declare review_comment: CreationOptional<string | null>;
-  declare expired_date: CreationOptional<Date | null>;
+  declare badge_expire_at: CreationOptional<Date | null>;
   declare created_at: CreationOptional<Date>;
   declare updated_at: CreationOptional<Date>;
   declare deleted_at: CreationOptional<Date | null>;
@@ -62,16 +62,16 @@ Enrollment.init(
       allowNull: false,
       defaultValue: EnrollmentStatus.IN_PROGRESS,
     },
-    enrolled_date: {
+    enrolled_at: {
       type: DataTypes.DATE,
       allowNull: false,
       defaultValue: DataTypes.NOW,
     },
-    completed_date: {
+    completed_at: {
       type: DataTypes.DATE,
       allowNull: true,
     },
-    reviewed_by_user_id:{
+    reviewed_by_user_id: {
       type: DataTypes.INTEGER,
       allowNull: true,
       references: {
@@ -81,17 +81,17 @@ Enrollment.init(
       onUpdate: "CASCADE",
       onDelete: "SET NULL",
     },
-    review_date: {
+    reviewed_at: {
       type: DataTypes.DATE,
       allowNull: true,
     },
     review_comment: {
-        type: DataTypes.TEXT,
-        allowNull: true,
-    },
-    expired_date: {
-      type: DataTypes.DATE,
+      type: DataTypes.TEXT,
       allowNull: true,
+    },
+    badge_expire_at: {
+      type: DataTypes.DATE,
+      allowNull: true, // Set to null if it wont ever expire
     },
     created_at: {
       type: DataTypes.DATE,

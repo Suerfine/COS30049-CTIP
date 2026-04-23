@@ -1,7 +1,11 @@
 import { Request, Response, NextFunction } from "express";
-import {User} from "../models";
+import { User } from "../models";
 
-export const auth = async (req: Request, res: Response, next: NextFunction) => {
+export const auth = async (
+  req: Request & { user?: User },
+  res: Response,
+  next: NextFunction,
+) => {
   const token = req.headers.authorization;
   // // TODO: verify JWT
   // if (!token) {

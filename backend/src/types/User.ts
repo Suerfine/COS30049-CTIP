@@ -11,6 +11,7 @@ export interface UserResponse {
 	id: number;
 	username: string;
 	role: UserRoles;
+    last_login_at: Date | null;
 	created_at: Date;
 	updated_at: Date;
 }

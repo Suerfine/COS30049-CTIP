@@ -1,15 +1,13 @@
 import { faker } from "@faker-js/faker";
-
-export type ElementType = "text" | "image" | "video" | "quiz";
+import { ElementTypes } from "../../src/enum/ElementTypes";
 
 export type ElementFactoryAttributes = {
   id?: number;
   page_id?: number;
   order: number;
-  type: ElementType;
+  type: ElementTypes;
   content: Record<string, unknown>;
   score?: number | null;
-  max_tries?: number | null;
   created_at?: Date;
   updated_at?: Date;
   deleted_at?: Date | null;
@@ -17,24 +15,32 @@ export type ElementFactoryAttributes = {
 
 export type ElementFactoryInput = Partial<ElementFactoryAttributes>;
 
-const buildContentByType = (type: ElementType): Record<string, unknown> => {
-  if (type === "text") {
+const buildContentByType = (type: ElementTypes): Record<string, unknown> => {
+  if (type === ElementTypes.TEXT) {
     return {
       text: faker.lorem.paragraph(),
     };
   }
 
-  if (type === "image") {
+  if (type === ElementTypes.IMAGE) {
     return {
       url: faker.image.urlLoremFlickr({ category: "nature" }),
       caption: faker.lorem.sentence(),
     };
   }
 
-  if (type === "video") {
+  if (type === ElementTypes.VIDEO) {
     return {
       url: faker.internet.url(),
       transcript: faker.lorem.sentences(2),
+    };
+  }
+
+  if (type === ElementTypes.FILE) {
+    return {
+      file_name: faker.system.fileName(),
+      file_url: faker.internet.url(),
+      description: faker.lorem.sentence(),
     };
   }
 
@@ -49,14 +55,13 @@ const buildContentByType = (type: ElementType): Record<string, unknown> => {
 };
 
 export const buildElement = (overrides: ElementFactoryInput = {}): ElementFactoryAttributes => {
-  const type = overrides.type ?? faker.helpers.arrayElement(["text", "image", "video", "quiz"]);
+  const type = overrides.type ?? faker.helpers.arrayElement(Object.values(ElementTypes));
 
   const defaultElement: ElementFactoryAttributes = {
     order: faker.number.int({ min: 1, max: 20 }),
     type,
     content: buildContentByType(type),
     score: 1,
-    max_tries: 3,
   };
 
   return {

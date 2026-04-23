@@ -1,45 +1,33 @@
 import {
   CreationOptional,
   DataTypes,
-  ForeignKey,
   InferAttributes,
   InferCreationAttributes,
   Model,
 } from "sequelize";
 import sequelize from "../config/Database";
-import Course from "./Course";
-import User from "./User";
 
-class Discussion extends Model<
-  InferAttributes<Discussion>,
-  InferCreationAttributes<Discussion>
+class Notification extends Model<
+  InferAttributes<Notification>,
+  InferCreationAttributes<Notification>
 > {
   declare id: CreationOptional<number>;
-  declare course_id: ForeignKey<Course["id"]>;
-  declare user_id: ForeignKey<User["id"]>;
+  declare user_id: number;
   declare title: string;
-  declare is_public: CreationOptional<boolean>;
+  declare message: string;
+  declare url: CreationOptional<string | null>;
+  declare is_dismissed: CreationOptional<boolean>;
   declare created_at: CreationOptional<Date>;
   declare updated_at: CreationOptional<Date>;
   declare deleted_at: CreationOptional<Date | null>;
 }
 
-Discussion.init(
+Notification.init(
   {
     id: {
       type: DataTypes.INTEGER,
       primaryKey: true,
       autoIncrement: true,
-    },
-    course_id: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      references: {
-        model: "courses",
-        key: "id",
-      },
-      onUpdate: "CASCADE",
-      onDelete: "CASCADE",
     },
     user_id: {
       type: DataTypes.INTEGER,
@@ -52,13 +40,21 @@ Discussion.init(
       onDelete: "CASCADE",
     },
     title: {
-      type: DataTypes.STRING(255),
+      type: DataTypes.STRING,
       allowNull: false,
     },
-    is_public: {
+    message: {
+      type: DataTypes.TEXT,
+      allowNull: false,
+    },
+    url: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    is_dismissed: {
       type: DataTypes.BOOLEAN,
       allowNull: false,
-      defaultValue: true,
+      defaultValue: false,
     },
     created_at: {
       type: DataTypes.DATE,
@@ -77,7 +73,7 @@ Discussion.init(
   },
   {
     sequelize,
-    tableName: "discussions",
+    tableName: "notifications",
     timestamps: true,
     createdAt: "created_at",
     updatedAt: "updated_at",
@@ -85,5 +81,4 @@ Discussion.init(
     deletedAt: "deleted_at",
   },
 );
-
-export default Discussion;
+export default Notification;

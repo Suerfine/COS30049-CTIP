@@ -1,6 +1,6 @@
 import { faker } from "@faker-js/faker";
 import { UserRoles } from "../../src/enum/UserRoles";
-import { hashPassword } from "../../src/utils/Password";
+import { hashPassword } from "../../src/utils/password";
 
 const DEFAULT_PASSWORD: string = "password";
 
@@ -16,6 +16,7 @@ export type UserFactoryAttributes = {
 	personal_email: string;
 	role: UserRoles;
 	password_hash: string;
+	last_login_at?: Date | null;
 	created_at?: Date;
 	updated_at?: Date;
 	deleted_at?: Date | null;
@@ -39,6 +40,7 @@ export const buildUser = (overrides: UserFactoryInput = {}): UserFactoryAttribut
 		personal_email: faker.internet.email().toLowerCase(),
 		role: faker.helpers.arrayElement(Object.values(UserRoles)),
 		password_hash: hashPassword(DEFAULT_PASSWORD),
+		last_login_at: faker.helpers.arrayElement([null, faker.date.recent({ days: 30 })]),
 	};
 
 	const resolvedPasswordHash =

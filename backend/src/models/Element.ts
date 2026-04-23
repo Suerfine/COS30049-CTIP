@@ -8,17 +8,18 @@ import {
 } from "sequelize";
 import sequelize from "../config/Database";
 import Page from "./Page";
+import { ElementTypes } from "../enum/ElementTypes";
 
-type ElementType = "text" | "image" | "video" | "quiz";
-
-class Element extends Model<InferAttributes<Element>, InferCreationAttributes<Element>> {
+class Element extends Model<
+  InferAttributes<Element>,
+  InferCreationAttributes<Element>
+> {
   declare id: CreationOptional<number>;
   declare page_id: ForeignKey<Page["id"]>;
   declare order: number;
-  declare type: ElementType;
+  declare type: ElementTypes;
   declare content: Record<string, unknown>;
   declare score: CreationOptional<number | null>;
-  declare max_tries: CreationOptional<number | null>;
   declare created_at: CreationOptional<Date>;
   declare updated_at: CreationOptional<Date>;
   declare deleted_at: CreationOptional<Date | null>;
@@ -47,7 +48,7 @@ Element.init(
       defaultValue: 0,
     },
     type: {
-      type: DataTypes.ENUM("text", "image", "video", "quiz"),
+      type: DataTypes.ENUM(...Object.values(ElementTypes)),
       allowNull: false,
     },
     content: {
@@ -55,10 +56,6 @@ Element.init(
       allowNull: false,
     },
     score: {
-      type: DataTypes.INTEGER,
-      allowNull: true,
-    },
-    max_tries: {
       type: DataTypes.INTEGER,
       allowNull: true,
     },
