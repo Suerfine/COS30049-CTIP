@@ -3,7 +3,7 @@ import {View, Text, StyleSheet, Pressable, FlatList,TextInput} from 'react-nativ
 import {Plus, ChevronRight, ChevronDown,Search, Trash2} from 'lucide-react-native';
 import { useOutline } from '../hooks/useOutline';
 
-const OutlineBar=({course, onSelectPage, editable})=>{
+const OutlineBar=({course, onSelectPage, editable, isCollapsed})=>{
     const{
         allModules,
         expandedModule,
@@ -32,7 +32,7 @@ const OutlineBar=({course, onSelectPage, editable})=>{
     }
 
     return(
-        <View style={styles.outlinebar}>
+        <View style={[styles.outlinebar, isCollapsed ? styles.collapsed : null]}>
             {/* Search Component */}
             <View style={styles.search}>
                 <Search size={18}/>
@@ -214,7 +214,10 @@ const styles=StyleSheet.create({
         userSelect:'none',
         flex:1,
         backgroundColor:'white',
-        paddingVertical:15
+        paddingVertical:15,
+    },
+    collapsed:{
+        maxWidth:'0px',
     },
     overview:{
         fontSize:16,
@@ -240,14 +243,13 @@ const styles=StyleSheet.create({
         gap:3,
         borderWidth:1,
         borderColor:'#8f8f8f',
-        maxWidth:185,
         paddingVertical:5,
-        paddingHorizontal:3,
         backgroundColor:'white',
         borderRadius:15,
         alignItems:"center",
         marginBottom:25,
-        marginHorizontal:20,
+        marginHorizontal:15,
+        paddingHorizontal:5
     },
     input:{
         flex:1,
