@@ -7,7 +7,6 @@ import { createStackNavigator } from '@react-navigation/stack';
 // Import Screens
 import AdminCourse from './src/screens/AdminCourse';
 import SideBar from './src/components/SideBar';
-import NavBar from './src/components/NavBar';
 import EditCourseDetails from './src/screens/EditCourseDetail';
 import UserDashboard from './src/screens/UserDashboard';
 import RegistrationManagement from './src/screens/RegistrationManagement';
@@ -41,7 +40,6 @@ export default function App() {
       <View style={styles.root}>
         <View style={styles.container}>
           {/* <SideBar navigation={navigation}/> */}
-          <NavBar navigation={navigation}/>
           
           
           {/* Main Content Area */}
@@ -73,7 +71,6 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,           
-    // flexDirection: 'row', 
     flexDirection: 'column',
     backgroundColor: '#fff',
   },

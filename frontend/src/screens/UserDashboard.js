@@ -2,9 +2,10 @@ import {useState} from 'react';
 import { View, Text, StyleSheet, Pressable, ScrollView} from 'react-native';
 import { ListPlus, ChevronRight, ChevronLeft } from 'lucide-react-native';
 import Checkbox from 'expo-checkbox';
-
+import NavBar from '../components/NavBar';
 import CourseCard from '../components/CourseCard.js';
 import { useUserDashboard } from '../hooks/useUserDashboard';
+
 
 const UserDashboard = ({ navigation }) => {
     const {courses,todos,userType,progressData,loading,setTodos} = useUserDashboard();
@@ -68,6 +69,7 @@ const UserDashboard = ({ navigation }) => {
 
     return(
         <View style={{ flex: 1 }}>
+            <NavBar/>
             <View style={styles.container}>
                 <View style={styles.topRow}>
                     {/* Left side */}

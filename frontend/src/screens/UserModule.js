@@ -6,9 +6,8 @@ import { Calendar } from 'react-native-calendars';
 import {useRoute} from '@react-navigation/native';
 
 // Import Components
-import CourseCard from '../components/CourseCard.js';
-import NavBar from '../components/NavBar.js';
-import OutlineBar from '../components/OutlineBar.js';
+import NavBar from '../components/NavBar';
+import OutlineBar from '../components/OutlineBar';
 
 const UserModule = ({ navigation }) => {
         const route=useRoute();
@@ -27,6 +26,7 @@ const UserModule = ({ navigation }) => {
 
     return(
         <View style={{ flex: 1 }}>
+            <NavBar/>
             {/* Outlinebar */}
             <OutlineBar course={course} onSelectPage={setSelectedPage} editable={false}/>
             {/* Content */}

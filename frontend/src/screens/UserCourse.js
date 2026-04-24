@@ -6,6 +6,7 @@ import ConfirmEnroll from '../components/ConfirmEnroll';
 import { useState } from 'react';
 import { ListFilter, SignalZero, SlidersHorizontal } from 'lucide-react-native'
 import FilterSidebar from '../components/FilterSidebar';
+import NavBar from '../components/NavBar';
 
 const UserCourse = ({ navigation }) => {
     const { courses, progressData, userType } = useUserDashboard();
@@ -59,6 +60,7 @@ const UserCourse = ({ navigation }) => {
 
     return (
         <View style={{ flex: 1 }}>
+            <NavBar/>
             <ScrollView style={styles.container}>
                 <View style={styles.courseContainer}>
                     {/* Background Image */}
