@@ -1,33 +1,26 @@
-import { Pen, Trash2, Search, Plus, Circle, ChevronLeft, ChevronsLeft, ChevronRight, ChevronsRight, X, User2, IdCard, Mail, ShieldUser, Calendar, FileUser, EllipsisVertical, ChevronDown, ChevronUp, CirclePlus, CircleMinus,  MessageSquare} from 'lucide-react-native';
+import { Pen, Trash2, Search, Plus, Circle, ChevronLeft, ChevronsLeft, ChevronRight, ChevronsRight, X, User2, IdCard, Mail, ShieldUser, Calendar, FileUser, EllipsisVertical, ChevronDown, ChevronUp, CirclePlus, CircleMinus,  MessageSquare, Phone} from 'lucide-react-native';
 import React, {useState} from 'react';
 import { Pressable, StyleSheet, FlatList, View,Text, Image, TextInput} from 'react-native';
 
 // Import other components and hooks
-import { useRegisterManagement } from '../hooks/useRegisterManagement';
-import ModalLayout from '../components/ModalLayout';
-import UsersFormContent from '../components/UsersFormContent';
+import { useAccountManagement } from '../hooks/useAccountManagement';
 
 const AccountManagement=()=>{
-    const {users, loading}=useRegisterManagement();
+    const {accounts} = useAccountManagement();
+
     const [currentPage, setCurrentPage]=useState(1);
     const itemsPerPage=10;
 
-    const [modalVisible, setModalVisible]=useState(false);
-    const [selectedUser, setSelectedUser]=useState(null);
+    const [selectedAcc, setSelectedAcc]=useState(null);
     const [activeMenuId, setActiveMenuId]=useState(null);
-    const [currentStatus, setCurrentStatus]=useState('All');
     const [isOpen, setIsOpen]=useState(false);
     const [isEditing, setIsEditing]=useState(false);
-
-    const handleAdd=()=>{
-        setModalVisible(true);
-    };
 
     // Caluculate the pagination
     const indexOfLastItem=currentPage*itemsPerPage;
     const indexOfFirstItem=indexOfLastItem-itemsPerPage;
-    const currentUsers=users.slice(indexOfFirstItem, indexOfLastItem);
-    const totalPages=Math.ceil(users.length/itemsPerPage);
+    const currentAcc=accounts.slice(indexOfFirstItem, indexOfLastItem);
+    const totalPages=Math.ceil(accounts.length/itemsPerPage);
 
     const renderHeader=()=>(
         <View style={[styles.tableHeader, styles.row]}>
@@ -40,33 +33,20 @@ const AccountManagement=()=>{
     );
 
     const renderUserItem=({item})=>(
-        <Pressable onPress={()=>setSelectedUser(item)} style={({hovered})=>[styles.row, styles.tableRow, hovered && {backgroundColor:'#f9f9f9'}, selectedUser?.id === item.id && {backgroundColor:'#fff8e1'}]}>
+        <Pressable onPress={()=>setSelectedAcc(item)} style={({hovered})=>[styles.row, styles.tableRow, hovered && {backgroundColor:'#f9f9f9'}, selectedAcc?.id === item.id && {backgroundColor:'#fff8e1'}]}>
             {/* Full Name and profile image */}
             <View style={[{flex:3}, styles.userInfo, styles.row]}>
                 <Image source={{uri:item.profileImage}} style={styles.avatar} accessibilityLabel={`Profile Image of ${item.fullName}`}/>
-                <Text>{item.fname + " " + item.lname}</Text>
+                <Text>{item.fullName}</Text>
             </View>
             {/* Username */}
             <Text style={{flex:2}}>{item.username}</Text>
-            {/* IC */}
-            <Text style={{flex:2}}>{item.ic}</Text>
-            {/* Email */}
-            <Text style={{flex:3}}>{item.email}</Text>
-            {/* Telefon */}
-            <Text style={{flex:2}}>{item.telefon}</Text>
-            {/* Register On */}
-            <Text style={{flex:2}}>{item.registerDate}</Text>
-            {/* Status */}
-            <View style={[styles.row,styles.badge,{flex:2}]}>
-               {item.status === "Approved" ? (
-                <Circle size={10} stroke="green" fill="green" />
-                ) : item.status === "Pending" ? (
-                <Circle size={10} stroke="orange" fill="orange" />
-                ) : (
-                <Circle size={10} stroke="red" fill="red" />
-                )}
-                <Text>{item.status}</Text>
-            </View>
+            {/* Work Email */}
+            <Text style={{flex:3}}>{item.workEmail}</Text>
+            {/* Joined On */}
+            <Text style={{flex:2}}>{item.joinedDate}</Text>
+            {/* Last Login */}
+            <Text style={{flex:2}}>{item.lastLogin}</Text>
         </Pressable>
     );
     
@@ -78,7 +58,7 @@ const AccountManagement=()=>{
         return (
             <View style={[styles.paginationContainer, styles.row]}> 
                 <Text style={styles.pageInfo}>
-                    Showing {users.length>0 ? indexOfFirstItem+1 : 0} to {Math.min(indexOfLastItem, users.length)} of {users.length} users
+                    Showing {accounts.length>0 ? indexOfFirstItem+1 : 0} to {Math.min(indexOfLastItem, accounts.length)} of {accounts.length} users
                 </Text>
                 <View style={styles.row}>
                     <Pressable disabled={currentPage==1} onPress={()=>setCurrentPage(1)} style={[styles.pageBtn, currentPage==1 && styles.btnDisabled]}>
@@ -116,115 +96,123 @@ const AccountManagement=()=>{
                 </View>
             </View>
 
-            {/* Create Users Modal */}
-            <ModalLayout visible={modalVisible} onClose={()=>setModalVisible(false)}>
-                <UsersFormContent
-                    onCancel={()=>setModalVisible(false)}
-                    isLoading={loading}
-                />
-            </ModalLayout>
-
             <View style={styles.tableContainer}>
                 <FlatList style={styles.table} 
-                    data={currentUsers}
+                    data={currentAcc}
                     ListHeaderComponent={renderHeader}
                     renderItem={renderUserItem}
                     keyExtractor={item=>item.id.toString()}
                 />
             </View>
-            {renderPagination()}
+            {totalPages>1 ? renderPagination() : null}
             {/* Side panel: show user details */}
-            {selectedUser && (
+            {selectedAcc && (
                 <View style={styles.sidePanel}>
                     <View style={styles.panelHeader}>
                         <Text style={styles.panelTitle}>
                             User Information
                         </Text>
-                        <Pressable onPress={()=>setSelectedUser(null)}>
+                        <Pressable onPress={()=>setSelectedAcc(null)}>
                             <X size={18}/>
                         </Pressable>
                     </View>
                     <View style={styles.panelContent}>
-                        {/* Status Pill */}
-                        <View style={[styles.statusPill, selectedUser.status === "Approved" ? styles.approved : selectedUser.status === "Pending" ? styles.pending : styles.rejected]}>
-                            <Text style={styles.statusText}>
-                                {selectedUser.status}
-                            </Text>
+                        {/* Action Menu */}
+                        <View style={styles.actionMenu}>
+                            <Pressable onPress={()=>setActiveMenuId(activeMenuId===selectedAcc.id ? null : selectedAcc.id)}>
+                                <EllipsisVertical/>
+                            </Pressable>
+                            {activeMenuId===selectedAcc.id && (
+                                <View style={styles.floatingMenu}>
+                                    <Pressable style={({hovered})=>[styles.menuItem, hovered && styles.menuItemHover]} onPress={()=>{setIsEditing(true); setActiveMenuId(null)}}>
+                                        <View style={[styles.row, styles.option]}>
+                                        <Pen size={16} color="orange" /><Text style={styles.menuText}>Edit</Text>
+                                        </View>
+                                    </Pressable>
+                                    <Pressable style={({hovered})=>[styles.menuItem, hovered && styles.menuItemHover]}>
+                                        <View style={[styles.row, styles.option]}>
+                                        <Trash2 size={16} color="orange" /><Text style={styles.menuText}>Delete</Text>
+                                        </View>
+                                    </Pressable>
+                                </View>
+                            )}
                         </View>
-                        <Image source={{uri:selectedUser.profileImage}} style={styles.largeAvatar}/>
-                        <Text style={styles.fullname}>{selectedUser.fname + " " + selectedUser.lname}</Text>
+                        <Image source={{uri:selectedAcc.profileImage}} style={styles.largeAvatar}/>
+                        <Text style={styles.fullname}>{selectedAcc.fullName}</Text>
                         
                         <View style={styles.user}>
-                            <View style={[styles.row, {justifyContent:'space-between'}]}>
-                                {/* Username */}
-                                <View style={styles.details}>
-                                    <View style={styles.row}>
-                                        <User2 size={18} color="#4f4f4f"/>
-                                        <Text style={styles.panelLabel}>Username:</Text>
-                                    </View>
-                                    {isEditing ? (<TextInput
-                                    style={[styles.userDetails,styles.inputEditing]}
-                                    value={selectedUser.username}
-                                />) : (<Text style={styles.userDetails}>{selectedUser.username}</Text>)}
-                                    
-                                </View>
-                                {/* IC */}
-                                <View style={styles.details}>
-                                    <View style={styles.row}>
-                                        <IdCard size={18} color="#4f4f4f"/>
-                                        <Text style={styles.panelLabel}>Passport/IC:</Text>
-                                    </View>
-                                    {isEditing ? (<TextInput
-                                    style={[styles.userDetails,styles.inputEditing]}
-                                    value={selectedUser.ic}
-                                />) : (<Text style={styles.userDetails}>{selectedUser.ic}</Text>)}
-                                </View>
-                            </View>
-                            <View style={[styles.row, {justifyContent:'space-between'}]}>
-                                {/* Email */}
-                                <View style={styles.details}>
-                                    <View style={styles.row}>
-                                        <Mail size={18} color="#4f4f4f"/>
-                                        <Text style={styles.panelLabel}>Email:</Text>
-                                    </View>
-                                    {isEditing ? (<TextInput
-                                    style={[styles.userDetails,styles.inputEditing]}
-                                    value={selectedUser.email}
-                                />) : (<Text style={styles.userDetails}>{selectedUser.email}</Text>)}
-                                </View>
-                                {/* Register Date */}
-                                <View style={styles.details}>
-                                    <View style={styles.row}>
-                                        <Calendar size={18} color="#4f4f4f"/>
-                                        <Text style={styles.panelLabel}>Register On:</Text>
-                                    </View>
-                                    <Text style={styles.userDetails}>{selectedUser.registerDate}</Text>
-                                </View>
-                            </View>
-                            {/* Remark Section */}
-                            <View style={styles.remark}>
-                                <View style={styles.row}>
-                                    <MessageSquare size={18} color="#4f4f4f"/>
-                                    <Text style={styles.panelLabel}>Remark:</Text>
-                                </View>
-                                <Text style={styles.userDetails}>{selectedUser.remark}</Text>
-                            </View>
-                            {/* CV Section */}
+                            {/* Username */}
                             <View style={styles.details}>
                                 <View style={styles.row}>
-                                    <FileUser size={18} color="#4f4f4f"/>
-                                    <Text style={styles.panelLabel}>Resume:</Text>
+                                    <User2 size={18} color="#4f4f4f"/>
+                                    <Text style={styles.panelLabel}>Username:</Text>
                                 </View>
-                                <Pressable style={styles.userDetails}>View CV PDF</Pressable>
+                                {isEditing ? (<TextInput
+                                style={[styles.userDetails,styles.inputEditing]}
+                                value={selectedAcc.username}
+                            />) : (<Text style={styles.userDetails}>{selectedAcc.username}</Text>)}
+                                
+                            </View>
+                            {/* IC */}
+                            <View style={styles.details}>
+                                <View style={styles.row}>
+                                    <IdCard size={18} color="#4f4f4f"/>
+                                    <Text style={styles.panelLabel}>Passport/IC:</Text>
+                                </View>
+                                {isEditing ? (<TextInput
+                                style={[styles.userDetails,styles.inputEditing]}
+                                value={selectedAcc.ic}
+                            />) : (<Text style={styles.userDetails}>{selectedAcc.ic}</Text>)}
+                            </View>
+
+                            {/* Telephone */}
+                            <View style={styles.details}>
+                                <View style={styles.row}>
+                                    <Phone size={18} color="#4f4f4f"/>
+                                    <Text style={styles.panelLabel}>Telephone:</Text>
+                                </View>
+                                {isEditing ? (<TextInput
+                                style={[styles.userDetails,styles.inputEditing]}
+                                value={selectedAcc.telephone}
+                            />) : (<Text style={styles.userDetails}>{selectedAcc.telephone}</Text>)}
+                            </View>
+                            
+                            {/* Email */}
+                            <View style={styles.details}>
+                                <View style={styles.row}>
+                                    <Mail size={18} color="#4f4f4f"/>
+                                    <Text style={styles.panelLabel}>Work Email:</Text>
+                                </View>
+                                <Text style={styles.userDetails}>{selectedAcc.workEmail}</Text>
+                                <View style={styles.row}>
+                                    <Text style={[styles.panelLabel, {marginLeft:35, marginTop:15}]}>Personal Email:</Text>
+                                </View>
+                                {isEditing ? (<TextInput
+                                style={[styles.userDetails,styles.inputEditing]}
+                                value={selectedAcc.workEmail}
+                            />) : (<Text style={styles.userDetails}>{selectedAcc.workEmail}</Text>)}
+                            </View>
+                            {/* Joined Date */}
+                            <View style={styles.details}>
+                                <View style={styles.row}>
+                                    <Calendar size={18} color="#4f4f4f"/>
+                                    <Text style={styles.panelLabel}>Joined On:</Text>
+                                </View>
+                                <Text style={styles.userDetails}>{selectedAcc.joinedDate}</Text>
                             </View>
                         </View>
-                        {selectedUser.status==='Pending' &&(
-                        <Pressable 
-                            style={styles.Btn} 
-                        >
-                            <Text style={styles.btnText}>Approve</Text>
-                        </Pressable>
-                        )}
+                        {isEditing &&(<View style={[styles.row, styles.actionBtn]}>
+                            <Pressable onPress={()=>setIsEditing(false)}
+                                style={styles.Btn} 
+                            >
+                                <Text>Cancel</Text>
+                            </Pressable>
+                            <Pressable 
+                                style={styles.Btn} 
+                            >
+                                <Text>Save</Text>
+                            </Pressable>
+                        </View>)}
                         
                     </View>
                 </View>
@@ -234,10 +222,6 @@ const AccountManagement=()=>{
 }
 
 const styles = StyleSheet.create({
-    checkbox:{
-        width:50,
-        alignItems:'center',
-    },
     container:{
         flex:1,
         paddingVertical:20,
@@ -310,10 +294,6 @@ const styles = StyleSheet.create({
     userInfo:{
         gap:10,
         alignItems:'center'
-    },
-    badge:{
-        alignItems:"center",
-        gap:5,
     },
     paginationContainer:{
         justifyContent:'space-between',
@@ -395,8 +375,7 @@ const styles = StyleSheet.create({
         alignSelf:'center',
     },
     panelContent:{
-        paddingHorizontal:20,
-        paddingVertical:8,
+        padding:20,
         position:'relative',
         flex:1,
     },
@@ -408,8 +387,6 @@ const styles = StyleSheet.create({
     },
     details:{
         marginTop:20,
-        gap:10,
-        width:150
     },
     remark:{
         marginTop:20,
@@ -457,38 +434,25 @@ const styles = StyleSheet.create({
         borderWidth:1, 
         borderColor:'#ddd',
         borderRadius:10,
-        padding:12,
+        paddingVertical:5,
+        paddingHorizontal:10,
         flex:1,
+        marginTop:5,
         minWidth:220
     },
     Btn:{
         width:120,
         alignItems:'center',
-        backgroundColor:'#207624',
+        backgroundColor:'#ffc95c',
         borderRadius:5,
         paddingHorizontal:20,
         paddingVertical:8,
         marginTop:15,
-        position:'absolute',
-        bottom:15,
-        right:15
     },
-    statusPill: {
-        borderRadius: 15,
-        alignSelf: 'end',
-        marginBottom:10,
-    },
-    statusText: {
-        fontSize: 12,
-        fontWeight: '600',
-        color: '#fff',
-        paddingVertical: 7,
-        paddingHorizontal: 12,
-    },
-    approved: { backgroundColor: 'green' },
-    pending: { backgroundColor: 'orange' },
-    rejected: { backgroundColor: 'red' },
-
+    actionBtn:{
+        gap:15,
+        justifyContent:'flex-end'
+    }
 });
 
 export default AccountManagement;

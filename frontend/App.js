@@ -48,7 +48,7 @@ export default function App() {
           <View style={styles.content}>
             <Stack.Navigator initialRouteName="Course Management">
               <Stack.Screen name="Course Management" component={AdminCourse} options={{headerShown: false}}/>
-              <Stack.Screen name="Course Details" component={EditCourseDetails}/>
+              <Stack.Screen name="Course Details" component={EditCourseDetails} options={{headerShown: false}}/>
               <Stack.Screen name="User Dashboard" component={UserDashboard} options={{headerShown: false}}/>
               <Stack.Screen name="Registration Management" component={RegistrationManagement} options={{headerShown: false}}/>
               <Stack.Screen name="User Module" component={UserModule} options={{headerShown: false}}/>
