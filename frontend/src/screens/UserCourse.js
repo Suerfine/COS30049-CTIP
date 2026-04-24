@@ -1,10 +1,10 @@
-import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, ImageBackground } from 'react-native';
 import CourseCard from '../components/CourseCard';
 import { useUserDashboard } from '../hooks/useUserDashboard';
 import { useMemo } from 'react';
 import ConfirmEnroll from '../components/ConfirmEnroll';
 import { useState } from 'react';
-import { ListFilter, SignalZero } from 'lucide-react-native'
+import { ListFilter, SignalZero, SlidersHorizontal } from 'lucide-react-native'
 import FilterSidebar from '../components/FilterSidebar';
 
 const UserCourse = ({ navigation }) => {
@@ -60,20 +60,35 @@ const UserCourse = ({ navigation }) => {
     return (
         <View style={{ flex: 1 }}>
             <ScrollView style={styles.container}>
-                <Text style={styles.title}>Courses</Text>
                 <View style={styles.courseContainer}>
-                    <Pressable
-                        onPress={() => {
-                            setTempFilters(filters);
-                            setFilterVisible(true);
-                        }}
+                    {/* Background Image */}
+                    <ImageBackground 
+                        source={require('../../assets/forest.png')}
+                        style={styles.backgroundImage}
                     >
-                        <View style={styles.filterBtn}>
-                            <Text style={styles.filterText}>Filter</Text>
-                            <ListFilter size={18} />
+                        <View style={styles.courseHeader}>
+                            <View>
+                                <Text style={styles.description}>Here you can find all courses</Text>
+                                <Text style={styles.title}>All Courses</Text>
+                            </View>
                         </View>
-                    </Pressable>
-
+                    </ImageBackground>
+                </View>
+                <View>
+                    <View style={styles.filterContainer}>
+                        <Pressable 
+                            onPress={() => {
+                                setTempFilters(filters);
+                                setFilterVisible(true);
+                            }}
+                            style={({ hovered }) => [
+                                styles.filter,
+                                hovered && styles.filterHover, 
+                            ]}
+                        >
+                            <SlidersHorizontal/>
+                        </Pressable>
+                    </View>
                     <View style={styles.cardContainer}>
                         {filteredCourses.length === 0?(
                             <View style={styles.emptyContainer}>
@@ -139,40 +154,56 @@ const UserCourse = ({ navigation }) => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+        marginHorizontal: 30,
+    },
+    courseContainer: {
+        marginTop: 20,
+        marginBottom: 20,
     },
     title: {
-        marginHorizontal: 40,
-        marginTop: 34,
-        marginBottom: 30,
-        fontSize: 30,
+        fontSize: 24,
+        fontWeight: 'bold',
+        marginBottom: 10,
+        color:'white'
     },
-    courseContainer:{
-        marginHorizontal: 40,
+    description: {
+        fontSize: 14,
+        lineHeight: 24,
+        color:'white',
+    },
+    courseHeader:{
+        paddingHorizontal:40,
+        paddingVertical:30,
+        borderRadius:20,
+        flexDirection:'row',
+        justifyContent:'space-between',
+        userSelect:'none',
+    },
+    backgroundImage:{
+        width:'100%',
+        borderRadius:20,
+        overflow:'hidden',
+        resizeMode:'fill',
+        marginTop:10,
     },
     cardContainer: {
         flexDirection: 'row',
         gap: 80,
         marginBottom: 20,
     },
-    filterBtn:{
-        borderRadius: 10,
-        color: "white",
-        backgroundColor: "#2f6618fe",
-        width: 90,
-        marginStart: 5,
-        marginBottom: 14,
-        padding: 10,
-        fontSize: 10,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 6,
+    filterContainer:{
+        flexDirection:'row',
+        justifyContent:'flex-end',
+        marginBottom:10,
     },
-    filterText:{
-        fontSize: 16,
-        color: "white",
-        alignItems: 'center',
-        justifyContent: 'center',
+    filter:{
+        flexDirection:'row',
+        paddingVertical:5,
+        paddingRight:10,
+        borderRadius:5,
+    },
+    filterHover:{
+        color:'#efab21'
     },
     emptyContainer:{
         width: '100%',
