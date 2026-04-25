@@ -23,6 +23,7 @@ const UserDashboard = ({ navigation }) => {
         return () => subscription?.remove();
     }, []);
 
+    // TODOLIST LOGIC
     // Toggle checkbox
     const toggleTodo = (id) => {
         setTodos(prev =>
@@ -49,6 +50,7 @@ const UserDashboard = ({ navigation }) => {
         filteredTodos = filteredTodos.filter(todo => !todo.completed);
     }
 
+    // CALENDAR LOGIC
     // get start of week (Sunday)
     const getStartOfWeek = (date) => {
         const d = new Date(date);
@@ -57,7 +59,7 @@ const UserDashboard = ({ navigation }) => {
         return d;
     };
 
-    // Generate 7 days
+    // generate 7 days
     const getWeekDates = (date) => {
         const start = getStartOfWeek(date);
         return Array.from({ length: 7 }).map((_, i) => {
@@ -69,6 +71,15 @@ const UserDashboard = ({ navigation }) => {
 
     const weekDates = getWeekDates(currentDate);
 
+    // dot indicator for dates with todo item(s)
+    const hasPendingTodoOnDate = (date) => {
+        return todos.some(todo =>
+            !todo.completed &&
+            new Date(todo.date).toDateString() === date.toDateString()
+        );
+    };
+
+    // COURSES LOGIC
     // get in progress courses
     const inProgressCourses = courses.filter(course => {
         const progressObj = progressData.find(p => p.courseId === course.id);
@@ -90,9 +101,8 @@ const UserDashboard = ({ navigation }) => {
                                     {/* info card */}
                                     <View style={styles.infoContainer}>
                                         <ImageBackground
-                                            source={require('../../assets/forest.png')}
+                                            source={require('../../assets/darkgreen_bg.jpeg')}
                                             style={styles.infoCard}
-                                            imageStyle={{ borderRadius: 20 }}  // applies borderRadius to the image itself
                                         >
                                             {/* info card left side */}
                                             <View style={styles.infoLeft}>
@@ -185,12 +195,15 @@ const UserDashboard = ({ navigation }) => {
                                         <ChevronRight style={styles.calendarBtn} />
                                     </Pressable>
                                 </View>
+                                
+                                <View style={styles.divider} />
 
-                                {/* Days row */}
+                                {/* Weeks row */}
                                 <View style={styles.weekRow}>
                                     {weekDates.map((date, index) => {
                                         const dateString = date.toISOString().split('T')[0];
                                         const isSelected = selectedDate === dateString;
+                                        const hasTodo = hasPendingTodoOnDate(date);
 
                                         return (
                                             <Pressable
@@ -217,6 +230,8 @@ const UserDashboard = ({ navigation }) => {
                                                 ]}>
                                                     {date.getDate()}
                                                 </Text>
+
+                                                {hasTodo && <View style={styles.dot} />}
                                             </Pressable>
                                         );
                                     })}
@@ -326,20 +341,21 @@ const styles = StyleSheet.create({
         minHeight: 0,
         paddingVertical: 30,
     },
-    rightWrapper: {
+    rightWrapper:{
         flex: 0.8,
-        backgroundColor: '#A5D6A7',
+        backgroundColor: '#E8F5E9',
     },
     // Info card
     infoContainer:{
         width: '100%',
         marginBottom: 10,
     },
-    infoCard: {
+    infoCard:{
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
         padding: 20,
+        paddingStart: 40,
         borderRadius: 20,
         width: '100%',
         overflow: 'hidden',
@@ -348,39 +364,38 @@ const styles = StyleSheet.create({
         shadowRadius: 10,
         elevation: 5,
     },
-    infoLeft: {
-        flex: 2,
-        gap: 6,
+    infoLeft:{
+        gap: 10,
     },
-    infoRight: {
-        flex: 0.5,
+    infoRight:{
         alignItems: 'center',
         justifyContent: 'center',
+        marginRight: 30,
     },
-    welcomeText: {
+    welcomeText:{
         fontSize: 30,
         fontWeight: 'bold',
         color: 'white',
     },
-    subText: {
+    subText:{
         fontSize: 15,
         color: 'white',
         marginTop: 4,
     },
-    infoRow1: {
+    infoRow1:{
         flexDirection: 'row',
         gap: 50,
     },
-    infoRow2: {
+    infoRow2:{
         flexDirection: 'row',
     },
-    label: {
+    label:{
         fontWeight: 'bold',
         fontSize: 16,
         color: 'white',
         marginTop: 4,
     },
-    profilePic: {
+    profilePic:{
         width: 100,
         height: 100,
         borderRadius: 50,
@@ -389,7 +404,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#ccc',
         marginBottom: 10,
     },
-    idText: {
+    idText:{
         fontWeight: 'bold',
         fontSize: 15,
         color: 'white',
@@ -399,6 +414,7 @@ const styles = StyleSheet.create({
         width: '100%',
         marginBottom: 10,
         paddingTop: 10,
+        paddingBottom: 10,
         paddingHorizontal: 5,
         overflow: 'hidden',
         backgroundColor: 'white',
@@ -431,6 +447,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingVertical: 10,
         borderRadius: 10,
+        height: 75,
     },
     dayName:{
         fontSize: 12,
@@ -449,11 +466,24 @@ const styles = StyleSheet.create({
         paddingHorizontal: 10,
         borderRadius: 50,
     },
+    dot:{
+        width: 6,
+        height: 6,
+        borderRadius: 3,
+        backgroundColor: 'green',
+        marginTop: 4,
+        alignSelf: 'center',
+    },
+    divider:{
+        height: 1,
+        backgroundColor: '#E0E0E0',
+        marginVertical: 5,
+    },
     // Todo list
     todoList:{
         flex: 1,
         minHeight: 0,
-        backgroundColor: '#E8F5E9',
+        backgroundColor: '#A5D6A7',
         borderRadius: 10,
         padding: 15,
         shadowColor: '#000',
@@ -471,7 +501,7 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center',
     },
-    todoRow: {
+    todoRow:{
         flexDirection: 'row',
         alignItems: 'center',
         gap: 10,
@@ -505,7 +535,7 @@ const styles = StyleSheet.create({
     tab:{
         fontSize: 14,
         color: 'black',
-        backgroundColor: '#E8F5E9',
+        backgroundColor: '#A5D6A7',
         padding: 7,
         paddingHorizontal: 15,
         borderRadius: 50,
@@ -520,7 +550,7 @@ const styles = StyleSheet.create({
         padding: 7,
         paddingHorizontal: 15,
         borderRadius: 50
-    }
+    },
 });
 
 export default UserDashboard;
