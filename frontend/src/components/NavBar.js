@@ -2,10 +2,22 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, Pressable, Image, TextInput } from 'react-native';
 import { Bell, Search } from 'lucide-react-native';
 import { CommonActions, useNavigation } from '@react-navigation/native';
+import { useAuth } from '../context/AuthContext';
 
 const NavBar = () => {
     const navigation = useNavigation();
+    const { logout } = useAuth();
     const [searchQuery, setSearchQuery] = useState('');
+
+    const handleLogout = async () => {
+        await logout();
+        navigation.dispatch(
+            CommonActions.reset({
+                index: 0,
+                routes: [{ name: 'Login' }],
+            })
+        );
+    };
 
     // Navigation Links
     const navLinks = [
@@ -57,7 +69,7 @@ const NavBar = () => {
                 <Pressable style={styles.notificationBtn}>
                     <Bell size={20} />
                 </Pressable>
-                <Pressable style={styles.profileBtn}>
+                <Pressable style={styles.profileBtn} onPress={handleLogout}>
                     <Image source={require('../../assets/profile.png')} style={styles.profile} accessibilityLabel='User Profile' />
                 </Pressable>
             </View>

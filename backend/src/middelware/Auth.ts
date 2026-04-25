@@ -1,28 +1,52 @@
 import { Request, Response, NextFunction } from "express";
-import { User } from "../models";
+import jwt, { JwtPayload } from "jsonwebtoken";
+import User from "../models/User";
 
-export const auth = async (
-  req: Request & { user?: User },
-  res: Response,
-  next: NextFunction,
-) => {
-  const token = req.headers.authorization;
-  // // TODO: verify JWT
-  // if (!token) {
-  //   return res.status(401).json({ message: "Unauthorized" });
-  // }
+type DecodedAuthToken = JwtPayload & {
+  id?: number;
+  role?: string;
+};
 
-  // Decode JWT token
+export const auth = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const authHeader = req.headers.authorization;
 
-  // Retrieve the user from the database based on the token (for demonstration, we just get the first user)
-  const logged_in_user = await User.findByPk(1); // Replace with actual user retrieval logic based on token
+    if (!authHeader) {
+      res.status(401).json({ message: "Unauthorized" });
+      return;
+    }
 
-  if (!logged_in_user) {
-    return res.status(401).json({ message: "Unauthorized" });
+    const [tokenType, token] = authHeader.split(" ");
+
+    if (tokenType !== "Bearer" || !token) {
+      res.status(401).json({ message: "Unauthorized" });
+      return;
+    }
+
+    const jwtSecret = process.env.JWT_SECRET;
+
+    if (!jwtSecret) {
+      res.status(401).json({ message: "Unauthorized" });
+      return;
+    }
+
+    const decoded = jwt.verify(token, jwtSecret) as DecodedAuthToken | string;
+
+    if (typeof decoded === "string" || typeof decoded.id !== "number") {
+      res.status(401).json({ message: "Unauthorized" });
+      return;
+    }
+
+    const user = await User.findByPk(decoded.id);
+
+    if (!user) {
+      res.status(401).json({ message: "Unauthorized" });
+      return;
+    }
+
+    req.user = user;
+    next();
+  } catch (error) {
+    res.status(401).json({ message: "Unauthorized" });
   }
-
-  // Attach user to request object for downstream handlers
-  req.user = logged_in_user;
-
-  next(); // allow all requests for now
 };

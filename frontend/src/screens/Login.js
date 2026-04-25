@@ -118,7 +118,7 @@ const Login = ({ navigation }) => {
                                 </View>
                             </View>
 
-                            <Pressable onPress={() => navigation.navigate('Forgot Password')}>
+                            <Pressable onPress={() => navigation.navigate('ForgotPassword')}>
                                 <Text style={styles.forgotPassword}>Forgot password?</Text>
                             </Pressable>
 
@@ -140,7 +140,7 @@ const Login = ({ navigation }) => {
 
                             <View style={styles.signupContainer}>
                                 <Text style={styles.signupText}>Need an account? </Text>
-                                <Pressable onPress={() => navigation.navigate('Sign Up')}>
+                                <Pressable onPress={() => navigation.navigate('SignUp')}>
                                     <Text style={styles.signupLink}>Create one</Text>
                                 </Pressable>
                             </View>

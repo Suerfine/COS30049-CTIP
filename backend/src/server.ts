@@ -1,18 +1,43 @@
 import express, { Application, Request, Response } from "express";
+import cors from "cors";
+import dotenv from "dotenv";
+import swaggerJsdoc from "swagger-jsdoc";
+import swaggerUi from "swagger-ui-express";
 import sequelize from "./config/Database";
 import "./models";
 import routes from "./routes";
 import swaggerUi from "swagger-ui-express";
 import swaggerSpec from "./config/Swagger";
 
+dotenv.config();
+
 const app: Application = express();
 const port = Number(process.env.PORT) || 5000;
+
+app.use(cors({
+  origin: "http://localhost:8081",
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+}));
 
 // Enable URL-encoded form data parsing
 app.use(express.urlencoded({ extended: true }));
 
 // Middleware to parse JSON bodies
 app.use(express.json());
+
+const swaggerSpec = swaggerJsdoc({
+  definition: {
+    openapi: "3.0.0",
+    info: {
+      title: "SFC API",
+      version: "1.0.0",
+    },
+  },
+  apis: ["./src/routes/*.ts"],
+});
+
+app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // Basic route
 app.get("/", (req: Request, res: Response) => {
