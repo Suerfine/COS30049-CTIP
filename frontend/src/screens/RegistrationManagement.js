@@ -69,7 +69,7 @@ const RegistrationManagement=()=>{
             {/* Telefon */}
             <Text style={{flex:2}}>{item.telefon}</Text>
             {/* Register On */}
-            <Text style={{flex:2}}>{item.registerDate}</Text>
+            <Text style={{flex:2}}>{item.joinedAt}</Text>
             
         </Pressable>
     );

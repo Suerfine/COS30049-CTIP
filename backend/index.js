@@ -669,12 +669,14 @@ app.get('/api/accounts',(req,res)=>{
 
 // Dummy todo data
 const todos = [
-  { id: 1, title: "Finish Module 1", course: "Basic First Aid", date: "2026-04-30", completed: true },
-  { id: 2, title: "Finish Module 1", course: "CPR Training", date: "2026-05-06", completed: true },
-  { id: 3, title: "Finish Module 2", course: "Basic First Aid", date: "2026-08-05", completed: false },
-  { id: 4, title: "Finish Module 2", course: "CPR Training", date: "2026-05-30", completed: false },
-  { id: 5, title: "Finish Module 2", course: "CPR Training", date: "2026-05-30", completed: false },
-  { id: 6, title: "Finish Module 2", course: "CPR Training", date: "2026-06-01", completed: false }
+    { id: 1, title: "Finish Module 1", course: "Basic First Aid", date: "2026-04-30", completed: true },
+    { id: 2, title: "Finish Module 1", course: "CPR Training", date: "2026-05-06", completed: true },
+    { id: 3, title: "Finish Module 2", course: "Basic First Aid", date: "2026-08-05", completed: true },
+    { id: 4, title: "Finish Module 2", course: "CPR Training", date: "2026-05-30", completed: false },
+    { id: 5, title: "Finish Module 2", course: "CPR Training", date: "2026-05-30", completed: false },
+    { id: 6, title: "Finish Module 2", course: "CPR Training", date: "2026-06-01", completed: false },
+    { id: 7, title: "Finish Module 2", course: "CPR Training", date: "2026-05-30", completed: false },
+    { id: 8, title: "Finish Module 2", course: "CPR Training", date: "2026-06-01", completed: false }
 ];
 
 // Route to get all todos
