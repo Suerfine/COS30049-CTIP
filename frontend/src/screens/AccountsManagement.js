@@ -232,7 +232,7 @@ const AccountManagement=()=>{
                                     <Calendar size={18} color="#4f4f4f"/>
                                     <Text style={styles.panelLabel}>Joined On:</Text>
                                 </View>
-                                <Text style={styles.userDetails}>{selectedAcc.joinedDate}</Text>
+                                <Text style={styles.userDetails}>{formatDate(selectedAcc.joinedDate)}</Text>
                             </View>
                         </View>
                         {isEditing &&(<View style={[styles.row, styles.actionBtn]}>

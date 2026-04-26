@@ -13,6 +13,8 @@ import RegistrationManagement from './src/screens/RegistrationManagement';
 import UserModule from './src/screens/UserModule';
 import UserCourse from './src/screens/UserCourse';
 import AccountManagement from './src/screens/AccountsManagement';
+import EnrollmentManagement from './src/screens/EnrollmentManagement';
+
 
 // Define
 const Stack=createStackNavigator();
@@ -28,6 +30,7 @@ export default function App() {
         'Registration Management': 'registrationManagement',
         'User Module':'userModule/:id',
         'User Course':'usercourse',
+        'Enrollment Management': 'enrollmentManagement',
       },
     },
   };
@@ -52,6 +55,7 @@ export default function App() {
               <Stack.Screen name="User Module" component={UserModule} options={{headerShown: false}}/>
               <Stack.Screen name="User Course" component={UserCourse} options={{headerShown: false}}/>
               <Stack.Screen name="Account Management" component={AccountManagement} options={{headerShown: false}}/>
+              <Stack.Screen name="Enrollment Management" component={EnrollmentManagement} options={{headerShown: false}}/>
             </Stack.Navigator>
           </View>
         </View>

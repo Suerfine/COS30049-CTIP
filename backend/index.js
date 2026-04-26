@@ -666,10 +666,13 @@ app.get('/api/accounts',(req,res)=>{
 })
 
 // Dummy Enrollment data
-const enrollments=[
+const enrollments = [
   {
+    "id":1,
     "userId": 1,
+    "fullName": "Fam Sin Mim",
     "courseId": 1,
+    "courseName": "IOT & Hardware Prototyping",
     "Enrolled_on": "2026-01-15",
     "status": "Completed",
     "completed_on": "2026-02-10",
@@ -678,8 +681,11 @@ const enrollments=[
     "expiry_date": "2027-02-11"
   },
   {
+    "id":2,
     "userId": 2,
+    "fullName": "Jordan Smith",
     "courseId": 2,
+    "courseName": "Advanced Machine Learning",
     "Enrolled_on": "2026-02-01",
     "status": "In Progress",
     "completed_on": null,
@@ -688,8 +694,11 @@ const enrollments=[
     "expiry_date": "2026-08-01"
   },
   {
+    "id":3,
     "userId": 3,
+    "fullName": "Amira Varma",
     "courseId": 3,
+    "courseName": "Full-Stack Web Development",
     "Enrolled_on": "2025-12-10",
     "status": "Expired",
     "completed_on": null,
@@ -698,8 +707,11 @@ const enrollments=[
     "expiry_date": "2026-03-10"
   },
   {
+    "id":4,
     "userId": 4,
+    "fullName": "Kevin Chen",
     "courseId": 1,
+    "courseName": "IOT & Hardware Prototyping",
     "Enrolled_on": "2026-03-20",
     "status": "In Progress",
     "completed_on": null,
@@ -708,8 +720,11 @@ const enrollments=[
     "expiry_date": "2026-09-20"
   },
   {
+    "id":5,
     "userId": 5,
+    "fullName": "Sachi Tanaka",
     "courseId": 2,
+    "courseName": "Advanced Machine Learning",
     "Enrolled_on": "2026-01-05",
     "status": "Completed",
     "completed_on": "2026-01-25",
@@ -717,7 +732,7 @@ const enrollments=[
     "issued_on": "2026-01-26",
     "expiry_date": "2027-01-26"
   }
-]
+];
 
 // Route to get all enrollments
 app.get('/api/enrollments',(req,res)=>{
