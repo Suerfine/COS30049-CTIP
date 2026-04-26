@@ -41,7 +41,7 @@ export default function App() {
 
       <View style={styles.root}>
         <View style={styles.container}>
-          <SideBar navigation={navigation}/>
+          {/* <SideBar navigation={navigation}/> */}
           
           
           {/* Main Content Area */}

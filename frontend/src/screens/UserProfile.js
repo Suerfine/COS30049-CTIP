@@ -76,7 +76,7 @@ const UserProfile = ({ navigation }) => {
                         <Text style={styles.name}>
                             {firstName || lastName
                                 ? `${firstName} ${lastName}`.trim()
-                                : user?.name || 'Name'}
+                                : 'Name'}
                         </Text>
                     </View>
                 </View>
