@@ -1,4 +1,4 @@
-const BASE_URL='http://localhost:5000/api/accounts';
+const BASE_URL='http://localhost:5000/api/users';
 
 export const AccountService={
     // GET: fetch all accounts

@@ -8,26 +8,32 @@ export const useAccountManagement=()=>{
     // Fetch all accounts
     const fetchAccounts=async()=>{
         try{
-            const [regData, accData]=await Promise.all([
+            const [regResponse, accResponse]=await Promise.all([
                 RegisterService.getAll(),
                 AccountService.getAll()
             ]);
+            
+            const regList=regResponse.data || (Array.isArray(regResponse) ? regResponse : []);
+            const accList=accResponse.data || (Array.isArray(accResponse) ? accResponse : []);
 
             // Join registration and accounts details
-            const detailedAcc=accData.map(acc=>{
-                const userDetail=regData.find(u=>u.id===acc.reg_id);
+            const detailedAcc=accList.map(acc=>{
+                const userDetail=regList.find(u=>u.user_id===acc.id);
 
                 return {
                     id:acc.id,
-                    reg_id:acc.reg_id,
-                    fullName:userDetail ? `${userDetail.fname} ${userDetail.lname}` : 'N/A',
-                    ic:userDetail ? `${userDetail.ic}` : 'N/A',
-                    telephone: userDetail?.telefon || 'N/A',
-                    username: userDetail ? `${userDetail.username}` : 'Unknown',
-                    workEmail: userDetail ? `${userDetail.username}@example.com` : 'N/A',
-                    joinedDate: acc.joinedDate,
-                    lastLogin: acc.lastLogin,
-                    profileImage: userDetail?.profileImage || null
+                    reg_id:acc.id,
+                    fullName: userDetail 
+                    ? `${userDetail.firstname} ${userDetail.lastname}` 
+                    : 'Unknown Name',
+                    ic:userDetail ? `${userDetail.identification}` : 'N/A',
+                    telephone: userDetail?.tel || 'N/A',
+                    username: acc.username,
+                    workEmail: `${acc.username}@example.com`,
+                    joinedDate: acc.created_at,
+                    lastLogin: acc?.last_login_at || "N/A",
+                    profileImage: userDetail?.profileImage || null,
+                    personal_email: userDetail?.personal_email || 'N/A'
                 };
             });
             setAccounts(detailedAcc);
