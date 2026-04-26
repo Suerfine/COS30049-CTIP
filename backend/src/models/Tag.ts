@@ -1,63 +1,35 @@
 import {
   CreationOptional,
   DataTypes,
-  ForeignKey,
   InferAttributes,
   InferCreationAttributes,
   Model,
 } from "sequelize";
 import sequelize from "../config/Database";
-import Page from "./Page";
-import { ElementTypes } from "../enum/ElementTypes";
 
-class Element extends Model<
-  InferAttributes<Element>,
-  InferCreationAttributes<Element>
-> {
+class Tag extends Model<InferAttributes<Tag>, InferCreationAttributes<Tag>> {
   declare id: CreationOptional<number>;
-  declare page_id: ForeignKey<Page["id"]>;
-  declare order: number;
-  declare type: ElementTypes;
-  declare content: Record<string, unknown>;
-  declare score: CreationOptional<number | null>;
+  declare title: string;
+  declare type: string;
   declare created_at: CreationOptional<Date>;
   declare updated_at: CreationOptional<Date>;
   declare deleted_at: CreationOptional<Date | null>;
 }
 
-Element.init(
+Tag.init(
   {
     id: {
       type: DataTypes.INTEGER,
       primaryKey: true,
       autoIncrement: true,
     },
-    page_id: {
-      type: DataTypes.INTEGER,
+    title: {
+      type: DataTypes.STRING(255),
       allowNull: false,
-      references: {
-        model: "pages",
-        key: "id",
-      },
-      onUpdate: "CASCADE",
-      onDelete: "CASCADE",
-    },
-    order: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      defaultValue: 0,
     },
     type: {
-      type: DataTypes.ENUM(...Object.values(ElementTypes)),
+      type: DataTypes.STRING(100),
       allowNull: false,
-    },
-    content: {
-      type: DataTypes.JSON,
-      allowNull: false,
-    },
-    score: {
-      type: DataTypes.INTEGER,
-      allowNull: true,
     },
     created_at: {
       type: DataTypes.DATE,
@@ -76,13 +48,19 @@ Element.init(
   },
   {
     sequelize,
-    tableName: "elements",
+    tableName: "tags",
     timestamps: true,
     createdAt: "created_at",
     updatedAt: "updated_at",
     paranoid: true,
     deletedAt: "deleted_at",
+    indexes: [
+      {
+        unique: true,
+        fields: ["title", "type"],
+      },
+    ],
   },
 );
 
-export default Element;
+export default Tag;

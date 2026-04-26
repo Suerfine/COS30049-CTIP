@@ -7,30 +7,30 @@ import {
   Model,
 } from "sequelize";
 import sequelize from "../config/Database";
-import { EnrollmentStatus } from "../enum/EnrollmentStatus";
+import { RegistrationStatus } from "../enum/RegistrationStatus";
 import User from "./User";
-import Course from "./Course";
 
-class Enrollment extends Model<
-  InferAttributes<Enrollment>,
-  InferCreationAttributes<Enrollment>
+class Registration extends Model<
+  InferAttributes<Registration>,
+  InferCreationAttributes<Registration>
 > {
   declare id: CreationOptional<number>;
-  declare user_id: ForeignKey<User["id"]>;
-  declare course_id: ForeignKey<Course["id"]>;
-  declare status: EnrollmentStatus;
-  declare enrolled_at: CreationOptional<Date>;
-  declare completed_at: CreationOptional<Date | null>;
+  declare user_id: CreationOptional<ForeignKey<User["id"]> | null>;
   declare reviewed_by_user_id: CreationOptional<ForeignKey<User["id"]> | null>;
+  declare status: RegistrationStatus;
+  declare firstname: string;
+  declare lastname: string;
+  declare identification: string;
+  declare personal_email: string;
+  declare tel: string;
+  declare admin_remark: CreationOptional<string | null>;
   declare reviewed_at: CreationOptional<Date | null>;
-  declare review_comment: CreationOptional<string | null>;
-  declare badge_expire_at: CreationOptional<Date | null>;
   declare created_at: CreationOptional<Date>;
   declare updated_at: CreationOptional<Date>;
   declare deleted_at: CreationOptional<Date | null>;
 }
 
-Enrollment.init(
+Registration.init(
   {
     id: {
       type: DataTypes.INTEGER,
@@ -39,37 +39,13 @@ Enrollment.init(
     },
     user_id: {
       type: DataTypes.INTEGER,
-      allowNull: false,
+      allowNull: true,
       references: {
         model: "users",
         key: "id",
       },
       onUpdate: "CASCADE",
       onDelete: "CASCADE",
-    },
-    course_id: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      references: {
-        model: "courses",
-        key: "id",
-      },
-      onUpdate: "CASCADE",
-      onDelete: "CASCADE",
-    },
-    status: {
-      type: DataTypes.ENUM(...Object.values(EnrollmentStatus)),
-      allowNull: false,
-      defaultValue: EnrollmentStatus.IN_PROGRESS,
-    },
-    enrolled_at: {
-      type: DataTypes.DATE,
-      allowNull: false,
-      defaultValue: DataTypes.NOW,
-    },
-    completed_at: {
-      type: DataTypes.DATE,
-      allowNull: true,
     },
     reviewed_by_user_id: {
       type: DataTypes.INTEGER,
@@ -81,17 +57,38 @@ Enrollment.init(
       onUpdate: "CASCADE",
       onDelete: "SET NULL",
     },
-    reviewed_at: {
-      type: DataTypes.DATE,
-      allowNull: true,
+    status: {
+      type: DataTypes.ENUM(...Object.values(RegistrationStatus)),
+      allowNull: false,
+      defaultValue: RegistrationStatus.PENDING,
     },
-    review_comment: {
+    firstname: {
+      type: DataTypes.STRING(100),
+      allowNull: false,
+    },
+    lastname: {
+      type: DataTypes.STRING(100),
+      allowNull: false,
+    },
+    identification: {
+      type: DataTypes.STRING(30),
+      allowNull: false,
+    },
+    personal_email: {
+      type: DataTypes.STRING(255),
+      allowNull: false,
+    },
+    tel: {
+      type: DataTypes.STRING(30),
+      allowNull: false,
+    },
+    admin_remark: {
       type: DataTypes.TEXT,
       allowNull: true,
     },
-    badge_expire_at: {
+    reviewed_at: {
       type: DataTypes.DATE,
-      allowNull: true, // Set to null if it wont ever expire
+      allowNull: true,
     },
     created_at: {
       type: DataTypes.DATE,
@@ -110,7 +107,7 @@ Enrollment.init(
   },
   {
     sequelize,
-    tableName: "enrollments",
+    tableName: "registrations",
     timestamps: true,
     createdAt: "created_at",
     updatedAt: "updated_at",
@@ -119,4 +116,4 @@ Enrollment.init(
   },
 );
 
-export default Enrollment;
+export default Registration;

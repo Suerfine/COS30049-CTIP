@@ -7,57 +7,47 @@ import {
   Model,
 } from "sequelize";
 import sequelize from "../config/Database";
-import Page from "./Page";
-import { ElementTypes } from "../enum/ElementTypes";
+import Course from "./Course";
+import Tag from "./Tag";
 
-class Element extends Model<
-  InferAttributes<Element>,
-  InferCreationAttributes<Element>
+class CourseTag extends Model<
+  InferAttributes<CourseTag>,
+  InferCreationAttributes<CourseTag>
 > {
   declare id: CreationOptional<number>;
-  declare page_id: ForeignKey<Page["id"]>;
-  declare order: number;
-  declare type: ElementTypes;
-  declare content: Record<string, unknown>;
-  declare score: CreationOptional<number | null>;
+  declare course_id: ForeignKey<Course["id"]>;
+  declare tag_id: ForeignKey<Tag["id"]>;
   declare created_at: CreationOptional<Date>;
   declare updated_at: CreationOptional<Date>;
   declare deleted_at: CreationOptional<Date | null>;
 }
 
-Element.init(
+CourseTag.init(
   {
     id: {
       type: DataTypes.INTEGER,
       primaryKey: true,
       autoIncrement: true,
     },
-    page_id: {
+    course_id: {
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: "pages",
+        model: "courses",
         key: "id",
       },
       onUpdate: "CASCADE",
       onDelete: "CASCADE",
     },
-    order: {
+    tag_id: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      defaultValue: 0,
-    },
-    type: {
-      type: DataTypes.ENUM(...Object.values(ElementTypes)),
-      allowNull: false,
-    },
-    content: {
-      type: DataTypes.JSON,
-      allowNull: false,
-    },
-    score: {
-      type: DataTypes.INTEGER,
-      allowNull: true,
+      references: {
+        model: "tags",
+        key: "id",
+      },
+      onUpdate: "CASCADE",
+      onDelete: "CASCADE",
     },
     created_at: {
       type: DataTypes.DATE,
@@ -76,7 +66,7 @@ Element.init(
   },
   {
     sequelize,
-    tableName: "elements",
+    tableName: "course_tags",
     timestamps: true,
     createdAt: "created_at",
     updatedAt: "updated_at",
@@ -85,4 +75,4 @@ Element.init(
   },
 );
 
-export default Element;
+export default CourseTag;

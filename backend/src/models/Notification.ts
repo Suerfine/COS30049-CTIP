@@ -1,63 +1,60 @@
 import {
   CreationOptional,
   DataTypes,
-  ForeignKey,
   InferAttributes,
   InferCreationAttributes,
   Model,
 } from "sequelize";
 import sequelize from "../config/Database";
-import Page from "./Page";
-import { ElementTypes } from "../enum/ElementTypes";
 
-class Element extends Model<
-  InferAttributes<Element>,
-  InferCreationAttributes<Element>
+class Notification extends Model<
+  InferAttributes<Notification>,
+  InferCreationAttributes<Notification>
 > {
   declare id: CreationOptional<number>;
-  declare page_id: ForeignKey<Page["id"]>;
-  declare order: number;
-  declare type: ElementTypes;
-  declare content: Record<string, unknown>;
-  declare score: CreationOptional<number | null>;
+  declare user_id: number;
+  declare title: string;
+  declare message: string;
+  declare url: CreationOptional<string | null>;
+  declare is_dismissed: CreationOptional<boolean>;
   declare created_at: CreationOptional<Date>;
   declare updated_at: CreationOptional<Date>;
   declare deleted_at: CreationOptional<Date | null>;
 }
 
-Element.init(
+Notification.init(
   {
     id: {
       type: DataTypes.INTEGER,
       primaryKey: true,
       autoIncrement: true,
     },
-    page_id: {
+    user_id: {
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: "pages",
+        model: "users",
         key: "id",
       },
       onUpdate: "CASCADE",
       onDelete: "CASCADE",
     },
-    order: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      defaultValue: 0,
-    },
-    type: {
-      type: DataTypes.ENUM(...Object.values(ElementTypes)),
+    title: {
+      type: DataTypes.STRING,
       allowNull: false,
     },
-    content: {
-      type: DataTypes.JSON,
+    message: {
+      type: DataTypes.TEXT,
       allowNull: false,
     },
-    score: {
-      type: DataTypes.INTEGER,
+    url: {
+      type: DataTypes.STRING,
       allowNull: true,
+    },
+    is_dismissed: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
     },
     created_at: {
       type: DataTypes.DATE,
@@ -76,7 +73,7 @@ Element.init(
   },
   {
     sequelize,
-    tableName: "elements",
+    tableName: "notifications",
     timestamps: true,
     createdAt: "created_at",
     updatedAt: "updated_at",
@@ -84,5 +81,4 @@ Element.init(
     deletedAt: "deleted_at",
   },
 );
-
-export default Element;
+export default Notification;

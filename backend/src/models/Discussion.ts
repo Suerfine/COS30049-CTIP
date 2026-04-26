@@ -7,57 +7,58 @@ import {
   Model,
 } from "sequelize";
 import sequelize from "../config/Database";
-import Page from "./Page";
-import { ElementTypes } from "../enum/ElementTypes";
+import Course from "./Course";
+import User from "./User";
 
-class Element extends Model<
-  InferAttributes<Element>,
-  InferCreationAttributes<Element>
+class Discussion extends Model<
+  InferAttributes<Discussion>,
+  InferCreationAttributes<Discussion>
 > {
   declare id: CreationOptional<number>;
-  declare page_id: ForeignKey<Page["id"]>;
-  declare order: number;
-  declare type: ElementTypes;
-  declare content: Record<string, unknown>;
-  declare score: CreationOptional<number | null>;
+  declare course_id: ForeignKey<Course["id"]>;
+  declare user_id: ForeignKey<User["id"]>;
+  declare title: string;
+  declare is_public: CreationOptional<boolean>;
   declare created_at: CreationOptional<Date>;
   declare updated_at: CreationOptional<Date>;
   declare deleted_at: CreationOptional<Date | null>;
 }
 
-Element.init(
+Discussion.init(
   {
     id: {
       type: DataTypes.INTEGER,
       primaryKey: true,
       autoIncrement: true,
     },
-    page_id: {
+    course_id: {
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: "pages",
+        model: "courses",
         key: "id",
       },
       onUpdate: "CASCADE",
       onDelete: "CASCADE",
     },
-    order: {
+    user_id: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      defaultValue: 0,
+      references: {
+        model: "users",
+        key: "id",
+      },
+      onUpdate: "CASCADE",
+      onDelete: "CASCADE",
     },
-    type: {
-      type: DataTypes.ENUM(...Object.values(ElementTypes)),
+    title: {
+      type: DataTypes.STRING(255),
       allowNull: false,
     },
-    content: {
-      type: DataTypes.JSON,
+    is_public: {
+      type: DataTypes.BOOLEAN,
       allowNull: false,
-    },
-    score: {
-      type: DataTypes.INTEGER,
-      allowNull: true,
+      defaultValue: true,
     },
     created_at: {
       type: DataTypes.DATE,
@@ -76,7 +77,7 @@ Element.init(
   },
   {
     sequelize,
-    tableName: "elements",
+    tableName: "discussions",
     timestamps: true,
     createdAt: "created_at",
     updatedAt: "updated_at",
@@ -85,4 +86,4 @@ Element.init(
   },
 );
 
-export default Element;
+export default Discussion;

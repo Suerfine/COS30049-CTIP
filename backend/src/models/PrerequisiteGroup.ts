@@ -7,57 +7,35 @@ import {
   Model,
 } from "sequelize";
 import sequelize from "../config/Database";
-import Page from "./Page";
-import { ElementTypes } from "../enum/ElementTypes";
+import Course from "./Course";
 
-class Element extends Model<
-  InferAttributes<Element>,
-  InferCreationAttributes<Element>
+class PrerequisiteGroup extends Model<
+  InferAttributes<PrerequisiteGroup>,
+  InferCreationAttributes<PrerequisiteGroup>
 > {
   declare id: CreationOptional<number>;
-  declare page_id: ForeignKey<Page["id"]>;
-  declare order: number;
-  declare type: ElementTypes;
-  declare content: Record<string, unknown>;
-  declare score: CreationOptional<number | null>;
+  declare course_id: ForeignKey<Course["id"]>;
   declare created_at: CreationOptional<Date>;
   declare updated_at: CreationOptional<Date>;
   declare deleted_at: CreationOptional<Date | null>;
 }
 
-Element.init(
+PrerequisiteGroup.init(
   {
     id: {
       type: DataTypes.INTEGER,
       primaryKey: true,
       autoIncrement: true,
     },
-    page_id: {
+    course_id: {
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: "pages",
+        model: "courses",
         key: "id",
       },
       onUpdate: "CASCADE",
       onDelete: "CASCADE",
-    },
-    order: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      defaultValue: 0,
-    },
-    type: {
-      type: DataTypes.ENUM(...Object.values(ElementTypes)),
-      allowNull: false,
-    },
-    content: {
-      type: DataTypes.JSON,
-      allowNull: false,
-    },
-    score: {
-      type: DataTypes.INTEGER,
-      allowNull: true,
     },
     created_at: {
       type: DataTypes.DATE,
@@ -76,7 +54,7 @@ Element.init(
   },
   {
     sequelize,
-    tableName: "elements",
+    tableName: "prerequisite_groups",
     timestamps: true,
     createdAt: "created_at",
     updatedAt: "updated_at",
@@ -85,4 +63,4 @@ Element.init(
   },
 );
 
-export default Element;
+export default PrerequisiteGroup;

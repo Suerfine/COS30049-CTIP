@@ -7,57 +7,49 @@ import {
   Model,
 } from "sequelize";
 import sequelize from "../config/Database";
-import Page from "./Page";
-import { ElementTypes } from "../enum/ElementTypes";
+import Discussion from "./Discussion";
+import User from "./User";
 
-class Element extends Model<
-  InferAttributes<Element>,
-  InferCreationAttributes<Element>
-> {
+class Message extends Model<InferAttributes<Message>, InferCreationAttributes<Message>> {
   declare id: CreationOptional<number>;
-  declare page_id: ForeignKey<Page["id"]>;
-  declare order: number;
-  declare type: ElementTypes;
-  declare content: Record<string, unknown>;
-  declare score: CreationOptional<number | null>;
+  declare discussion_id: ForeignKey<Discussion["id"]>;
+  declare user_id: ForeignKey<User["id"]>;
+  declare content: string;
   declare created_at: CreationOptional<Date>;
   declare updated_at: CreationOptional<Date>;
   declare deleted_at: CreationOptional<Date | null>;
 }
 
-Element.init(
+Message.init(
   {
     id: {
       type: DataTypes.INTEGER,
       primaryKey: true,
       autoIncrement: true,
     },
-    page_id: {
+    discussion_id: {
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: "pages",
+        model: "discussions",
         key: "id",
       },
       onUpdate: "CASCADE",
       onDelete: "CASCADE",
     },
-    order: {
+    user_id: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      defaultValue: 0,
-    },
-    type: {
-      type: DataTypes.ENUM(...Object.values(ElementTypes)),
-      allowNull: false,
+      references: {
+        model: "users",
+        key: "id",
+      },
+      onUpdate: "CASCADE",
+      onDelete: "CASCADE",
     },
     content: {
-      type: DataTypes.JSON,
+      type: DataTypes.TEXT,
       allowNull: false,
-    },
-    score: {
-      type: DataTypes.INTEGER,
-      allowNull: true,
     },
     created_at: {
       type: DataTypes.DATE,
@@ -76,7 +68,7 @@ Element.init(
   },
   {
     sequelize,
-    tableName: "elements",
+    tableName: "messages",
     timestamps: true,
     createdAt: "created_at",
     updatedAt: "updated_at",
@@ -85,4 +77,4 @@ Element.init(
   },
 );
 
-export default Element;
+export default Message;
