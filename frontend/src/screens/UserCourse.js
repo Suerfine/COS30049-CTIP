@@ -60,7 +60,6 @@ const UserCourse = ({ navigation }) => {
 
     return (
         <View style={{ flex: 1 }}>
-            <NavBar/>
             <ScrollView style={styles.container}>
                 <View style={styles.courseContainer}>
                     {/* Background Image */}

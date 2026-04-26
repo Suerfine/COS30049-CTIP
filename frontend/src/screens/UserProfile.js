@@ -38,9 +38,7 @@ const UserProfile = ({ navigation }) => {
     }, [user, account]);
     
     return(
-        <View style={style.container}>
-            <NavBar/>
-
+        <View style={styles.container}>
             <ScrollView>
                 {/* Profile Header */}
                 <View style={styles.profileHeader}>

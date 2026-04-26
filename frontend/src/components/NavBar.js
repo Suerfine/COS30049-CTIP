@@ -1,7 +1,8 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, Pressable, Image, TextInput, Animated } from 'react-native';
 import { Bell, Search } from 'lucide-react-native';
-import { CommonActions, useNavigation, useNavigationState } from '@react-navigation/native';
+import { CommonActions, useNavigation} from '@react-navigation/native';
+import { navigationRef } from '../navigationRef';
 
 // Navigation links animation
 const NavItem = ({ name, route, onPress, isActive }) => {
@@ -37,13 +38,18 @@ const NavItem = ({ name, route, onPress, isActive }) => {
 
 const NavBar = () => {
     const navigation = useNavigation();
+    const [currentRoute, setCurrentRoute] = useState(
+    navigationRef.getCurrentRoute()?.name
+    );
     const [searchQuery, setSearchQuery] = useState('');
-    
-    const currentRoute = useNavigationState(state => {
-        const route = state.routes[state.index];
-        return route.name;
+
+    useEffect(() => {
+    const unsubscribe = navigationRef.addListener('state', () => {
+        setCurrentRoute(navigationRef.getCurrentRoute()?.name);
     });
 
+    return unsubscribe;
+    }, []);
     // Navigation Links
     const navLinks = [
         { name: 'Courses', route: 'User Course' },
@@ -56,12 +62,7 @@ const NavBar = () => {
             <View style={styles.left}>
                 <Pressable
                     onPress={() => {
-                        navigation.dispatch(
-                            CommonActions.reset({
-                                index: 0,
-                                routes: [{ name: 'User Dashboard' }],
-                            })
-                        );
+                        navigationRef.navigate('User Dashboard')
                     }}
                 >
                     <Image source={require('../../assets/sfc_logo.png')} style={styles.logo} accessibilityLabel='Logo of SFC'/>
@@ -77,12 +78,7 @@ const NavBar = () => {
                         isActive={currentRoute === item.route}
                         style={styles.link} 
                         onPress={() => {
-                        navigation.dispatch(
-                            CommonActions.reset({
-                                index: 0,
-                                routes: [{ name: item.route }],
-                            })
-                        );
+                        navigationRef.navigate(item.route)
                     }}/>
                 ))}
             </View>
@@ -97,12 +93,7 @@ const NavBar = () => {
                 </Pressable>
                 <Pressable 
                     style={styles.profileBtn}
-                    onPress={() => navigation.dispatch(
-                        CommonActions.reset({
-                            index: 0,
-                            routes: [{ name: 'User Profile' }],
-                        })
-                    )}
+                    onPress={() => navigationRef.navigate('User Profile')}
                 >
                     <Image source={require('../../assets/profile.png')} style={styles.profile} accessibilityLabel='User Profile' />
                 </Pressable>
@@ -121,7 +112,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
         paddingVertical: 10,
         borderBottomWidth: 1,
-        borderBottomColor: '#ccc'
+        borderBottomColor: '#ccc',
     },
     left:{
         flex: 1,

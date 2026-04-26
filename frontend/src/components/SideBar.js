@@ -1,10 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect} from 'react';
 import { View, Text, StyleSheet, Pressable, Image} from 'react-native';
 import {LayoutDashboard, Book, ClipboardList, Flag, CreditCard,Bell, LogOut, UserPlus, User2} from 'lucide-react-native'
 import { CommonActions, useNavigation } from '@react-navigation/native';
+import { navigationRef } from '../navigationRef';
 
 const SideBar = () => {
     const navigation=useNavigation();
+    const [currentRoute, setCurrentRoute] = useState(
+    navigationRef.getCurrentRoute()?.name
+    );
     // Navigation Link
     const menuItems= [
         {name:'Dashboard', icon: LayoutDashboard},
@@ -15,6 +19,13 @@ const SideBar = () => {
         // {name:'Payment', icon: CreditCard},
         {name:'Abnormalies', icon: Flag},
     ];
+    useEffect(() => {
+        const unsubscribe = navigationRef.addListener('state', () => {
+            setCurrentRoute(navigationRef.getCurrentRoute()?.name);
+        });
+    
+        return unsubscribe;
+    }, []);
 
     //Set State
     const [activePage, setActivePage]=useState('Courses');
@@ -26,7 +37,7 @@ const SideBar = () => {
                 <Image source={require('../../assets/sfc_logo.png')} style={styles.logo} accessibilityLabel='Logo of SFC'/>
                 {menuItems.map((item) => {
                     const IconComponent=item.icon;
-                    const isActive= activePage === item.name;
+                    const isActive= currentRoute===item.route;
                     
                     return(
                         <View key={item.name}>
@@ -36,12 +47,7 @@ const SideBar = () => {
                                     style={({hovered})=>[styles.menuItem, isActive && styles.activeIcon, !isActive && hovered && styles.hoverStyle]}
                                         onPress={() => {
                                         setActivePage(item.name);
-                                        navigation.dispatch(
-                                            CommonActions.reset({
-                                                index: 0,
-                                                routes: [{ name: item.route }],
-                                            })
-                                        );
+                                        navigationRef.navigate(item.route)
 
                                     }}
                                 >
@@ -87,7 +93,6 @@ const styles = StyleSheet.create({
         flex:1,
         borderRightColor:'#3f3f3f4d',
         borderRightWidth:1,
-
     },
     link:{
         gap:15,

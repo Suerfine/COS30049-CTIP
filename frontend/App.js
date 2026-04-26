@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View } from 'react-native';
-import { NavigationContainer} from '@react-navigation/native';
+import { navigationRef } from './src/navigationRef';
 import { createStackNavigator } from '@react-navigation/stack';
+import { NavigationContainer } from '@react-navigation/native';
+
 
 // Import Screens
 import AdminCourse from './src/screens/AdminCourse';
@@ -15,6 +17,7 @@ import UserCourse from './src/screens/UserCourse';
 import AccountManagement from './src/screens/AccountsManagement';
 import EnrollmentManagement from './src/screens/EnrollmentManagement';
 import UserProfile from './src/screens/UserProfile';
+import NavBar from './src/components/NavBar';
 
 
 // Define
@@ -40,13 +43,13 @@ export default function App() {
   return (
     <NavigationContainer
       linking={linking}
+      ref={navigationRef}
     >
 
       <View style={styles.root}>
         <View style={styles.container}>
-          {/* <SideBar navigation={navigation}/> */}
-          
-          
+          <SideBar/>
+          {/* <NavBar/> */}
           {/* Main Content Area */}
           <View style={styles.content}>
             <Stack.Navigator initialRouteName="Course Management">
@@ -83,6 +86,6 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    backgroundColor:"#f2f2f2"
+    backgroundColor:"#f2f2f2",
   }
 });

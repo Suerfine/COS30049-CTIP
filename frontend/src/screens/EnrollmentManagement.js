@@ -1,7 +1,7 @@
 import React, {useState} from 'react';
-import { View, Text, StyleSheet, Pressable, TextInput, ImageBackground, ScrollView, FlatList} from 'react-native';
+import { View, Text, StyleSheet, Pressable, TextInput, ImageBackground, ScrollView, FlatList, Image} from 'react-native';
 import { useEnrollmentManagement } from '../hooks/useEnrollmentManagement';
-import { RotateCcw, Search, ChevronDown, ChevronUp,ArrowUpNarrowWide, ArrowDownWideNarrow} from 'lucide-react-native';
+import { RotateCcw, Search, ChevronDown, ChevronUp,ArrowUpNarrowWide, ArrowDownWideNarrow, Circle, Trash2} from 'lucide-react-native';
 
 const EnrollmentManagement = () => {
     const {enrollments, submissions, loading}=useEnrollmentManagement();
@@ -21,48 +21,90 @@ const EnrollmentManagement = () => {
         <View style={[styles.tableHeader, styles.row]}>
             <Text style={[styles.headerText,{flex: 2}]}>Full Name</Text>
             <Text style={[styles.headerText, { flex:2}]}>Course Code</Text>
-            <Text style={[styles.headerText, { flex:2 }]}>Course Name</Text>
+            <Text style={[styles.headerText, { flex:3 }]}>Course Name</Text>
             <Text style={[styles.headerText, { flex:2}]}>Enrolled On</Text>
             <Text style={[styles.headerText, { flex:2}]}>Status</Text>
             <Text style={[styles.headerText, { flex:2}]}>Completed On</Text>
             <Text style={[styles.headerText, { flex:2}]}>Badge</Text>
             <Text style={[styles.headerText, { flex:2}]}>Issues On</Text>
-            <Text style={[styles.headerText, { flex:2}]}>Expiry On</Text>        
+            <Text style={[styles.headerText, { flex:2}]}>Expiry On</Text>  
+            <Text style={[styles.headerText, { flex:1}]}>Action</Text>       
         </View>
     );
 
-    const renderUserItem=({item})=>(
-        <Pressable onPress={()=>setSelectedUser(item)} style={({hovered})=>[styles.row, styles.tableRow, hovered && {backgroundColor:'#f9f9f9'}, selectedUser?.id === item.id && {backgroundColor:'#fff8e1'}]}>
+    const renderItem=({item})=>(
+        <View style={[styles.row, styles.tableRow, {backgroundColor:'#f9f9f9'}]}>
             {/* Full Name and profile image */}
-            <View style={[{flex:3}, styles.userInfo, styles.row]}>
+            <View style={[{flex:2}, styles.userInfo, styles.row]}>
                 <Image source={{uri:item.profileImage}} style={styles.avatar} accessibilityLabel={`Profile Image of ${item.fullName}`}/>
-                <Text>{item.firstname + " " + item.lastname}</Text>
+                <Text>{item.fullName}</Text>
             </View>
-            {/* IC */}
-            <Text style={{flex:2}}>{item.identification}</Text>
+            {/* Course Code */}
+            <Text style={{flex:2}}>{item.courseId}</Text>
+            {/* Course Name */}
+            <Text style={{flex:3}}>{item.courseName}</Text>
+            {/* Enrolled On */}
+            <Text style={{flex:2}}>{item.Enrolled_on}</Text>
             {/* Status */}
             <View style={[styles.row,styles.badge,{flex:2}]}>
-               {item.status === "approved" ? (
+               {item.status === "Completed" ? (
                 <Circle size={10} stroke="green" fill="green" />
-                ) : item.status === "pending" ? (
+                ) : item.status === "In Progess" ? (
                 <Circle size={10} stroke="orange" fill="orange" />
                 ) : (
                 <Circle size={10} stroke="red" fill="red" />
                 )}
                 <Text>{item.status.charAt(0).toUpperCase() + item.status.slice(1)}</Text>
             </View>
-            {/* Email */}
-            <Text style={{flex:3}}>{item.personal_email}</Text>
-            {/* Telefon */}
-            <Text style={{flex:2}}>{item.tel}</Text>
-            {/* Register On */}
-            <Text style={{flex:2}}>{formatDate(item.created_at)}</Text>            
-        </Pressable>
+            {/* Completed On */}
+            <Text style={{flex:2}}>{item.completed_on || "N/A"}</Text>
+            {/* Badge */}
+            <Text style={{flex:2}}>{item.badge || "N/A"}</Text>
+            {/* Issue On */}
+            <Text style={{flex:2}}>{item.issued_on || "N/A"}</Text>
+            {/* Expiry On */}
+            <Text style={{flex:2}}>{item.expiry_date}</Text>
+            {/* Action */}
+            <Text style={{flex:1,textAlign:'center'}}><Trash2 size={16}/></Text>
+        </View>
     );
+
+    const renderPagination=()=>{
+        const pageNumbers=[];
+        for (let i=1; i<=totalPages;i++){
+            pageNumbers.push(i);
+        }
+        return (
+            <View style={[styles.paginationContainer, styles.row]}> 
+                <Text style={styles.pageInfo}>
+                    Showing {enrollments.length>0 ? indexOfFirstItem+1 : 0} to {Math.min(indexOfLastItem, enrollments.length)} of {enrollments.length} records
+                </Text>
+                <View style={styles.row}>
+                    <Pressable disabled={currentPage==1} onPress={()=>setCurrentPage(1)} style={[styles.pageBtn, currentPage==1 && styles.btnDisabled]}>
+                        <Text style={[currentPage==1 ? styles.disabledText : styles.pageBtnText,styles.arrowBtn]}><ChevronsLeft size={20}/></Text>
+                    </Pressable>
+                    <Pressable disabled={currentPage==1} onPress={()=>setCurrentPage(prev=>prev-1)} style={[styles.pageBtn, currentPage==1 && styles.btnDisabled]}>
+                        <Text style={[currentPage==1 ? styles.disabledText : styles.pageBtnText,styles.arrowBtn]}><ChevronLeft size={20}/></Text>
+                    </Pressable>
+                    {pageNumbers.map((number)=>(
+                        <Pressable key={number} onPress={()=>setCurrentPage(number)} style={[styles.pageBtn, currentPage === number && styles.activePageBtn]}>
+                            <Text style={[styles.pageBtnText, currentPage===number && styles.activePageBtn]}>{number}</Text>
+                        </Pressable>
+                    ))}
+                    <Pressable disabled={currentPage==totalPages} onPress={()=>setCurrentPage(prev=>prev+1)} style={[styles.pageBtn, currentPage==totalPages && styles.btnDisabled]}>
+                        <Text style={[currentPage==totalPages ? styles.disabledText : styles.pageBtnText, styles.arrowBtn]}><ChevronRight size={20}/></Text>
+                    </Pressable>
+                    <Pressable disabled={currentPage==totalPages} onPress={()=>setCurrentPage(totalPages)} style={[styles.pageBtn, currentPage==totalPages && styles.btnDisabled]}>
+                        <Text style={[currentPage==totalPages ? styles.disabledText : styles.pageBtnText, styles.arrowBtn]}><ChevronsRight size={20}/></Text>
+                    </Pressable>
+                </View>
+            </View>
+        )
+    };
     
     return (
         <ScrollView style={styles.container}>
-            <Text style={styles.title}>Registration Management</Text>
+            <Text style={styles.title}>Enrollment Management</Text>
             <View style={[styles.toolbar, styles.row]}>
                 <View style={styles.row}>
                     <Pressable onPress={()=>setSortConfig({key:null, asc:true})} style={({ hovered }) => [
@@ -117,11 +159,12 @@ const EnrollmentManagement = () => {
                 <FlatList style={styles.table} 
                     data={currentEnrollments}
                     ListHeaderComponent={renderHeader}
-                    // renderItem={renderUserItem}
+                    renderItem={renderItem}
                     keyExtractor={item=>item.id.toString()}
-                    ListEmptyComponent={<View style={styles.tableRow}><Text style={{flex:1, paddingVertical:2}}>No Users Found.</Text></View>}
+                    ListEmptyComponent={<View style={styles.tableRow}><Text style={{flex:1, paddingVertical:2}}>No Record Found.</Text></View>}
                 />
             </View>
+            {totalPages>1 ? renderPagination() : null}
         </ScrollView>
     );
 }
@@ -242,6 +285,67 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: '#374151',
         fontWeight: '500',
+    },
+    tableRow:{
+        paddingVertical:5,
+        borderBottomWidth:1,
+        borderBottomColor:"#8f8f8f84",
+        alignItems:'center',
+        paddingHorizontal:12,
+    },
+    userInfo:{
+        gap:10,
+        alignItems:'center'
+    },
+    badge:{
+        alignItems:"center",
+        gap:5,
+    },
+    paginationContainer:{
+        justifyContent:'space-between',
+        alignItems:"center",
+        paddingVertical:15,
+        paddingHorizontal:20,
+        backgroundColor:'white'
+    },
+    pageInfo: {
+        color: '#666',
+        fontSize: 14,
+    },
+    pageBtn: {
+        width:32,
+        height:32,
+        borderRadius: '50%',
+        backgroundColor: 'white',
+        borderWidth: 1,
+        borderColor: '#ccc',
+        alignItems:'center',
+        justifyContent:'center',
+        marginLeft:10
+    },
+    pageBtnText: {
+        color: '#ecaa25',
+        fontWeight: '600',
+    },
+    btnDisabled: {
+        backgroundColor: '#f0f0f0',
+        borderColor: '#eee',
+    },
+    disabledText: {
+        color: '#bbb',
+    },
+    currentPageText: {
+        alignSelf: 'center',
+        fontWeight: 'bold',
+        color: '#333',
+    },
+    arrowBtn:{
+        paddingTop:2
+    },
+    activePageBtn:{
+        backgroundColor:'#ffc758',
+        border:0,
+        color:'white'
     },
 });
 export default EnrollmentManagement;
