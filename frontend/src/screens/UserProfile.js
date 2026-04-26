@@ -1,6 +1,7 @@
 import {useState, useEffect} from 'react';
-import { View, Text, TextInput, StyleSheet, Pressable, ScrollView, Image, ImageBackground, Dimensions, Modal, pickImage } from 'react-native';
+import { View, Text, TextInput, StyleSheet, Pressable, ScrollView, Image, ImageBackground, Dimensions, Modal } from 'react-native';
 import { SquarePen } from 'lucide-react-native';
+import * as ImagePicker from 'expo-image-picker';
 import NavBar from '../components/NavBar';
 import ModalLayout from '../components/ModalLayout';
 import { ModalStyle } from '../components/ModalStyle';
@@ -38,7 +39,28 @@ const UserProfile = ({ navigation }) => {
     const [showCurrentPassword, setShowCurrentPassword] = useState(false);
     const [showNewPassword, setShowNewPassword] = useState(false);
     const [currentPassword, setCurrentPassword] = useState('');
- 
+
+    // select image for ChangePfpContent modal
+    const pickImage = async () => {
+        const { status } =
+            await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+        if (status !== 'granted') {
+            alert('Permission to access gallery is required!');
+            return;
+        }
+
+        let result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsEditing: true,
+            aspect: [1, 1],
+            quality: 1,
+        });
+
+        if (!result.canceled) {
+            setNewImagePath(result.assets[0].uri);
+        }
+    };
 
     // Populate fields
     useEffect(() => {
@@ -57,8 +79,6 @@ const UserProfile = ({ navigation }) => {
     
     return(
         <View style={styles.container}>
-            <NavBar/>
-
             <ScrollView>
                 {/* Profile Header */}
                 <View style={styles.profileHeader}>
@@ -69,249 +89,253 @@ const UserProfile = ({ navigation }) => {
                     >
                     </ImageBackground>
 
-                {/* Pfp and name */}
-                <View style={styles.pfpRow}>
-                    <View style={styles.pfpWrapper}>
-                        {user?.profileImage ? (
-                            <Image
-                                source={{ uri: user.profileImage }}
-                                style={styles.pfp}
-                            />
-                        ) : (
-                            <View style={styles.pfpPlaceholder}>
-                                <Text style={styles.pfpInitials}>
-                                    {firstName ? firstName[0].toUpperCase() : '?'}
-                                </Text>
-                            </View>
-                        )}
+                    {/* Pfp and name */}
+                    <View style={styles.pfpRow}>
+                        <View style={styles.pfpWrapper}>
+                            {user?.profileImage ? (
+                                <Image source={{ uri: user.profileImage }} style={styles.pfp} />
+                            ) : (
+                                <View style={styles.pfpPlaceholder}>
+                                    <Text style={styles.pfpInitials}>
+                                        {firstName ? firstName[0].toUpperCase() : '?'}
+                                    </Text>
+                                </View>
+                            )}
 
-                        {/* edit profile button */}
-                        <Pressable 
-                            style={({ hovered }) => [
-                                styles.pfpEditBtn,
-                                hovered && styles.hoverBtn
-                            ]}
-                            onPress={() => setPfpModalVisible(true)}
-                        >
-                            <SquarePen style={styles.pfpEditIcon}/>
-                        </Pressable>
-                    </View>
-
-                    <Text style={styles.name}>
-                        {firstName || lastName
-                            ? `${firstName} ${lastName}`.trim()
-                            : 'Name'}
-                    </Text>
-                </View>
-
-                {/* Change pfp modal */}
-                <ModalLayout visible={pfpModalVisible} onClose={() => setPfpModalVisible(false)}>
-                    <ChangePfpContent
-                        image={user?.profileImage}
-                        onPickImage={pickImage}
-                    />
-                </ModalLayout>
-            </View>
-
-            {/* Personal Information */}
-            <View style={styles.section}>
-                <View style={styles.sectionHeader}>
-                    <Text style={styles.sectionTitle}>Personal Information</Text>
-                    <View style={styles.actionButtons}>
-                        <Pressable style={styles.cancelBtn}>
-                            <Text style={styles.cancelBtnText}>Cancel</Text>
-                        </Pressable>
-                        <Pressable style={styles.saveBtn}>
-                            <Text style={styles.saveBtnText}>Save Changes</Text>
-                        </Pressable>
-                    </View>
-                </View>
-                
-                {/* first name, last name and IC row*/}
-                <View style={styles.fieldRow}>
-                    <View style={styles.fieldGroup}>
-                        <Text style={styles.fieldLabel}>First Name</Text>
-                        <TextInput
-                            style={styles.input}
-                            value={firstName}
-                            onChangeText={setFirstName}
-                            placeholder="First name" 
-                            placeholderTextColor="grey"
-                        />
-                    </View>
-
-                    <View style={styles.fieldGroup}>
-                        <Text style={styles.fieldLabel}>Last Name</Text>
-                        <TextInput
-                            style={styles.input}
-                            value={lastName}
-                            onChangeText={setLastName}
-                            placeholder="Last name"
-                            placeholderTextColor="grey"
-                        />
-                    </View>
-
-                    <View style={styles.fieldGroup}>
-                        <Text style={styles.fieldLabel}>IC / Passport No.</Text>
-                        <TextInput
-                            style={styles.input}
-                            value={icPassport}
-                            onChangeText={setIcPassport}
-                            placeholder="IC or passport number"
-                            placeholderTextColor="grey"
-                        />
-                    </View>
-                </View>
-
-                {/* email, phone and resume row */}
-                <View style={styles.fieldRow}>
-                    <View style={styles.fieldGroup}>
-                        <Text style={styles.fieldLabel}>Email</Text>
-                        <TextInput
-                            style={styles.input}
-                            value={email}
-                            onChangeText={setEmail}
-                            placeholder="Email address"
-                            placeholderTextColor="grey"
-                            keyboardType="email-address"
-                            autoCapitalize="none"
-                        />
-                    </View>
-
-                    <View style={styles.fieldGroup}>
-                        <Text style={styles.fieldLabel}>Phone Number</Text>
-                        <TextInput
-                            style={styles.input}
-                            value={phone}
-                            onChangeText={setPhone}
-                            placeholder="Phone number"
-                            placeholderTextColor="grey"
-                            keyboardType="phone-pad"
-                        />
-                    </View>
-
-                    <View style={styles.fieldGroup}>
-                        <Text style={styles.fieldLabel}>Resume</Text>
-                        <View style={styles.resumeRow}>
-                            <TextInput
-                                style={[styles.input, styles.resumeInput]}
-                                value={resume}
-                                onChangeText={setResume}
-                                placeholder="No file selected"
-                                placeholderTextColor="grey"
-                                editable={false}
-                            />
-                            <Pressable style={styles.uploadBtn}>
-                                <Text style={styles.uploadBtnText}>Upload</Text>
-                            </Pressable>
-                        </View>
-                    </View>
-                </View>
-            </View>
-
-            {/* Divider */}
-            <View style={styles.divider} />
-            
-            {/* Account Security */}
-            <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Account Security</Text>
-
-                {/* Username */}
-                <View style={styles.securityField}>
-                    <Text style={styles.fieldLabel}>Username</Text>
-                    <View style={styles.securityRow}>
-                        <TextInput
-                            style={[styles.input, styles.securityInput, !editingUsername && styles.inputDisabled]}
-                            value={username}
-                            onChangeText={setUsername}
-                            placeholder="Username"
-                            placeholderTextColor="grey"
-                            editable={editingUsername}
-                            autoCapitalize="none"
-                        />
-                        <Pressable 
-                            style={({ hovered }) => [
-                                styles.changeBtn,
-                                hovered && styles.hoverBtn
-                            ]}
-                            onPress={() => {
-                                if (editingUsername) {
-                                    // user click confirm button, save changes and exit edit mode
-                                    setEditingUsername(false);
-                                } else {
-                                    setEditingUsername(true);
-                                }
-                            }}
-                        >
-                            <Text style={styles.changeBtnText}>
-                                {editingUsername ? 'Confirm' : 'Change'}
-                            </Text>
-                        </Pressable>
-
-                        {editingUsername && (
+                            {/* edit profile button */}
                             <Pressable 
                                 style={({ hovered }) => [
-                                    styles.cancelBtn,
-                                    hovered && styles.hoverBtnOutline
+                                    styles.pfpEditBtn,
+                                    hovered && styles.hoverBtn
                                 ]}
-                                onPress={() => {
-                                    setEditingUsername(false);
-                                    setUsername(account?.username || '');
-                                }}
+                                onPress={() => setPfpModalVisible(true)}
                             >
-                                <Text style={styles.cancelBtnText}>Cancel</Text>
+                                <SquarePen style={styles.pfpEditIcon}/>
                             </Pressable>
-                        )}
-                    </View>
-                </View>
+                        </View>
 
-                {/* Password */}
-                <View style={styles.securityField}>
-                    <Text style={styles.fieldLabel}>Password</Text>
-                    <View style={styles.securityRow}>
-                        <TextInput
-                            style={[styles.input, styles.securityInput, !editingPassword && styles.inputDisabled]}
-                            value={editingPassword ? password : '••••••••'}
-                            onChangeText={setPassword}
-                            placeholder="New password"
-                            placeholderTextColor="grey"
-                            secureTextEntry={editingPassword}
-                            editable={editingPassword}
-                            autoCapitalize="none"
-                        />
-                        <Pressable 
-                            style={({ hovered }) => [
-                                styles.changeBtn,
-                                hovered && styles.hoverBtn
-                            ]}
-                            onPress={() => setPasswordModalVisible(true)}
-                        >
-                            <Text style={styles.changeBtnText}>
-                                {editingPassword ? 'Save' : 'Change'}
-                            </Text>
-                        </Pressable>
+                        <Text style={styles.name}>
+                            {firstName || lastName
+                                ? `${firstName} ${lastName}`.trim()
+                                : 'Name'}
+                        </Text>
                     </View>
 
-                    {/* Change password modal */}
-                    <ModalLayout 
-                        visible={passwordModalVisible} 
-                        onClose={() => setPasswordModalVisible(false)}
-                    >
-                        <ChangePasswordContent
-                            currentPassword={currentPassword}
-                            setCurrentPassword={setCurrentPassword}
-                            password={password}
-                            setPassword={setPassword}
-                            showCurrentPassword={showCurrentPassword}
-                            setShowCurrentPassword={setShowCurrentPassword}
-                            showNewPassword={showNewPassword}
-                            setShowNewPassword={setShowNewPassword}
-                            onClose={() => setPasswordModalVisible(false)}
+                    {/* Change pfp modal */}
+                    <ModalLayout visible={pfpModalVisible} onClose={() => setPfpModalVisible(false)}>
+                        <ChangePfpContent
+                            image={newImagePath || user?.profileImage}
+                            onPickImage={pickImage}
+                            onClose={() => setPfpModalVisible(false)}
                         />
                     </ModalLayout>
                 </View>
-            </View>
-        </ScrollView>
+
+                {/* Personal Information */}
+                <View style={styles.section}>
+                    <View style={styles.sectionHeader}>
+                        <Text style={styles.sectionTitle}>Personal Information</Text>
+                        <View style={styles.actionButtons}>
+                            <Pressable style={styles.cancelBtn}>
+                                <Text style={styles.cancelBtnText}>Cancel</Text>
+                            </Pressable>
+                            <Pressable style={styles.saveBtn}>
+                                <Text style={styles.saveBtnText}>Save Changes</Text>
+                            </Pressable>
+                        </View>
+                    </View>
+                    
+                    {/* first name, last name and IC row*/}
+                    <View style={styles.fieldRow}>
+                        <View style={styles.fieldGroup}>
+                            <Text style={styles.fieldLabel}>First Name</Text>
+                            <TextInput
+                                style={styles.input}
+                                value={firstName}
+                                onChangeText={setFirstName}
+                                placeholder="First name" 
+                                placeholderTextColor="grey"
+                            />
+                        </View>
+
+                        <View style={styles.fieldGroup}>
+                            <Text style={styles.fieldLabel}>Last Name</Text>
+                            <TextInput
+                                style={styles.input}
+                                value={lastName}
+                                onChangeText={setLastName}
+                                placeholder="Last name"
+                                placeholderTextColor="grey"
+                            />
+                        </View>
+
+                        <View style={styles.fieldGroup}>
+                            <Text style={styles.fieldLabel}>IC / Passport No.</Text>
+                            <TextInput
+                                style={styles.input}
+                                value={icPassport}
+                                onChangeText={setIcPassport}
+                                placeholder="IC or passport number"
+                                placeholderTextColor="grey"
+                            />
+                        </View>
+                    </View>
+
+                    {/* email, phone and resume row */}
+                    <View style={styles.fieldRow}>
+                        <View style={styles.fieldGroup}>
+                            <Text style={styles.fieldLabel}>Email</Text>
+                            <TextInput
+                                style={styles.input}
+                                value={email}
+                                onChangeText={setEmail}
+                                placeholder="Email address"
+                                placeholderTextColor="grey"
+                                keyboardType="email-address"
+                                autoCapitalize="none"
+                            />
+                        </View>
+
+                        <View style={styles.fieldGroup}>
+                            <Text style={styles.fieldLabel}>Phone Number</Text>
+                            <TextInput
+                                style={styles.input}
+                                value={phone}
+                                onChangeText={setPhone}
+                                placeholder="Phone number"
+                                placeholderTextColor="grey"
+                                keyboardType="phone-pad"
+                            />
+                        </View>
+
+                        <View style={styles.fieldGroup}>
+                            <Text style={styles.fieldLabel}>Resume</Text>
+                            <View style={styles.resumeRow}>
+                                <TextInput
+                                    style={[styles.input, styles.resumeInput]}
+                                    value={resume}
+                                    onChangeText={setResume}
+                                    placeholder="No file selected"
+                                    placeholderTextColor="grey"
+                                    editable={false}
+                                />
+                                <Pressable 
+                                    style={({ hovered }) => [
+                                        styles.uploadBtn,
+                                        hovered && styles.hoverBtn
+                                    ]}
+                                    onPress={() => setPasswordModalVisible(true)}
+                                >
+                                    <Text style={styles.uploadBtnText}>Upload</Text>
+                                </Pressable>
+                            </View>
+                        </View>
+                    </View>
+                </View>
+
+                {/* Divider */}
+                <View style={styles.divider} />
+            
+                {/* Account Security */}
+                <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>Account Security</Text>
+
+                    {/* Username */}
+                    <View style={styles.securityField}>
+                        <Text style={styles.fieldLabel}>Username</Text>
+                        <View style={styles.securityRow}>
+                            <TextInput
+                                style={[styles.input, styles.securityInput, !editingUsername && styles.inputDisabled]}
+                                value={username}
+                                onChangeText={setUsername}
+                                placeholder="Username"
+                                placeholderTextColor="grey"
+                                editable={editingUsername}
+                                autoCapitalize="none"
+                            />
+                            <Pressable 
+                                style={({ hovered }) => [
+                                    styles.changeBtn,
+                                    hovered && styles.hoverBtn
+                                ]}
+                                onPress={() => {
+                                    if (editingUsername) {
+                                        // user click confirm button, save changes and exit edit mode
+                                        setEditingUsername(false);
+                                    } else {
+                                        setEditingUsername(true);
+                                    }
+                                }}
+                            >
+                                <Text style={styles.changeBtnText}>
+                                    {editingUsername ? 'Confirm' : 'Change'}
+                                </Text>
+                            </Pressable>
+
+                            {editingUsername && (
+                                <Pressable 
+                                    style={({ hovered }) => [
+                                        styles.cancelBtn,
+                                        hovered && styles.hoverBtnOutline
+                                    ]}
+                                    onPress={() => {
+                                        setEditingUsername(false);
+                                        setUsername(account?.username || '');
+                                    }}
+                                >
+                                    <Text style={styles.cancelBtnText}>Cancel</Text>
+                                </Pressable>
+                            )}
+                        </View>
+                    </View>
+
+                    {/* Password */}
+                    <View style={styles.securityField}>
+                        <Text style={styles.fieldLabel}>Password</Text>
+                        <View style={styles.securityRow}>
+                            <TextInput
+                                style={[styles.input, styles.securityInput, !editingPassword && styles.inputDisabled]}
+                                value={editingPassword ? password : '••••••••'}
+                                onChangeText={setPassword}
+                                placeholder="New password"
+                                placeholderTextColor="grey"
+                                secureTextEntry={editingPassword}
+                                editable={editingPassword}
+                                autoCapitalize="none"
+                            />
+                            <Pressable 
+                                style={({ hovered }) => [
+                                    styles.changeBtn,
+                                    hovered && styles.hoverBtn
+                                ]}
+                                onPress={() => setPasswordModalVisible(true)}
+                            >
+                                <Text style={styles.changeBtnText}>
+                                    {editingPassword ? 'Save' : 'Change'}
+                                </Text>
+                            </Pressable>
+                        </View>
+
+                        {/* Change password modal */}
+                        <ModalLayout 
+                            visible={passwordModalVisible} 
+                            onClose={() => setPasswordModalVisible(false)}
+                        >
+                            <ChangePasswordContent
+                                currentPassword={currentPassword}
+                                setCurrentPassword={setCurrentPassword}
+                                password={password}
+                                setPassword={setPassword}
+                                showCurrentPassword={showCurrentPassword}
+                                setShowCurrentPassword={setShowCurrentPassword}
+                                showNewPassword={showNewPassword}
+                                setShowNewPassword={setShowNewPassword}
+                                onClose={() => setPasswordModalVisible(false)}
+                            />
+                        </ModalLayout>
+                    </View>
+                </View>
+            </ScrollView>
         </View>
     );
 }
@@ -495,9 +519,9 @@ const styles = StyleSheet.create({
         fontWeight: '500',
     },
     // Divider
-    divider: {
+    divider:{
         height: 1,
-        backgroundColor: 'black',
+        backgroundColor: '#2f6618fe',
         marginHorizontal: 50,
         marginVertical: 20,
     },
@@ -527,7 +551,7 @@ const styles = StyleSheet.create({
     },
     // hover button styles
     hoverBtn: {
-        backgroundColor: '#1f4d12',
+        backgroundColor: '#A5D6A7',
     },
 
     hoverBtnOutline: {

@@ -34,7 +34,7 @@ const ChangePasswordContent = ({
                     secureTextEntry={!showCurrentPassword}
                 />
                 <Pressable onPress={() => setShowCurrentPassword(prev => !prev)}>
-                    {showCurrentPassword ? <EyeOff/> : <Eye/>}
+                    {showCurrentPassword ? <Eye/> : <EyeOff/>}
                 </Pressable>
             </View>
 
@@ -48,7 +48,7 @@ const ChangePasswordContent = ({
                     secureTextEntry={!showNewPassword}
                 />
                 <Pressable onPress={() => setShowNewPassword(prev => !prev)}>
-                    {showNewPassword ? <EyeOff/> : <Eye/>}
+                    {showNewPassword ? <Eye/> : <EyeOff/>}
                 </Pressable>
             </View>
 
