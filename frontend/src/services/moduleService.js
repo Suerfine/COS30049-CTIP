@@ -1,4 +1,4 @@
-const BASE_URL='http://localhost:5000/api/courses';
+const BASE_URL='http://localhost:4000/api/courses';
 
 export const moduleService={
     // POST: Create new module
