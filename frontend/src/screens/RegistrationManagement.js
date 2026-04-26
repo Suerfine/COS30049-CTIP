@@ -7,6 +7,7 @@ import { useRegisterManagement } from '../hooks/useRegisterManagement';
 import ModalLayout from '../components/ModalLayout';
 import UsersFormContent from '../components/UsersFormContent';
 import { formatDate } from '../utils/formatDate';
+import { useSearchFilter } from '../hooks/useSearchFilter';
 
 const RegistrationManagement=()=>{
     const {users, loading}=useRegisterManagement();
@@ -18,6 +19,11 @@ const RegistrationManagement=()=>{
     const [currentStatus, setCurrentStatus]=useState('All');
     const [isOpen, setIsOpen]=useState(false);
 
+    // Search Function
+    const [searchTerm, setSearchTerm]=useState('');
+    const searchFields=['fullName', 'identification','personal_email','tel'];
+    const filteredUsers= useSearchFilter(users, searchTerm, currentStatus, searchFields);
+
     const handleAdd=()=>{
         setModalVisible(true);
     };
@@ -25,8 +31,8 @@ const RegistrationManagement=()=>{
     // Caluculate the pagination
     const indexOfLastItem=currentPage*itemsPerPage;
     const indexOfFirstItem=indexOfLastItem-itemsPerPage;
-    const currentUsers=users.slice(indexOfFirstItem, indexOfLastItem);
-    const totalPages=Math.ceil(users.length/itemsPerPage);
+    const currentUsers=filteredUsers.slice(indexOfFirstItem, indexOfLastItem);
+    const totalPages=Math.ceil(filteredUsers.length/itemsPerPage);
 
     const renderHeader=()=>(
         <View style={[styles.tableHeader, styles.row]}>
@@ -111,7 +117,7 @@ const RegistrationManagement=()=>{
                 <View style={styles.row}>
                     <View style={[styles.search,styles.row]}>
                         <Search size={18}/>
-                        <TextInput style={styles.input} placeholder='Search...' placeholderTextColor="#8f8f8f"/>
+                        <TextInput style={styles.input} placeholder='Search...' placeholderTextColor="#8f8f8f" value={searchTerm} onChangeText={(text)=>{setSearchTerm(text); setCurrentPage(1);}}/>
                     </View>
                     {/* Status Dropdown */}
                     <View style={styles.dropdownWrapper}>
@@ -173,6 +179,7 @@ const RegistrationManagement=()=>{
                     ListHeaderComponent={renderHeader}
                     renderItem={renderUserItem}
                     keyExtractor={item=>item.id.toString()}
+                    ListEmptyComponent={<View style={styles.tableRow}><Text style={{flex:1, paddingVertical:2}}>No Users Found.</Text></View>}
                 />
             </View>
             {totalPages>1 ? renderPagination() : null}
