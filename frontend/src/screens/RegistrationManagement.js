@@ -6,6 +6,7 @@ import { Pressable, StyleSheet, FlatList, View,Text, Image, TextInput} from 'rea
 import { useRegisterManagement } from '../hooks/useRegisterManagement';
 import ModalLayout from '../components/ModalLayout';
 import UsersFormContent from '../components/UsersFormContent';
+import { formatDate } from '../utils/formatDate';
 
 const RegistrationManagement=()=>{
     const {users, loading}=useRegisterManagement();
@@ -14,10 +15,8 @@ const RegistrationManagement=()=>{
 
     const [modalVisible, setModalVisible]=useState(false);
     const [selectedUser, setSelectedUser]=useState(null);
-    const [activeMenuId, setActiveMenuId]=useState(null);
     const [currentStatus, setCurrentStatus]=useState('All');
     const [isOpen, setIsOpen]=useState(false);
-    const [isEditing, setIsEditing]=useState(false);
 
     const handleAdd=()=>{
         setModalVisible(true);
@@ -32,7 +31,6 @@ const RegistrationManagement=()=>{
     const renderHeader=()=>(
         <View style={[styles.tableHeader, styles.row]}>
             <Text style={[styles.headerText, { flex:3 }]}>Full Name</Text>
-            <Text style={[styles.headerText, { flex:2 }]}>Username</Text>
             <Text style={[styles.headerText, { flex:2}]}>IC.</Text>
             <Text style={[styles.headerText, { flex:2 }]}>Status</Text>
             <Text style={[styles.headerText, { flex:3 }]}>Email</Text>
@@ -47,29 +45,27 @@ const RegistrationManagement=()=>{
             {/* Full Name and profile image */}
             <View style={[{flex:3}, styles.userInfo, styles.row]}>
                 <Image source={{uri:item.profileImage}} style={styles.avatar} accessibilityLabel={`Profile Image of ${item.fullName}`}/>
-                <Text>{item.fname + " " + item.lname}</Text>
+                <Text>{item.firstname + " " + item.lastname}</Text>
             </View>
-            {/* Username */}
-            <Text style={{flex:2}}>{item.username}</Text>
             {/* IC */}
-            <Text style={{flex:2}}>{item.ic}</Text>
+            <Text style={{flex:2}}>{item.identification}</Text>
             {/* Status */}
             <View style={[styles.row,styles.badge,{flex:2}]}>
-               {item.status === "Approved" ? (
+               {item.status === "approved" ? (
                 <Circle size={10} stroke="green" fill="green" />
-                ) : item.status === "Pending" ? (
+                ) : item.status === "pending" ? (
                 <Circle size={10} stroke="orange" fill="orange" />
                 ) : (
                 <Circle size={10} stroke="red" fill="red" />
                 )}
-                <Text>{item.status}</Text>
+                <Text>{item.status.charAt(0).toUpperCase() + item.status.slice(1)}</Text>
             </View>
             {/* Email */}
-            <Text style={{flex:3}}>{item.email}</Text>
+            <Text style={{flex:3}}>{item.personal_email}</Text>
             {/* Telefon */}
-            <Text style={{flex:2}}>{item.telefon}</Text>
+            <Text style={{flex:2}}>{item.tel}</Text>
             {/* Register On */}
-            <Text style={{flex:2}}>{item.joinedAt}</Text>
+            <Text style={{flex:2}}>{formatDate(item.created_at)}</Text>
             
         </Pressable>
     );
@@ -194,32 +190,17 @@ const RegistrationManagement=()=>{
                     <View style={styles.panelContent}>
                         
                         <Image source={{uri:selectedUser.profileImage}} style={styles.largeAvatar}/>
-                        <Text style={styles.fullname}>{selectedUser.fname + " " + selectedUser.lname}</Text>
+                        <Text style={styles.fullname}>{selectedUser.firstname + " " + selectedUser.lastname}</Text>
                         
                         <View style={styles.user}>
-                            <View style={[styles.row, {justifyContent:'space-between'}]}>
-                                {/* Username */}
-                                <View style={styles.details}>
-                                    <View style={styles.row}>
-                                        <User2 size={18} color="#4f4f4f"/>
-                                        <Text style={styles.panelLabel}>Username:</Text>
-                                    </View>
-                                    {isEditing ? (<TextInput
-                                    style={[styles.userDetails,styles.inputEditing]}
-                                    value={selectedUser.username}
-                                />) : (<Text style={styles.userDetails}>{selectedUser.username}</Text>)}
-                                    
-                                </View>
+                            <View style={[styles.row, {justifyContent:'space-between'}]}>                                
                                 {/* IC */}
                                 <View style={styles.details}>
                                     <View style={styles.row}>
                                         <IdCard size={18} color="#4f4f4f"/>
                                         <Text style={styles.panelLabel}>Passport/IC:</Text>
                                     </View>
-                                    {isEditing ? (<TextInput
-                                    style={[styles.userDetails,styles.inputEditing]}
-                                    value={selectedUser.ic}
-                                />) : (<Text style={styles.userDetails}>{selectedUser.ic}</Text>)}
+                                    <Text style={styles.userDetails}>{selectedUser.identification}</Text>
                                 </View>
                             </View>
                             <View style={[styles.row, {justifyContent:'space-between'}]}>
@@ -229,10 +210,7 @@ const RegistrationManagement=()=>{
                                         <Mail size={18} color="#4f4f4f"/>
                                         <Text style={styles.panelLabel}>Email:</Text>
                                     </View>
-                                    {isEditing ? (<TextInput
-                                    style={[styles.userDetails,styles.inputEditing]}
-                                    value={selectedUser.email}
-                                />) : (<Text style={styles.userDetails}>{selectedUser.email}</Text>)}
+                                    <Text style={styles.userDetails}>{selectedUser.personal_email}</Text>
                                 </View>
                                 {/* Register Date */}
                                 <View style={styles.details}>
@@ -240,7 +218,7 @@ const RegistrationManagement=()=>{
                                         <Calendar size={18} color="#4f4f4f"/>
                                         <Text style={styles.panelLabel}>Register On:</Text>
                                     </View>
-                                    <Text style={styles.userDetails}>{selectedUser.registerDate}</Text>
+                                    <Text style={styles.userDetails}>{formatDate(selectedUser.created_at)}</Text>
                                 </View>
                             </View>
                             {/* Telefon Section */}
@@ -249,7 +227,7 @@ const RegistrationManagement=()=>{
                                     <Phone size={18} color="#4f4f4f"/>
                                     <Text style={styles.panelLabel}>Telephone:</Text>
                                 </View>
-                                <Text style={styles.userDetails}>{selectedUser.telefon}</Text>
+                                <Text style={styles.userDetails}>{selectedUser.tel}</Text>
                             </View>
                             {/* Remark Section */}
                             <View style={styles.remark}>
@@ -257,7 +235,7 @@ const RegistrationManagement=()=>{
                                     <MessageSquare size={18} color="#4f4f4f"/>
                                     <Text style={styles.panelLabel}>Remark:</Text>
                                 </View>
-                                <Text style={styles.userDetails}>{selectedUser.remark}</Text>
+                                <Text style={styles.userDetails}>{selectedUser.admin_remark}</Text>
                             </View>
                             {/* CV Section */}
                             <View style={styles.details}>

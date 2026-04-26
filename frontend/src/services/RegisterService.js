@@ -1,4 +1,4 @@
-const BASE_URL='http://localhost:5000/api/users';
+const BASE_URL='http://localhost:5000/api/registrations';
 
 export const RegisterService={
     // GET: fetch all users
