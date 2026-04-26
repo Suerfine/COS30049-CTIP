@@ -54,10 +54,10 @@ const UserProfile = ({ navigation }) => {
     }, [user, account]);
     
     return(
-        <View style={{ flex: 1 }}>
+        <View style={style.container}>
             <NavBar/>
 
-            <ScrollView style={styles.container}>
+            <ScrollView>
                 {/* Profile Header */}
                 <View style={styles.profileHeader}>
                     {/* Background Image */}
@@ -382,7 +382,7 @@ const UserProfile = ({ navigation }) => {
 
 const styles = StyleSheet.create({
     container:{
-        flexDirection: 'column',
+        flex:1,
     },
     // Profile header
     profileHeader:{
