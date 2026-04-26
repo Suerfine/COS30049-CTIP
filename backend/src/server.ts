@@ -1,4 +1,5 @@
 import express, { Application, Request, Response } from "express";
+import cors from "cors";
 import sequelize from "./config/Database";
 import "./models";
 import routes from "./routes";
@@ -13,6 +14,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // Middleware to parse JSON bodies
 app.use(express.json());
+app.use(cors());
 
 // Basic route
 app.get("/", (req: Request, res: Response) => {
