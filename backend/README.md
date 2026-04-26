@@ -9,7 +9,7 @@ cd ./backend/
 npm install
 
 # Copy the example .env file
-cp .env.exmaple .env
+cp .env.example .env
 
 # Seed and sync the database
 npm run seed:dev
