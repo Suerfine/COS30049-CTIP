@@ -2,10 +2,14 @@ import {useState, useEffect} from 'react';
 import { View, Text, TextInput, StyleSheet, Pressable, ScrollView, Image, ImageBackground, Dimensions, Modal } from 'react-native';
 import { SquarePen } from 'lucide-react-native';
 import NavBar from '../components/NavBar';
+import ModalLayout from '../components/ModalLayout';
+import { ModalStyle } from '../components/ModalStyle';
+import { Eye, EyeOff } from 'lucide-react-native';
 import { useUserDashboard } from '../hooks/useUserDashboard';
 
 const UserProfile = ({ navigation }) => {
     const {user,account} = useUserDashboard();
+    // Personal Information state
     const [firstName, setFirstName] = useState('');
     const [lastName, setLastName] = useState('');
     const [icPassport, setIcPassport] = useState('');
@@ -20,6 +24,18 @@ const UserProfile = ({ navigation }) => {
     // Edit mode toggles
     const [editingUsername, setEditingUsername] = useState(false);
     const [editingPassword, setEditingPassword] = useState(false);
+
+    // Modal visibility
+    const [pfpModalVisible, setPfpModalVisible] = useState(false);
+    const [passwordModalVisible, setPasswordModalVisible] = useState(false);
+
+    // Dummy image path
+    const [newImagePath, setNewImagePath] = useState('');
+
+    // Password visibility
+    const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+    const [showNewPassword, setShowNewPassword] = useState(false);
+    const [currentPassword, setCurrentPassword] = useState('');
  
 
     // Populate fields
@@ -68,7 +84,13 @@ const UserProfile = ({ navigation }) => {
                             )}
  
                             {/* edit profile button */}
-                            <Pressable style={styles.pfpEditBtn}>
+                            <Pressable 
+                                style={({ hovered }) => [
+                                    styles.pfpEditBtn,
+                                    hovered && styles.hoverBtn
+                                ]}
+                                onPress={() => setPfpModalVisible(true)}
+                            >
                                 <SquarePen style={styles.pfpEditIcon}/>
                             </Pressable>
                         </View>
@@ -197,11 +219,39 @@ const UserProfile = ({ navigation }) => {
                                 editable={editingUsername}
                                 autoCapitalize="none"
                             />
-                            <Pressable style={styles.changeBtn}>
+                            <Pressable 
+                                style={({ hovered }) => [
+                                    styles.changeBtn,
+                                    hovered && styles.hoverBtn
+                                ]}
+                                onPress={() => {
+                                    if (editingUsername) {
+                                        // user click confirm button, save changes and exit edit mode
+                                        setEditingUsername(false);
+                                    } else {
+                                        setEditingUsername(true);
+                                    }
+                                }}
+                            >
                                 <Text style={styles.changeBtnText}>
-                                    {editingUsername ? 'Save' : 'Change'}
+                                    {editingUsername ? 'Confirm' : 'Change'}
                                 </Text>
                             </Pressable>
+
+                            {editingUsername && (
+                                <Pressable 
+                                    style={({ hovered }) => [
+                                        styles.cancelBtn,
+                                        hovered && styles.hoverBtnOutline
+                                    ]}
+                                    onPress={() => {
+                                        setEditingUsername(false);
+                                        setUsername(account?.username || '');
+                                    }}
+                                >
+                                    <Text style={styles.cancelBtnText}>Cancel</Text>
+                                </Pressable>
+                            )}
                         </View>
                     </View>
  
@@ -219,7 +269,13 @@ const UserProfile = ({ navigation }) => {
                                 editable={editingPassword}
                                 autoCapitalize="none"
                             />
-                            <Pressable style={styles.changeBtn}>
+                            <Pressable 
+                                style={({ hovered }) => [
+                                    styles.changeBtn,
+                                    hovered && styles.hoverBtn
+                                ]}
+                                onPress={() => setPasswordModalVisible(true)}
+                            >
                                 <Text style={styles.changeBtnText}>
                                     {editingPassword ? 'Save' : 'Change'}
                                 </Text>
@@ -227,8 +283,99 @@ const UserProfile = ({ navigation }) => {
                         </View>
                     </View>
                 </View>
-
             </ScrollView>
+            
+            {/* Change pfp modal */}
+            <ModalLayout visible={pfpModalVisible} onClose={() => setPfpModalVisible(false)}>
+                <View style={ModalStyle.container}>
+
+                    <View style={[ModalStyle.row, ModalStyle.header]}>
+                        <Text style={ModalStyle.title}>Change Profile Picture</Text>
+                    </View>
+
+                    {/* Current Image */}
+                    <View style={ModalStyle.imagePicker}>
+                        {user?.profileImage ? (
+                            <Image source={{ uri: user.profileImage }} style={ModalStyle.previewImage}/>
+                        ) : (
+                            <Text>No Image</Text>
+                        )}
+                    </View>
+
+                    {/* Upload row */}
+                    <View style={ModalStyle.row}>
+                        <TextInput
+                            style={ModalStyle.input}
+                            value={newImagePath}
+                            onChangeText={setNewImagePath}
+                            placeholder="Image path..."
+                        />
+
+                        <Pressable
+                            style={({ hovered }) => [
+                                ModalStyle.Btn,
+                                hovered && styles.hoverBtn
+                            ]}
+                        >
+                            <Text>Upload Image</Text>
+                        </Pressable>
+                    </View>
+
+                </View>
+            </ModalLayout>
+            
+            {/* Change password modal */}
+            <ModalLayout visible={passwordModalVisible} onClose={() => setPasswordModalVisible(false)}>
+                <View style={ModalStyle.container}>
+
+                    <View style={[ModalStyle.row, ModalStyle.header]}>
+                        <Text style={ModalStyle.title}>Change Password</Text>
+                    </View>
+
+                    {/* Current Password */}
+                    <Text style={ModalStyle.label}>Current Password</Text>
+                    <View style={ModalStyle.row}>
+                        <TextInput
+                            style={ModalStyle.input}
+                            value={showCurrentPassword ? currentPassword : '••••••••'}
+                            onChangeText={setCurrentPassword}
+                            secureTextEntry={!showCurrentPassword}
+                            editable={showCurrentPassword}
+                        />
+
+                        <Pressable onPress={() => setShowCurrentPassword(!showCurrentPassword)}>
+                            {showCurrentPassword ? <EyeOff/> : <Eye/>}
+                        </Pressable>
+                    </View>
+
+                    {/* New Password */}
+                    <Text style={ModalStyle.label}>New Password</Text>
+                    <View style={ModalStyle.row}>
+                        <TextInput
+                            style={ModalStyle.input}
+                            value={showNewPassword ? password : '••••••••'}
+                            onChangeText={setPassword}
+                            secureTextEntry={!showNewPassword}
+                            editable={showNewPassword}
+                        />
+
+                        <Pressable onPress={() => setShowNewPassword(!showNewPassword)}>
+                            {showNewPassword ? <EyeOff/> : <Eye/>}
+                        </Pressable>
+                    </View>
+
+                    {/* Confirm Button */}
+                    <Pressable
+                        style={({ hovered }) => [
+                            ModalStyle.Btn,
+                            hovered && styles.hoverBtn
+                        ]}
+                    >
+                        <Text>Confirm</Text>
+                    </Pressable>
+
+                </View>
+            </ModalLayout>
         </View>
     );
 }
@@ -441,6 +588,14 @@ const styles = StyleSheet.create({
         fontSize: 13,
         color: '#2f6618fe',
         fontWeight: '500',
+    },
+    // hover button styles
+    hoverBtn: {
+        backgroundColor: '#1f4d12',
+    },
+
+    hoverBtnOutline: {
+        backgroundColor: '#e6f2e6',
     },
 });
 
