@@ -90,12 +90,20 @@ const NavBar = () => {
             <View style={styles.right}>
                 <View style={styles.search}>
                     <Search size={18}/>
-                    <TextInput style={styles.input} placeholder='Search...' placeholderTextColor="#8f8f8f"/>
+                    <TextInput style={styles.input} placeholder='Search...' placeholderTextColor="#AAAAAA"/>
                 </View>
                 <Pressable style={styles.notificationBtn}>
                     <Bell size={20} />
                 </Pressable>
-                <Pressable style={styles.profileBtn}>
+                <Pressable 
+                    style={styles.profileBtn}
+                    onPress={() => navigation.dispatch(
+                        CommonActions.reset({
+                            index: 0,
+                            routes: [{ name: 'User Profile' }],
+                        })
+                    )}
+                >
                     <Image source={require('../../assets/profile.png')} style={styles.profile} accessibilityLabel='User Profile' />
                 </Pressable>
             </View>

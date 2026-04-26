@@ -14,6 +14,7 @@ import UserModule from './src/screens/UserModule';
 import UserCourse from './src/screens/UserCourse';
 import AccountManagement from './src/screens/AccountsManagement';
 import EnrollmentManagement from './src/screens/EnrollmentManagement';
+import UserProfile from './src/screens/UserProfile';
 
 
 // Define
@@ -30,6 +31,7 @@ export default function App() {
         'Registration Management': 'registrationManagement',
         'User Module':'userModule/:id',
         'User Course':'usercourse',
+        'User Profile':'userprofile',
         'Enrollment Management': 'enrollmentManagement',
       },
     },
@@ -42,7 +44,7 @@ export default function App() {
 
       <View style={styles.root}>
         <View style={styles.container}>
-          <SideBar navigation={navigation}/>
+          {/* <SideBar navigation={navigation}/> */}
           
           
           {/* Main Content Area */}
@@ -55,6 +57,7 @@ export default function App() {
               <Stack.Screen name="User Module" component={UserModule} options={{headerShown: false}}/>
               <Stack.Screen name="User Course" component={UserCourse} options={{headerShown: false}}/>
               <Stack.Screen name="Account Management" component={AccountManagement} options={{headerShown: false}}/>
+              <Stack.Screen name="User Profile" component={UserProfile} options={{headerShown: false}}/>
               <Stack.Screen name="Enrollment Management" component={EnrollmentManagement} options={{headerShown: false}}/>
             </Stack.Navigator>
           </View>
