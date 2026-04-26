@@ -28,7 +28,15 @@ export const getAllUsers = async (
   next: NextFunction,
 ) => {
   try {
-    const users = await paginateModel(User, req.query);
+    const isDeletedRaw = req.query.isDeleted;
+    const includeDeleted =
+      (typeof isDeletedRaw === "string" &&
+        isDeletedRaw.toLowerCase() === "true") ||
+      (typeof isDeletedRaw === "boolean" && isDeletedRaw === true);
+
+    const users = await paginateModel(User, req.query, {
+      paranoid: !includeDeleted,
+    });
     const baseUrl = `${req.protocol}://${req.get("host")}${req.originalUrl}`;
     const formattedResponse = formatPaginateResponse(
       users.data.map(toUserResponse),
@@ -65,6 +73,22 @@ export const getUserById = async (
         .status(500)
         .json({ message: "Internal server error\n" + err.message });
     });
+};
+
+export const getCurrentUser = async (
+  req: Request & { user?: User },
+  res: Response<UserResponse | { message: string }>,
+  next: NextFunction,
+) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    return res.json(toUserResponse(req.user));
+  } catch (err) {
+    next(err);
+  }
 };
 
 export const deleteUser = async (
@@ -207,12 +231,10 @@ export const createUser = async (
     } else {
       // If the user is an admin, we need to check for identification and personal_email
       if (!identification || !personal_email) {
-        return res
-          .status(400)
-          .json({
-            message:
-              "identification and personal_email are required for admin users",
-          });
+        return res.status(400).json({
+          message:
+            "identification and personal_email are required for admin users",
+        });
       }
       user_identification = identification;
       user_personal_email = personal_email;

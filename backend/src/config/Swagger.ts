@@ -1,5 +1,7 @@
 import path from "path";
 import swaggerJSDoc from "swagger-jsdoc";
+import { UserRoles } from "../enum/UserRoles";
+import { RegistrationStatus } from "../enum/RegistrationStatus";
 
 const options: swaggerJSDoc.Options = {
   definition: {
@@ -20,6 +22,10 @@ const options: swaggerJSDoc.Options = {
         name: "Users",
         description: "User management endpoints",
       },
+      {
+        name: "Registrations",
+        description: "Registration management endpoints",
+      },
     ],
     components: {
       securitySchemes: {
@@ -36,7 +42,11 @@ const options: swaggerJSDoc.Options = {
           properties: {
             username: { type: "string", example: "john.doe" },
             password: { type: "string", example: "securepassword123" },
-            role: { type: "string", example: "Park Ranger" },
+            role: {
+              type: "string",
+              enum: Object.values(UserRoles),
+              example: UserRoles.PARK_GUIDE,
+            },
             registration_id: { type: "integer", example: 10 },
             identification: { type: "string", example: "S1234567" },
             personal_email: {
@@ -75,12 +85,142 @@ const options: swaggerJSDoc.Options = {
           properties: {
             username: { type: "string", example: "john.doe" },
             password: { type: "string", example: "securepassword123" },
-            role: { type: "string", example: "Park Ranger" },
+            role: {
+              type: "string",
+              enum: Object.values(UserRoles),
+              example: UserRoles.PARK_GUIDE,
+            },
             identification: { type: "string", example: "S1234567" },
             personal_email: {
               type: "string",
               format: "email",
               example: "john.doe@example.com",
+            },
+          },
+        },
+        Registration: {
+          type: "object",
+          properties: {
+            id: { type: "integer", example: 1 },
+            user_id: { type: "integer", nullable: true },
+            reviewed_by_user_id: {
+              type: "integer",
+              nullable: true,
+              example: 1,
+            },
+            status: {
+              type: "string",
+              enum: Object.values(RegistrationStatus),
+              example: RegistrationStatus.PENDING,
+            },
+            firstname: { type: "string", example: "John" },
+            lastname: { type: "string", example: "Doe" },
+            identification: { type: "string", example: "S1234567" },
+            personal_email: {
+              type: "string",
+              format: "email",
+              example: "john.doe@example.com",
+            },
+            tel: { type: "string", example: "+610412345678" },
+            admin_remark: {
+              type: "string",
+              nullable: true,
+              example: "Pending identity verification",
+            },
+            reviewed_at: {
+              type: "string",
+              format: "date-time",
+              nullable: true,
+              example: "2026-04-24T08:00:00.000Z",
+            },
+            created_at: {
+              type: "string",
+              format: "date-time",
+              example: "2026-04-24T08:00:00.000Z",
+            },
+            updated_at: {
+              type: "string",
+              format: "date-time",
+              example: "2026-04-24T08:00:00.000Z",
+            },
+          },
+        },
+        CreateRegistrationRequest: {
+          type: "object",
+          required: [
+            "firstname",
+            "lastname",
+            "identification",
+            "personal_email",
+            "tel",
+          ],
+          properties: {
+            user_id: { type: "integer", nullable: true },
+            reviewed_by_user_id: {
+              type: "integer",
+              nullable: true,
+              example: 1,
+            },
+            status: {
+              type: "string",
+              enum: Object.values(RegistrationStatus),
+              example: RegistrationStatus.PENDING,
+            },
+            firstname: { type: "string", example: "John" },
+            lastname: { type: "string", example: "Doe" },
+            identification: { type: "string", example: "S1234567" },
+            personal_email: {
+              type: "string",
+              format: "email",
+              example: "john.doe@example.com",
+            },
+            tel: { type: "string", example: "+610412345678" },
+            admin_remark: {
+              type: "string",
+              nullable: true,
+              example: "Pending identity verification",
+            },
+            reviewed_at: {
+              type: "string",
+              format: "date-time",
+              nullable: true,
+              example: "2026-04-24T08:00:00.000Z",
+            },
+          },
+        },
+        UpdateRegistrationRequest: {
+          type: "object",
+          properties: {
+            user_id: { type: "integer", example: 2 },
+            reviewed_by_user_id: {
+              type: "integer",
+              nullable: true,
+              example: 1,
+            },
+            status: {
+              type: "string",
+              enum: Object.values(RegistrationStatus),
+              example: RegistrationStatus.APPROVED,
+            },
+            firstname: { type: "string", example: "John" },
+            lastname: { type: "string", example: "Doe" },
+            identification: { type: "string", example: "S1234567" },
+            personal_email: {
+              type: "string",
+              format: "email",
+              example: "john.doe@example.com",
+            },
+            tel: { type: "string", example: "+610412345678" },
+            admin_remark: {
+              type: "string",
+              nullable: true,
+              example: "Approved",
+            },
+            reviewed_at: {
+              type: "string",
+              format: "date-time",
+              nullable: true,
+              example: "2026-04-24T08:00:00.000Z",
             },
           },
         },

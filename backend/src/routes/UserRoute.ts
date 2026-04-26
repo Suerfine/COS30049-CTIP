@@ -9,13 +9,14 @@ const userRouter = Router();
  * /api/users:
  *   post:
  *     summary: Create a new user
+ *     description: Creates a user using form inputs in Swagger UI.
  *     tags: [Users]
  *     security:
  *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         application/x-www-form-urlencoded:
  *           schema:
  *             $ref: '#/components/schemas/CreateUserRequest'
  *     responses:
@@ -25,6 +26,24 @@ const userRouter = Router();
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/User'
+ *       400:
+ *         description: Invalid input data
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 userRouter.post("/", auth, UserController.createUser);
 
@@ -55,19 +74,27 @@ userRouter.post("/", auth, UserController.createUser);
  *           example: 10
  *         description: Number of records per page.
  *       - in: query
- *         name: sort
+ *         name: orderBy
  *         required: false
+ *         description: Sort expression format "attribute asc|desc". Multiple sort criteria can be separated by commas.
  *         schema:
  *           type: string
  *           example: id desc
- *         description: Sort expression format: "{attribute} asc|desc", where multiple sort criteria can be separated by comma. Example: "id desc, username asc".
  *       - in: query
  *         name: filter
  *         required: false
  *         schema:
  *           type: string
- *           example: role eq ADMIN
+ *           example: role eq park_guide
  *         description: Filter expression parsed by backend pagination utility.
+ *       - in: query
+ *         name: isDeleted
+ *         required: false
+ *         description: When true, include soft-deleted users in the result set. Defaults to false.
+ *         schema:
+ *           type: boolean
+ *           default: false
+ *           example: false
  *     responses:
  *       200:
  *         description: Users retrieved successfully.
@@ -92,7 +119,7 @@ userRouter.post("/", auth, UserController.createUser);
  *                 totalPages:
  *                   type: integer
  *                   example: 5
- *                 links:
+ *                 _links:
  *                   type: object
  *                   additionalProperties:
  *                     type: string
@@ -105,6 +132,31 @@ userRouter.post("/", auth, UserController.createUser);
  *               $ref: '#/components/schemas/ErrorResponse'
  */
 userRouter.get("/", auth, UserController.getAllUsers);
+
+/**
+ * @swagger
+ * /api/users/me:
+ *   get:
+ *     summary: Get the currently logged in user
+ *     description: Returns the profile of the authenticated user associated with the current request.
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Current user retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/User'
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+userRouter.get("/me", auth, UserController.getCurrentUser);
 
 /**
  * @swagger
@@ -161,7 +213,7 @@ userRouter.get("/:id", auth, UserController.getUserById);
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         application/x-www-form-urlencoded:
  *           schema:
  *             $ref: '#/components/schemas/UpdateUserRequest'
  *     responses:
@@ -198,7 +250,7 @@ userRouter.put("/:id", auth, UserController.upsertUser);
  * /api/users/{id}:
  *   delete:
  *     summary: Delete user
- *     description: Placeholder endpoint. Not implemented yet.
+ *     description: Soft deletes a user by setting deleted_at.
  *     tags: [Users]
  *     security:
  *       - bearerAuth: []
@@ -209,16 +261,36 @@ userRouter.put("/:id", auth, UserController.upsertUser);
  *         schema:
  *           type: string
  *     responses:
- *       501:
- *         description: Not implemented
+ *       200:
+ *         description: User deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: User deleted successfully
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       404:
+ *         description: User not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         description: Internal server error
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
 // Delete user
-userRouter.delete("/:id", auth, (_req: Request, res: Response) => {
-  res.status(501).json({ message: "Not implemented" });
-});
+userRouter.delete("/:id", auth, UserController.deleteUser);
 
 export default userRouter;
