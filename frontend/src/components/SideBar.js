@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Pressable, Image} from 'react-native';
-import {LayoutDashboard, Book, ClipboardList, Flag, CreditCard,Bell, LogOut, User2} from 'lucide-react-native'
+import {LayoutDashboard, Book, ClipboardList, Flag, CreditCard,Bell, LogOut, UserPlus, User2} from 'lucide-react-native'
 import { CommonActions, useNavigation } from '@react-navigation/native';
 
 const SideBar = () => {
@@ -8,7 +8,8 @@ const SideBar = () => {
     // Navigation Link
     const menuItems= [
         {name:'Dashboard', icon: LayoutDashboard, route:'User Dashboard'},
-        {name: 'Users', icon: User2, route:'User Management'},
+        {name: 'Registration', icon: UserPlus, route:'Registration Management'},
+        {name: 'Accounts', icon: User2, route:'Account Management'},
         {name: 'Courses', icon: Book, route:'Course Management'},
         {name: 'Enrollment', icon: ClipboardList},
         {name:'Payment', icon: CreditCard},

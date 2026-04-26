@@ -7,25 +7,25 @@ import { createStackNavigator } from '@react-navigation/stack';
 // Import Screens
 import AdminCourse from './src/screens/AdminCourse';
 import SideBar from './src/components/SideBar';
-import NavBar from './src/components/NavBar';
 import EditCourseDetails from './src/screens/EditCourseDetail';
 import UserDashboard from './src/screens/UserDashboard';
-import UserManagement from './src/screens/UserManagement';
+import RegistrationManagement from './src/screens/RegistrationManagement';
 import UserModule from './src/screens/UserModule';
 import UserCourse from './src/screens/UserCourse';
+import AccountManagement from './src/screens/AccountsManagement';
 
 // Define
 const Stack=createStackNavigator();
 
 export default function App() {
   const linking = {
-    prefixes: ['http://localhost:8081'], // your dev server URL
+    prefixes: ['http://localhost:8081'],
     config: {
       screens: {
         'Course Management': 'courseManagement',
         'Course Details': 'course/:id',
         'User Dashboard': 'dashboard',
-        'User Management': 'userManagement',
+        'Registration Management': 'registrationManagement',
         'User Module':'userModule/:id',
         'User Course':'usercourse',
       },
@@ -40,18 +40,18 @@ export default function App() {
       <View style={styles.root}>
         <View style={styles.container}>
           {/* <SideBar navigation={navigation}/> */}
-          <NavBar navigation={navigation}/>
           
           
           {/* Main Content Area */}
           <View style={styles.content}>
             <Stack.Navigator initialRouteName="Course Management">
               <Stack.Screen name="Course Management" component={AdminCourse} options={{headerShown: false}}/>
-              <Stack.Screen name="Course Details" component={EditCourseDetails}/>
+              <Stack.Screen name="Course Details" component={EditCourseDetails} options={{headerShown: false}}/>
               <Stack.Screen name="User Dashboard" component={UserDashboard} options={{headerShown: false}}/>
-              <Stack.Screen name="User Management" component={UserManagement} options={{headerShown: false}}/>
+              <Stack.Screen name="Registration Management" component={RegistrationManagement} options={{headerShown: false}}/>
               <Stack.Screen name="User Module" component={UserModule} options={{headerShown: false}}/>
               <Stack.Screen name="User Course" component={UserCourse} options={{headerShown: false}}/>
+              <Stack.Screen name="Account Management" component={AccountManagement} options={{headerShown: false}}/>
             </Stack.Navigator>
           </View>
         </View>
@@ -71,7 +71,6 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,           
-    // flexDirection: 'row', 
     flexDirection: 'column',
     backgroundColor: '#fff',
   },
