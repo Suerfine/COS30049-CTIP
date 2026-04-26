@@ -6,7 +6,7 @@ import { CommonActions, useNavigation } from '@react-navigation/native';
 const SideBar = () => {
     const navigation=useNavigation();
     // Navigation Link
-    const menuItems= [
+    const menuItems = [
         {name:'Dashboard', icon: LayoutDashboard, route:'User Dashboard'},
         {name: 'Registration', icon: UserPlus, route:'Registration Management'},
         {name: 'Accounts', icon: User2, route:'Account Management'},
