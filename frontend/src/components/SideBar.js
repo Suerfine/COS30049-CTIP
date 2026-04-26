@@ -7,12 +7,12 @@ const SideBar = () => {
     const navigation=useNavigation();
     // Navigation Link
     const menuItems= [
-        {name:'Dashboard', icon: LayoutDashboard, route:'User Dashboard'},
+        {name:'Dashboard', icon: LayoutDashboard},
         {name: 'Registration', icon: UserPlus, route:'Registration Management'},
         {name: 'Accounts', icon: User2, route:'Account Management'},
         {name: 'Courses', icon: Book, route:'Course Management'},
-        {name: 'Enrollment', icon: ClipboardList},
-        {name:'Payment', icon: CreditCard},
+        {name: 'Enrollment', icon: ClipboardList, route:'Enrollment Management'},
+        // {name:'Payment', icon: CreditCard},
         {name:'Abnormalies', icon: Flag},
     ];
 
