@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, FlatList, View,Text, Image, TextInput} from 'rea
 
 // Import other components and hooks
 import { useAccountManagement } from '../hooks/useAccountManagement';
+import { formatDate } from '../utils/formatDate';
 
 const AccountManagement=()=>{
     const {accounts} = useAccountManagement();
@@ -44,9 +45,9 @@ const AccountManagement=()=>{
             {/* Work Email */}
             <Text style={{flex:3}}>{item.workEmail}</Text>
             {/* Joined On */}
-            <Text style={{flex:2}}>{item.joinedDate}</Text>
+            <Text style={{flex:2}}>{formatDate(item.joinedDate)}</Text>
             {/* Last Login */}
-            <Text style={{flex:2}}>{item.lastLogin}</Text>
+            <Text style={{flex:2}}>{formatDate(item.lastLogin)}</Text>
         </Pressable>
     );
     
@@ -189,8 +190,8 @@ const AccountManagement=()=>{
                                 </View>
                                 {isEditing ? (<TextInput
                                 style={[styles.userDetails,styles.inputEditing]}
-                                value={selectedAcc.workEmail}
-                            />) : (<Text style={styles.userDetails}>{selectedAcc.workEmail}</Text>)}
+                                value={selectedAcc.personal_email}
+                            />) : (<Text style={styles.userDetails}>{selectedAcc.personal_email}</Text>)}
                             </View>
                             {/* Joined Date */}
                             <View style={styles.details}>
