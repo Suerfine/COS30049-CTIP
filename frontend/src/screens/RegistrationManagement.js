@@ -1,4 +1,4 @@
-import { Pen, Trash2, Search, Plus, Circle, ChevronLeft, ChevronsLeft, ChevronRight, ChevronsRight, X, User2, IdCard, Mail, ShieldUser, Calendar, FileUser, EllipsisVertical, ChevronDown, ChevronUp, CirclePlus, CircleMinus,  MessageSquare, Phone} from 'lucide-react-native';
+import { Pen, Trash2, Search, Plus, Circle, ChevronLeft, ChevronsLeft, ChevronRight, ChevronsRight, X, User2, IdCard, Mail, ShieldUser, Calendar, FileUser, EllipsisVertical, ChevronDown, ChevronUp, CirclePlus, CircleMinus,  MessageSquare, Phone, ArrowUpNarrowWide, ArrowDownWideNarrow, RotateCcw} from 'lucide-react-native';
 import React, {useState} from 'react';
 import { Pressable, StyleSheet, FlatList, View,Text, Image, TextInput} from 'react-native';
 
@@ -7,6 +7,7 @@ import { useRegisterManagement } from '../hooks/useRegisterManagement';
 import ModalLayout from '../components/ModalLayout';
 import UsersFormContent from '../components/UsersFormContent';
 import { formatDate } from '../utils/formatDate';
+import { useSearchFilter } from '../hooks/useSearchFilter';
 
 const RegistrationManagement=()=>{
     const {users, loading}=useRegisterManagement();
@@ -16,7 +17,17 @@ const RegistrationManagement=()=>{
     const [modalVisible, setModalVisible]=useState(false);
     const [selectedUser, setSelectedUser]=useState(null);
     const [currentStatus, setCurrentStatus]=useState('All');
+    
     const [isOpen, setIsOpen]=useState(false);
+
+    // Search Function
+    const [searchTerm, setSearchTerm]=useState('');
+    const searchFields=['fullName', 'identification','personal_email','tel'];
+    const { 
+        filteredData: filteredUsers, 
+        requestSort, 
+        sortConfig, setSortConfig 
+    } = useSearchFilter(users, searchTerm, "All", searchFields);
 
     const handleAdd=()=>{
         setModalVisible(true);
@@ -25,18 +36,30 @@ const RegistrationManagement=()=>{
     // Caluculate the pagination
     const indexOfLastItem=currentPage*itemsPerPage;
     const indexOfFirstItem=indexOfLastItem-itemsPerPage;
-    const currentUsers=users.slice(indexOfFirstItem, indexOfLastItem);
-    const totalPages=Math.ceil(users.length/itemsPerPage);
+    const currentUsers=filteredUsers.slice(indexOfFirstItem, indexOfLastItem);
+    const totalPages=Math.ceil(filteredUsers.length/itemsPerPage);
 
     const renderHeader=()=>(
         <View style={[styles.tableHeader, styles.row]}>
-            <Text style={[styles.headerText, { flex:3 }]}>Full Name</Text>
+            <Pressable onPress={()=>requestSort('fullName')} style={[styles.headerRow, {flex:3}]}>
+                <Text style={styles.headerText}>Full Name</Text>
+                {sortConfig.key==='fullName' &&
+                sortConfig.direction==='asc' ? <ArrowUpNarrowWide size={14} color="white"/> : <ArrowDownWideNarrow size={14} color="white"/>}
+            </Pressable>
+            
             <Text style={[styles.headerText, { flex:2}]}>IC.</Text>
             <Text style={[styles.headerText, { flex:2 }]}>Status</Text>
-            <Text style={[styles.headerText, { flex:3 }]}>Email</Text>
+            <Pressable onPress={()=>requestSort('personal_email')} style={[styles.headerRow, {flex:3}]}>
+                <Text style={styles.headerText}>Email</Text>
+                {sortConfig.key==='personal_email' &&
+                sortConfig.direction==='asc' ? <ArrowUpNarrowWide size={14} color="white"/> : <ArrowDownWideNarrow size={14} color="white"/>}
+            </Pressable>
             <Text style={[styles.headerText, { flex:2}]}>Telefon</Text>
-            <Text style={[styles.headerText, { flex:2 }]}>Register On</Text>
-            
+            <Pressable onPress={()=>requestSort('created_at')} style={[styles.headerRow, {flex:2}]}>
+                <Text style={styles.headerText}>Register On</Text>
+                {sortConfig.key==='created_at' &&
+                sortConfig.direction==='asc' ? <ArrowUpNarrowWide size={14} color="white"/> : <ArrowDownWideNarrow size={14} color="white"/>}
+            </Pressable>            
         </View>
     );
 
@@ -109,9 +132,15 @@ const RegistrationManagement=()=>{
             <Text style={styles.title}>Registration Management</Text>
             <View style={[styles.toolbar,styles.row]}>
                 <View style={styles.row}>
+                    <Pressable onPress={()=>setSortConfig({key:null, asc:true})} style={({ hovered }) => [
+                        styles.iconBtn,
+                        hovered && styles.iconBtnHover,
+                    ]}>
+                        <RotateCcw size={20}/>
+                    </Pressable>
                     <View style={[styles.search,styles.row]}>
                         <Search size={18}/>
-                        <TextInput style={styles.input} placeholder='Search...' placeholderTextColor="#8f8f8f"/>
+                        <TextInput style={styles.input} placeholder='Search...' placeholderTextColor="#8f8f8f" value={searchTerm} onChangeText={(text)=>{setSearchTerm(text); setCurrentPage(1);}}/>
                     </View>
                     {/* Status Dropdown */}
                     <View style={styles.dropdownWrapper}>
@@ -173,6 +202,7 @@ const RegistrationManagement=()=>{
                     ListHeaderComponent={renderHeader}
                     renderItem={renderUserItem}
                     keyExtractor={item=>item.id.toString()}
+                    ListEmptyComponent={<View style={styles.tableRow}><Text style={{flex:1, paddingVertical:2}}>No Users Found.</Text></View>}
                 />
             </View>
             {totalPages>1 ? renderPagination() : null}
@@ -329,7 +359,8 @@ const styles = StyleSheet.create({
     tableHeader:{
         backgroundColor:'#0a6340',
         paddingHorizontal:12,
-        paddingVertical:8
+        paddingVertical:8,
+        userSelect:"none"
     },
     headerText:{
         color:'white',
@@ -523,7 +554,24 @@ const styles = StyleSheet.create({
         bottom:15,
         right:15
     },
-
+    headerRow:{
+        flexDirection:'row',
+        gap:10,
+        paddingHorizontal:10,
+        alignItems:'center',
+    },
+    iconBtn:{
+        alignSelf:'center',
+        padding:8,
+        marginRight:20,
+        color:"#217837",
+        borderRadius:50,
+        backgroundColor:'white',
+    },
+    iconBtnHover:{
+        backgroundColor:"#217837",
+        color:'white',
+    }
 });
 
 export default RegistrationManagement;

@@ -41,7 +41,7 @@ export default function App() {
 
       <View style={styles.root}>
         <View style={styles.container}>
-          {/* <SideBar navigation={navigation}/> */}
+          <SideBar navigation={navigation}/>
           
           
           {/* Main Content Area */}
@@ -74,7 +74,7 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,           
-    flexDirection: 'column',
+    flexDirection: 'row',
     backgroundColor: '#fff',
   },
   content: {
