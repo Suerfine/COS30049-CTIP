@@ -5,7 +5,8 @@ import ProgressBar from './ProgressBar.js';
 const CourseCard=({imagePath, courseTitle, numModules,duration,expiry,userType, progress, onPress, onEdit, onDelete, onEnroll})=>{
     return (
         // Title need change to course ID later
-        <Pressable style={styles.card} onPress={onPress}>
+        // Not enrolled courses cannot view course content
+        <Pressable style={styles.card} onPress={progress === null || progress === 0 ? undefined : onPress}>
             <Image source={imagePath} style={styles.courseImg} accessibilityLabel='Cover Photo of Course'/>
             <Text style={styles.CourseTitle}>{courseTitle}</Text>
             
@@ -37,19 +38,17 @@ const CourseCard=({imagePath, courseTitle, numModules,duration,expiry,userType, 
                 </View>
             )}
             {userType !== 'admin' && (
-                <View style={styles.icon}>
-                    {onEnroll ? (
+                <>
+                    {progress === null || progress === 0 ? (
                         <Pressable style={styles.enrollBtn} onPress={onEnroll}>
-                            <Text style={{ color: 'white', textAlign: 'center' }}>
+                            <Text style={styles.enrollText}>
                                 Enroll
                             </Text>
                         </Pressable>
                     ) : (
-                        progress !== undefined && (
-                            <ProgressBar progress={progress} />
-                        )
+                        <ProgressBar progress={progress} />
                     )}
-                </View>
+                </>
             )}
         </Pressable>
     )
@@ -103,9 +102,13 @@ const styles=StyleSheet.create({
     },
     enrollBtn: {
         marginTop: 10,
-        backgroundColor: '#4CAF50',
+        backgroundColor: '#efab21',
         padding: 8,
         borderRadius: 6,
+    },
+    enrollText:{
+        color: 'black', 
+        textAlign: 'center' 
     }
 });
 

@@ -12,7 +12,7 @@ const UsersFormContent=({onSubmit, onCancel, isLoading})=>{
         image: null,
         fname: '',
         lname: '',
-        role: 'parkguide',
+        telefon: '',
     });
 
     const pickImage=async()=>{
@@ -57,12 +57,19 @@ const UsersFormContent=({onSubmit, onCancel, isLoading})=>{
                             <TextInput style={styles.input} value={form.ic} onChangeText={(text)=> setForm({...form, ic: text})}/>
                         </View>
                     </View>
-
-                    {/* Email */}
-                    <View>
-                        <Text style={styles.label}>Email:</Text>
-                            <TextInput style={styles.input} value={form.email}  placeholder='address@email.com' 
-                            placeholderTextColor="#8f8f8f"  onChangeText={(text)=> setForm({...form, email: text})}/>
+                    <View style={localStyles.row}>
+                        {/* Email */}
+                        <View>
+                            <Text style={styles.label}>Email:</Text>
+                                <TextInput style={styles.input} value={form.email}  placeholder='address@email.com' 
+                                placeholderTextColor="#8f8f8f"  onChangeText={(text)=> setForm({...form, email: text})}/>
+                        </View>
+                        {/* Telefon */}
+                        <View>
+                            <Text style={styles.label}>Telefon:</Text>
+                            <TextInput style={styles.input} value={form.telefon}  placeholder='012-3456789' 
+                            placeholderTextColor="#8f8f8f"  onChangeText={(text)=> setForm({...form, telefon: text})}/>
+                        </View>
                     </View>
 
                     {/* Full Name */}
@@ -79,23 +86,7 @@ const UsersFormContent=({onSubmit, onCancel, isLoading})=>{
                             placeholderTextColor="#8f8f8f" onChangeText={(text)=> setForm({...form, lname: text})}/>
                         </View>
                     </View>
-                    <View>
-                        <Text style={styles.label}>Role:</Text>
-                        <View style={localStyles.row}>
-                            <TouchableOpacity style={styles.row} onPress={()=>setForm({...form, role:'admin'})}>
-                                <View style={localStyles.radioCircle}>
-                                    {form.role==='admin' && <View style={localStyles.selectedRb}></View>}
-                                </View>
-                                <Text style={localStyles.radioText}>Admin</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity style={styles.row} onPress={()=>setForm({...form, role:'parkguide'})}>
-                                <View style={localStyles.radioCircle}>
-                                    {form.role==='parkguide' && <View style={localStyles.selectedRb}></View>}
-                                </View>
-                                <Text style={localStyles.radioText}>Park Guide</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
+                    
                 </View>
                 <View style={styles.upload}>
                     <Text style={styles.label}>Upload Images</Text>
@@ -149,22 +140,6 @@ const localStyles=StyleSheet.create({
     row:{
         flexDirection:'row',
         gap:20
-    },
-    radioCircle:{
-        height:18,
-        width:18,
-        borderRadius:10,
-        borderWidth:2,
-        borderColor:'#2c3e50',
-        alignItems:'center',
-        justifyContent:'center',
-        marginRight:10
-    },
-    selectedRb:{
-        width:10,
-        height:10,
-        borderRadius:5,
-        backgroundColor:'#2c3e50'
     }
 })
 ;

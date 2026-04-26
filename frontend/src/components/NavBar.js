@@ -1,11 +1,48 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, Pressable, Image, TextInput } from 'react-native';
+import React, { useState, useRef } from 'react';
+import { View, Text, StyleSheet, Pressable, Image, TextInput, Animated } from 'react-native';
 import { Bell, Search } from 'lucide-react-native';
-import { CommonActions, useNavigation } from '@react-navigation/native';
+import { CommonActions, useNavigation, useNavigationState } from '@react-navigation/native';
+
+// Navigation links animation
+const NavItem = ({ name, route, onPress, isActive }) => {
+    const scale = useRef(new Animated.Value(0)).current;
+
+    const hoverIn = () => {
+        Animated.timing(scale, { toValue: 1, duration: 200, useNativeDriver: true }).start();
+    };
+
+    const hoverOut = () => {
+        Animated.timing(scale, { toValue: 0, duration: 200, useNativeDriver: false }).start();
+    };
+
+    return (
+        <Pressable 
+            onHoverIn={hoverIn} 
+            onHoverOut={hoverOut} 
+            onPressIn={hoverIn} // for mobile
+            onPressOut={hoverOut} // for mobile
+            onPress={onPress}
+            style={styles.link}
+        >
+            <Text style={[styles.itemText, isActive && styles.activeText]}>
+                {name}
+            </Text>
+            <Animated.View style={[
+                styles.underline,
+                { transform: [{ scaleX: scale }] }
+            ]} />
+        </Pressable>
+    );
+};
 
 const NavBar = () => {
     const navigation = useNavigation();
     const [searchQuery, setSearchQuery] = useState('');
+    
+    const currentRoute = useNavigationState(state => {
+        const route = state.routes[state.index];
+        return route.name;
+    });
 
     // Navigation Links
     const navLinks = [
@@ -33,8 +70,11 @@ const NavBar = () => {
 
             <View style={styles.center}>
                 {navLinks.map(item => (
-                    <Pressable 
+                    <NavItem
                         key={item.name} 
+                        name={item.name} 
+                        route={item.route} 
+                        isActive={currentRoute === item.route}
                         style={styles.link} 
                         onPress={() => {
                         navigation.dispatch(
@@ -43,9 +83,7 @@ const NavBar = () => {
                                 routes: [{ name: item.route }],
                             })
                         );
-                    }}>
-                        <Text style={styles.itemText}>{item.name}</Text>
-                    </Pressable>
+                    }}/>
                 ))}
             </View>
 
@@ -91,16 +129,27 @@ const styles = StyleSheet.create({
         flex: 2,
         flexDirection: 'row',
         justifyContent: 'center',
-        gap: 20
+        gap: 80
     },
     item:{
         paddingHorizontal: 10,
         paddingVertical: 5,
     },
-    itemText:{
+    itemText: {
         fontSize: 16,
         fontWeight: '500',
-        color: '#333'
+        color: '#333',
+        paddingBottom: 2,
+    },
+    activeText: {
+        color: '#efab21',
+        fontWeight: '700',
+    },
+    underline: {
+        height: 2,
+        width: '100%',
+        marginTop: 2,
+        backgroundColor: '#efab21',
     },
     right:{
         flex: 1.5,

@@ -1,29 +1,23 @@
-import { Pen, Trash2, Search, Plus, Circle, ChevronLeft, ChevronsLeft, ChevronRight, ChevronsRight, X, User2, IdCard, Mail, ShieldUser, Calendar, FileUser, EllipsisVertical, ChevronDown, ChevronUp, CirclePlus, CircleMinus} from 'lucide-react-native';
+import { Pen, Trash2, Search, Plus, Circle, ChevronLeft, ChevronsLeft, ChevronRight, ChevronsRight, X, User2, IdCard, Mail, ShieldUser, Calendar, FileUser, EllipsisVertical, ChevronDown, ChevronUp, CirclePlus, CircleMinus,  MessageSquare, Phone} from 'lucide-react-native';
 import React, {useState} from 'react';
 import { Pressable, StyleSheet, FlatList, View,Text, Image, TextInput} from 'react-native';
-import {Checkbox} from 'react-native-paper';
-import { useUserManagement } from '../hooks/useUserManagement';
+
+// Import other components and hooks
+import { useRegisterManagement } from '../hooks/useRegisterManagement';
 import ModalLayout from '../components/ModalLayout';
 import UsersFormContent from '../components/UsersFormContent';
 
-const UserManagement=()=>{
-    const {users, loading}=useUserManagement();
+const RegistrationManagement=()=>{
+    const {users, loading}=useRegisterManagement();
     const [currentPage, setCurrentPage]=useState(1);
     const itemsPerPage=10;
-    const [isAllChecked, setIsAllChecked]=useState(false);
+
     const [modalVisible, setModalVisible]=useState(false);
     const [selectedUser, setSelectedUser]=useState(null);
     const [activeMenuId, setActiveMenuId]=useState(null);
-    const [currentStatus, setCurrentStatus]=useState('Approved');
+    const [currentStatus, setCurrentStatus]=useState('All');
     const [isOpen, setIsOpen]=useState(false);
     const [isEditing, setIsEditing]=useState(false);
-    
-    // Toggle user status
-    const toggleStatus=(id)=>{
-        setUsers(users.map(u => 
-            u.id === id ? { ...u, status: u.status === 'Active' ? 'Inactive' : 'Active' } : u
-        ));
-    };
 
     const handleAdd=()=>{
         setModalVisible(true);
@@ -36,49 +30,47 @@ const UserManagement=()=>{
     const totalPages=Math.ceil(users.length/itemsPerPage);
 
     const renderHeader=()=>(
-        <View style={[styles.tableHeader,styles.row]}>
-            <View style={styles.checkbox}><Checkbox status={isAllChecked ? 'checked' : 'unchecked'} onPress={()=>setIsAllChecked(!isAllChecked)} uncheckedColor="white" color="#ffd47e"/></View>
+        <View style={[styles.tableHeader, styles.row]}>
             <Text style={[styles.headerText, { flex:3 }]}>Full Name</Text>
             <Text style={[styles.headerText, { flex:2 }]}>Username</Text>
             <Text style={[styles.headerText, { flex:2}]}>IC.</Text>
+            <Text style={[styles.headerText, { flex:2 }]}>Status</Text>
             <Text style={[styles.headerText, { flex:3 }]}>Email</Text>
-            <Text style={[styles.headerText, { flex:2}]}>Status</Text>
-            <Text style={[styles.headerText, { flex:2}]}>Role</Text>
-            <Text style={[styles.headerText, { flex:2 }]}>Joined Date</Text>
-            <Text style={[styles.headerText, { flex:2 }]}>Last Active</Text>
+            <Text style={[styles.headerText, { flex:2}]}>Telefon</Text>
+            <Text style={[styles.headerText, { flex:2 }]}>Register On</Text>
+            
         </View>
     );
 
     const renderUserItem=({item})=>(
         <Pressable onPress={()=>setSelectedUser(item)} style={({hovered})=>[styles.row, styles.tableRow, hovered && {backgroundColor:'#f9f9f9'}, selectedUser?.id === item.id && {backgroundColor:'#fff8e1'}]}>
-            {/* Checkbox */}
-            <View style={styles.checkbox}>
-                <Checkbox status={item.selected ? 'checked' : 'unchecked'} color="#ffdf9f39"/>
-            </View>
-
             {/* Full Name and profile image */}
             <View style={[{flex:3}, styles.userInfo, styles.row]}>
                 <Image source={{uri:item.profileImage}} style={styles.avatar} accessibilityLabel={`Profile Image of ${item.fullName}`}/>
-                <Text>{item.fullName}</Text>
+                <Text>{item.fname + " " + item.lname}</Text>
             </View>
-
             {/* Username */}
             <Text style={{flex:2}}>{item.username}</Text>
             {/* IC */}
             <Text style={{flex:2}}>{item.ic}</Text>
-            {/* Email */}
-            <Text style={{flex:3}}>{item.email}</Text>
             {/* Status */}
             <View style={[styles.row,styles.badge,{flex:2}]}>
-                {item.status==="Active" ? (<Circle size={10} stroke="green" fill="green"/>):(<Circle size={10} stroke="grey" fill="grey"/>)}
+               {item.status === "Approved" ? (
+                <Circle size={10} stroke="green" fill="green" />
+                ) : item.status === "Pending" ? (
+                <Circle size={10} stroke="orange" fill="orange" />
+                ) : (
+                <Circle size={10} stroke="red" fill="red" />
+                )}
                 <Text>{item.status}</Text>
             </View>
-            {/* Role */}
-            <Text style={{flex:2}}>{item.role==='parkguide' ? 'Park Guide' : 'Admin'}</Text>
-            {/* Joined Date */}
-            <Text style={{flex:2}}>{item.joinedDate}</Text>
-            {/* Last Active */}
-            <Text style={{flex:2}}>{item.lastActive}</Text>
+            {/* Email */}
+            <Text style={{flex:3}}>{item.email}</Text>
+            {/* Telefon */}
+            <Text style={{flex:2}}>{item.telefon}</Text>
+            {/* Register On */}
+            <Text style={{flex:2}}>{item.joinedAt}</Text>
+            
         </Pressable>
     );
     
@@ -118,7 +110,7 @@ const UserManagement=()=>{
     // Loading
     return(
         <View style={styles.container}>
-            <Text style={styles.title}>User Management</Text>
+            <Text style={styles.title}>Registration Management</Text>
             <View style={[styles.toolbar,styles.row]}>
                 <View style={styles.row}>
                     <View style={[styles.search,styles.row]}>
@@ -138,7 +130,7 @@ const UserManagement=()=>{
                         {/* Dropdown Menu */}
                         {isOpen && (
                             <View style={styles.dropdownMenu}>
-                                {['Approved', 'Pending', 'Rejected'].map((status) => (
+                                {['All','Approved','Pending', 'Rejected'].map((status) => (
                                     <Pressable 
                                         key={status}
                                         style={({hovered})=>[
@@ -187,113 +179,86 @@ const UserManagement=()=>{
                     keyExtractor={item=>item.id.toString()}
                 />
             </View>
-            {renderPagination()}
+            {totalPages>1 ? renderPagination() : null}
             {/* Side panel: show user details */}
             {selectedUser && (
                 <View style={styles.sidePanel}>
                     <View style={styles.panelHeader}>
-                        <View style={styles.row}>
-                            <Text style={styles.panelTitle}>
-                                User Information
-                            </Text>
-                            <View style={[styles.badge,styles.row]}>
-                                {selectedUser.status==="Active" ? (<Circle size={10} stroke="green" fill="green"/>):(<Circle size={10} stroke="grey" fill="grey"/>)}
-                                <Text>{selectedUser.status}</Text>
-                            </View>
-                        </View>
+                        <Text style={styles.panelTitle}>
+                            User Information
+                        </Text>
                         <Pressable onPress={()=>setSelectedUser(null)}>
                             <X size={18}/>
                         </Pressable>
-                        
                     </View>
                     <View style={styles.panelContent}>
-                        {/* Actions Menu */}
-                        <View style={styles.actionMenu}>
-                            <Pressable onPress={()=>setActiveMenuId(activeMenuId===selectedUser.id ? null : selectedUser.id)}>
-                                <EllipsisVertical/>
-                            </Pressable>
-                            {activeMenuId===selectedUser.id && (
-                                <View style={styles.floatingMenu}>
-                                    <Pressable style={({hovered})=>[styles.menuItem, hovered && styles.menuItemHover]}>
-                                        {selectedUser.status === 'Active' ? (
-                                            <View style={[styles.row, styles.option]}>
-                                            <CircleMinus size={16} color="orange" /><Text style={styles.menuText}>Deactivate</Text>
-                                            </View>
-                                        ) : (<View style={[styles.row, styles.option]}>
-                                            <CirclePlus size={16} color="orange" /><Text style={styles.menuText}>Activate</Text>
-                                            </View>)}
-                                    </Pressable>
-                                    <Pressable style={({hovered})=>[styles.menuItem, hovered && styles.menuItemHover]} onPress={()=>{setIsEditing(true); setActiveMenuId(null)}}>
-                                        <View style={[styles.row, styles.option]}>
-                                        <Pen size={16} color="orange" /><Text style={styles.menuText}>Edit</Text>
-                                        </View>
-                                    </Pressable>
-                                    <Pressable style={({hovered})=>[styles.menuItem, hovered && styles.menuItemHover]}>
-                                        <View style={[styles.row, styles.option]}>
-                                        <Trash2 size={16} color="orange" /><Text style={styles.menuText}>Delete</Text>
-                                        </View>
-                                    </Pressable>
-                                </View>
-                            )}
-                        </View>
+                        
                         <Image source={{uri:selectedUser.profileImage}} style={styles.largeAvatar}/>
-                        <Text style={styles.fullname}>{selectedUser.fullName}</Text>
+                        <Text style={styles.fullname}>{selectedUser.fname + " " + selectedUser.lname}</Text>
+                        
                         <View style={styles.user}>
-                            {/* Username */}
-                            <View style={styles.details}>
-                                <View style={styles.row}>
-                                    <User2 size={18} color="#4f4f4f"/>
-                                    <Text style={styles.panelLabel}>Username:</Text>
-                                </View>
-                                {isEditing ? (<TextInput
-                                style={[styles.userDetails,styles.inputEditing]}
-                                value={selectedUser.username}
-                            />) : (<Text style={styles.userDetails}>{selectedUser.username}</Text>)}
-                                
-                            </View>
-                            {/* IC */}
-                            <View style={styles.details}>
-                                <View style={styles.row}>
-                                    <IdCard size={18} color="#4f4f4f"/>
-                                    <Text style={styles.panelLabel}>Passport/IC:</Text>
-                                </View>
-                                {isEditing ? (<TextInput
-                                style={[styles.userDetails,styles.inputEditing]}
-                                value={selectedUser.ic}
-                            />) : (<Text style={styles.userDetails}>{selectedUser.ic}</Text>)}
-                                
-                            </View>
-                            {/* Email */}
-                            <View style={styles.details}>
-                                <View style={styles.row}>
-                                    <Mail size={18} color="#4f4f4f"/>
-                                    <Text style={styles.panelLabel}>Email:</Text>
-                                </View>
-                                {isEditing ? (<TextInput
-                                style={[styles.userDetails,styles.inputEditing]}
-                                value={selectedUser.email}
-                            />) : (<Text style={styles.userDetails}>{selectedUser.email}</Text>)}
-                            </View>
                             <View style={[styles.row, {justifyContent:'space-between'}]}>
-                                {/* Role */}
+                                {/* Username */}
                                 <View style={styles.details}>
                                     <View style={styles.row}>
-                                        <ShieldUser size={18} color="#4f4f4f"/>
-                                        <Text style={styles.panelLabel}>Role:</Text>
+                                        <User2 size={18} color="#4f4f4f"/>
+                                        <Text style={styles.panelLabel}>Username:</Text>
                                     </View>
-                                    <Text style={styles.userDetails}>{selectedUser.role === "admin" ? 'Admin' :'Park Guide'}</Text>
+                                    {isEditing ? (<TextInput
+                                    style={[styles.userDetails,styles.inputEditing]}
+                                    value={selectedUser.username}
+                                />) : (<Text style={styles.userDetails}>{selectedUser.username}</Text>)}
+                                    
                                 </View>
-
-                                {/* Joined Date */}
+                                {/* IC */}
+                                <View style={styles.details}>
+                                    <View style={styles.row}>
+                                        <IdCard size={18} color="#4f4f4f"/>
+                                        <Text style={styles.panelLabel}>Passport/IC:</Text>
+                                    </View>
+                                    {isEditing ? (<TextInput
+                                    style={[styles.userDetails,styles.inputEditing]}
+                                    value={selectedUser.ic}
+                                />) : (<Text style={styles.userDetails}>{selectedUser.ic}</Text>)}
+                                </View>
+                            </View>
+                            <View style={[styles.row, {justifyContent:'space-between'}]}>
+                                {/* Email */}
+                                <View style={styles.details}>
+                                    <View style={styles.row}>
+                                        <Mail size={18} color="#4f4f4f"/>
+                                        <Text style={styles.panelLabel}>Email:</Text>
+                                    </View>
+                                    {isEditing ? (<TextInput
+                                    style={[styles.userDetails,styles.inputEditing]}
+                                    value={selectedUser.email}
+                                />) : (<Text style={styles.userDetails}>{selectedUser.email}</Text>)}
+                                </View>
+                                {/* Register Date */}
                                 <View style={styles.details}>
                                     <View style={styles.row}>
                                         <Calendar size={18} color="#4f4f4f"/>
-                                        <Text style={styles.panelLabel}>Joined Date:</Text>
+                                        <Text style={styles.panelLabel}>Register On:</Text>
                                     </View>
-                                    <Text style={styles.userDetails}>{selectedUser.joinedDate}</Text>
+                                    <Text style={styles.userDetails}>{selectedUser.registerDate}</Text>
                                 </View>
                             </View>
-
+                            {/* Telefon Section */}
+                            <View style={styles.details}>
+                                <View style={styles.row}>
+                                    <Phone size={18} color="#4f4f4f"/>
+                                    <Text style={styles.panelLabel}>Telephone:</Text>
+                                </View>
+                                <Text style={styles.userDetails}>{selectedUser.telefon}</Text>
+                            </View>
+                            {/* Remark Section */}
+                            <View style={styles.remark}>
+                                <View style={styles.row}>
+                                    <MessageSquare size={18} color="#4f4f4f"/>
+                                    <Text style={styles.panelLabel}>Remark:</Text>
+                                </View>
+                                <Text style={styles.userDetails}>{selectedUser.remark}</Text>
+                            </View>
                             {/* CV Section */}
                             <View style={styles.details}>
                                 <View style={styles.row}>
@@ -303,18 +268,15 @@ const UserManagement=()=>{
                                 <Pressable style={styles.userDetails}>View CV PDF</Pressable>
                             </View>
                         </View>
-                        {isEditing &&(<View style={[styles.row, styles.actionBtn]}>
-                            <Pressable onPress={()=>setIsEditing(false)}
-                                style={styles.Btn} 
-                            >
-                                <Text>Cancel</Text>
-                            </Pressable>
-                            <Pressable 
-                                style={styles.Btn} 
-                            >
-                                <Text>Save</Text>
-                            </Pressable>
-                        </View>)}
+                        {selectedUser.status==='Pending' &&(
+                        <Pressable 
+                           style={({ hovered }) => [styles.Btn,
+                                hovered && styles.btnHover, 
+                            ]} 
+                        >
+                            <Text style={styles.btnText}>Approve</Text>
+                        </Pressable>
+                        )}
                         
                     </View>
                 </View>
@@ -324,10 +286,6 @@ const UserManagement=()=>{
 }
 
 const styles = StyleSheet.create({
-    checkbox:{
-        width:50,
-        alignItems:'center',
-    },
     container:{
         flex:1,
         paddingVertical:20,
@@ -338,7 +296,7 @@ const styles = StyleSheet.create({
         borderBottomWidth:1,
         borderBottomColor:"#8f8f8f84",
         alignItems:'center',
-        
+        paddingHorizontal:12,
     },
     table:{
         backgroundColor:"white",
@@ -385,14 +343,15 @@ const styles = StyleSheet.create({
     },
     btnText:{
         color:'white',
-        fontSize:16
+        fontSize:14
     },
     btnHover:{
         backgroundColor:'#5a993ffe'
     },
     tableHeader:{
         backgroundColor:'#0a6340',
-        
+        paddingHorizontal:12,
+        paddingVertical:8
     },
     headerText:{
         color:'white',
@@ -495,7 +454,9 @@ const styles = StyleSheet.create({
         alignSelf:'center',
     },
     panelContent:{
-        padding:20
+        padding:20,
+        position:'relative',
+        flex:1,
     },
     fullname:{
         fontSize:16,
@@ -504,6 +465,11 @@ const styles = StyleSheet.create({
         marginTop:15
     },
     details:{
+        marginTop:20,
+        gap:10,
+        width:150
+    },
+    remark:{
         marginTop:20,
         gap:10,
     },
@@ -518,11 +484,6 @@ const styles = StyleSheet.create({
         paddingHorizontal:10,
         marginTop:15,
         paddingRight:30
-    },
-    actionMenu:{
-        alignSelf:'flex-end',
-        position:'absolute',
-        zIndex:400
     },
     pillTrigger:{
         border:'1px solid #0a6340',
@@ -572,44 +533,19 @@ const styles = StyleSheet.create({
     menuItemHover:{
         backgroundColor:"#f9f9f9"
     },
-    floatingMenu:{
-        position:'absolute',
-        right:7,
-        top:30,
-        backgroundColor:'white',
-        shadowColor: '#000',
-        shadowOpacity: 0.1,
-        shadowRadius: 10,
-        elevation: 5,
-        borderWidth: 1,
-        borderColor: '#f0f0f0',
-        userSelect:"none"
-    },
-    option:{
-        gap:8,
-        alignSelf:'flex-start'
-    },
-    inputEditing:{
-        borderWidth:1, 
-        borderColor:'#ddd',
-        borderRadius:10,
-        padding:12,
-        flex:1,
-        minWidth:220
-    },
     Btn:{
-        minWidth:100,
+        width:120,
         alignItems:'center',
-        backgroundColor:'#ffc95c',
-        borderRadius:5,
+        backgroundColor:'#2e9333',
+        borderRadius:10,
         paddingHorizontal:20,
         paddingVertical:8,
         marginTop:15,
+        position:'absolute',
+        bottom:15,
+        right:15
     },
-    actionBtn:{
-        gap:15,
-        justifyContent:'flex-end'
-    }
+
 });
 
-export default UserManagement;
+export default RegistrationManagement;

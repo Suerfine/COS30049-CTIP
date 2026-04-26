@@ -1,122 +1,222 @@
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, ImageBackground } from 'react-native';
 import CourseCard from '../components/CourseCard';
 import { useUserDashboard } from '../hooks/useUserDashboard';
 import { useMemo } from 'react';
+import ConfirmEnroll from '../components/ConfirmEnroll';
+import { useState } from 'react';
+import { ListFilter, SignalZero, SlidersHorizontal } from 'lucide-react-native'
+import FilterSidebar from '../components/FilterSidebar';
+import NavBar from '../components/NavBar';
 
 const UserCourse = ({ navigation }) => {
     const { courses, progressData, userType } = useUserDashboard();
+    const [selectedCourse, setSelectedCourse] = useState(null);
+    const [modalVisible, setModalVisible] = useState(false);
+    const [filterVisible, setFilterVisible] = useState(false);
 
-    // categorize courses
-    const { inProgressCourses, completedCourses, notEnrolledCourses } = useMemo(() => {
+    const [filters, setFilters] = useState({
+        level: 'all',
+        status: 'all',
+    });
 
-        const inProgress = [];
-        const completed = [];
-        const notEnrolled = [];
+    const [tempFilters, setTempFilters] = useState(filters);
 
-        courses.forEach(course => {
+    const coursesWithStatus = useMemo(() => {
+        return courses.map(course => {
             const progressObj = progressData.find(
-                p => p.id === course.id
+                p => p.courseId === course.id
             );
+
             const progress = progressObj ? progressObj.progress : null;
 
-            if (progress === null || progress === 0) {
-                notEnrolled.push({ ...course, progress });
-            } else if (progress === 1) {
-                completed.push({ ...course, progress });
-            } else {
-                inProgress.push({ ...course, progress });
+            let status = 'notEnrolled';
+            if (typeof progress === 'number') {
+                if (progress >= 1) status = 'completed';
+                else if (progress > 0) status = 'inProgress';
             }
+
+            return {
+                ...course,
+                progress,
+                status,
+            };
         });
-
-        return {
-            inProgressCourses: inProgress,
-            completedCourses: completed,
-            notEnrolledCourses: notEnrolled
-        };
-
     }, [courses, progressData]);
 
-    const renderCourseList = (list, showEnroll = false) => (
-        <View style={styles.cardContainer}>
-            {list.map(course => (
-                <CourseCard
-                    key={course.id}
-                    id={course.id}
-                    imagePath={{ uri: course.image }}
-                    courseTitle={course.courseTitle}
-                    numModules={course.modules ? course.modules.length : 0}
-                    duration={course.duration}
-                    expiry={course.expiryDate}
-                    progress={course.progress}
-                    userType={userType}
-                    onPress={() =>
-                        navigation.navigate('User Module', { id: course.id })
-                    }
-                    onEnroll={
-                        showEnroll
-                            ? () => console.log('Enroll:', course.id)
-                            : undefined
-                    }
-                />
-            ))}
-        </View>
-    );
-    console.log("RAW progressData:", progressData);
+    // filter by level/status
+    const filteredCourses = useMemo(() => {
+        if (!coursesWithStatus) return [];
+        return coursesWithStatus.filter(course => {
+            const matchLevel =
+                filters.level === 'all' ||
+                course.level?.trim().toLowerCase() === filters.level.toLowerCase();
+
+            const matchStatus =
+                filters.status === 'all' || course.status === filters.status;
+
+            return matchLevel && matchStatus;
+        });
+    }, [coursesWithStatus, filters]);
 
     return (
-        <ScrollView style={styles.container}>
-            <Text style={styles.title}>Courses</Text>
-            <View style={styles.sectionContainer}>
-                <View style={styles.sectionCard}>
-                    <Text style={styles.sectionTitle}>In Progress</Text>
-                    {renderCourseList(inProgressCourses)}
+        <View style={{ flex: 1 }}>
+            <NavBar/>
+            <ScrollView style={styles.container}>
+                <View style={styles.courseContainer}>
+                    {/* Background Image */}
+                    <ImageBackground 
+                        source={require('../../assets/forest.png')}
+                        style={styles.backgroundImage}
+                    >
+                        <View style={styles.courseHeader}>
+                            <View>
+                                <Text style={styles.description}>Here you can find all courses</Text>
+                                <Text style={styles.title}>All Courses</Text>
+                            </View>
+                        </View>
+                    </ImageBackground>
                 </View>
+                <View>
+                    <View style={styles.filterContainer}>
+                        <Pressable 
+                            onPress={() => {
+                                setTempFilters(filters);
+                                setFilterVisible(true);
+                            }}
+                            style={({ hovered }) => [
+                                styles.filter,
+                                hovered && styles.filterHover, 
+                            ]}
+                        >
+                            <SlidersHorizontal/>
+                        </Pressable>
+                    </View>
+                    <View style={styles.cardContainer}>
+                        {filteredCourses.length === 0?(
+                            <View style={styles.emptyContainer}>
+                                <Text style={styles.emptyText}>No courses found</Text>
+                            </View>
+                        ) : ( filteredCourses.map(course => (
+                            <CourseCard
+                                key={course.id}
+                                id={course.id}
+                                imagePath={{ uri: course.image }}
+                                courseTitle={course.courseTitle}
+                                numModules={course.modules ? course.modules.length : 0}
+                                duration={course.duration}
+                                expiry={course.expiryDate}
+                                progress={course.progress}
+                                userType={userType}
+                                onPress={() =>
+                                    navigation.navigate('User Module', { id: course.id })
+                                }
+                                onEnroll={() => {
+                                    setSelectedCourse(course);
+                                    setModalVisible(true);
+                                }}
+                            />
+                        ))
+                    )}
+                    </View>
+                </View>
+            </ScrollView>
 
-                <View style={styles.sectionCard}>
-                    <Text style={styles.sectionTitle}>Completed</Text>
-                    {renderCourseList(completedCourses)}
-                </View>
-                
-                <View style={styles.sectionCard}>
-                    <Text style={styles.sectionTitle}>Not Enrolled</Text>
-                    {renderCourseList(notEnrolledCourses, true)}
-                </View>
-            </View>
-        </ScrollView>
+            <FilterSidebar
+                visible={filterVisible}
+                tempFilters={tempFilters}
+                setTempFilters={setTempFilters}
+                onClose={() => setFilterVisible(false)}
+                onApply={() => {
+                    setFilters(tempFilters);
+                    setFilterVisible(false);
+                }}
+                onReset={() => {
+                    const reset = { level: 'all', status: 'all' };
+                    setTempFilters(reset);
+                    setFilters(reset);
+                }}
+            />
+
+            <ConfirmEnroll
+                visible={modalVisible}
+                course={selectedCourse}
+                onClose={() => setModalVisible(false)}
+                onConfirm={() => {
+                    console.log("Enrolled:", selectedCourse.id);
+
+                    // call api
+
+                    setModalVisible(false);
+                }}
+            />
+        </View>
     );
 };
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+        marginHorizontal: 30,
     },
-    title: {
-        marginHorizontal: 40,
-        marginTop: 34,
-        marginBottom: 30,
-        fontSize: 30,
-    },
-    sectionContainer:{
-        marginHorizontal: 40,
-    },
-    sectionCard:{
-        paddingHorizontal: 30,
-        paddingBottom: 30,
-        marginBottom: 30,
-        borderRadius: 20,
-        backgroundColor: '#9ee5a375',
-        boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.2)'
-    },
-    sectionTitle: {
-        fontSize: 20,
-        fontWeight: '600',
+    courseContainer: {
         marginTop: 20,
         marginBottom: 20,
     },
+    title: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        marginBottom: 10,
+        color:'white'
+    },
+    description: {
+        fontSize: 14,
+        lineHeight: 24,
+        color:'white',
+    },
+    courseHeader:{
+        paddingHorizontal:40,
+        paddingVertical:30,
+        borderRadius:20,
+        flexDirection:'row',
+        justifyContent:'space-between',
+        userSelect:'none',
+    },
+    backgroundImage:{
+        width:'100%',
+        borderRadius:20,
+        overflow:'hidden',
+        resizeMode:'fill',
+        marginTop:10,
+    },
     cardContainer: {
         flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: 20,
+        gap: 80,
+        marginBottom: 20,
+    },
+    filterContainer:{
+        flexDirection:'row',
+        justifyContent:'flex-end',
+        marginBottom:10,
+    },
+    filter:{
+        flexDirection:'row',
+        paddingVertical:5,
+        paddingRight:10,
+        borderRadius:5,
+    },
+    filterHover:{
+        color:'#efab21'
+    },
+    emptyContainer:{
+        width: '100%',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginTop: 100,
+    },
+
+    emptyText:{
+        fontSize: 20,
+        color: '#666',
     },
 });
 
