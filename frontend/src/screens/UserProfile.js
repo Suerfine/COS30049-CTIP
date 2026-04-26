@@ -312,6 +312,7 @@ const UserProfile = ({ navigation }) => {
                 </View>
             </View>
         </ScrollView>
+        </View>
     );
 }
 
