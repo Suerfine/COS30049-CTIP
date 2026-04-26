@@ -20,7 +20,10 @@ npm run dev
 # Open http://localhost:5000 in your browser
 ```
 
+!!! For development purposes, visit http://localhost:5000/api/docs for api reference!!!
+
 # Commands:
+
 `npm run seed:dev`
 
 Seeds the database with test data and synchorise the database models. Call this to reset the database or when there is a changes to the database structure.
@@ -30,12 +33,13 @@ Seeds the database with test data and synchorise the database models. Call this 
 Starts the server on live hotreload (the server automatically restarts when it detects changes).
 
 # Project Structure:
+
 ```
 database/ #Database maintenance and testing
     factories/
     seeders/
 src/
-    config/ #All configurations go here 
+    config/ #All configurations go here
         Database.ts
     controllers/ #Business logic of routes
         ...
