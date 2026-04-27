@@ -113,6 +113,7 @@ const styles = StyleSheet.create({
         paddingVertical: 10,
         borderBottomWidth: 1,
         borderBottomColor: '#ccc',
+        height:'60px'
     },
     left:{
         flex: 1,
@@ -168,10 +169,11 @@ const styles = StyleSheet.create({
         borderRadius:15,
         alignItems:"center",
         marginHorizontal:20,
+        width:220,
     },
     input:{
         flex:1,
-        maxWidth:140,
+        maxWidth:220,
         outlineStyle:'none'
     },
     notificationBtn:{

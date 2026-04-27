@@ -1,27 +1,35 @@
 import {useState, useEffect} from 'react';
 import { View, Text, StyleSheet, Pressable, ScrollView, Image, ImageBackground, Dimensions } from 'react-native';
-import { ListPlus, ChevronRight, ChevronLeft } from 'lucide-react-native';
+import { ListPlus, ChevronRight, ChevronLeft, ClockFading, Phone, Mail, ChevronsUpDown, ChevronsDownUp} from 'lucide-react-native';
 import Checkbox from 'expo-checkbox';
+import {Animated} from 'react-native';
 
-import NavBar from '../components/NavBar';
+// Import from other hook and components
 import CourseCard from '../components/CourseCard.js';
 import { useUserDashboard } from '../hooks/useUserDashboard';
 
 const UserDashboard = ({ navigation }) => {
-    const [topRowHeight, setTopRowHeight] = useState(0);
     const {courses,todos,userType,progressData,loading,setTodos,user,account} = useUserDashboard();
     const [selectedDate, setSelectedDate] = useState(null);
     const [filter, setFilter] = useState("all");
     const [currentDate, setCurrentDate] = useState(new Date());
+    const [isExpanded, setIsExpanded]=useState(false);
 
-    // Get window height so rightColumn does not overflow screen height
-    const [windowHeight, setWindowHeight] = useState(Dimensions.get('window').height);
-    useEffect(() => {
-        const subscription = Dimensions.addEventListener('change', ({ window }) => {
-            setWindowHeight(window.height);
-        });
-        return () => subscription?.remove();
-    }, []);
+    const slideAnim=useState(new Animated.Value(0))[0];
+    const handleTabChange=(tab, value)=>{
+        setFilter(tab);
+        Animated.spring(slideAnim,{
+            toValue:value,
+            useNativeDriver:false,
+            friction:8,
+            tension:40
+        }).start();
+    };
+
+    const translateX=slideAnim.interpolate({
+        inputRange:[0,1,2],
+        outputRange:[0,100, 200],
+    });
 
     // TODOLIST LOGIC
     // Toggle checkbox
@@ -69,6 +77,19 @@ const UserDashboard = ({ navigation }) => {
         });
     };
 
+    const getDaysInMonth = (date) => {
+        const year = date.getFullYear();
+        const month = date.getMonth();
+        const days = [];
+
+        const totalDays = new Date(year, month + 1, 0).getDate(); 
+        
+        for (let i = 1; i <= totalDays; i++) {
+            days.push(new Date(year, month, i));
+        }
+        return days;
+    };
+
     const weekDates = getWeekDates(currentDate);
 
     // dot indicator for dates with todo item(s)
@@ -89,118 +110,111 @@ const UserDashboard = ({ navigation }) => {
     });
 
     return(
-        <View style={{ flex: 1 }}>
-            <NavBar/>
-                <View key={windowHeight} style={styles.topRow} onLayout={(e) => setTopRowHeight(e.nativeEvent.layout.height)}>
-                    {/* Left side of screen */}
-                    <View style={styles.leftScreen}>
-                        <ScrollView>
-                            <Text style={styles.dashboardTitle}>Dashboard</Text>
-                                <View style={styles.leftColumn}>
+        <ScrollView style={{ flex: 1 }}>
+            <View style={styles.topRow}>
+                {/* Left side of screen */}
+                <View style={styles.leftScreen}>
+                        <View style={styles.leftColumn}>
+                            {/* info card */}
+                            <View style={styles.infoContainer}>
+                                <ImageBackground
+                                    source={require('../../assets/darkgreen_bg.jpeg')}
+                                    style={styles.infoCard}
+                                >
+                                    {/* info card left side */}
+                                    <View style={styles.infoLeft}>
+                                        <Text style={styles.welcomeText}>
+                                            Welcome, {user?.fname}
+                                        </Text>
 
-                                    {/* info card */}
-                                    <View style={styles.infoContainer}>
-                                        <ImageBackground
-                                            source={require('../../assets/darkgreen_bg.jpeg')}
-                                            style={styles.infoCard}
-                                        >
-                                            {/* info card left side */}
-                                            <View style={styles.infoLeft}>
-                                                <Text style={styles.welcomeText}>
-                                                    Welcome, {user?.fname}
-                                                </Text>
+                                        <View style={styles.row}>
+                                            <ClockFading size={16} color='white' style={styles.icon}/>
+                                            <Text style={styles.subText}>
+                                                Joined since {account?.joinedDate}
+                                            </Text>
+                                        </View>
 
+                                        <View style={styles.infoRow1}>
+                                            <View style={styles.row}>
+                                                <Phone size={16} color='white' style={styles.icon}/>
                                                 <Text style={styles.subText}>
-                                                    Joined since {account?.joinedDate}
-                                                </Text>
-
-                                                <View style={styles.infoRow1}>
-                                                    <View style={styles.infoRow2}>
-                                                        <Text style={styles.label}>Phone: </Text>
-                                                        <Text style={styles.subText}>
-                                                            <Text>{user?.telefon}</Text>
-                                                        </Text>
-                                                    </View>
-
-                                                    <View style={styles.infoRow2}>
-                                                        <Text style={styles.label}>Email: </Text>
-                                                        <Text style={styles.subText}>
-                                                            <Text>{user?.email}</Text>
-                                                        </Text>
-                                                    </View>
-                                                </View>
-                                            </View>
-
-                                            {/* info card right side */}
-                                            <View style={styles.infoRight}>
-                                                <Image source={{ uri: user?.profileImage }} style={styles.profilePic}/>
-
-                                                <Text style={styles.idText}>
-                                                    ID: {user?.id}
+                                                    {user?.telefon}
                                                 </Text>
                                             </View>
-                                        </ImageBackground>
+                                            
+                                            <View style={styles.row}>
+                                                <Mail size={16} color='white' style={styles.icon}/>
+                                                <Text style={styles.subText}>
+                                                    {user?.email}
+                                                </Text>
+                                            </View>
+                                        </View>
                                     </View>
 
-                                    {/* only display in progress courses */}
-                                    <View style={styles.cardContainer}>
-                                        {inProgressCourses.map(course => {
-                                            const courseProgress = progressData.find(p => p.courseId === course.id);
-                                            const numModules = course.modules ? course.modules.length : 0;
+                                    {/* info card right side */}
+                                    <View style={styles.infoRight}>
+                                        <Image source={{ uri: user?.profileImage }} style={styles.profilePic}/>
 
-                                            return (
-                                                <CourseCard
-                                                    key={course.id}
-                                                    id={course.id}
-                                                    imagePath={{ uri: course.image }}
-                                                    courseTitle={course.courseTitle}
-                                                    numModules={numModules}
-                                                    duration={course.duration}
-                                                    expiry={course.expiryDate}
-                                                    progress={courseProgress?.progress}
-                                                    userType={userType}
-                                                    onPress={() => navigation.navigate('User Module', { id: course.id })}
-                                                />
-                                            );
-                                        })}
+                                        <Text style={styles.idBadge}>
+                                            ID: {user?.id}
+                                        </Text>
                                     </View>
-                                </View> 
-                        </ScrollView>
-                    </View>
+                                </ImageBackground>
+                            </View>
+                            <Text style={styles.sectionTitle}>My Courses</Text>
 
-                    {/* Right side of screen */} 
-                    <View style={[styles.rightWrapper, topRowHeight > 0 && { height: topRowHeight }]}>
-                        <View style={styles.rightColumn}>
+                            {/* only display in progress courses */}
+                            <View style={styles.cardContainer}>
+                                {inProgressCourses.map(course => {
+                                    const courseProgress = progressData.find(p => p.courseId === course.id);
+                                    const numModules = course.modules ? course.modules.length : 0;
+
+                                    return (
+                                        <CourseCard
+                                            key={course.id}
+                                            id={course.id}
+                                            imagePath={{ uri: course.image }}
+                                            courseTitle={course.courseTitle}
+                                            numModules={numModules}
+                                            duration={course.duration}
+                                            expiry={course.expiryDate}
+                                            progress={courseProgress?.progress}
+                                            userType={userType}
+                                            onPress={() => navigation.navigate('User Module', { id: course.id })}
+                                        />
+                                    );
+                                })}
+                            </View>
+                        </View> 
+                </View>
+
+                {/* Right side of screen */} 
+                <View style={styles.rightWrapper}>
+                    <View style={styles.rightColumn}>
+                        
+                        {/* Calendar */}
+                        <View style={styles.calendarContainer}>
+                            <View style={styles.calendarHeader}>
+                                <Text style={styles.monthText}>{currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })}
+                                </Text>
+                                <Pressable onPress={()=>setIsExpanded(!isExpanded)} style={styles.expandBtn}>
+                                    {isExpanded ? <ChevronsDownUp size={20} color='#0a6340'/> : <ChevronsUpDown size={20} color='#0a6340'/>}
+                                </Pressable>
+                            </View>
                             
-                            {/* Calendar */}
-                            <View style={styles.calendarContainer}>
-                                <View style={styles.calendarHeader}>
-                                    <Pressable onPress={() => {
-                                        const d = new Date(currentDate);
-                                        d.setDate(d.getDate() - 7);
-                                        setCurrentDate(d);
-                                    }}>
-                                        <ChevronLeft style={styles.calendarBtn} />
-                                    </Pressable>
+                            <View style={styles.divider} />
+                            <View style={styles.calendarBodyRow}>
+                                <Pressable onPress={() => {
+                                    const d = new Date(currentDate);
+                                    isExpanded ? d.setMonth(d.getMonth() - 1) : d.setDate(d.getDate() - 7);
+                                    setCurrentDate(d);
+                                }}>
+                                    <ChevronLeft size={24} color='#2f6618fe' />
+                                </Pressable>
 
-                                    <Text style={styles.monthText}>
-                                        {currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })}
-                                    </Text>
-
-                                    <Pressable onPress={() => {
-                                        const d = new Date(currentDate);
-                                        d.setDate(d.getDate() + 7);
-                                        setCurrentDate(d);
-                                    }}>
-                                        <ChevronRight style={styles.calendarBtn} />
-                                    </Pressable>
-                                </View>
-                                
-                                <View style={styles.divider} />
-
-                                {/* Weeks row */}
-                                <View style={styles.weekRow}>
-                                    {weekDates.map((date, index) => {
+                                {/* The Dates Grid */}
+                                <View style={isExpanded ? styles.monthGrid : styles.weekRow}>
+                                    {(isExpanded ? getDaysInMonth(currentDate) : weekDates).map((date, index) => {
                                         const dateString = date.toISOString().split('T')[0];
                                         const isSelected = selectedDate === dateString;
                                         const hasTodo = hasPendingTodoOnDate(date);
@@ -210,95 +224,109 @@ const UserDashboard = ({ navigation }) => {
                                                 key={index}
                                                 style={[
                                                     styles.dayContainer,
-                                                    isSelected && styles.selectedDay
+                                                    isSelected && styles.selectedDay,
+                                                    isExpanded ? styles.monthDayContainer : { flex: 1 },
                                                 ]}
-                                                onPress={() => {
-                                                    if (isSelected) {
-                                                        setSelectedDate(null);
-                                                    } else {
-                                                        setSelectedDate(dateString);
-                                                    }
-                                                }}
+                                                onPress={() => setSelectedDate(isSelected ? null : dateString)}
                                             >
                                                 <Text style={styles.dayName}>
                                                     {date.toLocaleDateString('en-US', { weekday: 'short' })}
                                                 </Text>
-
-                                                <Text style={[
-                                                    styles.dayNumber,
-                                                    isSelected && styles.selectedText
-                                                ]}>
+                                                <Text style={[styles.dayNumber, isSelected && styles.selectedText]}>
                                                     {date.getDate()}
                                                 </Text>
-
                                                 {hasTodo && <View style={styles.dot} />}
                                             </Pressable>
                                         );
                                     })}
                                 </View>
+
+                                {/* Right Button - Always visible */}
+                                <Pressable onPress={() => {
+                                    const d = new Date(currentDate);
+                                    isExpanded ? d.setMonth(d.getMonth() + 1) : d.setDate(d.getDate() + 7);
+                                    setCurrentDate(d);
+                                }}>
+                                    <ChevronRight size={24} color='#2f6618fe' />
+                                </Pressable>
+
                             </View>
+                        </View>
 
-                            {/* Todo tab for filter (All, Completed, Not completed) */}
-                            <View style={styles.todoTab}>
-                                <Pressable onPress={() => setFilter("all")}>
-                                    <Text style={filter === "all" ? styles.activeTab : styles.tab}>
-                                        All
-                                    </Text>
+                        {/* Todo tab for filter (All, Completed, Not completed) */}
+                        <View style={styles.tabWrapper}>
+                            <View style={[styles.tabContainer,styles.row]}>
+                                <Pressable onPress={()=>handleTabChange('all',0)} style={styles.tabButton}>
+                                    <Text style={[styles.tabText, filter==='all' && styles.activeTabText]}>All</Text>
                                 </Pressable>
-
-                                <Pressable onPress={() => setFilter("completed")}>
-                                    <Text style={filter === "completed" ? styles.activeTab : styles.tab}>
-                                        Completed
-                                    </Text>
+                                <Pressable onPress={()=>handleTabChange('completed',1)} style={styles.tabButton}>
+                                    <Text style={[styles.tabText, filter==='completed' && styles.activeTabText]}>Completed</Text>
                                 </Pressable>
-
-                                <Pressable onPress={() => setFilter("pending")}>
-                                    <Text style={filter === "pending" ? styles.activeTab : styles.tab}>
-                                        Not Completed
-                                    </Text>
+                                <Pressable onPress={()=>handleTabChange('pending',2)} style={styles.tabButton}>
+                                    <Text style={[styles.tabText, filter==='pending' && styles.activeTabText]}>Pending</Text>
                                 </Pressable>
                             </View>
+                            <Animated.View style={[styles.slidingLine, {transform:[{translateX}]}]}/>
+                        </View>
+                        {/* <View style={styles.todoTab}>
+                            <Pressable onPress={() => setFilter("all")}>
+                                <Text style={filter === "all" ? styles.activeTab : styles.tab}>
+                                    All
+                                </Text>
+                            </Pressable>
 
-                            {/* Todo list */}
-                            <View style={{ flex: 1, minHeight: 0 }}>
-                                <View style={styles.todoList}>
-                                    <View style={styles.todoHeader}>
-                                        <Text style={styles.todoListTitle}>Todo List</Text>
+                            <Pressable onPress={() => setFilter("completed")}>
+                                <Text style={filter === "completed" ? styles.activeTab : styles.tab}>
+                                    Completed
+                                </Text>
+                            </Pressable>
 
-                                        <Pressable onPress={() => setShowModal(true)}>
-                                            <ListPlus size={20} />
-                                        </Pressable>
-                                    </View>
-                                    <ScrollView showsVerticalScrollIndicator={true}>
-                                        {filteredTodos.length === 0 ? (
-                                            <Text>No todos</Text>
-                                        ) : (
-                                            filteredTodos.map(todo => (
-                                                <View key={todo.id} style={styles.todoItem}>
-                                                    <View style={styles.todoRow}>
-                                                        <Checkbox
-                                                            value={todo.completed}
-                                                            onValueChange={() => toggleTodo(todo.id)}
-                                                        />
-                                                        <View style={{flex: 1}}>
-                                                            <Text style={styles.todoTitle}>{todo.title}</Text>
-                                                            <Text style={styles.todoCourse}>{todo.course} - {todo.date}</Text>
-                                                        </View>
+                            <Pressable onPress={() => setFilter("pending")}>
+                                <Text style={filter === "pending" ? styles.activeTab : styles.tab}>
+                                    Not Completed
+                                </Text>
+                            </Pressable>
+                        </View> */}
 
-                                                        <Pressable onPress={() => openEdit(todo)}>
-                                                            <ChevronRight size={20} />
-                                                        </Pressable>
-                                                    </View>
-                                                </View>
-                                            ))
-                                        )}
-                                    </ScrollView>
+                        {/* Todo list */}
+                        <View style={{ flex: 1, minHeight: 0 }}>
+                            <View style={styles.todoList}>
+                                <View style={styles.todoHeader}>
+                                    <Text style={styles.todoListTitle}>Todo List</Text>
+                                    <Pressable onPress={() => setShowModal(true)}>
+                                        <ListPlus size={20} />
+                                    </Pressable>
                                 </View>
+                                <ScrollView showsVerticalScrollIndicator={true} indicatorStyle='white'>
+                                    {filteredTodos.length === 0 ? (
+                                        <Text>No todos</Text>
+                                    ) : (
+                                        filteredTodos.map(todo => (
+                                            <View key={todo.id} style={styles.todoItem}>
+                                                <View style={styles.todoRow}>
+                                                    <Checkbox
+                                                        value={todo.completed}
+                                                        onValueChange={() => toggleTodo(todo.id)}
+                                                    />
+                                                    <View style={{flex: 1}}>
+                                                        <Text style={styles.todoTitle}>{todo.title}</Text>
+                                                        <Text style={styles.todoCourse}>{todo.course} - {todo.date}</Text>
+                                                    </View>
+
+                                                    <Pressable onPress={() => openEdit(todo)}>
+                                                        <ChevronRight size={20} />
+                                                    </Pressable>
+                                                </View>
+                                            </View>
+                                        ))
+                                    )}
+                                </ScrollView>
                             </View>
                         </View>
                     </View>
                 </View>
-        </View>
+            </View>
+        </ScrollView>
     );
 }
 
@@ -310,18 +338,10 @@ const styles = StyleSheet.create({
         paddingHorizontal: 30,
         marginLeft: 20,
     },
-    dashboardTitle:{
-        marginHorizontal: 10,
-        marginVertical: 10,
-        marginBottom: 15,
-        fontSize: 40,
-        fontWeight: 'bold',
-    },
     cardContainer:{
         flexDirection:'row',
         flexWrap:'wrap',
         justifyContent:'flex-start',
-        marginTop:20,
         gap:30,
     },
     topRow:{
@@ -342,8 +362,13 @@ const styles = StyleSheet.create({
         paddingVertical: 30,
     },
     rightWrapper:{
-        flex: 0.8,
+        flex: 1,
         backgroundColor: '#E8F5E9',
+        position:'sticky',
+        top:0,
+        height:'calc(100vh - 65px)',
+        alignSelf:'flex-start',
+        maxWidth:370
     },
     // Info card
     infoContainer:{
@@ -373,36 +398,30 @@ const styles = StyleSheet.create({
         marginRight: 30,
     },
     welcomeText:{
-        fontSize: 30,
+        fontSize: 25,
         fontWeight: 'bold',
         color: 'white',
     },
     subText:{
-        fontSize: 15,
+        fontSize: 14,
         color: 'white',
         marginTop: 4,
+        marginLeft:7
     },
     infoRow1:{
         flexDirection: 'row',
         gap: 50,
     },
-    infoRow2:{
+    row:{
         flexDirection: 'row',
     },
-    label:{
-        fontWeight: 'bold',
-        fontSize: 16,
-        color: 'white',
-        marginTop: 4,
-    },
-    profilePic:{
-        width: 100,
-        height: 100,
-        borderRadius: 50,
+    profilePic: {
+        width: 80,
+        height: 80,
+        borderRadius: 40,
         borderWidth: 3,
-        borderColor: 'rgba(255,255,255,0.5)',
-        backgroundColor: '#ccc',
-        marginBottom: 10,
+        borderColor: 'rgba(255, 255, 255, 0.5)',
+        marginBottom: 5,
     },
     idText:{
         fontWeight: 'bold',
@@ -415,39 +434,50 @@ const styles = StyleSheet.create({
         marginBottom: 10,
         paddingTop: 10,
         paddingBottom: 10,
-        paddingHorizontal: 5,
         overflow: 'hidden',
         backgroundColor: 'white',
-        shadowColor: '#000',
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-        elevation: 3,
+        borderRadius:5
+        
     },
     calendarHeader:{
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
         marginBottom: 10,
+        marginHorizontal:15,
+        userSelect:'none'
     },
     calendarBtn:{
         fontSize: 20,
-        paddingHorizontal: 15,
         color: '#2f6618fe',
     },
     monthText:{
         fontSize: 16,
         fontWeight: 'bold',
     },
-    weekRow:{
+    calendarBodyRow: {
+        flexDirection: 'row',
+        alignItems:'center'
+    },
+    monthGrid: {
+        flex: 1, 
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'flex-start',
+    },
+    weekRow: {
+        flex: 1,
         flexDirection: 'row',
         justifyContent: 'space-between',
     },
+    monthDayContainer:{
+        width:'14.28%',
+        height:45,
+        paddingVertical:5
+    },
     dayContainer:{
-        flex: 1,
         alignItems: 'center',
-        paddingVertical: 10,
-        borderRadius: 10,
-        height: 75,
+        paddingVertical:10,
     },
     dayName:{
         fontSize: 12,
@@ -455,8 +485,6 @@ const styles = StyleSheet.create({
     },
     dayNumber:{
         fontSize: 16,
-        marginTop: 4,
-        padding: 6,
     },
     selectedText:{
         color: 'white',
@@ -482,17 +510,12 @@ const styles = StyleSheet.create({
     // Todo list
     todoList:{
         flex: 1,
-        minHeight: 0,
-        backgroundColor: '#A5D6A7',
+        backgroundColor: '#8ed2a944',
         borderRadius: 10,
         padding: 15,
-        shadowColor: '#000',
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-        elevation: 3,
     },
     todoListTitle:{
-        fontSize: 18,
+        fontSize: 17,
         marginBottom: 10,
         fontWeight: 'bold',
     },
@@ -550,6 +573,54 @@ const styles = StyleSheet.create({
         padding: 7,
         paddingHorizontal: 15,
         borderRadius: 50
+    },
+    icon:{
+        alignSelf:'center'
+    },
+    idBadge: {
+        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+        paddingHorizontal: 8,
+        paddingVertical: 2,
+        borderRadius: 12,
+        marginTop: 4,
+        color: '#fff',
+        fontSize: 16,
+        fontFamily: 'monospace',
+    },
+    tabWrapper:{
+        marginVertical:10,
+        positive:'relative',
+        justifyContent:'space-between',
+    },
+    tabContainer:{
+        width:'100%',
+        userSelect:'none',
+    },
+    slidingLine:{
+        position:"absolute",
+        bottom:0,
+        width:103,
+        height:3,
+        backgroundColor:'#0a6340',
+        borderRadius:3
+    },
+    tabButton:{
+        paddingVertical:10,
+        width:100,
+        alignItems:'center'
+    },
+    activeTabText:{
+        color:'#065133c6',
+        fontWeight:'bold',
+    },
+    tabText:{
+        fontSize:14,
+        color:'#666'
+    },
+    sectionTitle: {
+        fontSize: 22,
+        fontWeight: 'bold',
+        color: '#1a1a1a',
     },
 });
 

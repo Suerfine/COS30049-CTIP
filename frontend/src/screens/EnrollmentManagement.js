@@ -2,7 +2,7 @@ import React, {useState} from 'react';
 import { View, Text, StyleSheet, Pressable, TextInput, ImageBackground, ScrollView, FlatList, Image} from 'react-native';
 import { useEnrollmentManagement } from '../hooks/useEnrollmentManagement';
 import { RotateCcw, Search, ChevronDown, ChevronUp,ArrowUpNarrowWide, ArrowDownWideNarrow, Circle, Trash2} from 'lucide-react-native';
-import {Animated, Dimensions} from 'react-native';
+import {Animated} from 'react-native';
 
 const EnrollmentManagement = () => {
     const {enrollments, submissions, loading}=useEnrollmentManagement();

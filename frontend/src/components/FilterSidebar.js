@@ -12,7 +12,7 @@ const FilterSidebar = ({ visible, tempFilters, setTempFilters, onApply, onReset,
     const [translateX, setTranslateX] = useState(-300);
 
     useEffect(() => {
-        setTranslateX(visible ? 0 : -300);
+        setTranslateX(visible ? 0 : 300);
     }, [visible]);
 
     const toggle = (key, value) => {
@@ -102,8 +102,9 @@ const styles = StyleSheet.create({
     },
     sidebar: {
         position: 'absolute',
-        left: 0,
+        right: 0,
         top: 0,
+        bottom:0,
         height: '100%',
         width: 280,
         backgroundColor: 'white',
