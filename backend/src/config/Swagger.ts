@@ -38,21 +38,35 @@ const options: swaggerJSDoc.Options = {
       schemas: {
         CreateUserRequest: {
           type: "object",
-          required: ["username", "password", "role"],
+          required: [
+            "username",
+            "firstname",
+            "lastname",
+            "password",
+            "role",
+            "identification",
+            "personal_email",
+          ],
           properties: {
             username: { type: "string", example: "john.doe" },
+            firstname: { type: "string", example: "John" },
+            lastname: { type: "string", example: "Doe" },
             password: { type: "string", example: "securepassword123" },
             role: {
               type: "string",
               enum: Object.values(UserRoles),
               example: UserRoles.PARK_GUIDE,
             },
-            registration_id: { type: "integer", example: 10 },
             identification: { type: "string", example: "S1234567" },
             personal_email: {
               type: "string",
               format: "email",
               example: "john.doe@example.com",
+            },
+            pfp: {
+              type: "string",
+              format: "binary",
+              description: "Optional profile image file",
             },
           },
         },
@@ -61,6 +75,8 @@ const options: swaggerJSDoc.Options = {
           properties: {
             id: { type: "integer", example: 1 },
             username: { type: "string", example: "john.doe" },
+            firstname: { type: "string", example: "John" },
+            lastname: { type: "string", example: "Doe" },
             role: { type: "string", example: "ADMIN" },
             last_login_at: {
               type: "string",
@@ -84,6 +100,8 @@ const options: swaggerJSDoc.Options = {
           type: "object",
           properties: {
             username: { type: "string", example: "john.doe" },
+            firstname: { type: "string", example: "John" },
+            lastname: { type: "string", example: "Doe" },
             password: { type: "string", example: "securepassword123" },
             role: {
               type: "string",
@@ -95,6 +113,11 @@ const options: swaggerJSDoc.Options = {
               type: "string",
               format: "email",
               example: "john.doe@example.com",
+            },
+            pfp: {
+              type: "string",
+              format: "binary",
+              description: "Optional profile image file",
             },
           },
         },

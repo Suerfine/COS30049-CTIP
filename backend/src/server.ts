@@ -1,4 +1,5 @@
 import express, { Application, Request, Response } from "express";
+import path from "path";
 import sequelize from "./config/Database";
 import "./models";
 import routes from "./routes";
@@ -7,12 +8,16 @@ import swaggerSpec from "./config/Swagger";
 
 const app: Application = express();
 const port = Number(process.env.PORT) || 5000;
+const publicStoragePath = path.resolve(__dirname, "../storage/public");
 
 // Enable URL-encoded form data parsing
 app.use(express.urlencoded({ extended: true }));
 
 // Middleware to parse JSON bodies
 app.use(express.json());
+
+// Serve public storage assets
+app.use("/public", express.static(publicStoragePath));
 
 // Basic route
 app.get("/", (req: Request, res: Response) => {

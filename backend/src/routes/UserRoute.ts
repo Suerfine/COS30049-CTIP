@@ -1,8 +1,10 @@
 import { Router, Request, Response } from "express";
 import * as UserController from "../controllers/UserController";
 import { auth } from "../middelware/Auth";
+import profilePictureUpload from "../middelware/UserPfpUpload";
 
 const userRouter = Router();
+const userPfpUpload = profilePictureUpload.single("pfp");
 
 /**
  * @swagger
@@ -16,7 +18,7 @@ const userRouter = Router();
  *     requestBody:
  *       required: true
  *       content:
- *         application/x-www-form-urlencoded:
+ *         multipart/form-data:
  *           schema:
  *             $ref: '#/components/schemas/CreateUserRequest'
  *     responses:
@@ -45,7 +47,7 @@ const userRouter = Router();
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-userRouter.post("/", auth, UserController.createUser);
+userRouter.post("/", auth, userPfpUpload, UserController.createUser);
 
 /**
  * @swagger
@@ -213,7 +215,7 @@ userRouter.get("/:id", auth, UserController.getUserById);
  *     requestBody:
  *       required: true
  *       content:
- *         application/x-www-form-urlencoded:
+ *         multipart/form-data:
  *           schema:
  *             $ref: '#/components/schemas/UpdateUserRequest'
  *     responses:
@@ -243,7 +245,7 @@ userRouter.get("/:id", auth, UserController.getUserById);
  *               $ref: '#/components/schemas/ErrorResponse'
  */
 // Update user
-userRouter.put("/:id", auth, UserController.upsertUser);
+userRouter.put("/:id", auth, userPfpUpload, UserController.upsertUser);
 
 /**
  * @swagger

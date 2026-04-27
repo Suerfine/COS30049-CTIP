@@ -1,5 +1,8 @@
 import { Request, Response, NextFunction } from "express";
-import { User, Registration } from "../models";
+import path from "path";
+import { promises as fs } from "fs";
+import sharp from "sharp";
+import { User } from "../models";
 import {
   CreateUserRequest,
   GetAllUserRequest,
@@ -11,10 +14,78 @@ import { PaginateRequestParams, PaginateResponse } from "../types/common";
 import { UserRoles } from "../enum/UserRoles";
 import { hashPassword } from "../utils/password";
 
+const USER_PFP_DIR = path.resolve(process.cwd(), "storage/public/user/pfp");
+const PFP_MAX_WIDTH = Number(process.env.PFP_MAX_WIDTH) || 512;
+const PFP_MAX_HEIGHT = Number(process.env.PFP_MAX_HEIGHT) || 512;
+const SUPPORTED_PFP_MIME_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+]);
+
+function extensionForMimeType(mimeType: string): string {
+  if (mimeType === "image/jpeg") {
+    return "jpg";
+  }
+  if (mimeType === "image/png") {
+    return "png";
+  }
+  if (mimeType === "image/webp") {
+    return "webp";
+  }
+  if (mimeType === "image/gif") {
+    return "gif";
+  }
+
+  return "";
+}
+
+async function saveUserProfilePicture(
+  userId: number,
+  file?: Express.Multer.File,
+): Promise<void> {
+  if (!file) {
+    return;
+  }
+
+  if (!SUPPORTED_PFP_MIME_TYPES.has(file.mimetype)) {
+    throw new Error("Unsupported profile image type");
+  }
+
+  const extension = extensionForMimeType(file.mimetype);
+  if (!extension) {
+    throw new Error("Unsupported profile image type");
+  }
+
+  await fs.mkdir(USER_PFP_DIR, { recursive: true });
+
+  // Keep a single active profile picture per user regardless of extension.
+  const existingFiles = await fs.readdir(USER_PFP_DIR);
+  const existingUserFiles = existingFiles.filter((name) =>
+    name.startsWith(`${userId}.`),
+  );
+  await Promise.all(
+    existingUserFiles.map((name) => fs.unlink(path.join(USER_PFP_DIR, name))),
+  );
+
+  const destination = path.join(USER_PFP_DIR, `${userId}.${extension}`);
+  await sharp(file.buffer)
+    .resize({
+      width: PFP_MAX_WIDTH,
+      height: PFP_MAX_HEIGHT,
+      fit: "inside",
+      withoutEnlargement: true,
+    })
+    .toFile(destination);
+}
+
 function toUserResponse(user: User): UserResponse {
   return {
     id: user.id,
     username: user.username,
+    firstname: user.firstname,
+    lastname: user.lastname,
     role: user.role,
     last_login_at: user.last_login_at,
     created_at: user.created_at,
@@ -112,7 +183,10 @@ export const deleteUser = async (
 };
 
 export const upsertUser = async (
-  req: Request<{ id: string }, unknown, UpdateUserRequest> & { user?: User },
+  req: Request<{ id: string }, unknown, UpdateUserRequest> & {
+    user?: User;
+    file?: Express.Multer.File;
+  },
   res: Response<UserResponse | { message: string }>,
   next: NextFunction,
 ) => {
@@ -149,13 +223,49 @@ export const upsertUser = async (
       typeof req.body.username === "string" &&
       req.body.username.trim() !== ""
     ) {
+      // Checking if the new username already exists for another user
+      const existingUsername = await User.findOne({
+        where: { username: req.body.username },
+      });
+      if (existingUsername) {
+        return res.status(400).json({ message: "Username already exists" });
+      }
+      // Only update username if it's provided and not empty
       updates.username = req.body.username;
+    }
+
+    if (
+      typeof req.body.firstname === "string" &&
+      req.body.firstname.trim() !== ""
+    ) {
+      updates.firstname = req.body.firstname;
+    }
+
+    if (
+      typeof req.body.lastname === "string" &&
+      req.body.lastname.trim() !== ""
+    ) {
+      updates.lastname = req.body.lastname;
     }
 
     if (
       typeof req.body.identification === "string" &&
       req.body.identification.trim() !== ""
     ) {
+      // Checking if the new identification already exists for another user
+      const existingIdentification = await User.findOne({
+        where: {
+          identification: req.body.identification,
+          id: { $ne: targetUser.id },
+        },
+      });
+      if (existingIdentification) {
+        return res
+          .status(400)
+          .json({ message: "Identification already exists" });
+      }
+
+      // Only update identification if it's provided and not empty
       updates.identification = req.body.identification;
     }
 
@@ -177,13 +287,14 @@ export const upsertUser = async (
       updates.role = req.body.role;
     }
 
-    if (Object.keys(updates).length === 0) {
+    if (Object.keys(updates).length === 0 && !req.file) {
       return res
         .status(400)
         .json({ message: "No valid fields provided to update" });
     }
 
     await targetUser.update(updates);
+    await saveUserProfilePicture(targetUser.id, req.file);
 
     return res.json(toUserResponse(targetUser));
   } catch (err) {
@@ -192,7 +303,7 @@ export const upsertUser = async (
 };
 
 export const createUser = async (
-  req: Request<{}, {}, CreateUserRequest>,
+  req: Request<{}, {}, CreateUserRequest> & { file?: Express.Multer.File },
   res: Response<UserResponse | { message: string }>,
   next: NextFunction,
 ) => {
@@ -200,13 +311,33 @@ export const createUser = async (
     username,
     password,
     role,
-    registration_id,
+    firstname,
+    lastname,
     identification,
     personal_email,
   } = req.body;
   try {
-    let user_identification: string = "";
-    let user_personal_email: string = "";
+    if (
+      typeof firstname !== "string" ||
+      firstname.trim() === "" ||
+      typeof lastname !== "string" ||
+      lastname.trim() === ""
+    ) {
+      return res.status(400).json({
+        message: "firstname and lastname are required",
+      });
+    }
+
+    const user_firstname = firstname.trim();
+    const user_lastname = lastname.trim();
+    const user_identification = identification?.trim();
+    const user_personal_email = personal_email?.trim();
+
+    if (!user_identification || !user_personal_email) {
+      return res.status(400).json({
+        message: "identification and personal_email are required",
+      });
+    }
 
     // Checking if username already exists
     const existingUser = await User.findOne({ where: { username } });
@@ -214,30 +345,12 @@ export const createUser = async (
       return res.status(400).json({ message: "Username already exists" });
     }
 
-    // If the user being created is not an admin then we need to check if the registration_id is valid
-    if (role !== UserRoles.ADMIN) {
-      if (!registration_id) {
-        return res
-          .status(400)
-          .json({ message: "registration_id is required for non-admin users" });
-      }
-      // Check if the registration_id exists in the database
-      const registration = await Registration.findByPk(registration_id);
-      if (!registration) {
-        return res.status(400).json({ message: "Invalid registration_id" });
-      }
-      user_identification = registration.identification;
-      user_personal_email = registration.personal_email;
-    } else {
-      // If the user is an admin, we need to check for identification and personal_email
-      if (!identification || !personal_email) {
-        return res.status(400).json({
-          message:
-            "identification and personal_email are required for admin users",
-        });
-      }
-      user_identification = identification;
-      user_personal_email = personal_email;
+    //Checking if identification already exists
+    const existingIdentification = await User.findOne({
+      where: { identification: user_identification },
+    });
+    if (existingIdentification) {
+      return res.status(400).json({ message: "Identification already exists" });
     }
 
     // Hash the password before storing it in the database
@@ -248,28 +361,33 @@ export const createUser = async (
       username: username,
       password_hash: hashedPassword,
       role: role,
+      firstname: user_firstname,
+      lastname: user_lastname,
       identification: user_identification,
       personal_email: user_personal_email,
     });
 
-    // If the user was a non-admin, we should also update the registration to link it to the new user
-    if (role !== UserRoles.ADMIN) {
-      await Registration.update(
-        { user_id: newUser.id },
-        { where: { id: registration_id } },
-      );
-    }
+    await saveUserProfilePicture(newUser.id, req.file);
 
     // Return the created user (excluding the password hash)
     res.status(201).json({
       id: newUser.id,
       username: newUser.username,
+      firstname: newUser.firstname,
+      lastname: newUser.lastname,
       role: newUser.role,
       last_login_at: newUser.last_login_at,
       created_at: newUser.created_at,
       updated_at: newUser.updated_at,
     });
   } catch (err) {
+    if (
+      err instanceof Error &&
+      err.message.toLowerCase().includes("profile image")
+    ) {
+      return res.status(400).json({ message: err.message });
+    }
+
     res.status(500).json({ message: "Internal server error\n" + err });
   }
 };

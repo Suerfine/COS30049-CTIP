@@ -12,6 +12,8 @@ import { UserRoles } from "../enum/UserRoles";
 class User extends Model<InferAttributes<User>, InferCreationAttributes<User>> {
   declare id: CreationOptional<number>;
   declare username: string;
+  declare firstname: string;
+  declare lastname: string;
   declare identification: string;
   declare personal_email: string;
   declare role: UserRoles;
@@ -33,6 +35,14 @@ User.init(
       type: DataTypes.STRING(30),
       allowNull: false,
       unique: true,
+    },
+    firstname: {
+      type: DataTypes.STRING(100),
+      allowNull: false,
+    },
+    lastname: {
+      type: DataTypes.STRING(100),
+      allowNull: false,
     },
     identification: {
       type: DataTypes.STRING(30),
@@ -84,6 +94,12 @@ User.init(
       beforeValidate: (user) => {
         if (typeof user.username === "string") {
           user.username = user.username.trim();
+        }
+        if (typeof user.firstname === "string") {
+          user.firstname = user.firstname.trim();
+        }
+        if (typeof user.lastname === "string") {
+          user.lastname = user.lastname.trim();
         }
         if (typeof user.identification === "string") {
           user.identification = user.identification.trim();
