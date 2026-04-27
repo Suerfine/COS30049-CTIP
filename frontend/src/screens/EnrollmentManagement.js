@@ -2,9 +2,11 @@ import React, {useState} from 'react';
 import { View, Text, StyleSheet, Pressable, TextInput, ImageBackground, ScrollView, FlatList, Image} from 'react-native';
 import { useEnrollmentManagement } from '../hooks/useEnrollmentManagement';
 import { RotateCcw, Search, ChevronDown, ChevronUp,ArrowUpNarrowWide, ArrowDownWideNarrow, Circle, Trash2} from 'lucide-react-native';
+import {Animated, Dimensions} from 'react-native';
 
 const EnrollmentManagement = () => {
     const {enrollments, submissions, loading}=useEnrollmentManagement();
+    const [activeTab, setActiveTab]=useState('enrollment');
     const enrollFields=['fullName', 'courseName', 'status'];
     const [searchTerm, setSearchTerm]=useState('');
     const [currentPage, setCurrentPage]=useState(1);
@@ -12,12 +14,36 @@ const EnrollmentManagement = () => {
     const [currentStatus, setCurrentStatus]=useState('All');
     const [isOpen, setIsOpen]=useState(false);
 
+    const STATUS_OPTIONS={
+        enrollment:['All', 'Completed', 'In Progress', 'Expired'],
+        submission:['All', 'Approved', 'Pending', 'Rejected']
+    };
+
+    const displayData=activeTab === 'enrollment' ? enrollments : submissions;
+
     const indexOfLastItem=currentPage*itemsPerPage;
     const indexOfFirstItem=indexOfLastItem-itemsPerPage;
-    const currentEnrollments=enrollments.slice(indexOfFirstItem, indexOfLastItem);
-    const totalPages=Math.ceil(enrollments.length/itemsPerPage);
+    const currentData=displayData.slice(indexOfFirstItem, indexOfLastItem);
+    const totalPages=Math.ceil(displayData.length/itemsPerPage);
+    const slideAnim=useState(new Animated.Value(0))[0];
 
-    const renderHeader=()=>(
+    const handleTabChange=(tab, value)=>{
+        setActiveTab(tab);
+        setCurrentPage(1);
+        Animated.spring(slideAnim,{
+            toValue:value,
+            useNativeDriver:false,
+            friction:8,
+            tension:50
+        }).start();
+    };
+
+    const translateX=slideAnim.interpolate({
+        inputRange:[0,1],
+        outputRange:[0,150],
+    });
+
+    const renderEnrollmentHeader=()=>(
         <View style={[styles.tableHeader, styles.row]}>
             <Text style={[styles.headerText,{flex: 2}]}>Full Name</Text>
             <Text style={[styles.headerText, { flex:2}]}>Course Code</Text>
@@ -25,14 +51,28 @@ const EnrollmentManagement = () => {
             <Text style={[styles.headerText, { flex:2}]}>Enrolled On</Text>
             <Text style={[styles.headerText, { flex:2}]}>Status</Text>
             <Text style={[styles.headerText, { flex:2}]}>Completed On</Text>
-            <Text style={[styles.headerText, { flex:2}]}>Badge</Text>
-            <Text style={[styles.headerText, { flex:2}]}>Issues On</Text>
             <Text style={[styles.headerText, { flex:2}]}>Expiry On</Text>  
-            <Text style={[styles.headerText, { flex:1}]}>Action</Text>       
+            <Text style={[styles.headerText, { flex:1, textAlign:'center'}]}>Action</Text>       
         </View>
     );
 
-    const renderItem=({item})=>(
+    const renderSubmissionsHeader=()=>(
+        <View style={[styles.tableHeader, styles.row]}>
+            <Text style={[styles.headerText,{flex: 2}]}>Full Name</Text>
+            <Text style={[styles.headerText, { flex:2}]}>Course Code</Text>
+            <Text style={[styles.headerText, { flex:3 }]}>Course Name</Text>
+            <Text style={[styles.headerText, { flex:2}]}>Final Quiz</Text>
+            <Text style={[styles.headerText, { flex:2}]}>Total Score</Text>
+            <Text style={[styles.headerText, { flex:2}]}>Completed On</Text>
+            <Text style={[styles.headerText, { flex:2}]}>Status</Text>
+            <Text style={[styles.headerText, { flex:2}]}>Badge</Text>
+            <Text style={[styles.headerText, { flex:2}]}>Issues On</Text>
+            <Text style={[styles.headerText, { flex:2}]}>Expiry On</Text>  
+            <Text style={[styles.headerText, { flex:1, textAlign:'center'}]}>Action</Text>       
+        </View>
+    );
+
+    const renderEnrollmentItem=({item})=>(
         <View style={[styles.row, styles.tableRow, {backgroundColor:'#f9f9f9'}]}>
             {/* Full Name and profile image */}
             <View style={[{flex:2}, styles.userInfo, styles.row]}>
@@ -49,7 +89,7 @@ const EnrollmentManagement = () => {
             <View style={[styles.row,styles.badge,{flex:2}]}>
                {item.status === "Completed" ? (
                 <Circle size={10} stroke="green" fill="green" />
-                ) : item.status === "In Progess" ? (
+                ) : item.status === "In Progress" ? (
                 <Circle size={10} stroke="orange" fill="orange" />
                 ) : (
                 <Circle size={10} stroke="red" fill="red" />
@@ -58,6 +98,41 @@ const EnrollmentManagement = () => {
             </View>
             {/* Completed On */}
             <Text style={{flex:2}}>{item.completed_on || "N/A"}</Text>
+            {/* Expiry On */}
+            <Text style={{flex:2}}>{item.expiry_date}</Text>
+            {/* Action */}
+            <Text style={{flex:1,textAlign:'center'}}><Trash2 size={16}/></Text>
+        </View>
+    );
+
+    const renderSubmissionsItem=({item})=>(
+        <View style={[styles.row, styles.tableRow, {backgroundColor:'#f9f9f9'}]}>
+            {/* Full Name and profile image */}
+            <View style={[{flex:2}, styles.userInfo, styles.row]}>
+                <Image source={{uri:item.profileImage}} style={styles.avatar} accessibilityLabel={`Profile Image of ${item.fullName}`}/>
+                <Text>{item.fullName}</Text>
+            </View>
+            {/* Course Code */}
+            <Text style={{flex:2, textAlign:'center'}}>{item.courseId}</Text>
+            {/* Course Name */}
+            <Text style={{flex:3}}>{item.courseName}</Text>
+            {/* Final quiz */}
+            <Text style={{flex:2, textAlign:'center'}}>{item.final_quiz_score}</Text>
+            {/* Total Score */}
+            <Text style={{flex:2, textAlign:'center'}}>{item.course_total_score}</Text>
+            {/* Completed On */}
+            <Text style={{flex:2}}>{item.completion_date || "N/A"}</Text>
+            {/* Status */}
+            <View style={[styles.row,styles.badge,{flex:2}]}>
+               {item.status === "Approved" ? (
+                <Circle size={10} stroke="green" fill="green" />
+                ) : item.status === "Pending" ? (
+                <Circle size={10} stroke="orange" fill="orange" />
+                ) : (
+                <Circle size={10} stroke="red" fill="red" />
+                )}
+                <Text>{item.status.charAt(0).toUpperCase() + item.status.slice(1)}</Text>
+            </View>
             {/* Badge */}
             <Text style={{flex:2}}>{item.badge || "N/A"}</Text>
             {/* Issue On */}
@@ -105,6 +180,18 @@ const EnrollmentManagement = () => {
     return (
         <ScrollView style={styles.container}>
             <Text style={styles.title}>Enrollment Management</Text>
+            <View style={styles.tabWrapper}>
+                <View style={[styles.tabContainer,styles.row]}>
+                    <Pressable onPress={()=>{handleTabChange('enrollment',0); setCurrentPage(1);}} style={styles.tabButton}>
+                        <Text style={[styles.tabText, activeTab==='enrollment' && styles.activeTabText]}>Enrollments</Text>
+                    </Pressable>
+                    <Pressable onPress={()=>{handleTabChange('submission',1); setCurrentPage(1);}} style={styles.tabButton}>
+                        <Text style={[styles.tabText, activeTab==='submission' && styles.activeTabText]}>Submissions</Text>
+                    </Pressable>
+                </View>
+                <Animated.View style={[styles.slidingLine, {transform:[{translateX}]}]}/>
+            </View>
+            
             <View style={[styles.toolbar, styles.row]}>
                 <View style={styles.row}>
                     <Pressable onPress={()=>setSortConfig({key:null, asc:true})} style={({ hovered }) => [
@@ -130,7 +217,7 @@ const EnrollmentManagement = () => {
                         {/* Dropdown Menu */}
                         {isOpen && (
                             <View style={styles.dropdownMenu}>
-                                {['All','Completed','In Progress', 'Expired'].map((status) => (
+                                {STATUS_OPTIONS[activeTab].map((status) => (
                                     <Pressable
                                         key={status}
                                         style={({hovered})=>[
@@ -157,9 +244,9 @@ const EnrollmentManagement = () => {
             </View>
             <View style={styles.tableContainer}>
                 <FlatList style={styles.table} 
-                    data={currentEnrollments}
-                    ListHeaderComponent={renderHeader}
-                    renderItem={renderItem}
+                    data={currentData}
+                    ListHeaderComponent={activeTab==='enrollment' ? renderEnrollmentHeader : renderSubmissionsHeader}
+                    renderItem={activeTab==='enrollment' ? renderEnrollmentItem : renderSubmissionsItem}
                     keyExtractor={item=>item.id.toString()}
                     ListEmptyComponent={<View style={styles.tableRow}><Text style={{flex:1, paddingVertical:2}}>No Record Found.</Text></View>}
                 />
@@ -218,12 +305,14 @@ const styles = StyleSheet.create({
     },
     toolbar:{
         justifyContent:'space-between',
-        marginVertical:20,
+        marginTop:15,
+        marginBottom:15,
         zIndex:500
     },
     menuItem:{
         padding:14,
-        alignItems:'center'
+        alignItems:'center',
+        width:'100px'
     },
     menuItemActive:{
         backgroundColor:"#7d9f7a"
@@ -347,5 +436,40 @@ const styles = StyleSheet.create({
         border:0,
         color:'white'
     },
+    avatar:{
+        width:35,
+        height:35,
+        borderRadius:50,
+    },
+    tabButton:{
+        paddingVertical:10,
+        paddingHorizontal:20,
+        marginRight:10,
+        width:150,
+    },
+    tabText:{
+        fontSize:16,
+        color:'#666'
+    },
+    activeTabText:{
+        color:'#065133c6',
+        fontWeight:'bold'
+    },
+    tabWrapper:{
+        width:300,
+        marginTop:20,
+        positive:'relative',
+    },
+    tabContainer:{
+        width:'100%',
+    },
+    slidingLine:{
+        position:"absolute",
+        bottom:0,
+        width:150,
+        height:3,
+        backgroundColor:'#0a6340',
+        borderRadius:3
+    }
 });
 export default EnrollmentManagement;

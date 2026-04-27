@@ -676,8 +676,6 @@ const enrollments = [
     "Enrolled_on": "2026-01-15",
     "status": "Completed",
     "completed_on": "2026-02-10",
-    "badge": null,
-    "issued_on": "2026-02-11",
     "expiry_date": "2027-02-11"
   },
   {
@@ -689,8 +687,6 @@ const enrollments = [
     "Enrolled_on": "2026-02-01",
     "status": "In Progress",
     "completed_on": null,
-    "badge": null,
-    "issued_on": null,
     "expiry_date": "2026-08-01"
   },
   {
@@ -702,8 +698,6 @@ const enrollments = [
     "Enrolled_on": "2025-12-10",
     "status": "Expired",
     "completed_on": null,
-    "badge": null,
-    "issued_on": null,
     "expiry_date": "2026-03-10"
   },
   {
@@ -715,8 +709,6 @@ const enrollments = [
     "Enrolled_on": "2026-03-20",
     "status": "In Progress",
     "completed_on": null,
-    "badge": null,
-    "issued_on": null,
     "expiry_date": "2026-09-20"
   },
   {
@@ -728,8 +720,6 @@ const enrollments = [
     "Enrolled_on": "2026-01-05",
     "status": "Completed",
     "completed_on": "2026-01-25",
-    "badge": null,
-    "issued_on": "2026-01-26",
     "expiry_date": "2027-01-26"
   }
 ];
@@ -742,18 +732,34 @@ app.get('/api/enrollments',(req,res)=>{
 // Dummy submission
 const submissions=[
   {
+    "id":1,
     "userId": 1,
     "course_id": 1,
+    "fullName": "Sachi Tanaka",
+    "courseId": 2,
+    "courseName": "Advanced Machine Learning",
     "course_total_score": 92,
     "final_quiz_score": 88,
-    "completion_date": "2026-02-10"
+    "completion_date": "2026-02-10",
+    "badge": null,
+    "issued_on": "2026-02-11",
+    "expiry_date":"20267-02-11",
+    "status":'Approved'
   },
   {
+    "id":2,
     "userId": 5,
     "course_id": 2,
+    "fullName": "Sachi Tanaka",
+    "courseId": 2,
+    "courseName": "Advanced Machine Learning",
     "course_total_score": 85,
     "final_quiz_score": 90,
-    "completion_date": "2026-01-25"
+    "completion_date": "2026-01-25",
+    "badge": null,
+    "issued_on": "2026-02-11",
+    "expiry_date":"20267-02-11",
+    "status":'Pending'
   }
 ];
 
