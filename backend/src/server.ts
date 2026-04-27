@@ -1,12 +1,11 @@
 import express, { Application, Request, Response } from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-import swaggerJsdoc from "swagger-jsdoc";
 import swaggerUi from "swagger-ui-express";
+import { QueryTypes } from "sequelize";
 import sequelize from "./config/Database";
 import "./models";
 import routes from "./routes";
-import swaggerUi from "swagger-ui-express";
 import swaggerSpec from "./config/Swagger";
 
 dotenv.config();
@@ -26,17 +25,6 @@ app.use(express.urlencoded({ extended: true }));
 // Middleware to parse JSON bodies
 app.use(express.json());
 
-const swaggerSpec = swaggerJsdoc({
-  definition: {
-    openapi: "3.0.0",
-    info: {
-      title: "SFC API",
-      version: "1.0.0",
-    },
-  },
-  apis: ["./src/routes/*.ts"],
-});
-
 app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // Basic route
@@ -49,15 +37,35 @@ app.get("/api/docs.json", (_req: Request, res: Response) => {
   res.setHeader("Content-Type", "application/json");
   res.send(swaggerSpec);
 });
-app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // Mount ALL routes on /api
 app.use("/api", routes);
+
+const ensureSqliteUsersSchema = async (): Promise<void> => {
+  if (sequelize.getDialect() !== "sqlite") {
+    return;
+  }
+
+  const userColumns = (await sequelize.query(
+    "PRAGMA table_info(users);",
+    { type: QueryTypes.SELECT },
+  )) as Array<{ name?: string }>;
+
+  const hasLastLoginAt = userColumns.some(
+    (column) => column.name === "last_login_at",
+  );
+
+  if (!hasLastLoginAt) {
+    await sequelize.query("ALTER TABLE users ADD COLUMN last_login_at DATETIME;");
+    console.log("Added missing users.last_login_at column for SQLite schema compatibility.");
+  }
+};
 
 const startServer = async (): Promise<void> => {
   try {
     await sequelize.authenticate();
     console.log("Database connection has been established successfully.");
+    await ensureSqliteUsersSchema();
 
     app.listen(port, () => {
       console.log(`Server is running on http://localhost:${port}`);

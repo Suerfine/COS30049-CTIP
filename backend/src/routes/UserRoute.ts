@@ -60,7 +60,7 @@ userRouter.post("/", auth, UserController.createUser);
  *         schema:
  *           type: string
  *           example: id desc
- *         description: Sort expression format: "{attribute} asc|desc", where multiple sort criteria can be separated by comma. Example: "id desc, username asc".
+ *         description: 'Sort expression format {attribute} asc|desc where multiple sort criteria can be separated by comma. Example id desc, username asc.'
  *       - in: query
  *         name: filter
  *         required: false

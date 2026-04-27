@@ -31,20 +31,34 @@ const decodeJwtPayload = (token) => {
 
 export const authService = {
     async login(email, password) {
-        const response = await fetch(`${BASE_URL}/token`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                personal_email: email,
-                password,
-            }),
-        });
+        let response;
+        try {
+            response = await fetch(`${BASE_URL}/token`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    personal_email: email,
+                    password,
+                }),
+            });
+        } catch {
+            throw new Error('Unable to connect to server. Please check backend is running.');
+        }
 
-        const data = await response.json();
+        let data = null;
+        try {
+            data = await response.json();
+        } catch {
+            data = null;
+        }
 
         if (!response.ok) {
+            if (response.status === 401) {
+                throw new Error('Incorrect email or password');
+            }
+
             throw new Error(data?.message || 'Login failed');
         }
 

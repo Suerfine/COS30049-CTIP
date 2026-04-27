@@ -97,8 +97,6 @@ const options: swaggerJSDoc.Options = {
   apis: [
     path.join(__dirname, "../routes/*.ts"),
     path.join(__dirname, "../routes/*.js"),
-    path.join(process.cwd(), "src/routes/*.ts"),
-    path.join(process.cwd(), "dist/src/routes/*.js"),
   ],
 };
 

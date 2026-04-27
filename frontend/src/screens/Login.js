@@ -13,19 +13,22 @@ const Login = ({ navigation }) => {
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [loginError, setLoginError] = useState('');
 
     const handleLogin = async () => {
         if (!email || !password) {
-            Alert.alert('Error', 'Please fill in all fields');
+            setLoginError('Please fill in all fields');
             return;
         }
 
+        setLoginError('');
         setLoading(true);
         try {
             const user = await login(email, password);
             const nextRoute = user?.role === 'admin' ? 'Course Management' : 'User Dashboard';
+            const roleLabel = user?.role === 'admin' ? 'Admin' : 'Park Ranger';
 
-            Alert.alert('Success', `Login successful as ${user.role}.`);
+            Alert.alert('Success', `Login successful as ${roleLabel}.`);
             navigation.dispatch(
                 CommonActions.reset({
                     index: 0,
@@ -33,7 +36,7 @@ const Login = ({ navigation }) => {
                 })
             );
         } catch (error) {
-            Alert.alert('Error', error.message || 'Login failed. Please try again.');
+            setLoginError(error?.message || 'Login failed. Please try again.');
         } finally {
             setLoading(false);
         }
@@ -89,7 +92,12 @@ const Login = ({ navigation }) => {
                                         style={styles.input}
                                         placeholder="Enter your email"
                                         value={email}
-                                        onChangeText={setEmail}
+                                        onChangeText={(value) => {
+                                            setEmail(value);
+                                            if (loginError) {
+                                                setLoginError('');
+                                            }
+                                        }}
                                         keyboardType="email-address"
                                         editable={!loading}
                                     />
@@ -104,7 +112,12 @@ const Login = ({ navigation }) => {
                                         style={styles.input}
                                         placeholder="Enter your password"
                                         value={password}
-                                        onChangeText={setPassword}
+                                        onChangeText={(value) => {
+                                            setPassword(value);
+                                            if (loginError) {
+                                                setLoginError('');
+                                            }
+                                        }}
                                         secureTextEntry={!showPassword}
                                         editable={!loading}
                                     />
@@ -131,6 +144,10 @@ const Login = ({ navigation }) => {
                                     {loading ? 'Signing in...' : 'Sign In'}
                                 </Text>
                             </Pressable>
+
+                            {!!loginError && (
+                                <Text style={styles.errorText}>{loginError}</Text>
+                            )}
 
                             <View style={styles.divider}>
                                 <View style={styles.dividerLine} />
@@ -322,6 +339,13 @@ const styles = StyleSheet.create({
         color: '#ffffff',
         fontSize: 16,
         fontWeight: '600',
+    },
+    errorText: {
+        color: '#b42318',
+        fontSize: 13,
+        fontWeight: '600',
+        marginTop: 2,
+        textAlign: 'left',
     },
     divider: {
         flexDirection: 'row',

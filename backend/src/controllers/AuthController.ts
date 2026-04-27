@@ -11,23 +11,26 @@ type TokenRequestBody = {
 export const token = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { personal_email, password } = req.body as TokenRequestBody;
+    const normalizedEmail = typeof personal_email === "string"
+      ? personal_email.trim().toLowerCase()
+      : "";
 
-    if (!personal_email || !password) {
-      res.status(401).json({ message: "Invalid credentials" });
+    if (!normalizedEmail || !password) {
+      res.status(401).json({ message: "Incorrect email or password" });
       return;
     }
 
-    const user = await User.findOne({ where: { personal_email } });
+    const user = await User.findOne({ where: { personal_email: normalizedEmail } });
 
     if (!user) {
-      res.status(401).json({ message: "Invalid credentials" });
+      res.status(401).json({ message: "Incorrect email or password" });
       return;
     }
 
     const isValidPassword = verifyPassword(password, user.password_hash);
 
     if (!isValidPassword) {
-      res.status(401).json({ message: "Invalid credentials" });
+      res.status(401).json({ message: "Incorrect email or password" });
       return;
     }
 

@@ -27,7 +27,6 @@ import { buildRegistrationHistory } from "../factories/RegistrationFactory";
 import "../../src/models";
 
 export async function runSeeders(
-  user_admin_count: number = 5,
   user_park_guide_count: number = 10,
   course_count: number = 5,
 ): Promise<void> {
@@ -44,22 +43,13 @@ export async function runSeeders(
   const createdAdminUser = await User.create(adminUser);
 
   // Creating the users
-  const adminUsers: UserFactoryAttributes[] = buildUsers(user_admin_count, {
-    role: UserRoles.ADMIN,
-  });
   const createdAdminUsers: EnrollmentFactoryUser[] = [
     {
       id: createdAdminUser.id,
       created_at: createdAdminUser.created_at,
     },
   ];
-  for (const user of adminUsers) {
-    const createdUser = await User.create(user);
-    createdAdminUsers.push({
-      id: createdUser.id,
-      created_at: createdUser.created_at,
-    });
-  }
+
   const parkGuideUsers: UserFactoryAttributes[] = buildUsers(
     user_park_guide_count,
     { role: UserRoles.PARK_GUIDE },
