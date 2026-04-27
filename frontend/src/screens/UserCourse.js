@@ -7,19 +7,27 @@ import { useState } from 'react';
 import { ListFilter, SignalZero, SlidersHorizontal } from 'lucide-react-native'
 import FilterSidebar from '../components/FilterSidebar';
 import NavBar from '../components/NavBar';
+import SlidingTabs from '../components/SlidingTabs';
 
 const UserCourse = ({ navigation }) => {
     const { courses, progressData, userType } = useUserDashboard();
     const [selectedCourse, setSelectedCourse] = useState(null);
     const [modalVisible, setModalVisible] = useState(false);
     const [filterVisible, setFilterVisible] = useState(false);
+    
+    const [courseFilter, setCourseFilter]=useState('all');
 
     const [filters, setFilters] = useState({
         level: 'all',
         status: 'all',
     });
-
     const [tempFilters, setTempFilters] = useState(filters);
+
+    const tabs=[
+        {id:'all', label:'All'},
+        {id:'basic', label:'Basic'},
+        {id:'advanced',label:'Advanced'}
+    ];
 
     const coursesWithStatus = useMemo(() => {
         return courses.map(course => {
@@ -77,6 +85,7 @@ const UserCourse = ({ navigation }) => {
                 </View>
                 <View>
                     <View style={styles.filterContainer}>
+                        <SlidingTabs tabs={tabs} activeTab={courseFilter} onTabChange={(id)=>setCourseFilter(id)}/>
                         <Pressable 
                             onPress={() => {
                                 setTempFilters(filters);
@@ -194,8 +203,8 @@ const styles = StyleSheet.create({
     },
     filterContainer:{
         flexDirection:'row',
-        justifyContent:'flex-end',
         marginBottom:10,
+        justifyContent:'space-between',
     },
     filter:{
         flexDirection:'row',
