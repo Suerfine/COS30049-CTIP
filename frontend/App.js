@@ -48,8 +48,8 @@ export default function App() {
 
       <View style={styles.root}>
         <View style={styles.container}>
-          <SideBar/>
-          {/* <NavBar/> */}
+          {/* <SideBar/> */}
+          <NavBar/>
           {/* Main Content Area */}
           <View style={styles.content}>
             <Stack.Navigator initialRouteName="Course Management">
@@ -81,7 +81,7 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,           
-    flexDirection: 'row',
+    flexDirection: 'column',
     backgroundColor: '#fff',
   },
   content: {

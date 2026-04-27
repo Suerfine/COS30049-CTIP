@@ -4,7 +4,7 @@ import { useUserDashboard } from '../hooks/useUserDashboard';
 import { useMemo } from 'react';
 import ConfirmEnroll from '../components/ConfirmEnroll';
 import { useState } from 'react';
-import { ListFilter, SignalZero, SlidersHorizontal } from 'lucide-react-native'
+import { CircleX, ListFilter, SignalZero, SlidersHorizontal } from 'lucide-react-native'
 import FilterSidebar from '../components/FilterSidebar';
 import NavBar from '../components/NavBar';
 import SlidingTabs from '../components/SlidingTabs';
@@ -18,10 +18,16 @@ const UserCourse = ({ navigation }) => {
     const [courseFilter, setCourseFilter]=useState('all');
 
     const [filters, setFilters] = useState({
-        level: 'all',
         status: 'all',
+        category:'all',
     });
     const [tempFilters, setTempFilters] = useState(filters);
+
+    const statusLabels = {
+        inProgress: 'In Progress',
+        completed: 'Completed',
+        notEnrolled: 'Not Enrolled',
+    };
 
     const tabs=[
         {id:'all', label:'All'},
@@ -54,17 +60,32 @@ const UserCourse = ({ navigation }) => {
     // filter by level/status
     const filteredCourses = useMemo(() => {
         if (!coursesWithStatus) return [];
+        
         return coursesWithStatus.filter(course => {
-            const matchLevel =
-                filters.level === 'all' ||
-                course.level?.trim().toLowerCase() === filters.level.toLowerCase();
-
-            const matchStatus =
-                filters.status === 'all' || course.status === filters.status;
+            const courseLevel = course.level ? course.level.toLowerCase() : '';
+            const matchLevel = courseFilter === 'all' || courseLevel === courseFilter.toLowerCase();
+            const matchStatus = filters.status === 'all' || course.status === filters.status;
+            // const matchCategory = filters.category === 'all' || 
+            //     (Array.isArray(filters.category) && course.category && filters.category.includes(course.category));
 
             return matchLevel && matchStatus;
         });
-    }, [coursesWithStatus, filters]);
+    }, [coursesWithStatus, filters, courseFilter]);
+
+    const removeFilter=(key, value)=>{
+        setFilters(prev=>{
+            if (key==='status'){
+                return {...prev, status:'all'};
+            }
+            if(key==='category'){
+                const newCats=prev.category.filter(c=>c !== value);
+                return {
+                    ...prev, category:newCats.length>0 ? newCats :'all'
+                };
+            }
+            return prev;
+        });
+    };
 
     return (
         <View style={{ flex: 1 }}>
@@ -98,6 +119,25 @@ const UserCourse = ({ navigation }) => {
                         >
                             <SlidersHorizontal/>
                         </Pressable>
+                    </View>
+                    <View style={styles.pillContainer}>
+                        {filters.status !== 'all' && (
+                            <View style={styles.pill}>
+                                <Text style={styles.pillText}>{statusLabels[filters.status]}</Text>
+                                <Pressable onPress={() => removeFilter('status')}>
+                                    <CircleX size={16} color="white" />
+                                </Pressable>
+                            </View>
+                        )}
+
+                        {Array.isArray(filters.category) && filters.category.map((catName) => (
+                            <View key={catName} style={styles.pill}>
+                                <Text style={styles.pillText}>{catName}</Text>
+                                <Pressable onPress={() => removeFilter('category', catName)}>
+                                    <CircleX size={16} color="white" />
+                                </Pressable>
+                            </View>
+                        ))}
                     </View>
                     <View style={styles.cardContainer}>
                         {filteredCourses.length === 0?(
@@ -205,6 +245,8 @@ const styles = StyleSheet.create({
         flexDirection:'row',
         marginBottom:10,
         justifyContent:'space-between',
+        borderBottomColor:'#42424255',
+        borderBottomWidth:1
     },
     filter:{
         flexDirection:'row',
@@ -225,6 +267,27 @@ const styles = StyleSheet.create({
     emptyText:{
         fontSize: 20,
         color: '#666',
+    },
+    pillContainer:{
+        flexDirection:'row',
+        flexWrap:'wrap',
+        gap:8,
+        marginBottom:15,
+        marginTop:5
+    },
+    pill:{
+        flexDirection:'row',
+        alignItems:'center',
+        backgroundColor: '#0a6340',
+        paddingHorizontal:12,
+        paddingVertical:8,
+        borderRadius:20,
+    },
+    pillText:{
+        fontSize:14,
+        color:"white",
+        marginRight:6,
+        fontWeight:'500'
     },
 });
 
