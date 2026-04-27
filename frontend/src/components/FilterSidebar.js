@@ -9,7 +9,7 @@ const statusLabels = {
 };
 
 const FilterSidebar = ({ visible, tempFilters, setTempFilters, onApply, onReset, onClose }) => {
-    const [translateX, setTranslateX] = useState(-300);
+    const [translateX, setTranslateX] = useState(300);
 
     useEffect(() => {
         setTranslateX(visible ? 0 : 300);

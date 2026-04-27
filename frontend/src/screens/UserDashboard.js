@@ -14,6 +14,7 @@ const UserDashboard = ({ navigation }) => {
     const [filter, setFilter] = useState("all");
     const [currentDate, setCurrentDate] = useState(new Date());
     const [isExpanded, setIsExpanded]=useState(false);
+    const weekLabels=['Fri', 'Sat','Sun', 'Mon', 'Tue', 'Wed', 'Thu'];
 
     const slideAnim=useState(new Animated.Value(0))[0];
     const handleTabChange=(tab, value)=>{
@@ -63,7 +64,9 @@ const UserDashboard = ({ navigation }) => {
     const getStartOfWeek = (date) => {
         const d = new Date(date);
         const day = d.getDay();
-        d.setDate(d.getDate() - day);
+        const startDay=5;
+        const diff=(day-startDay+7)%7;
+        d.setDate(d.getDate() - diff);
         return d;
     };
 
@@ -80,13 +83,18 @@ const UserDashboard = ({ navigation }) => {
     const getDaysInMonth = (date) => {
         const year = date.getFullYear();
         const month = date.getMonth();
+        const firstDay = new Date(year, month, 1);
+        const lastDate = new Date(year, month + 1, 0).getDate();
+        const startDay = 5; 
+        const firstDayIndex = (firstDay.getDay() - startDay + 7) % 7;
         const days = [];
-
-        const totalDays = new Date(year, month + 1, 0).getDate(); 
-        
-        for (let i = 1; i <= totalDays; i++) {
+        for (let i = 0; i < firstDayIndex; i++) {
+            days.push(null);
+        }
+        for (let i = 1; i <= lastDate; i++) {
             days.push(new Date(year, month, i));
         }
+
         return days;
     };
 
@@ -204,6 +212,7 @@ const UserDashboard = ({ navigation }) => {
                             
                             <View style={styles.divider} />
                             <View style={styles.calendarBodyRow}>
+                                
                                 <Pressable onPress={() => {
                                     const d = new Date(currentDate);
                                     isExpanded ? d.setMonth(d.getMonth() - 1) : d.setDate(d.getDate() - 7);
@@ -211,35 +220,64 @@ const UserDashboard = ({ navigation }) => {
                                 }}>
                                     <ChevronLeft size={24} color='#2f6618fe' />
                                 </Pressable>
+                                <View style={{ flex: 1 }}>
+                                    <View style={styles.weekHeaderRow}>
+                                        {weekLabels.map((day, i) => (
+                                            <Text key={i} style={styles.weekHeaderText}>
+                                                {day}
+                                            </Text>
+                                        ))}
+                                    </View>
+                                    {/* The Dates Grid */}
+                                    <View style={isExpanded ? styles.monthGrid : styles.weekRow}>
+                                        {(isExpanded ? getDaysInMonth(currentDate) : weekDates).map((date, index) => {
+                                            
+                                            if (!date) {
+                                                return (
+                                                    <View
+                                                        key={index}
+                                                        style={[
+                                                            styles.dayContainer,
+                                                            styles.monthDayContainer
+                                                        ]}
+                                                    />
+                                                );
+                                            }
+                                            const dateString = date.toISOString().split('T')[0];
+                                            const isSelected = selectedDate === dateString;
+                                            const hasTodo = hasPendingTodoOnDate(date);
+                                            
+                                            return (
+                                                
+                                                <Pressable
+                                                    key={index}
+                                                    style={[
+                                                        styles.dayContainer,
+                                                        isSelected && styles.selectedDay,
+                                                        isExpanded
+                                                            ? styles.monthDayContainer
+                                                            : { flex: 1 },
+                                                    ]}
+                                                    onPress={() =>
+                                                        setSelectedDate(isSelected ? null : dateString)
+                                                    }
+                                                >
 
-                                {/* The Dates Grid */}
-                                <View style={isExpanded ? styles.monthGrid : styles.weekRow}>
-                                    {(isExpanded ? getDaysInMonth(currentDate) : weekDates).map((date, index) => {
-                                        const dateString = date.toISOString().split('T')[0];
-                                        const isSelected = selectedDate === dateString;
-                                        const hasTodo = hasPendingTodoOnDate(date);
+                                                    <Text
+                                                        style={[
+                                                            styles.dayNumber,
+                                                            isSelected && styles.selectedText
+                                                        ]}
+                                                    >
+                                                        {date.getDate()}
+                                                    </Text>
 
-                                        return (
-                                            <Pressable
-                                                key={index}
-                                                style={[
-                                                    styles.dayContainer,
-                                                    isSelected && styles.selectedDay,
-                                                    isExpanded ? styles.monthDayContainer : { flex: 1 },
-                                                ]}
-                                                onPress={() => setSelectedDate(isSelected ? null : dateString)}
-                                            >
-                                                <Text style={styles.dayName}>
-                                                    {date.toLocaleDateString('en-US', { weekday: 'short' })}
-                                                </Text>
-                                                <Text style={[styles.dayNumber, isSelected && styles.selectedText]}>
-                                                    {date.getDate()}
-                                                </Text>
-                                                {hasTodo && <View style={styles.dot} />}
-                                            </Pressable>
-                                        );
-                                    })}
-                                </View>
+                                                    {hasTodo && <View style={styles.dot} />}
+                                                </Pressable>
+                                            );
+                                        })}
+                                    </View>
+                                    </View>
 
                                 {/* Right Button - Always visible */}
                                 <Pressable onPress={() => {
@@ -464,27 +502,24 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         flexWrap: 'wrap',
         justifyContent: 'flex-start',
+        
     },
     weekRow: {
         flex: 1,
         flexDirection: 'row',
         justifyContent: 'space-between',
+        
     },
     monthDayContainer:{
         width:'14.28%',
-        height:45,
-        paddingVertical:5
+        height:40,
     },
     dayContainer:{
         alignItems: 'center',
         paddingVertical:10,
     },
-    dayName:{
-        fontSize: 12,
-        color: '#666',
-    },
     dayNumber:{
-        fontSize: 16,
+        fontSize: 14,
     },
     selectedText:{
         color: 'white',
@@ -621,6 +656,18 @@ const styles = StyleSheet.create({
         fontSize: 22,
         fontWeight: 'bold',
         color: '#1a1a1a',
+    },
+    weekHeaderRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+    },
+
+    weekHeaderText: {
+        flex: 1,
+        textAlign: 'center',
+        fontSize: 12,
+        fontWeight: '600',
+        color: '#666',
     },
 });
 
