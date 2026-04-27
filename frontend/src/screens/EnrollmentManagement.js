@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Pressable, TextInput, ImageBackground, ScrollVi
 import { useEnrollmentManagement } from '../hooks/useEnrollmentManagement';
 import { RotateCcw, Search, ChevronDown, ChevronUp,ArrowUpNarrowWide, ArrowDownWideNarrow, Circle, Trash2} from 'lucide-react-native';
 import {Animated} from 'react-native';
+import SlidingTabs from '../components/SlidingTabs';
 
 const EnrollmentManagement = () => {
     const {enrollments, submissions, loading}=useEnrollmentManagement();
@@ -25,23 +26,10 @@ const EnrollmentManagement = () => {
     const indexOfFirstItem=indexOfLastItem-itemsPerPage;
     const currentData=displayData.slice(indexOfFirstItem, indexOfLastItem);
     const totalPages=Math.ceil(displayData.length/itemsPerPage);
-    const slideAnim=useState(new Animated.Value(0))[0];
-
-    const handleTabChange=(tab, value)=>{
-        setActiveTab(tab);
-        setCurrentPage(1);
-        Animated.spring(slideAnim,{
-            toValue:value,
-            useNativeDriver:false,
-            friction:8,
-            tension:50
-        }).start();
-    };
-
-    const translateX=slideAnim.interpolate({
-        inputRange:[0,1],
-        outputRange:[0,150],
-    });
+    const tabs=[
+        {id: 'enrollment', label:'Enrollment'},
+        {id: 'submission', label:'Submission'},
+    ]
 
     const renderEnrollmentHeader=()=>(
         <View style={[styles.tableHeader, styles.row]}>
@@ -180,17 +168,7 @@ const EnrollmentManagement = () => {
     return (
         <ScrollView style={styles.container}>
             <Text style={styles.title}>Enrollment Management</Text>
-            <View style={styles.tabWrapper}>
-                <View style={[styles.tabContainer,styles.row]}>
-                    <Pressable onPress={()=>{handleTabChange('enrollment',0); setCurrentPage(1);}} style={styles.tabButton}>
-                        <Text style={[styles.tabText, activeTab==='enrollment' && styles.activeTabText]}>Enrollments</Text>
-                    </Pressable>
-                    <Pressable onPress={()=>{handleTabChange('submission',1); setCurrentPage(1);}} style={styles.tabButton}>
-                        <Text style={[styles.tabText, activeTab==='submission' && styles.activeTabText]}>Submissions</Text>
-                    </Pressable>
-                </View>
-                <Animated.View style={[styles.slidingLine, {transform:[{translateX}]}]}/>
-            </View>
+            <SlidingTabs tabs={tabs} activeTab={activeTab} onTabChange={(id)=>{setActiveTab(id); setCurrentPage(1);}}/>
             
             <View style={[styles.toolbar, styles.row]}>
                 <View style={styles.row}>
@@ -270,6 +248,7 @@ const styles = StyleSheet.create({
     title:{
         fontSize:25,
         fontWeight:500,
+        marginBottom:5
     },
     row:{
         flexDirection:'row'
@@ -441,35 +420,5 @@ const styles = StyleSheet.create({
         height:35,
         borderRadius:50,
     },
-    tabButton:{
-        paddingVertical:10,
-        paddingHorizontal:20,
-        marginRight:10,
-        width:150,
-    },
-    tabText:{
-        fontSize:16,
-        color:'#666'
-    },
-    activeTabText:{
-        color:'#065133c6',
-        fontWeight:'bold'
-    },
-    tabWrapper:{
-        width:300,
-        marginTop:20,
-        positive:'relative',
-    },
-    tabContainer:{
-        width:'100%',
-    },
-    slidingLine:{
-        position:"absolute",
-        bottom:0,
-        width:150,
-        height:3,
-        backgroundColor:'#0a6340',
-        borderRadius:3
-    }
 });
 export default EnrollmentManagement;

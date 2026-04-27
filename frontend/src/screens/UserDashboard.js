@@ -7,30 +7,26 @@ import {Animated} from 'react-native';
 // Import from other hook and components
 import CourseCard from '../components/CourseCard.js';
 import { useUserDashboard } from '../hooks/useUserDashboard';
+import SlidingTabs from '../components/SlidingTabs.js';
 
 const UserDashboard = ({ navigation }) => {
     const {courses,todos,userType,progressData,loading,setTodos,user,account} = useUserDashboard();
     const [selectedDate, setSelectedDate] = useState(null);
     const [filter, setFilter] = useState("all");
+    const [courseFilter, setCourseFilter]=useState('in progress');
     const [currentDate, setCurrentDate] = useState(new Date());
     const [isExpanded, setIsExpanded]=useState(false);
     const weekLabels=['Fri', 'Sat','Sun', 'Mon', 'Tue', 'Wed', 'Thu'];
+    const todoTab=[
+        {id: 'all', label:'All'},
+        {id: 'completed', label:'Completed'},
+        {id: 'pending', label:'Pending'},
+    ];
 
-    const slideAnim=useState(new Animated.Value(0))[0];
-    const handleTabChange=(tab, value)=>{
-        setFilter(tab);
-        Animated.spring(slideAnim,{
-            toValue:value,
-            useNativeDriver:false,
-            friction:8,
-            tension:40
-        }).start();
-    };
-
-    const translateX=slideAnim.interpolate({
-        inputRange:[0,1,2],
-        outputRange:[0,100, 200],
-    });
+    const courseTab=[
+        {id: 'in progress', label:'In Progress'},
+        {id: 'completed', label:'Completed'}
+    ];
 
     // TODOLIST LOGIC
     // Toggle checkbox
@@ -117,6 +113,15 @@ const UserDashboard = ({ navigation }) => {
         return progress !== null && progress > 0 && progress < 1;
     });
 
+    // Dummy tag
+    const categories = [
+        { id: '1', name: 'Flora & Fauna' },
+        { id: '2', name: 'Navigation' },
+        { id: '3', name: 'First Aid' },
+        { id: '4', name: 'Survival' },
+        { id: '5', name: 'History' },
+    ];
+
     return(
         <ScrollView style={{ flex: 1 }}>
             <View style={styles.topRow}>
@@ -170,10 +175,11 @@ const UserDashboard = ({ navigation }) => {
                                 </ImageBackground>
                             </View>
                             <Text style={styles.sectionTitle}>My Courses</Text>
-
+                            {/* Haven't done for filter */}
+                            <SlidingTabs tabs={courseTab} activeTab={courseFilter} onTabChange={(id)=>setCourseFilter(id)}/>
                             {/* only display in progress courses */}
                             <View style={styles.cardContainer}>
-                                {inProgressCourses.map(course => {
+                                {courseFilter==='in progress' &&inProgressCourses.map(course => {
                                     const courseProgress = progressData.find(p => p.courseId === course.id);
                                     const numModules = course.modules ? course.modules.length : 0;
 
@@ -192,6 +198,15 @@ const UserDashboard = ({ navigation }) => {
                                         />
                                     );
                                 })}
+                            </View>
+                            {/* Categories: When user click one of the category, navigate to course page  */}
+                            <Text style={styles.sectionTitle}>Explore Categories</Text>
+                            <View style={styles.tagContainer}>
+                                {categories.map((item)=>(
+                                    <Pressable key={item.id} style={styles.categoryTag} >
+                                        <Text style={styles.tagText}>{item.name}</Text>
+                                    </Pressable>
+                                ))}
                             </View>
                         </View> 
                 </View>
@@ -292,39 +307,7 @@ const UserDashboard = ({ navigation }) => {
                         </View>
 
                         {/* Todo tab for filter (All, Completed, Not completed) */}
-                        <View style={styles.tabWrapper}>
-                            <View style={[styles.tabContainer,styles.row]}>
-                                <Pressable onPress={()=>handleTabChange('all',0)} style={styles.tabButton}>
-                                    <Text style={[styles.tabText, filter==='all' && styles.activeTabText]}>All</Text>
-                                </Pressable>
-                                <Pressable onPress={()=>handleTabChange('completed',1)} style={styles.tabButton}>
-                                    <Text style={[styles.tabText, filter==='completed' && styles.activeTabText]}>Completed</Text>
-                                </Pressable>
-                                <Pressable onPress={()=>handleTabChange('pending',2)} style={styles.tabButton}>
-                                    <Text style={[styles.tabText, filter==='pending' && styles.activeTabText]}>Pending</Text>
-                                </Pressable>
-                            </View>
-                            <Animated.View style={[styles.slidingLine, {transform:[{translateX}]}]}/>
-                        </View>
-                        {/* <View style={styles.todoTab}>
-                            <Pressable onPress={() => setFilter("all")}>
-                                <Text style={filter === "all" ? styles.activeTab : styles.tab}>
-                                    All
-                                </Text>
-                            </Pressable>
-
-                            <Pressable onPress={() => setFilter("completed")}>
-                                <Text style={filter === "completed" ? styles.activeTab : styles.tab}>
-                                    Completed
-                                </Text>
-                            </Pressable>
-
-                            <Pressable onPress={() => setFilter("pending")}>
-                                <Text style={filter === "pending" ? styles.activeTab : styles.tab}>
-                                    Not Completed
-                                </Text>
-                            </Pressable>
-                        </View> */}
+                        <SlidingTabs tabs={todoTab} activeTab={filter} onTabChange={(id)=>setFilter(id)}/>
 
                         {/* Todo list */}
                         <View style={{ flex: 1, minHeight: 0 }}>
@@ -381,6 +364,7 @@ const styles = StyleSheet.create({
         flexWrap:'wrap',
         justifyContent:'flex-start',
         gap:30,
+        marginBottom:15
     },
     topRow:{
         flex: 1,
@@ -582,33 +566,6 @@ const styles = StyleSheet.create({
         fontSize: 12,
         marginLeft: 3
     },
-    // Todo filter tab
-    todoTab:{
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        marginTop: 10,
-        marginBottom: 20,
-        paddingHorizontal: 10,
-    },
-    tab:{
-        fontSize: 14,
-        color: 'black',
-        backgroundColor: '#A5D6A7',
-        padding: 7,
-        paddingHorizontal: 15,
-        borderRadius: 50,
-        borderBottomWidth: 2,
-        borderBottomColor: '#888'
-    },
-    activeTab:{
-        fontSize: 14,
-        color: 'white',
-        borderBottomWidth: 2,
-        backgroundColor: '#2f6618fe',
-        padding: 7,
-        paddingHorizontal: 15,
-        borderRadius: 50
-    },
     icon:{
         alignSelf:'center'
     },
@@ -621,36 +578,6 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontSize: 16,
         fontFamily: 'monospace',
-    },
-    tabWrapper:{
-        marginVertical:10,
-        positive:'relative',
-        justifyContent:'space-between',
-    },
-    tabContainer:{
-        width:'100%',
-        userSelect:'none',
-    },
-    slidingLine:{
-        position:"absolute",
-        bottom:0,
-        width:103,
-        height:3,
-        backgroundColor:'#0a6340',
-        borderRadius:3
-    },
-    tabButton:{
-        paddingVertical:10,
-        width:100,
-        alignItems:'center'
-    },
-    activeTabText:{
-        color:'#065133c6',
-        fontWeight:'bold',
-    },
-    tabText:{
-        fontSize:14,
-        color:'#666'
     },
     sectionTitle: {
         fontSize: 22,
@@ -668,6 +595,27 @@ const styles = StyleSheet.create({
         fontSize: 12,
         fontWeight: '600',
         color: '#666',
+    },
+    tagContainer: {
+        flexDirection:'row',
+        flexWrap: 'wrap',
+        gap: 10,
+        marginTop: 12,
+    },
+    categoryTag: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#0a6340',
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        borderRadius: 25,
+        borderWidth: 1,
+        borderColor: '#E0E0E0',
+    },
+    tagText: {
+        fontSize: 14,
+        color: 'white',
+        fontWeight: '500',
     },
 });
 
