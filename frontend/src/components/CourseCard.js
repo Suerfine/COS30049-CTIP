@@ -172,10 +172,12 @@ const styles=StyleSheet.create({
         backgroundColor: '#efab21',
         padding: 8,
         borderRadius: 6,
+        maxHeight:35,
     },
     enrollText:{
-        color: 'black', 
-        textAlign: 'center' 
+        color: 'white', 
+        textAlign: 'center',
+        fontWeight:'600'
     },
     details:{
         paddingHorizontal: Platform.select({

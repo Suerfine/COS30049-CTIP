@@ -17,7 +17,7 @@ const SlidingTabs=({tabs, activeTab, onTabChange})=>{
 
     const translateX=slideAnim.interpolate({
         inputRange:tabs.map((item,i)=>i),
-        outputRange:tabs.map((item,i)=>i*105),
+        outputRange:tabs.map((item,i)=>i*103),
     });
 
     return (

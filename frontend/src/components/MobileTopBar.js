@@ -1,8 +1,8 @@
 import React from 'react';
 import {View, Text, TextInput, Pressable, StyleSheet} from 'react-native';
-import { Menu, Search, Bell } from 'lucide-react-native';
+import { Menu, Search, Bell, SlidersHorizontal} from 'lucide-react-native';
 
-const MobileTopBar=({onToggleSidebar})=>{
+const MobileTopBar=({onToggleSidebar, routeName, onFilterPress})=>{
     return (
         <View style={styles.header}>
             {/* Expand Icon */}
@@ -14,6 +14,14 @@ const MobileTopBar=({onToggleSidebar})=>{
                 <Search size={18}/>
                 <TextInput style={styles.input} placeholder='Search...' placeholderTextColor="#AAAAAA"/>
             </View>
+            {routeName==='Courses' && (<Pressable 
+                onPress={
+                    onFilterPress
+                }
+                style={styles.iconBtn}
+            >
+                <SlidersHorizontal size={22} color="#333"/>
+            </Pressable>)}
             {/* Notification */}
             <Pressable style={styles.iconBtn}>
                 <Bell size={22} color="#333"/>

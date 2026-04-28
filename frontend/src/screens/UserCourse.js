@@ -1,16 +1,15 @@
 import { View, Text, StyleSheet, ScrollView, Pressable, ImageBackground } from 'react-native';
-import CourseCard from '../components/CourseCard';
-import { useMemo } from 'react';
-import ConfirmEnroll from '../components/ConfirmEnroll';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { CircleX, ListFilter, SignalZero, SlidersHorizontal } from 'lucide-react-native'
-import FilterSidebar from '../components/FilterSidebar';
-import NavBar from '../components/NavBar';
-import SlidingTabs from '../components/SlidingTabs';
 
 // Import other hook and component
 import { useUserDashboard } from '../hooks/useUserDashboard';
 import { useUserCourse } from '../hooks/useUserCourse';
+import NavBar from '../components/NavBar';
+import SlidingTabs from '../components/SlidingTabs';
+import FilterSidebar from '../components/FilterSidebar';
+import ConfirmEnroll from '../components/ConfirmEnroll';
+import CourseCard from '../components/CourseCard';
 
 const UserCourse = ({ navigation }) => {
     const { courses, progressData, userType  } = useUserDashboard();
