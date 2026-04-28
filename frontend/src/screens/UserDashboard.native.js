@@ -31,9 +31,9 @@ const UserDashboard=({navigation})=>{
     } = useUserDashboard();
 
     return(
-        <SafeAreaView style={styles.container} edges={['top','left','right']}>
+        <SafeAreaView style={styles.container} edges={['left','right']}>
             <StatusBar barStyle="dark-content"/>
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyles={styles.scrollContent}>
+            <ScrollView showsVerticalScrollIndicator={false}>
                 <ImageBackground
                     source={require('../../assets/darkgreen_bg.jpeg')}
                     style={styles.infoCard}
@@ -114,9 +114,6 @@ const UserDashboard=({navigation})=>{
 const styles=StyleSheet.create({
     container:{
         flex:1,
-    },
-    scrollContent:{
-        padding:15,
     },
     infoCard:{
         padding:20,

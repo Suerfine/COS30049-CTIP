@@ -4,13 +4,15 @@ import { LayoutDashboard, Book, Award, Group, ListTodo } from 'lucide-react-nati
 
 // Import screens
 import UserDashboard from '../screens/UserDashboard';
+import MobileTopBar from '../components/MobileTopBar';
 
 const Tab=createBottomTabNavigator();
 
 export default function MobileTabNavigator(){
     return (
         <Tab.Navigator screenOptions={{
-            headerShown:false
+            headerShown:true,
+            header:(props)=> <MobileTopBar {...props}/>
         }}>
             <Tab.Screen
                 name='Dashboard'
