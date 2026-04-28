@@ -10,12 +10,24 @@ import { useUserDashboard } from '../hooks/useUserDashboard';
 import SlidingTabs from '../components/SlidingTabs.js';
 
 const UserDashboard = ({ navigation }) => {
-    const {courses,todos,userType,progressData,loading,setTodos,user,account} = useUserDashboard();
-    const [selectedDate, setSelectedDate] = useState(null);
-    const [filter, setFilter] = useState("all");
-    const [courseFilter, setCourseFilter]=useState('in progress');
-    const [currentDate, setCurrentDate] = useState(new Date());
-    const [isExpanded, setIsExpanded]=useState(false);
+    const {
+        courses, 
+        todos, 
+        userType, 
+        progressData, 
+        loading, 
+        setTodos, 
+        user, 
+        account,
+        selectedDate, setSelectedDate,
+        filter, setFilter,
+        courseFilter, setCourseFilter,
+        currentDate, setCurrentDate,
+        isExpanded, setIsExpanded,
+        weekDates, getDaysInMonth, filteredTodos, inProgressCourses,
+        toggleTodo, hasPendingTodoOnDate
+    } = useUserDashboard();
+    
     const weekLabels=['Fri', 'Sat','Sun', 'Mon', 'Tue', 'Wed', 'Thu'];
     const todoTab=[
         {id: 'all', label:'All'},
@@ -27,91 +39,6 @@ const UserDashboard = ({ navigation }) => {
         {id: 'in progress', label:'In Progress'},
         {id: 'completed', label:'Completed'}
     ];
-
-    // TODOLIST LOGIC
-    // Toggle checkbox
-    const toggleTodo = (id) => {
-        setTodos(prev =>
-            prev.map(todo =>
-                todo.id === id ? { ...todo, completed: !todo.completed } : todo
-            )
-        );
-    };
-
-    // Filter todos based on selected date and status
-    let filteredTodos = todos;
-
-    // Filter by date
-    if (selectedDate) {
-        filteredTodos = filteredTodos.filter(todo =>
-            new Date(todo.date).toDateString() === new Date(selectedDate).toDateString()
-        );
-    }
-
-    // Filter by status
-    if (filter === "completed") {
-        filteredTodos = filteredTodos.filter(todo => todo.completed);
-    } else if (filter === "pending") {
-        filteredTodos = filteredTodos.filter(todo => !todo.completed);
-    }
-
-    // CALENDAR LOGIC
-    // get start of week (Sunday)
-    const getStartOfWeek = (date) => {
-        const d = new Date(date);
-        const day = d.getDay();
-        const startDay=5;
-        const diff=(day-startDay+7)%7;
-        d.setDate(d.getDate() - diff);
-        return d;
-    };
-
-    // generate 7 days
-    const getWeekDates = (date) => {
-        const start = getStartOfWeek(date);
-        return Array.from({ length: 7 }).map((_, i) => {
-            const d = new Date(start);
-            d.setDate(start.getDate() + i);
-            return d;
-        });
-    };
-
-    const getDaysInMonth = (date) => {
-        const year = date.getFullYear();
-        const month = date.getMonth();
-        const firstDay = new Date(year, month, 1);
-        const lastDate = new Date(year, month + 1, 0).getDate();
-        const startDay = 5; 
-        const firstDayIndex = (firstDay.getDay() - startDay + 7) % 7;
-        const days = [];
-        for (let i = 0; i < firstDayIndex; i++) {
-            days.push(null);
-        }
-        for (let i = 1; i <= lastDate; i++) {
-            days.push(new Date(year, month, i));
-        }
-
-        return days;
-    };
-
-    const weekDates = getWeekDates(currentDate);
-
-    // dot indicator for dates with todo item(s)
-    const hasPendingTodoOnDate = (date) => {
-        return todos.some(todo =>
-            !todo.completed &&
-            new Date(todo.date).toDateString() === date.toDateString()
-        );
-    };
-
-    // COURSES LOGIC
-    // get in progress courses
-    const inProgressCourses = courses.filter(course => {
-        const progressObj = progressData.find(p => p.courseId === course.id);
-        const progress = progressObj ? progressObj.progress : null;
-
-        return progress !== null && progress > 0 && progress < 1;
-    });
 
     // Dummy tag
     const categories = [
