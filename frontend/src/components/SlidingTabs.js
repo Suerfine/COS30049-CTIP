@@ -17,7 +17,7 @@ const SlidingTabs=({tabs, activeTab, onTabChange})=>{
 
     const translateX=slideAnim.interpolate({
         inputRange:tabs.map((item,i)=>i),
-        outputRange:tabs.map((item,i)=>i*110),
+        outputRange:tabs.map((item,i)=>i*105),
     });
 
     return (
@@ -48,7 +48,7 @@ const styles=StyleSheet.create({
     slidingLine:{
         position:"absolute",
         bottom:0,
-        width:103,
+        width:95,
         height:3,
         backgroundColor:'#0a6340',
         borderRadius:3
@@ -64,7 +64,7 @@ const styles=StyleSheet.create({
     },
     tabText:{
         fontSize:14,
-        color:'#666'
+        color:'#666',
     },
 })
 

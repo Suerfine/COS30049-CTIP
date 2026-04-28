@@ -1,4 +1,6 @@
-const BASE_URL = 'http://localhost:4000/api';
+import { API_BASE_URL } from "../config/apiConfig";
+
+const BASE_URL = `${API_BASE_URL}/api`;
 
 export const userDashboardService = {
     getUserType: async () => {

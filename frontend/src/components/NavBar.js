@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, Pressable, Image, TextInput, Animated } from 'react-native';
 import { Bell, Search } from 'lucide-react-native';
 import { CommonActions, useNavigation} from '@react-navigation/native';
-import { navigationRef } from '../navigationRef';
+import { navigationRef } from '../utils/navigationRef';
 
 // Navigation links animation
 const NavItem = ({ name, route, onPress, isActive }) => {

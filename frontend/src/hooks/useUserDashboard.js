@@ -17,6 +17,27 @@ export const useUserDashboard = () => {
     const [currentDate, setCurrentDate] = useState(new Date());
     const [isExpanded, setIsExpanded]=useState(false);
 
+    const weekLabels=['Fri', 'Sat','Sun', 'Mon', 'Tue', 'Wed', 'Thu'];
+    const todoTab=[
+        {id: 'all', label:'All'},
+        {id: 'completed', label:'Completed'},
+        {id: 'pending', label:'Pending'},
+    ];
+
+    const courseTab=[
+        {id: 'in progress', label:'In Progress'},
+        {id: 'completed', label:'Completed'}
+    ];
+
+    // Dummy tag
+    const categories = [
+        { id: '1', name: 'Flora & Fauna' },
+        { id: '2', name: 'Navigation' },
+        { id: '3', name: 'First Aid' },
+        { id: '4', name: 'Survival' },
+        { id: '5', name: 'History' },
+    ];
+
     const fetchDashboardData = async () => {
         setLoading(true);
         try {
@@ -144,6 +165,7 @@ export const useUserDashboard = () => {
         currentDate, setCurrentDate,
         isExpanded, setIsExpanded,
         weekDates, getDaysInMonth, filteredTodos, inProgressCourses,
-        toggleTodo, hasPendingTodoOnDate, refreshData: fetchDashboardData
+        toggleTodo, hasPendingTodoOnDate, refreshData: fetchDashboardData,
+        weekLabels,todoTab, courseTab, categories
     };
 };

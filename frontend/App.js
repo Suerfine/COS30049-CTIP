@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View } from 'react-native';
-import { navigationRef } from './src/navigationRef';
+import { navigationRef } from './src/utils/navigationRef';
 import { createStackNavigator } from '@react-navigation/stack';
 import { NavigationContainer } from '@react-navigation/native';
-
+import { Platform } from 'react-native';
+import MobileTabNavigator from './src/navigation/MobileTabNavigator';
 
 // Import Screens
 import AdminCourse from './src/screens/AdminCourse';
@@ -24,6 +25,8 @@ import NavBar from './src/components/NavBar';
 const Stack=createStackNavigator();
 
 export default function App() {
+  const isMobile=Platform.OS !== 'web';
+
   const linking = {
     prefixes: ['http://localhost:8081'],
     config: {
@@ -48,21 +51,24 @@ export default function App() {
 
       <View style={styles.root}>
         <View style={styles.container}>
-          {/* <SideBar/> */}
-          <NavBar/>
+          {/* {!isMobile && <SideBar/>} */}
+          {!isMobile && <NavBar/>}
           {/* Main Content Area */}
           <View style={styles.content}>
-            <Stack.Navigator initialRouteName="Course Management">
-              <Stack.Screen name="Course Management" component={AdminCourse} options={{headerShown: false}}/>
-              <Stack.Screen name="Course Details" component={EditCourseDetails} options={{headerShown: false}}/>
-              <Stack.Screen name="User Dashboard" component={UserDashboard} options={{headerShown: false}}/>
-              <Stack.Screen name="Registration Management" component={RegistrationManagement} options={{headerShown: false}}/>
-              <Stack.Screen name="User Module" component={UserModule} options={{headerShown: false}}/>
-              <Stack.Screen name="User Course" component={UserCourse} options={{headerShown: false}}/>
-              <Stack.Screen name="Account Management" component={AccountManagement} options={{headerShown: false}}/>
-              <Stack.Screen name="User Profile" component={UserProfile} options={{headerShown: false}}/>
-              <Stack.Screen name="Enrollment Management" component={EnrollmentManagement} options={{headerShown: false}}/>
-            </Stack.Navigator>
+              <Stack.Navigator initialRouteName={isMobile ? "MobileRoot" : "User Dashboard"}>
+                  {isMobile && (
+                    <Stack.Screen name='MobileRoot' component={MobileTabNavigator} options={{headerShown:false}}/>
+                  )}
+                  <Stack.Screen name="Course Management" component={AdminCourse} options={{headerShown: false}}/>
+                  <Stack.Screen name="Course Details" component={EditCourseDetails} options={{headerShown: false}}/>
+                  <Stack.Screen name="User Dashboard" component={UserDashboard} options={{headerShown: false}}/>
+                  <Stack.Screen name="Registration Management" component={RegistrationManagement} options={{headerShown: false}}/>
+                  <Stack.Screen name="User Module" component={UserModule} options={{headerShown: false}}/>
+                  <Stack.Screen name="User Course" component={UserCourse} options={{headerShown: false}}/>
+                  <Stack.Screen name="Account Management" component={AccountManagement} options={{headerShown: false}}/>
+                  <Stack.Screen name="User Profile" component={UserProfile} options={{headerShown: false}}/>
+                  <Stack.Screen name="Enrollment Management" component={EnrollmentManagement} options={{headerShown: false}}/>
+              </Stack.Navigator>
           </View>
         </View>
 

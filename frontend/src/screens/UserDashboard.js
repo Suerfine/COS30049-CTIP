@@ -25,29 +25,9 @@ const UserDashboard = ({ navigation }) => {
         currentDate, setCurrentDate,
         isExpanded, setIsExpanded,
         weekDates, getDaysInMonth, filteredTodos, inProgressCourses,
-        toggleTodo, hasPendingTodoOnDate
+        toggleTodo, hasPendingTodoOnDate,
+        weekLabels,todoTab, courseTab, categories
     } = useUserDashboard();
-    
-    const weekLabels=['Fri', 'Sat','Sun', 'Mon', 'Tue', 'Wed', 'Thu'];
-    const todoTab=[
-        {id: 'all', label:'All'},
-        {id: 'completed', label:'Completed'},
-        {id: 'pending', label:'Pending'},
-    ];
-
-    const courseTab=[
-        {id: 'in progress', label:'In Progress'},
-        {id: 'completed', label:'Completed'}
-    ];
-
-    // Dummy tag
-    const categories = [
-        { id: '1', name: 'Flora & Fauna' },
-        { id: '2', name: 'Navigation' },
-        { id: '3', name: 'First Aid' },
-        { id: '4', name: 'Survival' },
-        { id: '5', name: 'History' },
-    ];
 
     return(
         <ScrollView style={{ flex: 1 }}>

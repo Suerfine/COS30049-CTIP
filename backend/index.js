@@ -42,7 +42,7 @@ const upload=multer({storage: storage});
 const courses = [
     {
         id: 1,
-        image: 'http://localhost:4000/images/first_aid.png',
+        image: 'http://10.0.2.2:4000/images/first_aid.png',
         courseTitle: 'Basic First Aid',
         level: 'basic',
         duration: '15 hours 30 mins',
@@ -154,7 +154,7 @@ const courses = [
     },
     {
         id: 2,
-        image: 'http://localhost:4000/images/cpr.png',
+        image: 'http://10.0.2.2:4000/images/cpr.png',
         courseTitle: 'CPR Training',
         level: 'basic',
         duration: '8 hours',
@@ -184,7 +184,7 @@ const courses = [
     },
     {
         id: 3,
-        image: 'http://localhost:4000/images/plantconservation.jpg',
+        image: 'http://10.0.2.2:4000/images/plantconservation.jpg',
         courseTitle: 'Plant Conservation',
         level: 'advanced',
         duration: '10 hours',

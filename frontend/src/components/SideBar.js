@@ -2,7 +2,7 @@ import React, { useState, useEffect} from 'react';
 import { View, Text, StyleSheet, Pressable, Image} from 'react-native';
 import {LayoutDashboard, Book, ClipboardList, Flag, CreditCard,Bell, LogOut, UserPlus, User2} from 'lucide-react-native'
 import { CommonActions, useNavigation } from '@react-navigation/native';
-import { navigationRef } from '../navigationRef';
+import { navigationRef } from '../utils/navigationRef';
 
 const SideBar = () => {
     const navigation=useNavigation();

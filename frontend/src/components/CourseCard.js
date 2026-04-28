@@ -1,26 +1,37 @@
-import { View, Pressable, Image, Text, StyleSheet} from 'react-native';
+import { View, Pressable, Image, Text, StyleSheet, Platform} from 'react-native';
 import {BookOpenText, Timer, ClockAlert, SquarePen, Trash2} from 'lucide-react-native'
 import ProgressBar from './ProgressBar.js';
 
 const CourseCard=({imagePath, courseTitle, numModules,duration,expiry,userType, progress, onPress, onEdit, onDelete, onEnroll})=>{
+    const isWeb=Platform.OS==='web';
+
     return (
         // Title need change to course ID later
         // Not enrolled courses cannot view course content
-        <Pressable style={styles.card} onPress={progress === null || progress === 0 ? undefined : onPress}>
+        <Pressable 
+            style={({ pressed, hovered }) => [
+                styles.card,
+                isWeb && hovered && styles.cardHover,
+                !isWeb && pressed && styles.cardPressed
+            ]} 
+            onPress={progress === null || progress === 0 ? undefined : onPress}
+        >
             <Image source={imagePath} style={styles.courseImg} accessibilityLabel='Cover Photo of Course'/>
-            <Text style={styles.CourseTitle}>{courseTitle}</Text>
-            
-            <View style={styles.courseDetails}>
-                <BookOpenText size={20}/>
-                <Text style={styles.DetailsText}>{numModules} Modules</Text>
-            </View>
-            <View style={styles.courseDetails}>
-                <Timer size={20}/>
-                <Text style={styles.DetailsText}>{duration}</Text>
-            </View>
-            <View style={styles.courseDetails}>
-                <ClockAlert size={20}/>
-                <Text style={styles.DetailsText}>{expiry}</Text>
+            <View style={styles.details}>
+                <Text style={styles.CourseTitle}>{courseTitle}</Text>
+                
+                <View style={styles.courseDetails}>
+                    <BookOpenText size={isWeb ? 20 : 15}/>
+                    <Text style={styles.DetailsText}>{numModules} Modules</Text>
+                </View>
+                <View style={styles.courseDetails}>
+                    <Timer size={isWeb ? 20 : 15}/>
+                    <Text style={styles.DetailsText}>{duration}</Text>
+                </View>
+                <View style={styles.courseDetails}>
+                    <ClockAlert size={isWeb ? 20 : 15}/>
+                    <Text style={styles.DetailsText}>{expiry}</Text>
+                </View>
             </View>
             
             {userType === 'admin' && (
@@ -37,7 +48,7 @@ const CourseCard=({imagePath, courseTitle, numModules,duration,expiry,userType, 
                     </Pressable>
                 </View>
             )}
-            {userType !== 'admin' && (
+            {userType !== 'admin' && isWeb && (
                 <>
                     {progress === null || progress === 0 ? (
                         <Pressable style={styles.enrollBtn} onPress={onEnroll}>
@@ -57,25 +68,57 @@ const CourseCard=({imagePath, courseTitle, numModules,duration,expiry,userType, 
 const styles=StyleSheet.create({
     card:{
         backgroundColor:"white",
-        borderRadius:5,
-        paddingHorizontal:17,
-        paddingVertical:10,
-        borderRadius:10,
-        maxWidth:300
+        borderRadius:12,
+        paddingHorizontal: Platform.select({
+            web:17,
+            default:0
+        }),
+        paddingVertical: Platform.select({
+            web:10,
+            default:0
+        }),
+        borderRadius: Platform.select({
+            web:12,
+            default:15
+        }),
+        width: Platform.select({
+            web:280,
+            default:190
+        }),
+        elevation:4,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 6,
     },
     courseImg:{
-        width:250,
-        height:170,
-        resizeMode:'cover',
+        width: Platform.select({
+            web:250,
+            default:'100%'
+        }),
+        height: Platform.select({
+            web:170,
+            default:150
+        }),
+        resizeMode:'fill',
         alignSelf:'center'
     },
     CourseTitle:{
         borderBottomColor:'#8f8f8f',
         borderBottomWidth:1,
-        fontSize:19,
-        paddingVertical:10,
+        fontSize: Platform.select({
+            web:19,
+            default:14
+        }),
+        paddingVertical: Platform.select({
+            web:10,
+            default:5
+        }),
         marginBottom:10,
-        textAlign:'center',
+        textAlign: Platform.select({
+            web:'center',
+            default:'left'
+        }),
         fontWeight:'bold'
     },
     courseDetails:{
@@ -84,11 +127,17 @@ const styles=StyleSheet.create({
         padding:2,
         color:'#3e3e3e',
         gap:5,
-        marginBottom:3
+        marginBottom: Platform.select({
+            web:3,
+            default:0
+        }),
     },
     DetailsText:{
         color:'#3e3e3e',
-        fontSize:14
+        fontSize: Platform.select({
+            web:14,
+            default:11
+        }),
     },
     icon:{
         flexDirection:'row',
@@ -109,6 +158,16 @@ const styles=StyleSheet.create({
     enrollText:{
         color: 'black', 
         textAlign: 'center' 
+    },
+    details:{
+        paddingHorizontal: Platform.select({
+            web:0,
+            default:10
+        }),
+        paddingBottom: Platform.select({
+            web:0,
+            default:10
+        }),
     }
 });
 
