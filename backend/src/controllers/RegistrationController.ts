@@ -1,4 +1,6 @@
 import { NextFunction, Request, Response } from "express";
+import fs from "fs";
+import path from "path";
 import { Registration } from "../models";
 import { DatabaseError, ValidationError } from "sequelize";
 import { PaginateRequestParams, PaginateResponse } from "../types/common";
@@ -9,6 +11,67 @@ import {
 } from "../types/Registration";
 import { formatPaginateResponse, paginateModel } from "../utils/paginate";
 import { RegistrationStatus } from "../enum/RegistrationStatus";
+import { User } from "../models";
+import { UserRoles } from "../enum/UserRoles";
+import {
+  ApproveRegistrationRequest,
+  RejectRegistrationRequest,
+  ApproveRegistrationResponse,
+} from "../types/Registration";
+import { hashPassword } from "../utils/password";
+import { PRIVATE_UPLOAD_STORAGE_PATH } from "../middelware/PrivateDocumentUpload";
+
+type RegistrationRequestWithFile = Request & {
+  user?: User;
+  file?: Express.Multer.File;
+};
+
+function normalizeDocumentPath(documentPath: string): string {
+  return path.resolve(documentPath);
+}
+
+function isPrivateDocumentPath(documentPath: string): boolean {
+  const normalizedPath = normalizeDocumentPath(documentPath);
+  const privateRoot = path.resolve(PRIVATE_UPLOAD_STORAGE_PATH);
+  return (
+    normalizedPath === privateRoot ||
+    normalizedPath.startsWith(`${privateRoot}${path.sep}`)
+  );
+}
+
+async function getAccessibleRegistrationDocument(
+  registrationId: string,
+  user?: User,
+): Promise<string | null> {
+  const registration = await Registration.findByPk(registrationId);
+  if (!registration || !registration.document_filepath) {
+    return null;
+  }
+
+  if (!user) {
+    return null;
+  }
+
+  const canAccess =
+    user.role === UserRoles.ADMIN ||
+    (registration.user_id !== null && registration.user_id === user.id);
+
+  if (!canAccess) {
+    return null;
+  }
+
+  const documentPath = normalizeDocumentPath(registration.document_filepath);
+  if (!isPrivateDocumentPath(documentPath)) {
+    return null;
+  }
+
+  try {
+    await fs.promises.access(documentPath, fs.constants.R_OK);
+    return documentPath;
+  } catch {
+    return null;
+  }
+}
 
 function toRegistrationResponse(
   registration: Registration,
@@ -23,6 +86,7 @@ function toRegistrationResponse(
     identification: registration.identification,
     personal_email: registration.personal_email,
     tel: registration.tel,
+    document_filepath: registration.document_filepath,
     admin_remark: registration.admin_remark,
     reviewed_at: registration.reviewed_at,
     created_at: registration.created_at,
@@ -31,7 +95,9 @@ function toRegistrationResponse(
 }
 
 export const createRegistration = async (
-  req: Request<{}, {}, CreateRegistrationRequest>,
+  req: Request<{}, {}, CreateRegistrationRequest> & {
+    file?: Express.Multer.File;
+  },
   res: Response<RegistrationResponse | { message: string }>,
   next: NextFunction,
 ) => {
@@ -45,6 +111,7 @@ export const createRegistration = async (
       identification: req.body.identification,
       personal_email: req.body.personal_email,
       tel: req.body.tel,
+      document_filepath: req.file?.path ?? null,
       admin_remark: req.body.admin_remark ?? null,
       reviewed_at: req.body.reviewed_at ? new Date(req.body.reviewed_at) : null,
     });
@@ -125,7 +192,9 @@ export const getRegistrationById = async (
 };
 
 export const updateRegistration = async (
-  req: Request<{ id: string }, {}, UpdateRegistrationRequest>,
+  req: Request<{ id: string }, {}, UpdateRegistrationRequest> & {
+    file?: Express.Multer.File;
+  },
   res: Response<RegistrationResponse | { message: string }>,
   next: NextFunction,
 ) => {
@@ -182,6 +251,9 @@ export const updateRegistration = async (
         ? new Date(req.body.reviewed_at)
         : null;
     }
+    if (req.file) {
+      updates.document_filepath = req.file.path;
+    }
 
     if (Object.keys(updates).length === 0) {
       return res
@@ -192,6 +264,27 @@ export const updateRegistration = async (
     await registration.update(updates);
 
     return res.json(toRegistrationResponse(registration));
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const getRegistrationDocument = async (
+  req: Request<{ id: string }> & { user?: User },
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const documentPath = await getAccessibleRegistrationDocument(
+      req.params.id,
+      req.user,
+    );
+
+    if (!documentPath) {
+      return res.status(404).json({ message: "Document not found" });
+    }
+
+    return res.sendFile(documentPath);
   } catch (err) {
     next(err);
   }
@@ -214,5 +307,133 @@ export const deleteRegistration = async (
     return res.json({ message: "Registration deleted successfully" });
   } catch (err) {
     next(err);
+  }
+};
+
+export const approveRegistration = async (
+  req: Request<{ id: string }, {}, ApproveRegistrationRequest> & {
+    user?: User;
+  },
+  res: Response<ApproveRegistrationResponse | { message: string }>,
+  next: NextFunction,
+) => {
+  try {
+    // Check if admin
+    if (!req.user || req.user.role !== UserRoles.ADMIN) {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    // Get registration
+    const registration = await Registration.findByPk(req.params.id);
+    if (!registration) {
+      return res.status(404).json({ message: "Registration not found" });
+    }
+
+    // Check if user_id already exists
+    if (registration.user_id) {
+      return res.status(400).json({ message: "User already registered" });
+    }
+
+    // Generate default password
+    const temporary_password = "SFC@" + registration.identification.slice(-4);
+
+    // Create new user with username as firstname + lastname
+    const username =
+      `${registration.firstname}${registration.lastname}`.toLowerCase();
+    const user = await User.create({
+      username,
+      firstname: registration.firstname,
+      lastname: registration.lastname,
+      identification: registration.identification,
+      personal_email: registration.personal_email,
+      role: UserRoles.PARK_GUIDE,
+      password_hash: hashPassword(temporary_password),
+    });
+
+    // Update registration with user_id and approved status
+    await registration.update({
+      user_id: user.id,
+      status: RegistrationStatus.APPROVED,
+      reviewed_by_user_id: req.user.id,
+      reviewed_at: new Date(),
+    });
+
+    return res.status(200).json({
+      registration: toRegistrationResponse(registration),
+      user: {
+        id: user.id,
+        username: user.username,
+        firstname: user.firstname,
+        lastname: user.lastname,
+        identification: user.identification,
+        personal_email: user.personal_email,
+        role: user.role,
+        created_at: user.created_at,
+        updated_at: user.updated_at,
+      },
+    });
+  } catch (err) {
+    if (err instanceof ValidationError) {
+      return res.status(400).json({ message: err.message });
+    }
+
+    if (err instanceof DatabaseError) {
+      const dbMessage =
+        (err.parent as { message?: string } | undefined)?.message ??
+        err.message;
+      return res.status(400).json({ message: dbMessage });
+    }
+
+    if (err instanceof Error) {
+      return res.status(500).json({ message: err.message });
+    }
+
+    return res.status(500).json({ message: "Unknown error" });
+  }
+};
+
+export const rejectRegistration = async (
+  req: Request<{ id: string }, {}, RejectRegistrationRequest> & { user?: User },
+  res: Response<RegistrationResponse | { message: string }>,
+  next: NextFunction,
+) => {
+  try {
+    // Check if admin
+    if (!req.user || req.user.role !== UserRoles.ADMIN) {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    // Get registration
+    const registration = await Registration.findByPk(req.params.id);
+    if (!registration) {
+      return res.status(404).json({ message: "Registration not found" });
+    }
+
+    // Update registration with rejection status and message
+    await registration.update({
+      status: RegistrationStatus.REJECTED,
+      admin_remark: req.body.message,
+      reviewed_by_user_id: req.user.id,
+      reviewed_at: new Date(),
+    });
+
+    return res.json(toRegistrationResponse(registration));
+  } catch (err) {
+    if (err instanceof ValidationError) {
+      return res.status(400).json({ message: err.message });
+    }
+
+    if (err instanceof DatabaseError) {
+      const dbMessage =
+        (err.parent as { message?: string } | undefined)?.message ??
+        err.message;
+      return res.status(400).json({ message: dbMessage });
+    }
+
+    if (err instanceof Error) {
+      return res.status(500).json({ message: err.message });
+    }
+
+    return res.status(500).json({ message: "Unknown error" });
   }
 };

@@ -145,6 +145,12 @@ const options: swaggerJSDoc.Options = {
               example: "john.doe@example.com",
             },
             tel: { type: "string", example: "+610412345678" },
+            document_filepath: {
+              type: "string",
+              nullable: true,
+              example:
+                "C:/Users/User/Documents/COS30049-CTIP/backend/storage/uploads/private/registrations/8b89f43a-9bb4-47ca-a269-f0554e651067.pdf",
+            },
             admin_remark: {
               type: "string",
               nullable: true,
@@ -198,6 +204,11 @@ const options: swaggerJSDoc.Options = {
               example: "john.doe@example.com",
             },
             tel: { type: "string", example: "+610412345678" },
+            document: {
+              type: "string",
+              format: "binary",
+              description: "Optional registration document file",
+            },
             admin_remark: {
               type: "string",
               nullable: true,
@@ -234,6 +245,11 @@ const options: swaggerJSDoc.Options = {
               example: "john.doe@example.com",
             },
             tel: { type: "string", example: "+610412345678" },
+            document: {
+              type: "string",
+              format: "binary",
+              description: "Optional registration document file",
+            },
             admin_remark: {
               type: "string",
               nullable: true,
@@ -244,6 +260,53 @@ const options: swaggerJSDoc.Options = {
               format: "date-time",
               nullable: true,
               example: "2026-04-24T08:00:00.000Z",
+            },
+          },
+        },
+        RejectRegistrationRequest: {
+          type: "object",
+          required: ["message"],
+          properties: {
+            message: {
+              type: "string",
+              example: "Identity documents were incomplete.",
+            },
+          },
+        },
+        ApproveRegistrationResponse: {
+          type: "object",
+          properties: {
+            registration: {
+              $ref: "#/components/schemas/Registration",
+            },
+            user: {
+              type: "object",
+              properties: {
+                id: { type: "integer", example: 2 },
+                username: { type: "string", example: "johndoe" },
+                firstname: { type: "string", example: "John" },
+                lastname: { type: "string", example: "Doe" },
+                identification: { type: "string", example: "S1234567" },
+                personal_email: {
+                  type: "string",
+                  format: "email",
+                  example: "john.doe@example.com",
+                },
+                role: {
+                  type: "string",
+                  example: UserRoles.PARK_GUIDE,
+                },
+                created_at: {
+                  type: "string",
+                  format: "date-time",
+                  example: "2026-04-24T08:00:00.000Z",
+                },
+                updated_at: {
+                  type: "string",
+                  format: "date-time",
+                  example: "2026-04-24T08:00:00.000Z",
+                },
+              },
             },
           },
         },
