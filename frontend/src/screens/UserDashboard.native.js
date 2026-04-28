@@ -78,7 +78,6 @@ const UserDashboard=({navigation})=>{
                             const numModules = course.modules ? course.modules.length : 0;
 
                             return (
-                                <>
                                 <CourseCard
                                     key={course.id}
                                     id={course.id}
@@ -91,45 +90,20 @@ const UserDashboard=({navigation})=>{
                                     userType={userType}
                                     onPress={() => navigation.navigate('User Module', { id: course.id })}
                                 />
-                                <CourseCard
-                                    key={course.id}
-                                    id={course.id}
-                                    imagePath={{ uri: course.image }}
-                                    courseTitle={course.courseTitle}
-                                    numModules={numModules}
-                                    duration={course.duration}
-                                    expiry={course.expiryDate}
-                                    progress={courseProgress?.progress}
-                                    userType={userType}
-                                    onPress={() => navigation.navigate('User Module', { id: course.id })}
-                                />
-                                <CourseCard
-                                    key={course.id}
-                                    id={course.id}
-                                    imagePath={{ uri: course.image }}
-                                    courseTitle={course.courseTitle}
-                                    numModules={numModules}
-                                    duration={course.duration}
-                                    expiry={course.expiryDate}
-                                    progress={courseProgress?.progress}
-                                    userType={userType}
-                                    onPress={() => navigation.navigate('User Module', { id: course.id })}
-                                />
-                                <CourseCard
-                                    key={course.id}
-                                    id={course.id}
-                                    imagePath={{ uri: course.image }}
-                                    courseTitle={course.courseTitle}
-                                    numModules={numModules}
-                                    duration={course.duration}
-                                    expiry={course.expiryDate}
-                                    progress={courseProgress?.progress}
-                                    userType={userType}
-                                    onPress={() => navigation.navigate('User Module', { id: course.id })}
-                                />
-                                </>
                             );
                         })}
+                    </View>
+                </View>
+                <View style={styles.sectionHeader}>
+                    <Text style={styles.sectionTitle}>
+                        Explore Categories
+                    </Text>
+                    <View style={styles.tagContainer}>
+                        {categories.map((item)=>(
+                            <Pressable key={item.id} style={styles.categoryTag} >
+                                <Text style={styles.tagText}>{item.name}</Text>
+                            </Pressable>
+                        ))}
                     </View>
                 </View>
             </ScrollView>
@@ -193,7 +167,7 @@ const styles=StyleSheet.create({
         fontWeight:600
     },
     sectionHeader:{
-        marginBottom:12,
+        marginBottom:15,
         paddingHorizontal:10,
     },
     sectionTitle: {
@@ -208,6 +182,27 @@ const styles=StyleSheet.create({
         justifyContent:'flex-start',
         gap:10,
         marginTop:15
+    },
+    tagContainer: {
+        flexDirection:'row',
+        flexWrap: 'wrap',
+        gap: 10,
+        marginTop: 12,
+    },
+    categoryTag: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#0a6340',
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        borderRadius: 25,
+        borderWidth: 1,
+        borderColor: '#E0E0E0',
+    },
+    tagText: {
+        fontSize: 12,
+        color: 'white',
+        fontWeight: '500',
     },
 })
 

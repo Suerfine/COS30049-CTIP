@@ -17,21 +17,39 @@ const CourseCard=({imagePath, courseTitle, numModules,duration,expiry,userType, 
             onPress={progress === null || progress === 0 ? undefined : onPress}
         >
             <Image source={imagePath} style={styles.courseImg} accessibilityLabel='Cover Photo of Course'/>
-            <View style={styles.details}>
-                <Text style={styles.CourseTitle}>{courseTitle}</Text>
+            <View style={styles.details}>                
+                    <Text style={styles.CourseTitle}>{courseTitle}</Text>
+                <View style={styles.row}> 
+                    <View>
+                        <View style={styles.courseDetails}>
+                            <BookOpenText size={isWeb ? 20 : 15}/>
+                            <Text style={styles.DetailsText}>{numModules} Modules</Text>
+                        </View>
+                        <View style={styles.courseDetails}>
+                            <Timer size={isWeb ? 20 : 15}/>
+                            <Text style={styles.DetailsText}>{duration}</Text>
+                        </View>
+                        <View style={styles.courseDetails}>
+                            <ClockAlert size={isWeb ? 20 : 15}/>
+                            <Text style={styles.DetailsText}>{expiry}</Text>
+                        </View>
+                    </View>
+                    
+                    {userType !== 'admin' && !isWeb && (
+                    <>
+                        {progress === null || progress === 0 ? (
+                            <Pressable style={styles.enrollBtn} onPress={onEnroll}>
+                                <Text style={styles.enrollText}>
+                                    Enroll
+                                </Text>
+                            </Pressable>
+                        ) : (
+                            <ProgressBar progress={progress} />
+                        )}
+                    </>
+                )}
+                </View>
                 
-                <View style={styles.courseDetails}>
-                    <BookOpenText size={isWeb ? 20 : 15}/>
-                    <Text style={styles.DetailsText}>{numModules} Modules</Text>
-                </View>
-                <View style={styles.courseDetails}>
-                    <Timer size={isWeb ? 20 : 15}/>
-                    <Text style={styles.DetailsText}>{duration}</Text>
-                </View>
-                <View style={styles.courseDetails}>
-                    <ClockAlert size={isWeb ? 20 : 15}/>
-                    <Text style={styles.DetailsText}>{expiry}</Text>
-                </View>
             </View>
             
             {userType === 'admin' && (
@@ -168,7 +186,20 @@ const styles=StyleSheet.create({
             web:0,
             default:10
         }),
-    }
+    },
+    cardHover: {
+        transform: [{ translateY: -5 }],
+        shadowOpacity: 0.2,
+    },
+    cardPressed:{
+        opacity:0.8,
+        transform:[{scale:0.98}]
+    },
+    row:{
+        flexDirection:'row',
+        justifyContent:'space-between'
+    },
+    
 });
 
 export default CourseCard;
