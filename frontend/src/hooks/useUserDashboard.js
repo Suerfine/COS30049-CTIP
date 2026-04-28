@@ -148,8 +148,6 @@ export const useUserDashboard = () => {
         return result;
     }, [todos, selectedDate, filter]);
 
-
-
     return { 
         courses, 
         todos, 
@@ -166,6 +164,7 @@ export const useUserDashboard = () => {
         isExpanded, setIsExpanded,
         weekDates, getDaysInMonth, filteredTodos, inProgressCourses,
         toggleTodo, hasPendingTodoOnDate, refreshData: fetchDashboardData,
-        weekLabels,todoTab, courseTab, categories
+        weekLabels,todoTab, courseTab, categories,
+
     };
 };

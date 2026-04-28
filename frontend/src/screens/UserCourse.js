@@ -1,6 +1,5 @@
 import { View, Text, StyleSheet, ScrollView, Pressable, ImageBackground } from 'react-native';
 import CourseCard from '../components/CourseCard';
-import { useUserDashboard } from '../hooks/useUserDashboard';
 import { useMemo } from 'react';
 import ConfirmEnroll from '../components/ConfirmEnroll';
 import { useState } from 'react';
@@ -9,83 +8,24 @@ import FilterSidebar from '../components/FilterSidebar';
 import NavBar from '../components/NavBar';
 import SlidingTabs from '../components/SlidingTabs';
 
+// Import other hook and component
+import { useUserDashboard } from '../hooks/useUserDashboard';
+import { useUserCourse } from '../hooks/useUserCourse';
+
 const UserCourse = ({ navigation }) => {
-    const { courses, progressData, userType } = useUserDashboard();
-    const [selectedCourse, setSelectedCourse] = useState(null);
-    const [modalVisible, setModalVisible] = useState(false);
-    const [filterVisible, setFilterVisible] = useState(false);
-    
-    const [courseFilter, setCourseFilter]=useState('all');
-
-    const [filters, setFilters] = useState({
-        status: 'all',
-        category:'all',
-    });
-    const [tempFilters, setTempFilters] = useState(filters);
-
-    const statusLabels = {
-        inProgress: 'In Progress',
-        completed: 'Completed',
-        notEnrolled: 'Not Enrolled',
-    };
-
-    const tabs=[
-        {id:'all', label:'All'},
-        {id:'basic', label:'Basic'},
-        {id:'advanced',label:'Advanced'}
-    ];
-
-    const coursesWithStatus = useMemo(() => {
-        return courses.map(course => {
-            const progressObj = progressData.find(
-                p => p.courseId === course.id
-            );
-
-            const progress = progressObj ? progressObj.progress : null;
-
-            let status = 'notEnrolled';
-            if (typeof progress === 'number') {
-                if (progress >= 1) status = 'completed';
-                else if (progress > 0) status = 'inProgress';
-            }
-
-            return {
-                ...course,
-                progress,
-                status,
-            };
-        });
-    }, [courses, progressData]);
-
-    // filter by level/status
-    const filteredCourses = useMemo(() => {
-        if (!coursesWithStatus) return [];
-        
-        return coursesWithStatus.filter(course => {
-            const courseLevel = course.level ? course.level.toLowerCase() : '';
-            const matchLevel = courseFilter === 'all' || courseLevel === courseFilter.toLowerCase();
-            const matchStatus = filters.status === 'all' || course.status === filters.status;
-            // const matchCategory = filters.category === 'all' || 
-            //     (Array.isArray(filters.category) && course.category && filters.category.includes(course.category));
-
-            return matchLevel && matchStatus;
-        });
-    }, [coursesWithStatus, filters, courseFilter]);
-
-    const removeFilter=(key, value)=>{
-        setFilters(prev=>{
-            if (key==='status'){
-                return {...prev, status:'all'};
-            }
-            if(key==='category'){
-                const newCats=prev.category.filter(c=>c !== value);
-                return {
-                    ...prev, category:newCats.length>0 ? newCats :'all'
-                };
-            }
-            return prev;
-        });
-    };
+    const { courses, progressData, userType  } = useUserDashboard();
+    const {selectedCourse, setSelectedCourse,
+        modalVisible, setModalVisible,
+        filterVisible, setFilterVisible,
+        allcourseFilter, setAllCourseFilter,
+        filters, setFilters,
+        tempFilters, setTempFilters,
+        statusLabels,
+        tabs,
+        coursesWithStatus,
+        filteredCourses,
+        removeFilter
+    }=useUserCourse();
 
     return (
         <View style={{ flex: 1 }}>
@@ -106,7 +46,7 @@ const UserCourse = ({ navigation }) => {
                 </View>
                 <View>
                     <View style={styles.filterContainer}>
-                        <SlidingTabs tabs={tabs} activeTab={courseFilter} onTabChange={(id)=>setCourseFilter(id)}/>
+                        <SlidingTabs tabs={tabs} activeTab={allcourseFilter} onTabChange={(id)=>setAllCourseFilter(id)}/>
                         <Pressable 
                             onPress={() => {
                                 setTempFilters(filters);
