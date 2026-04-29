@@ -25,7 +25,7 @@ const UserDashboard = ({ navigation }) => {
         currentDate, setCurrentDate,
         isExpanded, setIsExpanded,
         weekDates, getDaysInMonth, filteredTodos, inProgressCourses,
-        toggleTodo, hasPendingTodoOnDate,
+        toggleTodo, hasPendingTodoOnDate,formatLocalDate,
         weekLabels,todoTab, courseTab, categories
     } = useUserDashboard();
 
@@ -165,7 +165,7 @@ const UserDashboard = ({ navigation }) => {
                                                     />
                                                 );
                                             }
-                                            const dateString = date.toISOString().split('T')[0];
+                                            const dateString = formatLocalDate(date);
                                             const isSelected = selectedDate === dateString;
                                             const hasTodo = hasPendingTodoOnDate(date);
                                             
@@ -416,9 +416,13 @@ const styles = StyleSheet.create({
         color: 'white',
         fontWeight: 'bold',
         backgroundColor: '#2f6618fe',
-        padding: 6,
-        paddingHorizontal: 10,
+        width: 24,
+        height: 24,
         borderRadius: 50,
+        padding:2,
+        textAlign: 'center',
+        textAlignVertical: 'center',
+        lineHeight: 22,
     },
     dot:{
         width: 6,

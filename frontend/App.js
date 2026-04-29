@@ -19,6 +19,7 @@ import AccountManagement from './src/screens/AccountsManagement';
 import EnrollmentManagement from './src/screens/EnrollmentManagement';
 import UserProfile from './src/screens/UserProfile';
 import NavBar from './src/components/NavBar';
+import TaskDetails from './src/screens/TaskDetails.native';
 
 
 // Define

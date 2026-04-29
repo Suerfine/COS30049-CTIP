@@ -7,6 +7,7 @@ import UserDashboard from '../screens/UserDashboard';
 import MobileTopBar from '../components/MobileTopBar';
 import MobileSideBar from '../components/MobileSideBar';
 import UserCourse from '../screens/UserCourse';
+import TodoStackScreen from './TodoStackScreen';
 
 const Tab=createBottomTabNavigator();
 
@@ -40,6 +41,15 @@ export default function MobileTabNavigator(){
                     name='Courses'
                     component={UserCourse}
                     options={{tabBarIcon:({color})=><Book color={color} size={20}/>}}
+                />
+                <Tab.Screen
+                    name='To Do'
+                    component={TodoStackScreen}
+                    options={{tabBarIcon:({color})=><ListTodo color={color} size={20}/>}}
+                />
+                <Tab.Screen
+                    name='Badge'
+                    component={Award}
                 />
             </Tab.Navigator>
             <MobileSideBar isOpen={isSidebarOpen} onClose={()=>setIsSidebarOpen(false)}/>

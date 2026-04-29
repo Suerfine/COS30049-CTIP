@@ -72,9 +72,11 @@ export const useUserDashboard = () => {
     // get start of week (Sunday)
     const getStartOfWeek = (date) => {
         const d = new Date(date);
+        d.setHours(12, 0, 0, 0); 
+        
         const day = d.getDay();
-        const startDay=5;
-        const diff=(day-startDay+7)%7;
+        const startDay = 5;
+        const diff = (day - startDay + 7) % 7;
         d.setDate(d.getDate() - diff);
         return d;
     };
@@ -96,26 +98,41 @@ export const useUserDashboard = () => {
         const month = date.getMonth();
         const firstDay = new Date(year, month, 1);
         const lastDate = new Date(year, month + 1, 0).getDate();
+        
         const startDay = 5; 
         const firstDayIndex = (firstDay.getDay() - startDay + 7) % 7;
+        
         const days = [];
         for (let i = 0; i < firstDayIndex; i++) {
             days.push(null);
         }
         for (let i = 1; i <= lastDate; i++) {
-            days.push(new Date(year, month, i));
+            const d = new Date(year, month, i);
+            d.setHours(0, 0, 0, 0); 
+            days.push(d);
         }
-
         return days;
+    };
+
+    const formatLocalDate = (date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
     };
 
     // dot indicator for dates with todo item(s)
     const hasPendingTodoOnDate = (date) => {
-        return todos.some(todo =>
-            !todo.completed &&
-            new Date(todo.date).toDateString() === date.toDateString()
-        );
+        if (!date) return false;
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const calendarStr = `${year}-${month}-${day}`;
+        return todos.some(todo => {
+            return todo.date === calendarStr;
+        });
     };
+    
 
     // COURSES LOGIC
     // get in progress courses
@@ -164,7 +181,7 @@ export const useUserDashboard = () => {
         isExpanded, setIsExpanded,
         weekDates, getDaysInMonth, filteredTodos, inProgressCourses,
         toggleTodo, hasPendingTodoOnDate, refreshData: fetchDashboardData,
-        weekLabels,todoTab, courseTab, categories,
+        weekLabels,todoTab, courseTab, categories,formatLocalDate
 
     };
 };
