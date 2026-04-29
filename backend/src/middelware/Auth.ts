@@ -7,46 +7,38 @@ type DecodedAuthToken = JwtPayload & {
   role?: string;
 };
 
-export const auth = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const auth = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<any> => {
   try {
     const authHeader = req.headers.authorization;
-
     if (!authHeader) {
-      res.status(401).json({ message: "Unauthorized" });
-      return;
+      throw new Error("No authorization header");
     }
-
     const [tokenType, token] = authHeader.split(" ");
-
     if (tokenType !== "Bearer" || !token) {
-      res.status(401).json({ message: "Unauthorized" });
-      return;
+      throw new Error("Invalid authorization header");
     }
-
     const jwtSecret = process.env.JWT_SECRET;
-
     if (!jwtSecret) {
-      res.status(401).json({ message: "Unauthorized" });
-      return;
+      throw new Error("JWT secret not configured");
     }
-
     const decoded = jwt.verify(token, jwtSecret) as DecodedAuthToken | string;
-
     if (typeof decoded === "string" || typeof decoded.id !== "number") {
-      res.status(401).json({ message: "Unauthorized" });
-      return;
+      throw new Error("Invalid token payload");
     }
-
     const user = await User.findByPk(decoded.id);
-
     if (!user) {
-      res.status(401).json({ message: "Unauthorized" });
-      return;
+      throw new Error("User not found");
     }
-
     req.user = user;
-    next();
-  } catch (error) {
-    res.status(401).json({ message: "Unauthorized" });
+    return next();
+  } catch (err) {
+    res
+      .status(401)
+      .json({ message: err instanceof Error ? err.message : "Unauthorized" });
+    return;
   }
 };
