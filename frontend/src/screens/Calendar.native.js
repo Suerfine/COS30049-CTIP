@@ -1,9 +1,10 @@
-import { View, Text, StyleSheet, ScrollView, Pressable, StatusBar } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, StatusBar, Modal, TextInput, Switch } from 'react-native';
 import { useEffect, useState } from 'react'; 
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
-import { LayoutList, StretchHorizontal, ChevronLeft, Plus, ChevronRight } from 'lucide-react-native';
+import { LayoutList, StretchHorizontal, ChevronLeft, Plus, ChevronRight, X, Check } from 'lucide-react-native';
 import {Calendar as RNCalendar} from 'react-native-calendars'; 
 import Checkbox from 'expo-checkbox';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 // Import other hook and components
 import { useUserDashboard } from '../hooks/useUserDashboard';
@@ -13,6 +14,22 @@ const Calendar=({layout,navigation})=>{
     const [currentLayout, setCurrentLayout]=useState(layout);
     const {currentDate, todos, hasPendingTodoOnDate, filteredTodos, todoTab, setFilter, filter, toggleTodo} =useUserDashboard();
     const [selectedDate, setSelectedDate]=useState('');
+    const [isModalVisible, setIsModalVisible]=useState(false);
+    const [isAllDay, setIsAllDay]=useState(false);
+    const initialDate = selectedDate ? new Date(selectedDate) : new Date();
+    const [startDate, setStartDate] = useState(initialDate);
+    const [endDate, setEndDate] = useState(initialDate);
+    const [showStartPicker, setShowStartPicker] = useState(false);
+    const [showEndPicker, setShowEndPicker] = useState(false);
+    const [isPhysical, setIsPhysical] = useState(false);
+
+    useEffect(() => {
+        if (selectedDate) {
+            const newDate = new Date(selectedDate);
+            setStartDate(newDate);
+            setEndDate(newDate);
+        }
+    }, [selectedDate]);
 
     const getMarkedDates=()=>{
         let marks={};
@@ -197,13 +214,120 @@ const Calendar=({layout,navigation})=>{
                     <Pressable onPress={()=>setCurrentLayout(currentLayout==='calendar' ? 'list' : 'calendar')}>
                         {currentLayout==='calendar' ? (<StretchHorizontal size={24} color="black"/>) : (<LayoutList size={24} color="black"/>)}
                     </Pressable>
-                    <Pressable>
+                    <Pressable onPress={()=>setIsModalVisible(true)}>
                         <Plus size={24} color="black"/>
                     </Pressable>
                 </View>
             </View>
             {/* Layout */}
             {currentLayout==='calendar' ? (<RenderCalendar />) : (<RenderTodo/>)}
+            <Modal animationType="slide" transparent={true} visible={isModalVisible} onRequestClose={()=>setIsModalVisible(false)}>
+                <View style={styles.fullModalOverlay}>
+                    <View style={styles.fullModalContent}>
+                        {/* Header */}
+                        <View style={styles.modalHeader}>
+                            <Pressable onPress={()=>setIsModalVisible(false)} style={({pressed})=>[styles.backButton, pressed && styles.btnPressed]}>
+                                <X size={24}/>
+                            </Pressable>
+                            <Pressable onPress={()=>setIsModalVisible(false)} style={styles.modalTitle}>
+                                <Text style={styles.modalTitle}>New Task</Text>
+                            </Pressable>
+                            <Pressable style={({pressed})=>[styles.backButton, pressed && styles.btnPressed]}>
+                                <Check size={24}/>
+                            </Pressable>
+                        </View>
+                        <View style={styles.inputText}>
+                            <TextInput style={styles.input}
+                            placeholder='Title:' 
+                            placeholderTextColor="#8f8f8f" />
+                            <View style={styles.formRow}>
+                                <Text style={styles.label}>Physical Workshop</Text>
+                                <Switch
+                                    trackColor={{ false: "#767577", true: "#32750e" }}
+                                    thumbColor={isPhysical ? "#fff" : "#f4f3f4"}
+                                    onValueChange={() => setIsPhysical(!isPhysical)}
+                                    value={isPhysical}
+                                />
+                            </View>
+                            <View style={styles.formGroup}>
+                                {/* All-Day Toggle */}
+                                <View style={styles.formRow}>
+                                    <Text style={styles.label}>All-day</Text>
+                                    <Switch
+                                        trackColor={{ false: "#767577", true: "#32750e" }}
+                                        thumbColor={isAllDay ? "#fff" : "#f4f3f4"}
+                                        onValueChange={() => setIsAllDay(!isAllDay)}
+                                        value={isAllDay}
+                                    />
+                                </View>
+
+                                <View style={styles.divider} />
+
+                                {/* Start Date & Time */}
+                                <View style={styles.formRow}>
+                                    <Text style={styles.label}>Starts</Text>
+                                    <View style={styles.dateTimeValues}>
+                                        <Pressable style={styles.valueBadge} onPress={()=>setShowStartPicker(true)}>
+                                            <Text style={styles.valueText}>
+                                                {startDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                            </Text>
+                                        </Pressable>
+                                        {!isAllDay && (
+                                            <Pressable style={styles.valueBadge}>
+                                                <Text style={styles.valueText}>09:00</Text>
+                                            </Pressable>
+                                        )}
+                                        {showStartPicker && (
+                                            <DateTimePicker
+                                                value={startDate}
+                                                mode="date"
+                                                display="default"
+                                                onChange={(event, selected) => {
+                                                    setShowStartPicker(false);
+                                                    if (selected) setStartDate(selected);
+                                                }}
+                                            />
+                                        )}
+                                    </View>
+                                </View>
+
+                                <View style={styles.divider} />
+
+                                {/* End Date & Time */}
+                                <View style={styles.formRow}>
+                                    <Text style={styles.label}>Ends</Text>
+                                    <View style={styles.dateTimeValues}>
+                                        <Pressable style={styles.valueBadge} onPress={()=>setShowEndPicker(true)}>
+                                            <Text style={styles.valueText}>
+                                                {endDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                            </Text>
+                                        </Pressable>
+                                        {!isAllDay && (
+                                            <Pressable style={styles.valueBadge}>
+                                                <Text style={styles.valueText}>10:00</Text>
+                                            </Pressable>
+                                        )}
+                                        {showEndPicker && (
+                                            <DateTimePicker
+                                                value={endDate}
+                                                mode="date"
+                                                display="default"
+                                                onChange={(event, selected) => {
+                                                    setShowEndPicker(false);
+                                                    if (selected) setEndDate(selected);
+                                                }}
+                                            />
+                                        )}
+                                    </View>
+                                </View>
+                            </View>
+                            <TextInput multiline={true} style={[styles.input, styles.descInput]}
+                            placeholder='Description:' 
+                            placeholderTextColor="#8f8f8f" />
+                        </View>
+                    </View>
+                </View>
+            </Modal>
         </SafeAreaView>
     )
 };
@@ -335,7 +459,88 @@ const styles=StyleSheet.create({
     btnPressed:{
         opacity:0.8,
         transform:[{scale:0.98}],
+    },
+    fullModalOverlay:{
+        justifyContent:'flex-end',
+        flex:1
+    },
+    fullModalContent:{
+        height:'93%',
+        backgroundColor:'#f2f2f7',
+        borderTopLeftRadius:30,
+        borderTopRightRadius:30,
+        overflow:'hidden',
+    },
+    modalTitle:{
+        fontSize:17,
+        fontWeight:'600',
+    },
+    modalHeader:{
+        flexDirection:'row',
+        justifyContent:'space-between',
+        alignItems:'center',
+        padding:16,
+        backgroundColor:'#fff',
+        borderBottomWidth:1,
+        borderBottomColor:"#e5e5e5"
+    },
+    input: {
+        backgroundColor: 'white',
+        borderRadius: 15,
+        paddingHorizontal: 15,
+        paddingVertical: 10,
+        fontSize: 16,
+        color: '#000',
+    },
+    inputText:{
+        marginTop:10,
+        paddingHorizontal:20,
+    },
+    formGroup: {
+        backgroundColor: '#fff',
+        borderRadius: 10,
+        marginVertical: 10,
+        overflow: 'hidden',
+    },
+    formRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingVertical: 12,
+        paddingHorizontal: 16,
+        backgroundColor:'white',
+        borderRadius:20,
+        marginTop:10
+    },
+    label: {
+        fontSize: 17,
+        color: '#000',
+    },
+    dateTimeValues: {
+        flexDirection: 'row',
+        gap: 8,
+    },
+    valueBadge: {
+        backgroundColor: '#F2F2F7',
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        borderRadius: 6,
+    },
+    valueText: {
+        fontSize: 15,
+        color: '#166534', 
+    },
+    divider: {
+        height: 1,
+        backgroundColor: '#E5E5E5',
+        marginLeft: 16, 
+    },
+    descInput:{
+        height:200,
+        textAlignVertical: 'top', 
+        paddingTop:15
     }
 });
 
 export default Calendar;
+// need wirte the function of end date > satrt date
