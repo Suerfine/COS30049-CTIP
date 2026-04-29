@@ -19,7 +19,6 @@ import AccountManagement from './src/screens/AccountsManagement';
 import EnrollmentManagement from './src/screens/EnrollmentManagement';
 import UserProfile from './src/screens/UserProfile';
 import NavBar from './src/components/NavBar';
-import TaskDetails from './src/screens/TaskDetails.native';
 
 
 // Define
@@ -58,7 +57,9 @@ export default function App() {
           <View style={styles.content}>
               <Stack.Navigator initialRouteName={isMobile ? "MobileRoot" : "User Dashboard"}>
                   {isMobile && (
-                    <Stack.Screen name='MobileRoot' component={MobileTabNavigator} options={{headerShown:false}}/>
+                    <>
+                      <Stack.Screen name='MobileRoot' component={MobileTabNavigator} options={{headerShown:false}}/>
+                    </>
                   )}
                   <Stack.Screen name="Course Management" component={AdminCourse} options={{headerShown: false}}/>
                   <Stack.Screen name="Course Details" component={EditCourseDetails} options={{headerShown: false}}/>

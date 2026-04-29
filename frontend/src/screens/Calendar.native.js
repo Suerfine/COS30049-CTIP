@@ -322,7 +322,7 @@ const Calendar=({layout,navigation})=>{
                                 </View>
                             </View>
                             <TextInput multiline={true} style={[styles.input, styles.descInput]}
-                            placeholder='Description:' 
+                            placeholder='Description (optional):' 
                             placeholderTextColor="#8f8f8f" />
                         </View>
                     </View>
@@ -543,4 +543,4 @@ const styles=StyleSheet.create({
 });
 
 export default Calendar;
-// need wirte the function of end date > satrt date
+// need wirte the function of end date > satrt date, add which course, add which type

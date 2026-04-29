@@ -2,6 +2,9 @@ import React,{useEffect, useRef, useState} from 'react';
 import {View, Text, TextInput, Pressable, StyleSheet, Animated, Dimensions, Image} from 'react-native';
 import { UserPen, Calendar, Award, Settings, LogOut } from 'lucide-react-native';
 import { useUserDashboard } from '../hooks/useUserDashboard';
+import { useNavigation } from '@react-navigation/native';
+import UserProfile from '../screens/UserProfile.native';
+import { navigate } from '../utils/navigationRef';
 
 const {width}=Dimensions.get('window');
 
@@ -33,7 +36,7 @@ const MobileSideBar=({isOpen, onClose})=>{
     }
 
     const menuItems=[
-        {id: 'profile', label:'Profile', icon: UserPen},
+        {id: 'profile', label:'Profile', icon: UserPen, route:'UserProfile'},
         {id: 'calendar', label:'Calendar', icon: Calendar},
         {id: 'badges', label:'Badges', icon: Award},
         {id: 'settings', label:'Settings', icon: Settings},
@@ -56,7 +59,10 @@ const MobileSideBar=({isOpen, onClose})=>{
 
                     {/* Content */}
                         {menuItems.map((item) => (
-                            <Pressable key={item.id} style={styles.menuItem} onPress={onClose}>
+                            <Pressable key={item.id} style={styles.menuItem} onPress={()=>{
+                                onClose();
+                                navigate(item.route);
+                            }}>
                                 <item.icon size={22} color="#333" />
                                 <Text style={styles.menuText}>{item.label}</Text>
                             </Pressable>
