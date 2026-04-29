@@ -7,6 +7,16 @@ import "./models";
 import routes from "./routes";
 import swaggerSpec from "./config/Swagger";
 
+// Issue with augmeneted Express Request type not being recognized in middleware, so we need to redeclare it here
+import { User } from "../src/models";
+declare global {
+  namespace Express {
+    export interface Request {
+      user?: User; // Add the user property to the Request interface
+    }
+  }
+}
+
 const app: Application = express();
 const port = Number(process.env.PORT) || 5000;
 
