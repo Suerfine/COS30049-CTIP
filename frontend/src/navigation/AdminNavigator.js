@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { createStackNavigator } from "@react-navigation/stack";
-import { View, Platform } from "react-native";
+import { View } from "react-native";
 
 // Import screens
 import AdminCourse from "../screens/AdminCourse";
@@ -11,25 +11,22 @@ import EnrollmentManagement from "../screens/EnrollmentManagement";
 import UserProfile from "../screens/UserProfile";
 
 // Import components
-import NavBar from "../components/NavBar";
 import SideBar from "../components/SideBar";
 
 const Stack = createStackNavigator();
 
 export default function AdminNavigator() {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const isMobile = Platform.OS !== "web";
 
   return (
     <View style={{ flex: 1 }}>
       <View style={{ flexDirection: "row", flex: 1 }}>
-        {!isMobile && <NavBar />}
+        <SideBar/>
         <View style={{ flex: 1 }}>
           <Stack.Navigator
             screenOptions={{
               headerShown: false,
             }}
-            initialRouteName="Course Management"
+            initialRouteName="Registration Management"
           >
             <Stack.Screen name="Course Management" component={AdminCourse} />
             <Stack.Screen name="Course Details" component={EditCourseDetail} />
@@ -49,12 +46,6 @@ export default function AdminNavigator() {
           </Stack.Navigator>
         </View>
       </View>
-      {!isMobile && (
-        <SideBar
-          isOpen={isSidebarOpen}
-          onClose={() => setIsSidebarOpen(false)}
-        />
-      )}
     </View>
   );
 }

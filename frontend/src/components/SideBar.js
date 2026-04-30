@@ -1,14 +1,20 @@
 import React, { useState, useEffect} from 'react';
 import { View, Text, StyleSheet, Pressable, Image} from 'react-native';
 import {LayoutDashboard, Book, ClipboardList, Flag, CreditCard,Bell, LogOut, UserPlus, User2} from 'lucide-react-native'
-import { CommonActions, useNavigation } from '@react-navigation/native';
-import { navigationRef } from '../utils/navigationRef';
+import { CommonActions } from '@react-navigation/native';
+import { useNavigationState, useNavigation } from '@react-navigation/native';
 
 const SideBar = () => {
     const navigation=useNavigation();
-    const [currentRoute, setCurrentRoute] = useState(
-    navigationRef.getCurrentRoute()?.name
-    );
+    const currentRoute = useNavigationState((state) => {
+        if (!state) return null;
+        let route=state.routes[state.index];
+        while(route.state){
+            route=route.state.routes[route.state.index];
+        }
+        return route.name;
+    });
+    console.log(currentRoute);
     // Navigation Link
     const menuItems= [
         {name:'Dashboard', icon: LayoutDashboard},
@@ -19,13 +25,7 @@ const SideBar = () => {
         // {name:'Payment', icon: CreditCard},
         {name:'Abnormalies', icon: Flag},
     ];
-    useEffect(() => {
-        const unsubscribe = navigationRef.addListener('state', () => {
-            setCurrentRoute(navigationRef.getCurrentRoute()?.name);
-        });
     
-        return unsubscribe;
-    }, []);
 
     //Set State
     const [activePage, setActivePage]=useState('Courses');
@@ -47,7 +47,9 @@ const SideBar = () => {
                                     style={({hovered})=>[styles.menuItem, isActive && styles.activeIcon, !isActive && hovered && styles.hoverStyle]}
                                         onPress={() => {
                                         setActivePage(item.name);
-                                        navigationRef.navigate(item.route)
+                                        navigation.navigate('AdminStack',{
+                                            screen:item.route
+                                        })
 
                                     }}
                                 >
@@ -93,14 +95,13 @@ const styles = StyleSheet.create({
         flex:1,
         borderRightColor:'#3f3f3f4d',
         borderRightWidth:1,
+        backgroundColor:"white"
     },
     link:{
         gap:15,
         paddingBottom:25,
         borderBottomWidth: 1,
         borderBottomColor: '#ccc',
-        backgroundColor:'#ffffff',
-        
     },
     linkbtn:{
         paddingTop:8
@@ -134,31 +135,31 @@ const styles = StyleSheet.create({
         height:40,
         borderRadius:50,
         resizeMode:'contain',
-},
-admin:{
+    },
+    admin:{
         flex: 1,
         justifyContent:'space-between',
         alignItems:'flex-end',
         paddingBottom:10,
         flexDirection:'row',
         gap:15,
-        
-},
-logout:{
-    marginBottom:10,
-    color:'#474747'
-},
-adminInfo:{
-    flexDirection:'row',
-    alignItems:'center',
-    gap:5
-},
-hoverStyle:{
-    backgroundColor:"#eaefeb"
-},
-logoutHover:{
-    color:'#efab21'
-}
+            
+    },
+    logout:{
+        marginBottom:10,
+        color:'#474747'
+    },
+    adminInfo:{
+        flexDirection:'row',
+        alignItems:'center',
+        gap:5
+    },
+    hoverStyle:{
+        backgroundColor:"#eaefeb"
+    },
+    logoutHover:{
+        color:'#efab21'
+    }
 });
 
 export default SideBar;
