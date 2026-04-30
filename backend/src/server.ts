@@ -8,6 +8,10 @@ import "./models";
 import routes from "./routes";
 import swaggerSpec from "./config/Swagger";
 
+// Load environment variables from .env file
+const dotenv = require("dotenv");
+dotenv.config();
+
 // Issue with augmeneted Express Request type not being recognized in middleware, so we need to redeclare it here
 import { User } from "../src/models";
 declare global {
