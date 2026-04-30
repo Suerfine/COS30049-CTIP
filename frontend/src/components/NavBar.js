@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useRef } from "react";
 import {
   View,
   Text,
@@ -14,6 +14,7 @@ import {
   useNavigation,
   useNavigationState,
 } from "@react-navigation/native";
+import { useAuth } from "../context/AuthContext";
 
 // Navigation links animation
 const NavItem = ({ name, route, onPress, isActive }) => {
@@ -53,13 +54,10 @@ const NavItem = ({ name, route, onPress, isActive }) => {
     </Pressable>
   );
 };
-import { CommonActions, useNavigation } from "@react-navigation/native";
-import { useAuth } from "../context/AuthContext";
 
 const NavBar = () => {
   const navigation = useNavigation();
   const { logout } = useAuth();
-  const [searchQuery, setSearchQuery] = useState("");
 
   const currentRoute = useNavigationState((state) => {
     const route = state.routes[state.index];
@@ -176,7 +174,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 80,
   },
-  item: {
+  link: {
     paddingHorizontal: 10,
     paddingVertical: 5,
   },

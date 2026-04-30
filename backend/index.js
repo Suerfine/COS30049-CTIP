@@ -8,7 +8,7 @@ const path=require('path');
 //dot env for environment variables
 const dotenv=require('dotenv');
 dotenv.config();
-const PORT = process.env.PORT || 5000;
+const PORT = 4000;
 
 const app = express();
 app.use(cors());
@@ -42,7 +42,7 @@ const upload=multer({storage: storage});
 const courses = [
     {
         id: 1,
-        image: 'http://localhost:5000/images/first_aid.png',
+        image: 'http://localhost:4000/images/first_aid.png',
         courseTitle: 'Basic First Aid',
         level: 'basic',
         duration: '15 hours 30 mins',
@@ -154,7 +154,7 @@ const courses = [
     },
     {
         id: 2,
-        image: 'http://localhost:5000/images/cpr.png',
+        image: 'http://localhost:4000/images/cpr.png',
         courseTitle: 'CPR Training',
         level: 'basic',
         duration: '8 hours',
@@ -184,7 +184,7 @@ const courses = [
     },
     {
         id: 3,
-        image: 'http://localhost:5000/images/plantconservation.jpg',
+        image: 'http://localhost:4000/images/plantconservation.jpg',
         courseTitle: 'Plant Conservation',
         level: 'advanced',
         duration: '10 hours',
@@ -245,7 +245,7 @@ app.post('/api/courses', upload.single('image'), (req, res)=>{
             return res.status(400).send({message: 'No file uploaded'});
         }
         const newId=courses.length>0 ? Math.max(...courses.map(c=>c.id))+1 : 1;
-        const imageUrl=`http://localhost:5000/images/${req.file.filename}`;
+        const imageUrl=`http://localhost:4000/images/${req.file.filename}`;
         const newCourse={
             id: newId,
             courseTitle:req.body.courseTitle,
@@ -277,7 +277,7 @@ app.put('/api/courses/:id', upload.single('image'), (req,res)=>{
 
     let imageUrl=courses[courseIndex].image;
     if(req.file){
-        imageUrl=`http://localhost:5000/images/${req.file.filename}`;
+        imageUrl=`http://localhost:4000 /images/${req.file.filename}`;
     }
     const updatedCourse={
         ...courses[courseIndex],
@@ -454,7 +454,7 @@ const users=[
         telefon: '012-3456789',
         registerDate: '2025-10-15',
         status: 'Approved',
-        profileImage: 'http://localhost:5000/user-images/johndoe.png',
+        profileImage: 'http://localhost:4000/user-images/johndoe.png',
         remark: 'I would like to register for access to the dashboard and manage my projects.'
     },
     {
@@ -467,7 +467,7 @@ const users=[
         telefon: '012-3456789',
         registerDate: '2026-01-20',
         status: 'Pending',
-        profileImage: 'http://localhost:5000/user-images/jenny.png',
+        profileImage: 'http://localhost:4000/user-images/jenny.png',
         remark: 'I would like to register for access to the dashboard and manage my projects.'
     },
     {
@@ -480,7 +480,7 @@ const users=[
         telefon: '012-3456789',
         registerDate: '2026-02-10',
         status: 'Rejected',
-        profileImage: 'http://localhost:5000/user-images/smith.png',
+        profileImage: 'http://localhost:4000/user-images/smith.png',
         remark: 'I would like to register for access to the dashboard and manage my projects.'
     },
     {
@@ -493,7 +493,7 @@ const users=[
         telefon: '012-3456789',
         registerDate: '2026-01-25',
         status: 'Approved',
-        profileImage: 'http://localhost:5000/user-images/olivia.png',
+        profileImage: 'http://localhost:4000/user-images/olivia.png',
         remark: 'I would like to register for access to the dashboard and manage my projects.'
     },
     {
@@ -506,7 +506,7 @@ const users=[
         telefon: '012-3456789',
         registerDate: '2026-03-01',
         status: 'Pending',
-        profileImage: 'http://localhost:5000/user-images/daniel.png',
+        profileImage: 'http://localhost:4000/user-images/daniel.png',
         remark: 'I would like to register for access to the dashboard and manage my projects.'
     },
     {
@@ -519,7 +519,7 @@ const users=[
         telefon: '012-3456789',
         registerDate: '2026-02-15',
         status: 'Approved',
-        profileImage: 'http://localhost:5000/user-images/chloe.png',
+        profileImage: 'http://localhost:4000/user-images/chloe.png',
         remark: 'I would like to register for access to the dashboard and manage my projects.'
     },
     {
@@ -532,7 +532,7 @@ const users=[
         telefon: '012-3456789',
         registerDate: '2026-01-30',
         status: 'Rejected',
-        profileImage: 'http://localhost:5000/user-images/marcus.png',
+        profileImage: 'http://localhost:4000/user-images/marcus.png',
         remark: 'I would like to register for access to the dashboard and manage my projects.'
     },
     {
@@ -545,7 +545,7 @@ const users=[
         telefon: '012-3456789',
         registerDate: '2026-03-05',
         status: 'Approved',
-        profileImage: 'http://localhost:5000/user-images/issabelle.png',
+        profileImage: 'http://localhost:4000/user-images/issabelle.png',
         remark: 'I would like to register for access to the dashboard and manage my projects.'
     },
     {
@@ -558,7 +558,7 @@ const users=[
         telefon: '012-3456789',
         registerDate: '2026-02-20',
         status: 'Pending',
-        profileImage: 'http://localhost:5000/user-images/lucas.png',
+        profileImage: 'http://localhost:4000/user-images/lucas.png',
         remark: 'I would like to register for access to the dashboard and manage my projects.'
     },
     {
@@ -571,7 +571,7 @@ const users=[
         telefon: '012-3456789',
         registerDate: '2026-03-10',
         status: 'Approved',
-        profileImage: 'http://localhost:5000/user-images/mark.png',
+        profileImage: 'http://localhost:4000/user-images/mark.png',
         remark: 'I would like to register for access to the dashboard and manage my projects.'
     },
     {
@@ -584,7 +584,7 @@ const users=[
         telefon: '012-3456789',
         registerDate: '2026-01-28',
         status: 'Rejected',
-        profileImage: 'http://localhost:5000/user-images/nicholas.png',
+        profileImage: 'http://localhost:4000/user-images/nicholas.png',
         remark: 'I would like to register for access to the dashboard and manage my projects.'
     },
     {
@@ -597,7 +597,7 @@ const users=[
         telefon: '012-3456789',
         registerDate: '2026-03-15',
         status: 'Approved',
-        profileImage: 'http://localhost:5000/user-images/mia.png',
+        profileImage: 'http://localhost:4000/user-images/mia.png',
         remark: 'I would like to register for access to the dashboard and manage my projects.'
     },
     {
@@ -610,7 +610,7 @@ const users=[
         telefon: '012-3456789',
         registerDate: '2026-02-05',
         status: 'Pending',
-        profileImage: 'http://localhost:5000/user-images/noemi.png',
+        profileImage: 'http://localhost:4000/user-images/noemi.png',
         remark: 'I would like to register for access to the dashboard and manage my projects.'
     }
 ]
@@ -665,6 +665,108 @@ app.get('/api/accounts',(req,res)=>{
     res.json(accounts);
 })
 
+// Dummy Enrollment data
+const enrollments = [
+  {
+    "id":1,
+    "userId": 1,
+    "fullName": "Fam Sin Mim",
+    "courseId": 1,
+    "courseName": "IOT & Hardware Prototyping",
+    "Enrolled_on": "2026-01-15",
+    "status": "Completed",
+    "completed_on": "2026-02-10",
+    "expiry_date": "2027-02-11"
+  },
+  {
+    "id":2,
+    "userId": 2,
+    "fullName": "Jordan Smith",
+    "courseId": 2,
+    "courseName": "Advanced Machine Learning",
+    "Enrolled_on": "2026-02-01",
+    "status": "In Progress",
+    "completed_on": null,
+    "expiry_date": "2026-08-01"
+  },
+  {
+    "id":3,
+    "userId": 3,
+    "fullName": "Amira Varma",
+    "courseId": 3,
+    "courseName": "Full-Stack Web Development",
+    "Enrolled_on": "2025-12-10",
+    "status": "Expired",
+    "completed_on": null,
+    "expiry_date": "2026-03-10"
+  },
+  {
+    "id":4,
+    "userId": 4,
+    "fullName": "Kevin Chen",
+    "courseId": 1,
+    "courseName": "IOT & Hardware Prototyping",
+    "Enrolled_on": "2026-03-20",
+    "status": "In Progress",
+    "completed_on": null,
+    "expiry_date": "2026-09-20"
+  },
+  {
+    "id":5,
+    "userId": 5,
+    "fullName": "Sachi Tanaka",
+    "courseId": 2,
+    "courseName": "Advanced Machine Learning",
+    "Enrolled_on": "2026-01-05",
+    "status": "Completed",
+    "completed_on": "2026-01-25",
+    "expiry_date": "2027-01-26"
+  }
+];
+
+// Route to get all enrollments
+app.get('/api/enrollments',(req,res)=>{
+    res.json(enrollments);
+});
+
+// Dummy submission
+const submissions=[
+  {
+    "id":1,
+    "userId": 1,
+    "course_id": 1,
+    "fullName": "Sachi Tanaka",
+    "courseId": 2,
+    "courseName": "Advanced Machine Learning",
+    "course_total_score": 92,
+    "final_quiz_score": 88,
+    "completion_date": "2026-02-10",
+    "badge": null,
+    "issued_on": "2026-02-11",
+    "expiry_date":"20267-02-11",
+    "status":'Approved'
+  },
+  {
+    "id":2,
+    "userId": 5,
+    "course_id": 2,
+    "fullName": "Sachi Tanaka",
+    "courseId": 2,
+    "courseName": "Advanced Machine Learning",
+    "course_total_score": 85,
+    "final_quiz_score": 90,
+    "completion_date": "2026-01-25",
+    "badge": null,
+    "issued_on": "2026-02-11",
+    "expiry_date":"20267-02-11",
+    "status":'Pending'
+  }
+];
+
+// Route to get all submissions
+app.get('/api/submissions',(req,res)=>{
+    res.json(submissions);
+});
 // ---------------------------------------------------------------------
 
 // Dummy todo data

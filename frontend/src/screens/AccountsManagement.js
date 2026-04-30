@@ -1,9 +1,11 @@
-import { Pen, Trash2, Search, Plus, Circle, ChevronLeft, ChevronsLeft, ChevronRight, ChevronsRight, X, User2, IdCard, Mail, ShieldUser, Calendar, FileUser, EllipsisVertical, ChevronDown, ChevronUp, CirclePlus, CircleMinus,  MessageSquare, Phone} from 'lucide-react-native';
+import { Pen, Trash2, Search, Plus, Circle, ChevronLeft, ChevronsLeft, ChevronRight, ChevronsRight, X, User2, IdCard, Mail, ShieldUser, Calendar, FileUser, EllipsisVertical, ChevronDown, ChevronUp, CirclePlus, CircleMinus,  MessageSquare, Phone, ArrowUpNarrowWide, ArrowDownWideNarrow, RotateCcw} from 'lucide-react-native';
 import React, {useState} from 'react';
 import { Pressable, StyleSheet, FlatList, View,Text, Image, TextInput} from 'react-native';
 
 // Import other components and hooks
 import { useAccountManagement } from '../hooks/useAccountManagement';
+import { formatDate } from '../utils/formatDate';
+import { useSearchFilter } from '../hooks/useSearchFilter';
 
 const AccountManagement=()=>{
     const {accounts} = useAccountManagement();
@@ -15,20 +17,46 @@ const AccountManagement=()=>{
     const [activeMenuId, setActiveMenuId]=useState(null);
     const [isOpen, setIsOpen]=useState(false);
     const [isEditing, setIsEditing]=useState(false);
-
+    const [searchTerm, setSearchTerm]=useState('');
+    const searchFields = ['fullName', 'username', 'workEmail', 'ic', 'telephone', 'personal_email'];
+    const { 
+        filteredData: filteredUsers, 
+        requestSort, 
+        sortConfig, setSortConfig 
+    } = useSearchFilter(accounts, searchTerm, "All", searchFields);
     // Caluculate the pagination
     const indexOfLastItem=currentPage*itemsPerPage;
     const indexOfFirstItem=indexOfLastItem-itemsPerPage;
-    const currentAcc=accounts.slice(indexOfFirstItem, indexOfLastItem);
-    const totalPages=Math.ceil(accounts.length/itemsPerPage);
+    const currentAcc=filteredUsers.slice(indexOfFirstItem, indexOfLastItem);
+    const totalPages=Math.ceil(filteredUsers.length/itemsPerPage);
 
     const renderHeader=()=>(
         <View style={[styles.tableHeader, styles.row]}>
-            <Text style={[styles.headerText, { flex:3 }]}>Full Name</Text>
-            <Text style={[styles.headerText, { flex:2 }]}>Username</Text>
-            <Text style={[styles.headerText, { flex:3 }]}>Work Email</Text>
-            <Text style={[styles.headerText, { flex:2}]}>Joined On</Text>
-            <Text style={[styles.headerText, { flex:2 }]}>Last Login</Text>
+            <Pressable onPress={()=>requestSort('fullName')} style={[styles.headerRow, {flex:3}]}>
+                <Text style={styles.headerText}>Full Name</Text>
+                {sortConfig.key==='fullName' &&
+                sortConfig.direction==='asc' ? <ArrowUpNarrowWide size={14} color="white"/> : <ArrowDownWideNarrow size={14} color="white"/>}
+            </Pressable>
+            <Pressable onPress={()=>requestSort('username')} style={[styles.headerRow, {flex:2}]}>
+                <Text style={styles.headerText}>Username</Text>
+                {sortConfig.key==='username' &&
+                sortConfig.direction==='asc' ? <ArrowUpNarrowWide size={14} color="white"/> : <ArrowDownWideNarrow size={14} color="white"/>}
+            </Pressable>
+            <Pressable onPress={()=>requestSort('workEmail')} style={[styles.headerRow, {flex:3}]}>
+                <Text style={styles.headerText}>Work Email</Text>
+                {sortConfig.key==='workEmail' &&
+                sortConfig.direction==='asc' ? <ArrowUpNarrowWide size={14} color="white"/> : <ArrowDownWideNarrow size={14} color="white"/>}
+            </Pressable>
+            <Pressable onPress={()=>requestSort('joinedDate')} style={[styles.headerRow, {flex:2}]}>
+                <Text style={styles.headerText}>Joined On</Text>
+                {sortConfig.key==='joinedDate' &&
+                sortConfig.direction==='asc' ? <ArrowUpNarrowWide size={14} color="white"/> : <ArrowDownWideNarrow size={14} color="white"/>}
+            </Pressable>
+            <Pressable onPress={()=>requestSort('lastLogin')} style={[styles.headerRow, {flex:2}]}>
+                <Text style={styles.headerText}>Last Login</Text>
+                {sortConfig.key==='lastLogin' &&
+                sortConfig.direction==='asc' ? <ArrowUpNarrowWide size={14} color="white"/> : <ArrowDownWideNarrow size={14} color="white"/>}
+            </Pressable>
         </View>
     );
 
@@ -44,9 +72,9 @@ const AccountManagement=()=>{
             {/* Work Email */}
             <Text style={{flex:3}}>{item.workEmail}</Text>
             {/* Joined On */}
-            <Text style={{flex:2}}>{item.joinedDate}</Text>
+            <Text style={{flex:2}}>{formatDate(item.joinedDate)}</Text>
             {/* Last Login */}
-            <Text style={{flex:2}}>{item.lastLogin}</Text>
+            <Text style={{flex:2}}>{formatDate(item.lastLogin)}</Text>
         </Pressable>
     );
     
@@ -89,9 +117,15 @@ const AccountManagement=()=>{
             <Text style={styles.title}>Account Management</Text>
             <View style={styles.toolbar}>
                 <View style={styles.row}>
+                    <Pressable onPress={()=>setSortConfig({key:null, asc:true})} style={({ hovered }) => [
+                        styles.iconBtn,
+                        hovered && styles.iconBtnHover,
+                    ]}>
+                        <RotateCcw size={20}/>
+                    </Pressable>
                     <View style={[styles.search,styles.row]}>
                         <Search size={18}/>
-                        <TextInput style={styles.input} placeholder='Search...' placeholderTextColor="#8f8f8f"/>
+                        <TextInput style={styles.input} placeholder='Search...' placeholderTextColor="#8f8f8f" value={searchTerm} onChangeText={(text)=>{setSearchTerm(text); setCurrentPage(1);}}/>
                     </View>
                 </View>
             </View>
@@ -189,8 +223,8 @@ const AccountManagement=()=>{
                                 </View>
                                 {isEditing ? (<TextInput
                                 style={[styles.userDetails,styles.inputEditing]}
-                                value={selectedAcc.workEmail}
-                            />) : (<Text style={styles.userDetails}>{selectedAcc.workEmail}</Text>)}
+                                value={selectedAcc.personal_email}
+                            />) : (<Text style={styles.userDetails}>{selectedAcc.personal_email}</Text>)}
                             </View>
                             {/* Joined Date */}
                             <View style={styles.details}>
@@ -198,7 +232,7 @@ const AccountManagement=()=>{
                                     <Calendar size={18} color="#4f4f4f"/>
                                     <Text style={styles.panelLabel}>Joined On:</Text>
                                 </View>
-                                <Text style={styles.userDetails}>{selectedAcc.joinedDate}</Text>
+                                <Text style={styles.userDetails}>{formatDate(selectedAcc.joinedDate)}</Text>
                             </View>
                         </View>
                         {isEditing &&(<View style={[styles.row, styles.actionBtn]}>
@@ -276,7 +310,8 @@ const styles = StyleSheet.create({
     tableHeader:{
         backgroundColor:'#0a6340',
         paddingHorizontal:12,
-        paddingVertical:8
+        paddingVertical:8,
+        userSelect:'none',
     },
     headerText:{
         color:'white',
@@ -452,7 +487,25 @@ const styles = StyleSheet.create({
     actionBtn:{
         gap:15,
         justifyContent:'flex-end'
-    }
+    },
+    iconBtn:{
+        alignSelf:'center',
+        padding:8,
+        marginRight:20,
+        color:"#217837",
+        borderRadius:50,
+        backgroundColor:'white',
+    },
+    iconBtnHover:{
+        backgroundColor:"#217837",
+        color:'white',
+    },
+    headerRow:{
+        flexDirection:'row',
+        gap:10,
+        paddingHorizontal:10,
+        alignItems:'center',
+    },
 });
 
 export default AccountManagement;

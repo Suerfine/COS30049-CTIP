@@ -9,17 +9,30 @@ const statusLabels = {
 };
 
 const FilterSidebar = ({ visible, tempFilters, setTempFilters, onApply, onReset, onClose }) => {
-    const [translateX, setTranslateX] = useState(-300);
+    const [translateX, setTranslateX] = useState(300);
 
     useEffect(() => {
-        setTranslateX(visible ? 0 : -300);
+        setTranslateX(visible ? 0 : 300);
     }, [visible]);
 
     const toggle = (key, value) => {
-        setTempFilters(prev => ({
-            ...prev,
-            [key]: prev[key] === value ? 'all' : value,
-        }));
+        setTempFilters(prev=>{
+            if (key==='status'){
+                return {...prev, [key]:prev[key]===value ? 'all':value};
+            }else{
+                const currentCategories=Array.isArray(prev.category) ? prev.category:[];
+                const isExist=currentCategories.includes(value);
+
+                return{
+                    ...prev, 
+                    category:isExist ? currentCategories.filter(c=>c !==value) : [...currentCategories, value]
+                };
+            }
+        });
+    };
+
+    const setAllCategories=()=>{
+        setTempFilters(prev=>({...prev, category:'all'}));
     };
 
     const FilterItem = ({ label, isSelected, onPress }) => (
@@ -32,6 +45,10 @@ const FilterSidebar = ({ visible, tempFilters, setTempFilters, onApply, onReset,
         </Pressable>
     );
 
+    const removeFilter=(key,value)=>{
+        setTempFilters
+    }
+
     return (
         <>
             {visible && (
@@ -40,22 +57,6 @@ const FilterSidebar = ({ visible, tempFilters, setTempFilters, onApply, onReset,
 
             <View style={[styles.sidebar, { transform: [{ translateX }] }]}>
                 <Text style={styles.title}>Filters</Text>
-
-                {/* filter by level */}
-                <Text style={styles.section}>Level</Text>
-                {['Basic', 'Advanced'].map(level => (
-                    <FilterItem
-                        key={level}
-                        label={level}
-                        isSelected={tempFilters.level === level}
-                        onPress={() => toggle('level', level)}
-                    />
-                ))}
-                <FilterItem
-                    label="All"
-                    isSelected={tempFilters.level === 'all'}
-                    onPress={() => setTempFilters(prev => ({ ...prev, level: 'all' }))}
-                />
 
                 {/* filter by status */}
                 <Text style={styles.section}>Status</Text>
@@ -71,6 +72,22 @@ const FilterSidebar = ({ visible, tempFilters, setTempFilters, onApply, onReset,
                     label="All"
                     isSelected={tempFilters.status === 'all'}
                     onPress={() => setTempFilters(prev => ({ ...prev, status: 'all' }))}
+                />
+
+                {/* Tag Filter */}
+                <Text style={styles.section}>Categories</Text>
+                {['Flora & Fauna', 'Navigation', 'First Aid','Survival', 'History'].map(category => (
+                    <FilterItem
+                        key={category}
+                        label={category}
+                        isSelected={Array.isArray(tempFilters.category) && tempFilters.category.includes(category)}
+                        onPress={() => toggle('category', category)}
+                    />
+                ))}
+                <FilterItem
+                    label="All"
+                    isSelected={tempFilters.status === 'all'}
+                    onPress={() => setTempFilters(prev => ({ ...prev, category: 'all' }))}
                 />
 
                 {/* apply and reset buttons */}
@@ -102,8 +119,9 @@ const styles = StyleSheet.create({
     },
     sidebar: {
         position: 'absolute',
-        left: 0,
+        right: 0,
         top: 0,
+        bottom:0,
         height: '100%',
         width: 280,
         backgroundColor: 'white',

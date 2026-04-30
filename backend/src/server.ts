@@ -2,7 +2,6 @@ import express, { Application, Request, Response } from "express";
 import path from "path";
 import cors from "cors";
 import swaggerUi from "swagger-ui-express";
-import { QueryTypes } from "sequelize";
 import sequelize from "./config/Database";
 import "./models";
 import routes from "./routes";
@@ -26,19 +25,14 @@ const app: Application = express();
 const port = Number(process.env.PORT) || 5000;
 const publicStoragePath = path.resolve(__dirname, "../storage/public");
 
-app.use(
-  cors({
-    origin: "http://localhost:8081",
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-  }),
-);
-
 // Enable URL-encoded form data parsing
 app.use(express.urlencoded({ extended: true }));
 
 // Middleware to parse JSON bodies
 app.use(express.json());
+
+// Enable CORS for all routes
+app.use(cors());
 
 // Serve public storage assets
 app.use("/public", express.static(publicStoragePath));

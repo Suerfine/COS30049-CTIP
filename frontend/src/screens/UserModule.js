@@ -16,7 +16,7 @@ const UserModule = ({ navigation }) => {
         const [selectedPage, setSelectedPage]=useState(null);
     
         useEffect(()=>{
-            fetch(`http://localhost:5000/api/courses/${id}`)
+            fetch(`http://localhost:4000/api/courses/${id}`)
             .then(res=>res.json())
             .then(data=>setCourse(data))
             .catch(err=>console.error('Error when fetching the course: ',err));

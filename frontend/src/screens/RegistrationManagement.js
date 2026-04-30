@@ -1,4 +1,4 @@
-import { Pen, Trash2, Search, Plus, Circle, ChevronLeft, ChevronsLeft, ChevronRight, ChevronsRight, X, User2, IdCard, Mail, ShieldUser, Calendar, FileUser, EllipsisVertical, ChevronDown, ChevronUp, CirclePlus, CircleMinus,  MessageSquare, Phone} from 'lucide-react-native';
+import { Pen, Trash2, Search, Plus, Circle, ChevronLeft, ChevronsLeft, ChevronRight, ChevronsRight, X, User2, IdCard, Mail, ShieldUser, Calendar, FileUser, EllipsisVertical, ChevronDown, ChevronUp, CirclePlus, CircleMinus,  MessageSquare, Phone, ArrowUpNarrowWide, ArrowDownWideNarrow, RotateCcw} from 'lucide-react-native';
 import React, {useState} from 'react';
 import { Pressable, StyleSheet, FlatList, View,Text, Image, TextInput} from 'react-native';
 
@@ -6,6 +6,8 @@ import { Pressable, StyleSheet, FlatList, View,Text, Image, TextInput} from 'rea
 import { useRegisterManagement } from '../hooks/useRegisterManagement';
 import ModalLayout from '../components/ModalLayout';
 import UsersFormContent from '../components/UsersFormContent';
+import { formatDate } from '../utils/formatDate';
+import { useSearchFilter } from '../hooks/useSearchFilter';
 
 const RegistrationManagement=()=>{
     const {users, loading}=useRegisterManagement();
@@ -14,10 +16,18 @@ const RegistrationManagement=()=>{
 
     const [modalVisible, setModalVisible]=useState(false);
     const [selectedUser, setSelectedUser]=useState(null);
-    const [activeMenuId, setActiveMenuId]=useState(null);
     const [currentStatus, setCurrentStatus]=useState('All');
+    
     const [isOpen, setIsOpen]=useState(false);
-    const [isEditing, setIsEditing]=useState(false);
+
+    // Search Function
+    const [searchTerm, setSearchTerm]=useState('');
+    const searchFields=['fullName', 'identification','personal_email','tel'];
+    const { 
+        filteredData: filteredUsers, 
+        requestSort, 
+        sortConfig, setSortConfig 
+    } = useSearchFilter(users, searchTerm, "All", searchFields);
 
     const handleAdd=()=>{
         setModalVisible(true);
@@ -26,19 +36,30 @@ const RegistrationManagement=()=>{
     // Caluculate the pagination
     const indexOfLastItem=currentPage*itemsPerPage;
     const indexOfFirstItem=indexOfLastItem-itemsPerPage;
-    const currentUsers=users.slice(indexOfFirstItem, indexOfLastItem);
-    const totalPages=Math.ceil(users.length/itemsPerPage);
+    const currentUsers=filteredUsers.slice(indexOfFirstItem, indexOfLastItem);
+    const totalPages=Math.ceil(filteredUsers.length/itemsPerPage);
 
     const renderHeader=()=>(
         <View style={[styles.tableHeader, styles.row]}>
-            <Text style={[styles.headerText, { flex:3 }]}>Full Name</Text>
-            <Text style={[styles.headerText, { flex:2 }]}>Username</Text>
+            <Pressable onPress={()=>requestSort('fullName')} style={[styles.headerRow, {flex:3}]}>
+                <Text style={styles.headerText}>Full Name</Text>
+                {sortConfig.key==='fullName' &&
+                sortConfig.direction==='asc' ? <ArrowUpNarrowWide size={14} color="white"/> : <ArrowDownWideNarrow size={14} color="white"/>}
+            </Pressable>
+            
             <Text style={[styles.headerText, { flex:2}]}>IC.</Text>
             <Text style={[styles.headerText, { flex:2 }]}>Status</Text>
-            <Text style={[styles.headerText, { flex:3 }]}>Email</Text>
+            <Pressable onPress={()=>requestSort('personal_email')} style={[styles.headerRow, {flex:3}]}>
+                <Text style={styles.headerText}>Email</Text>
+                {sortConfig.key==='personal_email' &&
+                sortConfig.direction==='asc' ? <ArrowUpNarrowWide size={14} color="white"/> : <ArrowDownWideNarrow size={14} color="white"/>}
+            </Pressable>
             <Text style={[styles.headerText, { flex:2}]}>Telefon</Text>
-            <Text style={[styles.headerText, { flex:2 }]}>Register On</Text>
-            
+            <Pressable onPress={()=>requestSort('created_at')} style={[styles.headerRow, {flex:2}]}>
+                <Text style={styles.headerText}>Register On</Text>
+                {sortConfig.key==='created_at' &&
+                sortConfig.direction==='asc' ? <ArrowUpNarrowWide size={14} color="white"/> : <ArrowDownWideNarrow size={14} color="white"/>}
+            </Pressable>            
         </View>
     );
 
@@ -47,30 +68,27 @@ const RegistrationManagement=()=>{
             {/* Full Name and profile image */}
             <View style={[{flex:3}, styles.userInfo, styles.row]}>
                 <Image source={{uri:item.profileImage}} style={styles.avatar} accessibilityLabel={`Profile Image of ${item.fullName}`}/>
-                <Text>{item.fname + " " + item.lname}</Text>
+                <Text>{item.firstname + " " + item.lastname}</Text>
             </View>
-            {/* Username */}
-            <Text style={{flex:2}}>{item.username}</Text>
             {/* IC */}
-            <Text style={{flex:2}}>{item.ic}</Text>
+            <Text style={{flex:2}}>{item.identification}</Text>
             {/* Status */}
             <View style={[styles.row,styles.badge,{flex:2}]}>
-               {item.status === "Approved" ? (
+               {item.status === "approved" ? (
                 <Circle size={10} stroke="green" fill="green" />
-                ) : item.status === "Pending" ? (
+                ) : item.status === "pending" ? (
                 <Circle size={10} stroke="orange" fill="orange" />
                 ) : (
                 <Circle size={10} stroke="red" fill="red" />
                 )}
-                <Text>{item.status}</Text>
+                <Text>{item.status.charAt(0).toUpperCase() + item.status.slice(1)}</Text>
             </View>
             {/* Email */}
-            <Text style={{flex:3}}>{item.email}</Text>
+            <Text style={{flex:3}}>{item.personal_email}</Text>
             {/* Telefon */}
-            <Text style={{flex:2}}>{item.telefon}</Text>
+            <Text style={{flex:2}}>{item.tel}</Text>
             {/* Register On */}
-            <Text style={{flex:2}}>{item.joinedAt}</Text>
-            
+            <Text style={{flex:2}}>{formatDate(item.created_at)}</Text>            
         </Pressable>
     );
     
@@ -113,9 +131,15 @@ const RegistrationManagement=()=>{
             <Text style={styles.title}>Registration Management</Text>
             <View style={[styles.toolbar,styles.row]}>
                 <View style={styles.row}>
+                    <Pressable onPress={()=>setSortConfig({key:null, asc:true})} style={({ hovered }) => [
+                        styles.iconBtn,
+                        hovered && styles.iconBtnHover,
+                    ]}>
+                        <RotateCcw size={20}/>
+                    </Pressable>
                     <View style={[styles.search,styles.row]}>
                         <Search size={18}/>
-                        <TextInput style={styles.input} placeholder='Search...' placeholderTextColor="#8f8f8f"/>
+                        <TextInput style={styles.input} placeholder='Search...' placeholderTextColor="#8f8f8f" value={searchTerm} onChangeText={(text)=>{setSearchTerm(text); setCurrentPage(1);}}/>
                     </View>
                     {/* Status Dropdown */}
                     <View style={styles.dropdownWrapper}>
@@ -177,6 +201,7 @@ const RegistrationManagement=()=>{
                     ListHeaderComponent={renderHeader}
                     renderItem={renderUserItem}
                     keyExtractor={item=>item.id.toString()}
+                    ListEmptyComponent={<View style={styles.tableRow}><Text style={{flex:1, paddingVertical:2}}>No Users Found.</Text></View>}
                 />
             </View>
             {totalPages>1 ? renderPagination() : null}
@@ -194,32 +219,17 @@ const RegistrationManagement=()=>{
                     <View style={styles.panelContent}>
                         
                         <Image source={{uri:selectedUser.profileImage}} style={styles.largeAvatar}/>
-                        <Text style={styles.fullname}>{selectedUser.fname + " " + selectedUser.lname}</Text>
+                        <Text style={styles.fullname}>{selectedUser.firstname + " " + selectedUser.lastname}</Text>
                         
                         <View style={styles.user}>
-                            <View style={[styles.row, {justifyContent:'space-between'}]}>
-                                {/* Username */}
-                                <View style={styles.details}>
-                                    <View style={styles.row}>
-                                        <User2 size={18} color="#4f4f4f"/>
-                                        <Text style={styles.panelLabel}>Username:</Text>
-                                    </View>
-                                    {isEditing ? (<TextInput
-                                    style={[styles.userDetails,styles.inputEditing]}
-                                    value={selectedUser.username}
-                                />) : (<Text style={styles.userDetails}>{selectedUser.username}</Text>)}
-                                    
-                                </View>
+                            <View style={[styles.row, {justifyContent:'space-between'}]}>                                
                                 {/* IC */}
                                 <View style={styles.details}>
                                     <View style={styles.row}>
                                         <IdCard size={18} color="#4f4f4f"/>
                                         <Text style={styles.panelLabel}>Passport/IC:</Text>
                                     </View>
-                                    {isEditing ? (<TextInput
-                                    style={[styles.userDetails,styles.inputEditing]}
-                                    value={selectedUser.ic}
-                                />) : (<Text style={styles.userDetails}>{selectedUser.ic}</Text>)}
+                                    <Text style={styles.userDetails}>{selectedUser.identification}</Text>
                                 </View>
                             </View>
                             <View style={[styles.row, {justifyContent:'space-between'}]}>
@@ -229,10 +239,7 @@ const RegistrationManagement=()=>{
                                         <Mail size={18} color="#4f4f4f"/>
                                         <Text style={styles.panelLabel}>Email:</Text>
                                     </View>
-                                    {isEditing ? (<TextInput
-                                    style={[styles.userDetails,styles.inputEditing]}
-                                    value={selectedUser.email}
-                                />) : (<Text style={styles.userDetails}>{selectedUser.email}</Text>)}
+                                    <Text style={styles.userDetails}>{selectedUser.personal_email}</Text>
                                 </View>
                                 {/* Register Date */}
                                 <View style={styles.details}>
@@ -240,7 +247,7 @@ const RegistrationManagement=()=>{
                                         <Calendar size={18} color="#4f4f4f"/>
                                         <Text style={styles.panelLabel}>Register On:</Text>
                                     </View>
-                                    <Text style={styles.userDetails}>{selectedUser.registerDate}</Text>
+                                    <Text style={styles.userDetails}>{formatDate(selectedUser.created_at)}</Text>
                                 </View>
                             </View>
                             {/* Telefon Section */}
@@ -249,7 +256,7 @@ const RegistrationManagement=()=>{
                                     <Phone size={18} color="#4f4f4f"/>
                                     <Text style={styles.panelLabel}>Telephone:</Text>
                                 </View>
-                                <Text style={styles.userDetails}>{selectedUser.telefon}</Text>
+                                <Text style={styles.userDetails}>{selectedUser.tel}</Text>
                             </View>
                             {/* Remark Section */}
                             <View style={styles.remark}>
@@ -257,7 +264,7 @@ const RegistrationManagement=()=>{
                                     <MessageSquare size={18} color="#4f4f4f"/>
                                     <Text style={styles.panelLabel}>Remark:</Text>
                                 </View>
-                                <Text style={styles.userDetails}>{selectedUser.remark}</Text>
+                                <Text style={styles.userDetails}>{selectedUser.admin_remark}</Text>
                             </View>
                             {/* CV Section */}
                             <View style={styles.details}>
@@ -351,7 +358,8 @@ const styles = StyleSheet.create({
     tableHeader:{
         backgroundColor:'#0a6340',
         paddingHorizontal:12,
-        paddingVertical:8
+        paddingVertical:8,
+        userSelect:"none"
     },
     headerText:{
         color:'white',
@@ -545,7 +553,24 @@ const styles = StyleSheet.create({
         bottom:15,
         right:15
     },
-
+    headerRow:{
+        flexDirection:'row',
+        gap:10,
+        paddingHorizontal:10,
+        alignItems:'center',
+    },
+    iconBtn:{
+        alignSelf:'center',
+        padding:8,
+        marginRight:20,
+        color:"#217837",
+        borderRadius:50,
+        backgroundColor:'white',
+    },
+    iconBtnHover:{
+        backgroundColor:"#217837",
+        color:'white',
+    }
 });
 
 export default RegistrationManagement;

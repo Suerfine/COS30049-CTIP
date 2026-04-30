@@ -1,4 +1,6 @@
-const BASE_URL = 'http://localhost:5000/api';
+import { API_BASE_URL } from "../config/apiConfig";
+
+const BASE_URL = `${API_BASE_URL}/api`;
 
 export const userDashboardService = {
     getUserType: async () => {
@@ -23,7 +25,7 @@ export const userDashboardService = {
 
     // get first name, email, telefon, id, pfp
     getUserProfile: async () => {
-        const res = await fetch('http://localhost:5000/api/users');
+        const res = await fetch(`${BASE_URL}/users`);
         const data = await res.json();
 
         // assuming single user (index 0)

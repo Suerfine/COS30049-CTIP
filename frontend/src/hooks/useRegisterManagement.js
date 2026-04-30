@@ -7,12 +7,17 @@ export const useRegisterManagement=()=>{
 
     // Fetch all users
     const fetchUsers=async()=>{
+        setLoading(true);
         try{
-            const data=await RegisterService.getAll();
-            const initializedData=data.map(u=>({...u, selected:false}));
+            const response=await RegisterService.getAll();
+            const rawUsers=Array.isArray(response) ? response : (response.data || response.registrations || []);
+            const initializedData=rawUsers.map(u=>({...u, selected:false}));
             setUsers(initializedData);
         }catch(err){
             console.log("Failed to fetch all users: ",err);
+            setUsers([]);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -23,5 +28,6 @@ export const useRegisterManagement=()=>{
     return {
         users,
         loading,
+        refresh:fetchUsers
     }
 }

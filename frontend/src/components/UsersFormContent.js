@@ -45,17 +45,24 @@ const UsersFormContent=({onSubmit, onCancel, isLoading})=>{
             </View>
             <View style={styles.row}>
                 <View style={styles.content}>
+                    {/* Full Name */}
                     <View style={localStyles.row}>
-                        {/* User details */}
                         <View>
-                            <Text style={styles.label}>Username:</Text>
-                            <TextInput style={styles.input} value={form.username} onChangeText={(text)=> setForm({...form, username: text})}/>
+                            <Text style={styles.label}>First Name:</Text>
+                            <TextInput style={styles.input} value={form.fname}
+                            placeholder='John' 
+                            placeholderTextColor="#8f8f8f" onChangeText={(text)=> setForm({...form, fname: text})}/>
                         </View>
-                        {/* IC */}
                         <View>
-                            <Text style={styles.label}>Passport/IC:</Text>
-                            <TextInput style={styles.input} value={form.ic} onChangeText={(text)=> setForm({...form, ic: text})}/>
+                            <Text style={styles.label}>Last Name:</Text>
+                            <TextInput style={styles.input} value={form.lname} placeholder='Doe' 
+                            placeholderTextColor="#8f8f8f" onChangeText={(text)=> setForm({...form, lname: text})}/>
                         </View>
+                    </View>
+                    {/* IC */}
+                    <View>
+                        <Text style={styles.label}>Passport/IC:</Text>
+                        <TextInput style={styles.input} value={form.ic} onChangeText={(text)=> setForm({...form, ic: text})}/>
                     </View>
                     <View style={localStyles.row}>
                         {/* Email */}
@@ -69,21 +76,6 @@ const UsersFormContent=({onSubmit, onCancel, isLoading})=>{
                             <Text style={styles.label}>Telefon:</Text>
                             <TextInput style={styles.input} value={form.telefon}  placeholder='012-3456789' 
                             placeholderTextColor="#8f8f8f"  onChangeText={(text)=> setForm({...form, telefon: text})}/>
-                        </View>
-                    </View>
-
-                    {/* Full Name */}
-                    <View style={localStyles.row}>
-                        <View>
-                            <Text style={styles.label}>First Name:</Text>
-                            <TextInput style={styles.input} value={form.fname}
-                            placeholder='John' 
-                            placeholderTextColor="#8f8f8f" onChangeText={(text)=> setForm({...form, fname: text})}/>
-                        </View>
-                        <View>
-                            <Text style={styles.label}>Last Name:</Text>
-                            <TextInput style={styles.input} value={form.lname} placeholder='Doe' 
-                            placeholderTextColor="#8f8f8f" onChangeText={(text)=> setForm({...form, lname: text})}/>
                         </View>
                     </View>
                     

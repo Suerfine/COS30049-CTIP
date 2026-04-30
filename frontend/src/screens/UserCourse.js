@@ -1,66 +1,33 @@
 import { View, Text, StyleSheet, ScrollView, Pressable, ImageBackground } from 'react-native';
-import CourseCard from '../components/CourseCard';
+import { useMemo, useState } from 'react';
+import { CircleX, ListFilter, SignalZero, SlidersHorizontal } from 'lucide-react-native'
+
+// Import other hook and component
 import { useUserDashboard } from '../hooks/useUserDashboard';
-import { useMemo } from 'react';
-import ConfirmEnroll from '../components/ConfirmEnroll';
-import { useState } from 'react';
-import { ListFilter, SignalZero, SlidersHorizontal } from 'lucide-react-native'
-import FilterSidebar from '../components/FilterSidebar';
+import { useUserCourse } from '../hooks/useUserCourse';
 import NavBar from '../components/NavBar';
+import SlidingTabs from '../components/SlidingTabs';
+import FilterSidebar from '../components/FilterSidebar';
+import ConfirmEnroll from '../components/ConfirmEnroll';
+import CourseCard from '../components/CourseCard';
 
 const UserCourse = ({ navigation }) => {
-    const { courses, progressData, userType } = useUserDashboard();
-    const [selectedCourse, setSelectedCourse] = useState(null);
-    const [modalVisible, setModalVisible] = useState(false);
-    const [filterVisible, setFilterVisible] = useState(false);
-
-    const [filters, setFilters] = useState({
-        level: 'all',
-        status: 'all',
-    });
-
-    const [tempFilters, setTempFilters] = useState(filters);
-
-    const coursesWithStatus = useMemo(() => {
-        return courses.map(course => {
-            const progressObj = progressData.find(
-                p => p.courseId === course.id
-            );
-
-            const progress = progressObj ? progressObj.progress : null;
-
-            let status = 'notEnrolled';
-            if (typeof progress === 'number') {
-                if (progress >= 1) status = 'completed';
-                else if (progress > 0) status = 'inProgress';
-            }
-
-            return {
-                ...course,
-                progress,
-                status,
-            };
-        });
-    }, [courses, progressData]);
-
-    // filter by level/status
-    const filteredCourses = useMemo(() => {
-        if (!coursesWithStatus) return [];
-        return coursesWithStatus.filter(course => {
-            const matchLevel =
-                filters.level === 'all' ||
-                course.level?.trim().toLowerCase() === filters.level.toLowerCase();
-
-            const matchStatus =
-                filters.status === 'all' || course.status === filters.status;
-
-            return matchLevel && matchStatus;
-        });
-    }, [coursesWithStatus, filters]);
+    const { courses, progressData, userType  } = useUserDashboard();
+    const {selectedCourse, setSelectedCourse,
+        modalVisible, setModalVisible,
+        filterVisible, setFilterVisible,
+        allcourseFilter, setAllCourseFilter,
+        filters, setFilters,
+        tempFilters, setTempFilters,
+        statusLabels,
+        tabs,
+        coursesWithStatus,
+        filteredCourses,
+        removeFilter
+    }=useUserCourse();
 
     return (
         <View style={{ flex: 1 }}>
-            <NavBar/>
             <ScrollView style={styles.container}>
                 <View style={styles.courseContainer}>
                     {/* Background Image */}
@@ -78,6 +45,7 @@ const UserCourse = ({ navigation }) => {
                 </View>
                 <View>
                     <View style={styles.filterContainer}>
+                        <SlidingTabs tabs={tabs} activeTab={allcourseFilter} onTabChange={(id)=>setAllCourseFilter(id)}/>
                         <Pressable 
                             onPress={() => {
                                 setTempFilters(filters);
@@ -90,6 +58,25 @@ const UserCourse = ({ navigation }) => {
                         >
                             <SlidersHorizontal/>
                         </Pressable>
+                    </View>
+                    <View style={styles.pillContainer}>
+                        {filters.status !== 'all' && (
+                            <View style={styles.pill}>
+                                <Text style={styles.pillText}>{statusLabels[filters.status]}</Text>
+                                <Pressable onPress={() => removeFilter('status')}>
+                                    <CircleX size={16} color="white" />
+                                </Pressable>
+                            </View>
+                        )}
+
+                        {Array.isArray(filters.category) && filters.category.map((catName) => (
+                            <View key={catName} style={styles.pill}>
+                                <Text style={styles.pillText}>{catName}</Text>
+                                <Pressable onPress={() => removeFilter('category', catName)}>
+                                    <CircleX size={16} color="white" />
+                                </Pressable>
+                            </View>
+                        ))}
                     </View>
                     <View style={styles.cardContainer}>
                         {filteredCourses.length === 0?(
@@ -195,8 +182,10 @@ const styles = StyleSheet.create({
     },
     filterContainer:{
         flexDirection:'row',
-        justifyContent:'flex-end',
         marginBottom:10,
+        justifyContent:'space-between',
+        borderBottomColor:'#42424255',
+        borderBottomWidth:1
     },
     filter:{
         flexDirection:'row',
@@ -217,6 +206,27 @@ const styles = StyleSheet.create({
     emptyText:{
         fontSize: 20,
         color: '#666',
+    },
+    pillContainer:{
+        flexDirection:'row',
+        flexWrap:'wrap',
+        gap:8,
+        marginBottom:15,
+        marginTop:5
+    },
+    pill:{
+        flexDirection:'row',
+        alignItems:'center',
+        backgroundColor: '#0a6340',
+        paddingHorizontal:12,
+        paddingVertical:8,
+        borderRadius:20,
+    },
+    pillText:{
+        fontSize:14,
+        color:"white",
+        marginRight:6,
+        fontWeight:'500'
     },
 });
 

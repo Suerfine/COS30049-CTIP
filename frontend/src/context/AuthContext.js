@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo, useState } from "react";
+import { createContext, useContext, useMemo, useState, useEffect } from "react";
 import { authService } from "../services/authService";
 
 const AuthContext = createContext(null);
@@ -6,6 +6,23 @@ const AuthContext = createContext(null);
 export const AuthProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
   const [accessToken, setAccessToken] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Initialize auth state on mount
+  useEffect(() => {
+    const initializeAuth = async () => {
+      try {
+        // Try to restore session from storage (implement if needed)
+        // For now, just set loading to false
+        setIsLoading(false);
+      } catch (error) {
+        console.error("Auth initialization error:", error);
+        setIsLoading(false);
+      }
+    };
+
+    initializeAuth();
+  }, []);
 
   const login = async (email, password) => {
     const payload = await authService.login(email, password);
@@ -29,10 +46,11 @@ export const AuthProvider = ({ children }) => {
     () => ({
       currentUser,
       accessToken,
+      isLoading,
       login,
       logout,
     }),
-    [currentUser, accessToken],
+    [currentUser, accessToken, isLoading],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

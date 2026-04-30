@@ -1,4 +1,4 @@
-const API_URL='http://localhost:5000/api/courses';
+const API_URL='http://localhost:4000/api/courses';
 
 export const courseService={
     // Get: fetch all course from backend api

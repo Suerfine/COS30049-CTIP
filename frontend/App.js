@@ -1,183 +1,47 @@
-import React, { useState } from "react";
+import React from "react";
+import { NavigationContainer } from "@react-navigation/native";
 import { StatusBar } from "expo-status-bar";
-import { StyleSheet, View } from "react-native";
-import {
-  NavigationContainer,
-  useNavigationContainerRef,
-} from "@react-navigation/native";
-import { createStackNavigator } from "@react-navigation/stack";
+import { StyleSheet } from "react-native";
 
-import AdminCourse from "./src/screens/AdminCourse";
-import SideBar from "./src/components/SideBar";
-import NavBar from "./src/components/NavBar";
-import EditCourseDetails from "./src/screens/EditCourseDetail";
-import UserDashboard from "./src/screens/UserDashboard";
-import RegistrationManagement from "./src/screens/RegistrationManagement";
-import UserModule from "./src/screens/UserModule";
-import UserCourse from "./src/screens/UserCourse";
-import AccountManagement from "./src/screens/AccountsManagement";
-import Login from "./src/screens/Login";
-import SignUp from "./src/screens/SignUp";
-import ForgotPassword from "./src/screens/ForgotPassword";
+// Import navigation
+import RootNavigator from "./src/navigation/RootNavigator";
+
+// Import context
 import { AuthProvider } from "./src/context/AuthContext";
 
-const Stack = createStackNavigator();
-
-function AppNavigator() {
-  const navigationRef = useNavigationContainerRef();
-  const [currentRouteName, setCurrentRouteName] = useState("Login");
-
-  const linking = {
-    prefixes: ["http://localhost:8081"],
-    config: {
-      screens: {
-        Login: "login",
-        SignUp: "signup",
-        ForgotPassword: "forgot-password",
-        "Course Management": "courseManagement",
-        "Course Details": "course/:id",
-        "User Dashboard": "dashboard",
-        "Registration Management": "registrationManagement",
-        "User Module": "userModule/:id",
-        "User Course": "usercourse",
-        "User Management": "userManagement",
-        "User Module": "userModule/:id",
-        "User Course": "usercourse",
-      },
+const linking = {
+  prefixes: ["http://localhost:8081", "parkguide://"],
+  config: {
+    screens: {
+      Landing: "landing",
+      Login: "login",
+      SignUp: "signup",
+      ForgotPassword: "forgot-password",
+      "Course Management": "courseManagement",
+      "Course Details": "course/:id",
+      Dashboard: "dashboard",
+      "Registration Management": "registrationManagement",
+      "User Module": "userModule/:id",
+      Courses: "courses",
+      UserProfile: "profile",
+      "Enrollment Management": "enrollmentManagement",
     },
-  };
-
-  const hideNavBarRoutes = ["Login", "SignUp", "ForgotPassword"];
-  const shouldHideNavBar = hideNavBarRoutes.includes(currentRouteName);
-
-  return (
-    <NavigationContainer
-      linking={linking}
-      ref={navigationRef}
-      onReady={() =>
-        setCurrentRouteName(navigationRef.getCurrentRoute()?.name || "Login")
-      }
-      onStateChange={() =>
-        setCurrentRouteName(navigationRef.getCurrentRoute()?.name || "Login")
-      }
-    >
-      <View style={styles.root}>
-        <View style={styles.container}>
-          {/* <SideBar navigation={navigation}/> */}
-
-          {/* Main Content Area */}
-          <View style={styles.content}>
-            <Stack.Navigator initialRouteName="Course Management">
-              <Stack.Screen
-                name="Course Management"
-                component={AdminCourse}
-                options={{ headerShown: false }}
-              />
-              <Stack.Screen
-                name="Course Details"
-                component={EditCourseDetails}
-                options={{ headerShown: false }}
-              />
-              <Stack.Screen
-                name="User Dashboard"
-                component={UserDashboard}
-                options={{ headerShown: false }}
-              />
-              <Stack.Screen
-                name="Registration Management"
-                component={RegistrationManagement}
-                options={{ headerShown: false }}
-              />
-              <Stack.Screen
-                name="User Module"
-                component={UserModule}
-                options={{ headerShown: false }}
-              />
-              <Stack.Screen
-                name="User Course"
-                component={UserCourse}
-                options={{ headerShown: false }}
-              />
-              <Stack.Screen
-                name="Account Management"
-                component={AccountManagement}
-                options={{ headerShown: false }}
-              />
-              <Stack.Screen
-                name="Login"
-                component={Login}
-                options={{ headerShown: false }}
-              />
-              <Stack.Screen
-                name="SignUp"
-                component={SignUp}
-                options={{ headerShown: false }}
-              />
-              <Stack.Screen
-                name="ForgotPassword"
-                component={ForgotPassword}
-                options={{ headerShown: false }}
-              />
-              <Stack.Screen
-                name="Course Management"
-                component={AdminCourse}
-                options={{ headerShown: false }}
-              />
-              <Stack.Screen
-                name="Course Details"
-                component={EditCourseDetails}
-              />
-              <Stack.Screen
-                name="User Dashboard"
-                component={UserDashboard}
-                options={{ headerShown: false }}
-              />
-              <Stack.Screen
-                name="User Management"
-                component={UserManagement}
-                options={{ headerShown: false }}
-              />
-              <Stack.Screen
-                name="User Module"
-                component={UserModule}
-                options={{ headerShown: false }}
-              />
-              <Stack.Screen
-                name="User Course"
-                component={UserCourse}
-                options={{ headerShown: false }}
-              />
-            </Stack.Navigator>
-          </View>
-        </View>
-
-        <StatusBar style="auto" />
-      </View>
-    </NavigationContainer>
-  );
-}
+  },
+};
 
 export default function App() {
   return (
     <AuthProvider>
-      <AppNavigator />
+      <NavigationContainer linking={linking}>
+        <RootNavigator />
+        <StatusBar style="auto" />
+      </NavigationContainer>
     </AuthProvider>
   );
 }
 
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    padding: 0,
-    margin: 0,
-  },
   container: {
     flex: 1,
-    flexDirection: "column",
-    backgroundColor: "#fff",
-  },
-  content: {
-    flex: 1,
-    backgroundColor: "#f2f2f2",
   },
 });
