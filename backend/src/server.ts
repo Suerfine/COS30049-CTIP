@@ -32,7 +32,13 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
 // Enable CORS for all routes
-app.use(cors());
+app.use(
+  cors({
+    origin: true,
+    credentials: true,
+    allowedHeaders: ["Content-Type", "Authorization"],
+  }),
+);
 
 // Serve public storage assets
 app.use("/public", express.static(publicStoragePath));
@@ -43,7 +49,15 @@ app.get("/", (req: Request, res: Response) => {
 });
 
 // Swagger docs
-app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+app.use(
+  "/api/docs",
+  swaggerUi.serve,
+  // enable persistent authorization in the UI so the "Authorize" dialog
+  // correctly applies the Bearer token to Try it Out requests
+  swaggerUi.setup(swaggerSpec, undefined, {
+    swaggerOptions: { persistAuthorization: true },
+  }),
+);
 
 // Mount ALL routes on /api
 app.use("/api", routes);

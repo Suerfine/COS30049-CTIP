@@ -16,10 +16,12 @@ router.use("/users", userRouter);
  *     tags:
  *       - Auth
  *     summary: Issue JWT access token
+ *     description: Authenticate with email and password to receive a JWT access token for OAuth2 authentication
+ *     security: []
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         application/x-www-form-urlencoded:
  *           schema:
  *             type: object
  *             required:

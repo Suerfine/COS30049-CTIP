@@ -2,6 +2,7 @@ import path from "path";
 import swaggerJSDoc from "swagger-jsdoc";
 import { UserRoles } from "../enum/UserRoles";
 import { RegistrationStatus } from "../enum/RegistrationStatus";
+import { auth } from "../middelware/Auth";
 
 const options: swaggerJSDoc.Options = {
   definition: {
@@ -33,6 +34,8 @@ const options: swaggerJSDoc.Options = {
           type: "http",
           scheme: "bearer",
           bearerFormat: "JWT",
+          description:
+            "JWT Bearer token. Obtain a token by calling POST /token with email and password.",
         },
       },
       schemas: {
@@ -318,7 +321,7 @@ const options: swaggerJSDoc.Options = {
         },
       },
     },
-    security: [{ bearerAuth: [] }],
+    security: [{ OAuth2: ["read", "write"] }],
   },
   apis: [
     path.join(__dirname, "../routes/*.ts"),
