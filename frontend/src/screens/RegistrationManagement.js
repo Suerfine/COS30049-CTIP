@@ -1,6 +1,6 @@
-import { Pen, Trash2, Search, Plus, Circle, ChevronLeft, ChevronsLeft, ChevronRight, ChevronsRight, X, User2, IdCard, Mail, ShieldUser, Calendar, FileUser, EllipsisVertical, ChevronDown, ChevronUp, CirclePlus, CircleMinus,  MessageSquare, Phone, ArrowUpNarrowWide, ArrowDownWideNarrow, RotateCcw} from 'lucide-react-native';
+import { Pen, Trash2, Search, Plus, Circle, ChevronLeft, ChevronsLeft, ChevronRight, ChevronsRight, X, User2, IdCard, Mail, ShieldUser, Calendar, FileUser, EllipsisVertical, ChevronDown, ChevronUp, CirclePlus, CircleMinus,  MessageSquare, Phone, ArrowUpNarrowWide, ArrowDownWideNarrow, RotateCcw, FileText, ExternalLink} from 'lucide-react-native';
 import React, {useState} from 'react';
-import { Pressable, StyleSheet, FlatList, View,Text, Image, TextInput} from 'react-native';
+import { Pressable, StyleSheet, FlatList, View,Text, Image, TextInput, ActivityIndicator} from 'react-native';
 
 // Import other components and hooks
 import { useRegisterManagement } from '../hooks/useRegisterManagement';
@@ -10,7 +10,7 @@ import { formatDate } from '../utils/formatDate';
 import { useSearchFilter } from '../hooks/useSearchFilter';
 
 const RegistrationManagement=()=>{
-    const {users, loading}=useRegisterManagement();
+    const {users, loading, handleCreateUser,isCreating,setIsCreating,}=useRegisterManagement();
     const [currentPage, setCurrentPage]=useState(1);
     const itemsPerPage=10;
 
@@ -27,7 +27,7 @@ const RegistrationManagement=()=>{
         filteredData: filteredUsers, 
         requestSort, 
         sortConfig, setSortConfig 
-    } = useSearchFilter(users, searchTerm, "All", searchFields);
+    } = useSearchFilter(users, searchTerm, currentStatus, searchFields);
 
     const handleAdd=()=>{
         setModalVisible(true);
@@ -125,7 +125,6 @@ const RegistrationManagement=()=>{
         )
     };
 
-    // Loading
     return(
         <View style={styles.container}>
             <Text style={styles.title}>Registration Management</Text>
@@ -259,29 +258,39 @@ const RegistrationManagement=()=>{
                                 <Text style={styles.userDetails}>{selectedUser.tel}</Text>
                             </View>
                             {/* Remark Section */}
-                            <View style={styles.remark}>
-                                <View style={styles.row}>
-                                    <MessageSquare size={18} color="#4f4f4f"/>
-                                    <Text style={styles.panelLabel}>Remark:</Text>
+                            {selectedUser.admin_remark !== null && (
+                                <View style={styles.remark}>
+                                    <View style={styles.row}>
+                                        <MessageSquare size={18} color="#4f4f4f"/>
+                                        <Text style={styles.panelLabel}>Remark:</Text>
+                                    </View>
+                                    <Text style={styles.userDetails}>{selectedUser.admin_remark}</Text>
                                 </View>
-                                <Text style={styles.userDetails}>{selectedUser.admin_remark}</Text>
-                            </View>
+                            )}
+                            
                             {/* CV Section */}
                             <View style={styles.details}>
                                 <View style={styles.row}>
                                     <FileUser size={18} color="#4f4f4f"/>
                                     <Text style={styles.panelLabel}>Resume:</Text>
                                 </View>
-                                <Pressable style={styles.userDetails}>View CV PDF</Pressable>
+                                <Pressable style={styles.pdfBadge} onPress={()=>window.open(item.resumeUrl, '_blank')} ><FileText size={14} color="#0a6340" />
+                                    <Text style={styles.pdfText}>View_Resume.pdf</Text>
+                                    <ExternalLink size={14} color="#666" />
+                                </Pressable>
                             </View>
                         </View>
-                        {selectedUser.status==='Pending' &&(
+                        {selectedUser.status=='pending' &&(
                         <Pressable 
                            style={({ hovered }) => [styles.Btn,
                                 hovered && styles.btnHover, 
-                            ]} 
+                            ]} onPress={()=>handleCreateUser(selectedUser)}
                         >
-                            <Text style={styles.btnText}>Approve</Text>
+                            {isCreating ? (
+                                <ActivityIndicator color="white" size="small" />
+                            ) : (
+                                <Text style={styles.btnText}>Approve</Text>
+                            )}
                         </Pressable>
                         )}
                         
@@ -519,6 +528,7 @@ const styles = StyleSheet.create({
         elevation: 5,
         borderWidth: 1,
         borderColor: '#f0f0f0',
+        userSelect:"none"
     },
     dropdownWrapper:{
         position:'relative',
@@ -570,7 +580,26 @@ const styles = StyleSheet.create({
     iconBtnHover:{
         backgroundColor:"#217837",
         color:'white',
+    },
+    pdfBadge:{
+        flexDirection:'row',
+        alignItems:'center',
+        backgroundColor:'#f0f7f4',
+        paddingHorizontal:12,
+        paddingVertical:6,
+        borderRadius:6,
+        borderWidth:1,
+        borderColor: '#0a634033',
+        gap: 8,
+        marginTop: 4,
+    },
+    pdfText:{
+        color:'#0a6340',
+        fontSize:13,
+        fontWeight:'500'
     }
 });
 
 export default RegistrationManagement;
+
+// Add user and add user ui add role and change img to resume

@@ -61,4 +61,16 @@ export const RegisterService={
         }
     },
 
+    // PUT: update user status
+    // Dont have id on api and database for user
+    updateStatus: async (id, status) => {
+        const response = await fetch(`${API_ENDPOINTS.REGISTER}/${id}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+        });
+        if (!response.ok) throw new Error("Failed to update status");
+        return await response.json();
+    }
+
 };

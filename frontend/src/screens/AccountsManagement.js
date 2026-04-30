@@ -64,17 +64,17 @@ const AccountManagement=()=>{
         <Pressable onPress={()=>setSelectedAcc(item)} style={({hovered})=>[styles.row, styles.tableRow, hovered && {backgroundColor:'#f9f9f9'}, selectedAcc?.id === item.id && {backgroundColor:'#fff8e1'}]}>
             {/* Full Name and profile image */}
             <View style={[{flex:3}, styles.userInfo, styles.row]}>
-                <Image source={{uri:item.profileImage}} style={styles.avatar} accessibilityLabel={`Profile Image of ${item.fullName}`}/>
-                <Text>{item.fullName}</Text>
+                <Image source={{uri:item.profileImage}} style={styles.avatar} accessibilityLabel={`Profile Image of ${item.firstname+" "+item.lastname}`}/>
+                <Text>{item.firstname+" "+item.lastname}</Text>
             </View>
             {/* Username */}
             <Text style={{flex:2}}>{item.username}</Text>
             {/* Work Email */}
-            <Text style={{flex:3}}>{item.workEmail}</Text>
+            <Text style={{flex:3}}>{item.username + " @example.com"}</Text>
             {/* Joined On */}
-            <Text style={{flex:2}}>{formatDate(item.joinedDate)}</Text>
+            <Text style={{flex:2}}>{formatDate(item.created_at)}</Text>
             {/* Last Login */}
-            <Text style={{flex:2}}>{formatDate(item.lastLogin)}</Text>
+            <Text style={{flex:2}}>{formatDate(item.last_login_at)}</Text>
         </Pressable>
     );
     
@@ -146,7 +146,7 @@ const AccountManagement=()=>{
                         <Text style={styles.panelTitle}>
                             User Information
                         </Text>
-                        <Pressable onPress={()=>setSelectedAcc(null)}>
+                        <Pressable onPress={()=>{setSelectedAcc(null);setIsEditing(false)}}>
                             <X size={18}/>
                         </Pressable>
                     </View>
@@ -172,7 +172,7 @@ const AccountManagement=()=>{
                             )}
                         </View>
                         <Image source={{uri:selectedAcc.profileImage}} style={styles.largeAvatar}/>
-                        <Text style={styles.fullname}>{selectedAcc.fullName}</Text>
+                        <Text style={styles.fullname}>{selectedAcc.firstname+" "+selectedAcc.lastname}</Text>
                         
                         <View style={styles.user}>
                             {/* Username */}
@@ -195,8 +195,8 @@ const AccountManagement=()=>{
                                 </View>
                                 {isEditing ? (<TextInput
                                 style={[styles.userDetails,styles.inputEditing]}
-                                value={selectedAcc.ic}
-                            />) : (<Text style={styles.userDetails}>{selectedAcc.ic}</Text>)}
+                                value={selectedAcc.identification}
+                            />) : (<Text style={styles.userDetails}>{selectedAcc.identification}</Text>)}
                             </View>
 
                             {/* Telephone */}
@@ -217,7 +217,7 @@ const AccountManagement=()=>{
                                     <Mail size={18} color="#4f4f4f"/>
                                     <Text style={styles.panelLabel}>Work Email:</Text>
                                 </View>
-                                <Text style={styles.userDetails}>{selectedAcc.workEmail}</Text>
+                                <Text style={styles.userDetails}>{selectedAcc.username+"@example.com"}</Text>
                                 <View style={styles.row}>
                                     <Text style={[styles.panelLabel, {marginLeft:35, marginTop:15}]}>Personal Email:</Text>
                                 </View>
@@ -232,7 +232,7 @@ const AccountManagement=()=>{
                                     <Calendar size={18} color="#4f4f4f"/>
                                     <Text style={styles.panelLabel}>Joined On:</Text>
                                 </View>
-                                <Text style={styles.userDetails}>{formatDate(selectedAcc.joinedDate)}</Text>
+                                <Text style={styles.userDetails}>{formatDate(selectedAcc.created_at)}</Text>
                             </View>
                         </View>
                         {isEditing &&(<View style={[styles.row, styles.actionBtn]}>
@@ -509,3 +509,5 @@ const styles = StyleSheet.create({
 });
 
 export default AccountManagement;
+
+// Edit user and delete user

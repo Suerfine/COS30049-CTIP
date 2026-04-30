@@ -13,5 +13,6 @@ const BASE_URL=()=>{
 export const API_ENDPOINTS={
     USER:{
         SIGNUP: `${BASE_URL()}/registrations`,
+        ACCOUNT: `${BASE_URL()}/users`,
     }
 };
