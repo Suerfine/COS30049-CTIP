@@ -84,7 +84,6 @@ registrationRouter.post(
  */
 registrationRouter.get(
   "/:id/document",
-  auth,
   RegistrationController.getRegistrationDocument,
 );
 
@@ -172,7 +171,7 @@ registrationRouter.get(
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-registrationRouter.get("/", auth, RegistrationController.getAllRegistrations);
+registrationRouter.get("/", RegistrationController.getAllRegistrations);
 
 /**
  * @swagger

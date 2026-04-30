@@ -12,11 +12,19 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const initializeAuth = async () => {
       try {
-        // Try to restore session from storage (implement if needed)
-        // For now, just set loading to false
-        setIsLoading(false);
+        const storedUser=localStorage.getItem("currentUser");
+        const storedToken=localStorage.getItem("accessToken");
+        if(storedUser && storedToken){
+          setCurrentUser(JSON.parse(storedUser));
+          setAccessToken(storedToken);
+
+          if(typeof document !== "undefined"){
+            document.title="SFC";
+          }
+        }
       } catch (error) {
         console.error("Auth initialization error:", error);
+      }finally{
         setIsLoading(false);
       }
     };
@@ -27,19 +35,26 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     const payload = await authService.login(email, password);
     const user = payload?.user || null;
+    const token=payload?.access_token || null;
 
     if (!user) {
       throw new Error("Login failed");
     }
 
     setCurrentUser(user);
-    setAccessToken(payload.access_token || null);
+    setAccessToken(token);
+
+    localStorage.setItem("currentUser", JSON.stringify(user));
+    localStorage.setItem("accessToken", token);
     return user;
   };
 
   const logout = async () => {
     setCurrentUser(null);
     setAccessToken(null);
+
+    localStorage.removeItem("currentUser");
+    localStorage.removeItem("accessToken");
   };
 
   const value = useMemo(

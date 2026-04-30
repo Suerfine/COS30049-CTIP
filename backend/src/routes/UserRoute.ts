@@ -158,7 +158,7 @@ userRouter.get("/", auth, UserController.getAllUsers);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-userRouter.get("/me", auth, UserController.getCurrentUser);
+userRouter.get("/me", UserController.getCurrentUser);
 
 /**
  * @swagger

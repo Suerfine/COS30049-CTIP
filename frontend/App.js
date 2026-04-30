@@ -27,6 +27,13 @@ const linking = {
       "Enrollment Management": "enrollmentManagement",
     },
   },
+  documentTitle: {
+    formatter: (options, route) => {
+      // If the route is found, use its name. 
+      // If not (like during a refresh), use your App's name.
+      return route?.name ?? "SFC Portal";
+    },
+  },
 };
 
 export default function App() {

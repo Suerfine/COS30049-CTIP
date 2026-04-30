@@ -19,11 +19,7 @@ export default function RootNavigator() {
   const { currentUser, isLoading } = useAuth();
 
   if (isLoading) {
-    return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-        <ActivityIndicator size="large" />
-      </View>
-    );
+    return null;
   }
 
   // No user logged in - show unlogged in stack
@@ -48,6 +44,7 @@ export default function RootNavigator() {
         <Stack.Screen
           name="AdminStack"
           component={AdminNavigator}
+          initialParams={{screen: 'Registration Management'}}
           options={{
             animationEnabled: false,
           }}

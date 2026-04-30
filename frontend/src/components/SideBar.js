@@ -3,8 +3,10 @@ import { View, Text, StyleSheet, Pressable, Image} from 'react-native';
 import {LayoutDashboard, Book, ClipboardList, Flag, CreditCard,Bell, LogOut, UserPlus, User2} from 'lucide-react-native'
 import { CommonActions } from '@react-navigation/native';
 import { useNavigationState, useNavigation } from '@react-navigation/native';
+import { useAuth } from '../context/AuthContext';
 
 const SideBar = () => {
+    const {logout} =useAuth();
     const navigation=useNavigation();
     const currentRoute = useNavigationState((state) => {
         if (!state) return null;
@@ -14,7 +16,9 @@ const SideBar = () => {
         }
         return route.name;
     });
-    console.log(currentRoute);
+    const displayRoute = (currentRoute === 'AdminStack' || !currentRoute) 
+        ? 'Registration Management' 
+        : currentRoute;
     // Navigation Link
     const menuItems= [
         {name:'Dashboard', icon: LayoutDashboard},
@@ -37,7 +41,7 @@ const SideBar = () => {
                 <Image source={require('../../assets/sfc_logo.png')} style={styles.logo} accessibilityLabel='Logo of SFC'/>
                 {menuItems.map((item) => {
                     const IconComponent=item.icon;
-                    const isActive= currentRoute===item.route;
+                    const isActive= displayRoute===item.route;
                     
                     return(
                         <View key={item.name}>
@@ -77,7 +81,7 @@ const SideBar = () => {
                     style={({ hovered }) => [
                         styles.logout,
                         hovered && styles.logoutHover, 
-                    ]}
+                    ]} onPress={()=>logout()}
                     >
                     <LogOut size={17}/>
                 </Pressable>
