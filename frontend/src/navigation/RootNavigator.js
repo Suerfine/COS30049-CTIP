@@ -44,7 +44,7 @@ export default function RootNavigator() {
         <Stack.Screen
           name="AdminStack"
           component={AdminNavigator}
-          initialParams={{screen: 'Registration Management'}}
+          initialParams={{screen: 'Admin Dashboard'}}
           options={{
             animationEnabled: false,
           }}

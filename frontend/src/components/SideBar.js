@@ -17,11 +17,11 @@ const SideBar = () => {
         return route.name;
     });
     const displayRoute = (currentRoute === 'AdminStack' || !currentRoute) 
-        ? 'Registration Management' 
+        ? 'Admin Dashboard' 
         : currentRoute;
     // Navigation Link
     const menuItems= [
-        {name:'Dashboard', icon: LayoutDashboard},
+        {name:'Dashboard', icon: LayoutDashboard, route:'Admin Dashboard'},
         {name: 'Registration', icon: UserPlus, route:'Registration Management'},
         {name: 'Accounts', icon: User2, route:'Account Management'},
         {name: 'Courses', icon: Book, route:'Course Management'},

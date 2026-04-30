@@ -9,6 +9,7 @@ import RegistrationManagement from "../screens/RegistrationManagement";
 import AccountsManagement from "../screens/AccountsManagement";
 import EnrollmentManagement from "../screens/EnrollmentManagement";
 import UserProfile from "../screens/UserProfile";
+import AdminDashboard from "../screens/AdminDashboard";
 
 // Import components
 import SideBar from "../components/SideBar";
@@ -26,7 +27,7 @@ export default function AdminNavigator() {
             screenOptions={{
               headerShown: false,
             }}
-            initialRouteName="Registration Management"
+            initialRouteName="Admin Dashboard"
           >
             <Stack.Screen name="Course Management" component={AdminCourse} />
             <Stack.Screen name="Course Details" component={EditCourseDetail} />
@@ -41,6 +42,10 @@ export default function AdminNavigator() {
             <Stack.Screen
               name="Enrollment Management"
               component={EnrollmentManagement}
+            />
+            <Stack.Screen
+              name="Admin Dashboard"
+              component={AdminDashboard}
             />
             <Stack.Screen name="User Profile" component={UserProfile} />
           </Stack.Navigator>
