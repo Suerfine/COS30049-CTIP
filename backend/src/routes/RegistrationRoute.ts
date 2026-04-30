@@ -53,7 +53,6 @@ const registrationRouter = Router();
  */
 registrationRouter.post(
   "/",
-  auth,
   privateRegistrationDocumentUpload,
   RegistrationController.createRegistration,
 );

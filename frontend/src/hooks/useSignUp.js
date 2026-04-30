@@ -1,18 +1,20 @@
 import React, {useState} from 'react';
 import * as DocumentPicker from 'expo-document-picker';
+import { Alert } from 'react-native';
 
 // Import other hook and service
+import { RegisterService } from '../services/RegisterService';
 
 export const useSignUp=()=>{
-    const [name, setName] = useState('');
+    const [fname, setFname]=useState('');
+    const [lname, setLname]=useState('');
     const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [confirmPassword, setConfirmPassword] = useState('');
-    const [showPassword, setShowPassword] = useState(false);
-    const [role, setRole]=useState('guide');
-    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const [telephone, setTelephone]=useState('');
+    const [ic, setIc]=useState('');
     const [loading, setLoading] = useState(false);
     const [file, setFile]=useState(null);
+    const [error, setError]=useState({});
+    const phoneRegex = /^(01[0-9]{1}-?[0-9]{7,8}|0[1-9]{1}-?[0-9]{6,7})$/;
 
     // // Password strength calculation
     // const calculatePasswordStrength = (pwd) => {
@@ -33,47 +35,47 @@ export const useSignUp=()=>{
 
     // const passwordStrength = calculatePasswordStrength(password);
 
-    const isValidEmail = (value) => /^\S+@\S+\.\S+$/.test(value);
+    const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    const isOnlyLetters=(str)=>{
+        return /^[A-Za-z\s]+$/.test(str.trim());
+    }
 
     const validateForm = () => {
-        if (!name.trim()) {
-            Alert.alert('Missing name', 'Please enter your full name so your account can be identified.');
-            return false;
+        let tempErrors={};
+        if (!fname.trim()) {
+            tempErrors.fname='* First Name is required.';
+        }
+        else if (!isOnlyLetters(fname)) {
+            tempErrors.fname='* First Name must only contain letters.';
+        }
+        if (!lname.trim()) {
+            tempErrors.lname='* Last Name is required.';
+        }
+        else if (!isOnlyLetters(lname)) {
+            tempErrors.lname='* Last Name must only contain letters.';
         }
         if (!email.trim()) {
-            Alert.alert('Missing email', 'Please enter your email address.');
-            return false;
+            tempErrors.email='* Email Address is required.';
         }
-        if (!isValidEmail(email.trim())) {
-            Alert.alert('Invalid email', 'Please enter a valid email address (for example: name@example.com).');
-            return false;
+        else if (!isValidEmail(email.trim())) {
+            tempErrors.email='* Please enter a valid email address.';
         }
-        return true;
+        if (!telephone.trim()) {
+            tempErrors.tel='* Telephone is required.';
+        }
+        else if(!phoneRegex.test(telephone.trim())){
+            tempErrors.tel='* Invalid format. use 01x-xxxxxxx';
+        }
+        if (!ic.trim()) {
+            tempErrors.ic='* Passport/IC is required.';
+        }
+        if(!file){
+            tempErrors.file='* Resume is required.';
+        }
+        setError(tempErrors);
+        return Object.keys(tempErrors).length===0;
     };
 
-    const handleSignUp = async () => {
-        if (!validateForm()) return;
-
-        setLoading(true);
-        try {
-            // TODO: Connect to backend registration endpoint
-            // const response = await fetch('http://localhost:5000/api/register', {
-            //     method: 'POST',
-            //     headers: { 'Content-Type': 'application/json' },
-            //     body: JSON.stringify({ name, email, password })
-            // });
-            // const data = await response.json();
-            // Gotta wait for backend to be set up before we can test this, but for now we'll just show a success message
-            
-            Alert.alert('Success', 'Account created successfully! Please log in.');
-            navigation.navigate('Login');
-        } catch (error) {
-            Alert.alert('Error', 'Registration failed. Please try again.');
-        } finally {
-            setLoading(false);
-        }
-    };
-    
     // Resume upload
     const handleUpload=async()=>{
         try{
@@ -92,19 +94,46 @@ export const useSignUp=()=>{
 
     const removeFile=()=>setFile(null);
 
+    const handleSignUp = async (navigation) => {
+        if (!validateForm()) return;
+
+        setLoading(true);
+        try {
+            const userData={
+                fname,
+                lname,
+                ic,
+                email,
+                telephone,
+                file:file ? {
+                    uri: file.uri,
+                    name:file.name,
+                    type:file.mimeType || 'application/pdf'
+                } : null
+            };
+
+            await RegisterService.registerUser(userData);
+            
+            Alert.alert('Success', 'Account created successfully! Please log in.');
+            navigation.navigate('Login');
+
+        } catch (error) {
+             Alert.alert('* Registration failed. Please try again.')
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return{
-        name, setName,
+        fname, setFname,
+        lname, setLname,
         email, setEmail,
-        role,setRole,
-        password, setPassword,
-        confirmPassword,setConfirmPassword,
-        showPassword,setShowPassword,
-        showConfirmPassword, setShowConfirmPassword,
-        loading,setLoading,
-        isValidEmail,
-        validateForm,
-        handleSignUp,
         file,setFile,
-        handleUpload, removeFile
+        telephone,setTelephone,
+        ic,setIc,
+        loading,setLoading,
+        handleSignUp,
+        handleUpload, removeFile,
+        error, setError
     }
 }

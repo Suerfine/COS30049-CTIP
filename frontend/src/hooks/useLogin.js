@@ -12,7 +12,7 @@ export const useLogin=()=>{
 
     const handleLogin = async () => {
         if (!email || !password) {
-            setLoginError('Please fill in all fields');
+            setLoginError('* Please fill in all fields');
             return;
         }
 

@@ -4,25 +4,21 @@ import { User, Mail, Phone, IdCard, FileUp, FileCheck, FileIcon, X } from 'lucid
 
 // Import other hook and component
 import { useSignUp } from '../hooks/useSignUp';
-import NavBar from '../components/NavBar';
 
 const SignUp = ({ navigation }) => {
     const { width } = useWindowDimensions();
     const isDesktop = width >= 980;
     const {
-        name, setName,
+        fname, setFname,
+        lname, setLname,
         email, setEmail,
-        role,setRole,
-        password, setPassword,
-        confirmPassword,setConfirmPassword,
-        showPassword,setShowPassword,
-        showConfirmPassword, setShowConfirmPassword,
-        loading,setLoading,
-        isValidEmail,
-        validateForm,
-        handleSignUp,
         file,setFile,
-        handleUpload, removeFile
+        telephone,setTelephone,
+        ic,setIc,
+        loading,setLoading,
+        handleSignUp,
+        handleUpload, removeFile,
+        error, setError
     }=useSignUp();
 
     return (
@@ -57,7 +53,7 @@ const SignUp = ({ navigation }) => {
                         />
                         <View>
                             <Text style={styles.brandTitle}>SFC Digital Training</Text>
-                            <Text style={styles.brandCaption}>Official internal learning platform</Text>
+                            <Text style={styles.brandCaption}>Official Internal Learning Platform</Text>
                         </View>
                     </View>
 
@@ -66,26 +62,6 @@ const SignUp = ({ navigation }) => {
                         <Text style={styles.subtitle}>Register to start your training and compliance modules.</Text>
                     </View>
 
-                    {/* Role */}
-                    <View>
-                        <Text style={styles.label}>Role</Text>
-                        <View style={styles.buttonContainer}>
-                            <Pressable style={({hovered})=>[
-                                styles.roleCard, (hovered || role==='guide') && styles.cardHover
-                            ]}
-                            onPress={()=> setRole('guide')}
-                            >   
-                                <Text style={styles.roleText}>Park Guide</Text>
-                            </Pressable>
-                            <Pressable style={({hovered, pressed})=>[
-                                styles.roleCard, (hovered || role==='admin') && styles.cardHover
-                            ]}
-                            onPress={()=> setRole('admin')}
-                            >   
-                                <Text style={styles.roleText}>Admin</Text>
-                            </Pressable>
-                        </View>
-                    </View>
 
                     <View style={styles.form}>
                         <View style={styles.row}>
@@ -97,10 +73,14 @@ const SignUp = ({ navigation }) => {
                                         style={styles.input}
                                         placeholder="John"
                                         placeholderTextColor="#8f8f8f"
-                                        value={name}
+                                        value={fname}
                                         editable={!loading}
+                                        onChangeText={setFname}
                                     />
                                 </View>
+                                {error.fname && (
+                                    <Text style={styles.errorText}>{error.fname}</Text>
+                                )}
                             </View>
                             <View style={styles.inputGroup}>
                                 <Text style={styles.label}>Last Name</Text>
@@ -110,10 +90,14 @@ const SignUp = ({ navigation }) => {
                                         style={styles.input}
                                         placeholder="Doe"
                                         placeholderTextColor="#8f8f8f"
-                                        value={name}
+                                        value={lname}
                                         editable={!loading}
+                                        onChangeText={setLname}
                                     />
                                 </View>
+                                {error.lname && (
+                                    <Text style={styles.errorText}>{error.lname}</Text>
+                                )}
                             </View>
                         </View>
                         
@@ -132,6 +116,9 @@ const SignUp = ({ navigation }) => {
                                         editable={!loading}
                                     />
                                 </View>
+                                {error.email && (
+                                    <Text style={styles.errorText}>{error.email}</Text>
+                                )}
                             </View>
                             <View style={styles.inputGroup}>
                                 <Text style={styles.label}>Telephone</Text>
@@ -139,11 +126,16 @@ const SignUp = ({ navigation }) => {
                                     <Phone size={20} color="#2f6618fe" style={styles.icon} />
                                     <TextInput
                                         style={styles.input}
-                                        placeholder="xxx-xxxxxxx"
+                                        placeholder="01x-xxxxxxx"
                                         placeholderTextColor="#8f8f8f"
                                         editable={!loading}
+                                        onChangeText={setTelephone}
+                                        value={telephone}
                                     />
                                 </View>
+                                {error.tel && (
+                                    <Text style={styles.errorText}>{error.tel}</Text>
+                                )}
                             </View>
                         </View>
                         
@@ -155,9 +147,15 @@ const SignUp = ({ navigation }) => {
                                 <TextInput
                                     style={styles.input}
                                     placeholder="Enter your IC"
-                                    placeholderTextColor="#8f8f8f"           
+                                    placeholderTextColor="#8f8f8f" 
+                                    value={ic} 
+                                    onChangeText={setIc}
+                                    editable={!loading}         
                                 />
                             </View>
+                            {error.ic && (
+                                <Text style={styles.errorText}>{error.ic}</Text>
+                            )}
                         </View>
                         
                         {/* Resume/CV */}
@@ -184,18 +182,12 @@ const SignUp = ({ navigation }) => {
                                 </View>
                             )}
                         </View>
-
-                        {/* <Pressable
-                            style={[styles.signupButton, (loading || passwordStrength.score < 2) && styles.disabledButton]}
-                            onPress={handleSignUp}
-                        >
-                            <Text style={styles.signupButtonText}>
-                                {loading ? 'Creating Account...' : 'Create Account'}
-                            </Text>
-                        </Pressable> */}
+                        {error.file && (
+                            <Text style={styles.errorText}>{error.file}</Text>
+                        )}
                         <Pressable
-                            style={styles.signupButton}
-                            onPress={handleSignUp}
+                            style={[styles.signupButton, loading && styles.disabledButton]}
+                            onPress={()=>handleSignUp(navigation)}
                         >
                             <Text style={styles.signupButtonText}>
                                 {loading ? 'Creating Account...' : 'Create Account'}
@@ -302,7 +294,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 12,
-        marginBottom: 18,
+        marginBottom: 15,
     },
     brandLogo: {
         width: 78,
@@ -462,33 +454,6 @@ const styles = StyleSheet.create({
         flexDirection:'row',
         gap:10
     },
-    buttonContainer:{
-        flexDirection:'row',
-        gap:15,
-        width:'100%',
-        marginVertical:10,
-        userSelect:'none',
-    },
-    roleCard:{
-        backgroundColor:'#ffffff',
-        borderRadius:13,
-        paddingVertical:10,
-        width:130,
-        alignItems:'center',
-        borderWidth:1,
-        borderColor:'#eee',
-        backgroundColor:'#6f9c53',
-    },
-    cardHover:{
-        borderColor:'#0a6340',
-        backgroundColor:'#397e1bfe',
-        transform:[{scale:1.02}]
-    },
-    roleText:{
-        color:'white',
-        fontSize:14,
-        fontWeight:'600'
-    },
     uploadBox:{
         borderWidth:2,
         borderStyle:'dashed',
@@ -534,7 +499,14 @@ const styles = StyleSheet.create({
     },
     removeBtn:{
         padding:5
-    }
+    },
+    errorText: {
+        color: '#b42318',
+        fontSize: 13,
+        fontWeight: '600',
+        marginTop: 2,
+        textAlign: 'left',
+    },
 });
 
 export default SignUp;

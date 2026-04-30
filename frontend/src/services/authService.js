@@ -56,7 +56,7 @@ export const authService = {
 
         if (!response.ok) {
             if (response.status === 401) {
-                throw new Error('Incorrect email or password');
+                throw new Error('* Incorrect email or password');
             }
 
             throw new Error(data?.message || 'Login failed');

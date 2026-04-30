@@ -32,7 +32,7 @@ export const RegisterService={
             formData.append('lastname', userData.lname);
             formData.append('identification', userData.ic);
             formData.append('personal_email', userData.email);
-            formData.append('tel', userData.tel);
+            formData.append('tel', userData.telephone);
 
             if(userData.file){
                 formData.append('document', {
@@ -44,7 +44,8 @@ export const RegisterService={
 
             const response=await fetch(API_ENDPOINTS.USER.SIGNUP,{
                 method:'POST',
-                body:formData
+                body:formData,
+                headers:{'Accept' : 'application/json'},
             });
 
             const data=await response.json();
@@ -59,5 +60,5 @@ export const RegisterService={
             throw error;
         }
     },
-    
+
 };
