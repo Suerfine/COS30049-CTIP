@@ -53,6 +53,7 @@ export default function RootNavigator() {
         <Stack.Screen
           name="ParkGuideStack"
           component={ParkGuideNavigator}
+          initialParams={{screen: 'Dashboard'}}
           options={{
             animationEnabled: false,
           }}

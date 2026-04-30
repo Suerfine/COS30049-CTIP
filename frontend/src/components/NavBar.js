@@ -60,10 +60,17 @@ const NavBar = () => {
   const { logout } = useAuth();
 
   const currentRoute = useNavigationState((state) => {
-    const route = state.routes[state.index];
-    return route.name;
+      if (!state) return null;
+      let route=state.routes[state.index];
+      while(route.state){
+          route=route.state.routes[route.state.index];
+      }
+      return route.name;
   });
 
+  const displayRoute = (currentRoute === 'ParkGuideStack' || !currentRoute) 
+          ? 'Dashboard' 
+          : currentRoute;
   const handleLogout = async () => {
     await logout();
     navigation.dispatch(
@@ -76,7 +83,7 @@ const NavBar = () => {
 
   // Navigation Links
   const navLinks = [
-    { name: "Courses", route: "User Course" },
+    { name: "Courses", route: "Courses" },
     { name: "Badges", route: "Badges" },
     { name: "Anomaly", route: "Anomaly" },
   ];
@@ -86,12 +93,10 @@ const NavBar = () => {
       <View style={styles.left}>
         <Pressable
           onPress={() => {
-            navigation.dispatch(
-              CommonActions.reset({
-                index: 0,
-                routes: [{ name: "User Dashboard" }],
-              }),
-            );
+              navigation.navigate('ParkGuideStack',{
+                  screen:"Dashboard"
+              })
+
           }}
         >
           <Image
@@ -108,15 +113,13 @@ const NavBar = () => {
             key={item.name}
             name={item.name}
             route={item.route}
-            isActive={currentRoute === item.route}
+            isActive={displayRoute === item.route}
             style={styles.link}
             onPress={() => {
-              navigation.dispatch(
-                CommonActions.reset({
-                  index: 0,
-                  routes: [{ name: item.route }],
-                }),
-              );
+                navigation.navigate('ParkGuideStack',{
+                    screen:item.route
+                })
+
             }}
           />
         ))}
@@ -134,7 +137,12 @@ const NavBar = () => {
         <Pressable style={styles.notificationBtn}>
           <Bell size={20} />
         </Pressable>
-        <Pressable style={styles.profileBtn} onPress={handleLogout}>
+        <Pressable style={styles.profileBtn} onPress={() => {
+              navigation.navigate('ParkGuideStack',{
+                  screen:"UserProfile"
+              })
+
+          }}>
           <Image
             source={require("../../assets/profile.png")}
             style={styles.profile}
