@@ -177,7 +177,7 @@ const styles = StyleSheet.create({
         flexDirection: 'column',
     },
     heroPanel: {
-        flex: 1.05,
+        width: '47%',
         justifyContent: 'flex-end',
         minHeight: 280,
         position: 'relative',

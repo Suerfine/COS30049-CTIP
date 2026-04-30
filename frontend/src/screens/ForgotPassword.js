@@ -79,6 +79,7 @@ const ForgotPassword = ({ navigation }) => {
                                     <TextInput
                                         style={styles.input}
                                         placeholder="Enter your email"
+                                        placeholderTextColor="#8f8f8f"
                                         value={email}
                                         onChangeText={setEmail}
                                         keyboardType="email-address"
@@ -111,6 +112,7 @@ const ForgotPassword = ({ navigation }) => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+        height:'100vh',
         backgroundColor: '#e8efe7',
     },
     scrollView: {
@@ -119,19 +121,18 @@ const styles = StyleSheet.create({
     },
     scrollContent: {
         flexGrow: 1,
-        justifyContent: 'flex-start',
-        alignItems: 'center',
+        justifyContent: 'center',
         padding: 24,
     },
     shell: {
         width: '100%',
-        maxWidth: 1200,
+        maxWidth: 1000,
         alignSelf: 'center',
         borderRadius: 20,
         backgroundColor: '#ffffff',
         borderWidth: 1,
         borderColor: '#d8e2d6',
-        minHeight: 520,
+        minHeight: 600,
     },
     shellDesktop: {
         flexDirection: 'row',
@@ -220,6 +221,7 @@ const styles = StyleSheet.create({
     },
     header: {
         marginBottom: 26,
+        marginTop:20
     },
     title: {
         fontSize: 34,
@@ -260,13 +262,14 @@ const styles = StyleSheet.create({
         flex: 1,
         fontSize: 16,
         color: '#333',
+        outlineStyle:'none'
     },
     button: {
         backgroundColor: '#2f6618fe',
         paddingVertical: 14,
         borderRadius: 12,
         alignItems: 'center',
-        marginTop: 6,
+        marginTop: 16,
     },
     buttonText: {
         color: '#ffffff',
