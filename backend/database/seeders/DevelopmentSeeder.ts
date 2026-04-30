@@ -37,11 +37,25 @@ export async function runSeeders(
 
   // Default Admin user
   const adminUser = buildUser({
+    firstname: "Admin",
+    lastname: "Admin",
+    personal_email: "admin@sfc.gov.my",
     username: "admin",
     password: "admin",
     role: UserRoles.ADMIN,
   });
   const createdAdminUser = await User.create(adminUser);
+
+  //Default user for park guide role
+  const parkGuideUser = buildUser({
+    firstname: "Park",
+    lastname: "Guide",
+    personal_email: "park.guide@sfc.gov.my",
+    username: "park.guide",
+    password: "park.guide",
+    role: UserRoles.PARK_GUIDE,
+  });
+  const createdParkGuideUser = await User.create(parkGuideUser);
 
   // Creating the users
   const adminUsers: UserFactoryAttributes[] = buildUsers(user_admin_count, {
