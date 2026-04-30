@@ -263,6 +263,7 @@ const styles = StyleSheet.create({
     heroContent: {
         padding: 28,
         gap: 12,
+        userSelect:'none'
     },
     heroTitle: {
         color: '#ffffff',
