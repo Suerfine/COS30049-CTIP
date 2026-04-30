@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useState} from 'react';
 
 // Import other hook and service
 import { useAuth } from '../context/AuthContext';

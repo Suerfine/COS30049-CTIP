@@ -68,6 +68,7 @@ const Login = ({ navigation }) => {
                                     <TextInput
                                         style={styles.input}
                                         placeholder="Enter your email"
+                                        placeholderTextColor="#8f8f8f"
                                         value={email}
                                         onChangeText={(value) => {
                                             setEmail(value);
@@ -89,6 +90,7 @@ const Login = ({ navigation }) => {
                                         style={styles.input}
                                         placeholder="Enter your password"
                                         value={password}
+                                        placeholderTextColor="#8f8f8f"
                                         onChangeText={(value) => {
                                             setPassword(value);
                                             if (loginError) {
@@ -129,7 +131,7 @@ const Login = ({ navigation }) => {
                             <View style={styles.signupContainer}>
                                 <Text style={styles.signupText}>Don't have an account? </Text>
                                 <Pressable onPress={() => navigation.navigate('SignUp')}>
-                                    <Text style={styles.signupLink}>Create Account</Text>
+                                    <Text style={styles.signupLink}>Register</Text>
                                 </Pressable>
                             </View>
                         </View>
@@ -144,6 +146,7 @@ const Login = ({ navigation }) => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+        height:'100vh',
         backgroundColor: '#e8efe7',
     },
     scrollView: {
@@ -157,15 +160,15 @@ const styles = StyleSheet.create({
     },
     shell: {
         width: '100%',
-        maxWidth: 1200,
+        maxWidth: 1000,
         alignSelf: 'center',
         borderRadius: 20,
         overflow: 'hidden',
         backgroundColor: '#ffffff',
         borderWidth: 1,
         borderColor: '#d8e2d6',
-        minHeight: 560,
-        marginVertical:'auto'
+        minHeight: 600,
+        marginVertical:'auto',
     },
     shellDesktop: {
         flexDirection: 'row',

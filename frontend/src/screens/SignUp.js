@@ -1,158 +1,131 @@
 import { useState } from 'react';
 import { View, Text, StyleSheet, Pressable, ScrollView, TextInput, Alert, Image, useWindowDimensions } from 'react-native';
-import { User, Mail, Lock, Eye, EyeOff, Check, X } from 'lucide-react-native';
+import { User, Mail, Phone, IdCard, FileUp, FileCheck, FileIcon, X } from 'lucide-react-native';
+
+// Import other hook and component
+import { useSignUp } from '../hooks/useSignUp';
+import NavBar from '../components/NavBar';
 
 const SignUp = ({ navigation }) => {
     const { width } = useWindowDimensions();
     const isDesktop = width >= 980;
-
-    const [name, setName] = useState('');
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [confirmPassword, setConfirmPassword] = useState('');
-    const [showPassword, setShowPassword] = useState(false);
-    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-    const [loading, setLoading] = useState(false);
-
-    // Password strength calculation
-    const calculatePasswordStrength = (pwd) => {
-        if (!pwd) return { score: 0, label: '', color: '#999' };
-
-        let score = 0;
-        if (pwd.length >= 8) score++;
-        if (pwd.length >= 12) score++;
-        if (/[a-z]/.test(pwd)) score++;
-        if (/[A-Z]/.test(pwd)) score++;
-        if (/[0-9]/.test(pwd)) score++;
-        if (/[^a-zA-Z0-9]/.test(pwd)) score++;
-
-        if (score <= 2) return { score: 1, label: 'Weak', color: '#d32f2f' };
-        if (score <= 4) return { score: 2, label: 'Medium', color: '#f57c00' };
-        return { score: 3, label: 'Strong', color: '#2f6618fe' };
-    };
-
-    const passwordStrength = calculatePasswordStrength(password);
-
-    const isValidEmail = (value) => /^\S+@\S+\.\S+$/.test(value);
-
-    const validateForm = () => {
-        if (!name.trim()) {
-            Alert.alert('Missing name', 'Please enter your full name so your account can be identified.');
-            return false;
-        }
-        if (!email.trim()) {
-            Alert.alert('Missing email', 'Please enter your email address.');
-            return false;
-        }
-        if (!isValidEmail(email.trim())) {
-            Alert.alert('Invalid email', 'Please enter a valid email address (for example: name@example.com).');
-            return false;
-        }
-        if (!password) {
-            Alert.alert('Missing password', 'Please create a password for your account.');
-            return false;
-        }
-        if (password.length < 8) {
-            Alert.alert('Weak password', 'Password must be at least 8 characters long.');
-            return false;
-        }
-        if (passwordStrength.score < 2) {
-            Alert.alert('Weak password', 'Password must be at least Medium strength by including uppercase, lowercase, numbers, and symbols.');
-            return false;
-        }
-        if (password !== confirmPassword) {
-            Alert.alert('Password mismatch', 'Confirm password must match the password you created.');
-            return false;
-        }
-        return true;
-    };
-
-    const handleSignUp = async () => {
-        if (!validateForm()) return;
-
-        setLoading(true);
-        try {
-            // TODO: Connect to backend registration endpoint
-            // const response = await fetch('http://localhost:5000/api/register', {
-            //     method: 'POST',
-            //     headers: { 'Content-Type': 'application/json' },
-            //     body: JSON.stringify({ name, email, password })
-            // });
-            // const data = await response.json();
-            // Gotta wait for backend to be set up before we can test this, but for now we'll just show a success message
-            
-            Alert.alert('Success', 'Account created successfully! Please log in.');
-            navigation.navigate('Login');
-        } catch (error) {
-            Alert.alert('Error', 'Registration failed. Please try again.');
-        } finally {
-            setLoading(false);
-        }
-    };
+    const {
+        name, setName,
+        email, setEmail,
+        role,setRole,
+        password, setPassword,
+        confirmPassword,setConfirmPassword,
+        showPassword,setShowPassword,
+        showConfirmPassword, setShowConfirmPassword,
+        loading,setLoading,
+        isValidEmail,
+        validateForm,
+        handleSignUp,
+        file,setFile,
+        handleUpload, removeFile
+    }=useSignUp();
 
     return (
         <View style={styles.container}>
-            <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-                <View style={[styles.shell, isDesktop ? styles.shellDesktop : styles.shellMobile]}>
-                    {isDesktop && (
-                        <View style={styles.heroPanel}>
-                            <Image
-                                source={require('../../assets/forest.png')}
-                                style={styles.heroImageFill}
-                                accessibilityLabel="Forest background"
-                            />
-                            <View style={styles.heroOverlay} />
-                            <View style={styles.heroContent}>
-                                <Text style={styles.heroTitle}>Train With Purpose</Text>
-                                <Text style={styles.heroSubtitle}>Create your account to access assigned courses, certification paths, and field-readiness modules.</Text>
-                                <View style={styles.heroChipRow}>
-                                    <Text style={styles.heroChip}>Role-Based Access</Text>
-                                    <Text style={styles.heroChip}>Security First</Text>
-                                </View>
+        <ScrollView contentContainerStyle={styles.scrollContent}>
+            <View style={[styles.shell, isDesktop ? styles.shellDesktop : styles.shellMobile]}>
+                {isDesktop && (
+                    <View style={styles.heroPanel}>
+                        <Image
+                            source={require('../../assets/forest.png')}
+                            style={styles.heroImageFill}
+                            accessibilityLabel="Forest background"
+                        />
+                        <View style={styles.heroOverlay} />
+                        <View style={styles.heroContent}>
+                            <Text style={styles.heroTitle}>Train With Purpose</Text>
+                            <Text style={styles.heroSubtitle}>Create your account to access assigned courses, certification paths, and field-readiness modules.</Text>
+                            <View style={styles.heroChipRow}>
+                                <Text style={styles.heroChip}>Role-Based Access</Text>
+                                <Text style={styles.heroChip}>Security First</Text>
                             </View>
                         </View>
-                    )}
+                    </View>
+                )}
 
-                    <View style={styles.formPanel}>
-                        <View style={styles.brandRow}>
-                            <Image
-                                source={require('../../assets/sfc_logo.png')}
-                                style={styles.brandLogo}
-                                accessibilityLabel="SFC logo"
-                            />
-                            <View>
-                                <Text style={styles.brandTitle}>SFC Digital Training</Text>
-                                <Text style={styles.brandCaption}>Official internal learning platform</Text>
-                            </View>
+                <View style={styles.formPanel}>
+                    <View style={styles.brandRow}>
+                        <Image
+                            source={require('../../assets/sfc_logo.png')}
+                            style={styles.brandLogo}
+                            accessibilityLabel="SFC logo"
+                        />
+                        <View>
+                            <Text style={styles.brandTitle}>SFC Digital Training</Text>
+                            <Text style={styles.brandCaption}>Official internal learning platform</Text>
                         </View>
+                    </View>
 
-                        <View style={styles.header}>
-                            <Text style={styles.title}>Create Account</Text>
-                            <Text style={styles.subtitle}>Register to start your training and compliance modules.</Text>
+                    <View style={styles.header}>
+                        <Text style={styles.title}>Registration</Text>
+                        <Text style={styles.subtitle}>Register to start your training and compliance modules.</Text>
+                    </View>
+
+                    {/* Role */}
+                    <View>
+                        <Text style={styles.label}>Role</Text>
+                        <View style={styles.buttonContainer}>
+                            <Pressable style={({hovered})=>[
+                                styles.roleCard, (hovered || role==='guide') && styles.cardHover
+                            ]}
+                            onPress={()=> setRole('guide')}
+                            >   
+                                <Text style={styles.roleText}>Park Guide</Text>
+                            </Pressable>
+                            <Pressable style={({hovered, pressed})=>[
+                                styles.roleCard, (hovered || role==='admin') && styles.cardHover
+                            ]}
+                            onPress={()=> setRole('admin')}
+                            >   
+                                <Text style={styles.roleText}>Admin</Text>
+                            </Pressable>
                         </View>
+                    </View>
 
-                        <View style={styles.form}>
+                    <View style={styles.form}>
+                        <View style={styles.row}>
                             <View style={styles.inputGroup}>
-                                <Text style={styles.label}>Full Name</Text>
+                                <Text style={styles.label}>First Name</Text>
                                 <View style={styles.inputContainer}>
                                     <User size={20} color="#2f6618fe" style={styles.icon} />
                                     <TextInput
                                         style={styles.input}
-                                        placeholder="Enter your full name"
+                                        placeholder="John"
+                                        placeholderTextColor="#8f8f8f"
                                         value={name}
-                                        onChangeText={setName}
                                         editable={!loading}
                                     />
                                 </View>
                             </View>
-
+                            <View style={styles.inputGroup}>
+                                <Text style={styles.label}>Last Name</Text>
+                                <View style={styles.inputContainer}>
+                                    <User size={20} color="#2f6618fe" style={styles.icon} />
+                                    <TextInput
+                                        style={styles.input}
+                                        placeholder="Doe"
+                                        placeholderTextColor="#8f8f8f"
+                                        value={name}
+                                        editable={!loading}
+                                    />
+                                </View>
+                            </View>
+                        </View>
+                        
+                        <View style={styles.row}>
                             <View style={styles.inputGroup}>
                                 <Text style={styles.label}>Email</Text>
                                 <View style={styles.inputContainer}>
                                     <Mail size={20} color="#2f6618fe" style={styles.icon} />
                                     <TextInput
                                         style={styles.input}
-                                        placeholder="Enter your email"
+                                        placeholder="johndoe@example.com"
+                                        placeholderTextColor="#8f8f8f"
                                         value={email}
                                         onChangeText={setEmail}
                                         keyboardType="email-address"
@@ -160,139 +133,97 @@ const SignUp = ({ navigation }) => {
                                     />
                                 </View>
                             </View>
-
                             <View style={styles.inputGroup}>
-                                <Text style={styles.label}>Password</Text>
+                                <Text style={styles.label}>Telephone</Text>
                                 <View style={styles.inputContainer}>
-                                    <Lock size={20} color="#2f6618fe" style={styles.icon} />
+                                    <Phone size={20} color="#2f6618fe" style={styles.icon} />
                                     <TextInput
                                         style={styles.input}
-                                        placeholder="Create a password"
-                                        value={password}
-                                        onChangeText={setPassword}
-                                        secureTextEntry={!showPassword}
+                                        placeholder="xxx-xxxxxxx"
+                                        placeholderTextColor="#8f8f8f"
                                         editable={!loading}
                                     />
-                                    <Pressable onPress={() => setShowPassword(!showPassword)}>
-                                        {showPassword ? (
-                                            <EyeOff size={20} color="#2f6618fe" />
-                                        ) : (
-                                            <Eye size={20} color="#2f6618fe" />
-                                        )}
-                                    </Pressable>
                                 </View>
-
-                                <Text style={styles.passwordHint}>
-                                    Use a stronger password with uppercase, lowercase, numbers, and symbols.
-                                </Text>
-
-                                {password && (
-                                    <View style={styles.strengthContainer}>
-                                        <View style={styles.strengthBars}>
-                                            {[1, 2, 3].map((i) => (
-                                                <View
-                                                    key={i}
-                                                    style={[
-                                                        styles.strengthBar,
-                                                        { backgroundColor: i <= passwordStrength.score ? passwordStrength.color : '#e0e0e0' }
-                                                    ]}
-                                                />
-                                            ))}
-                                        </View>
-                                        <Text style={[styles.strengthLabel, { color: passwordStrength.color }]}>
-                                            {passwordStrength.label}
-                                        </Text>
-                                    </View>
-                                )}
-                            </View>
-
-                            <View style={styles.inputGroup}>
-                                <Text style={styles.label}>Confirm Password</Text>
-                                <View style={styles.inputContainer}>
-                                    <Lock size={20} color="#2f6618fe" style={styles.icon} />
-                                    <TextInput
-                                        style={styles.input}
-                                        placeholder="Confirm your password"
-                                        value={confirmPassword}
-                                        onChangeText={setConfirmPassword}
-                                        secureTextEntry={!showConfirmPassword}
-                                        editable={!loading}
-                                    />
-                                    <Pressable onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
-                                        {showConfirmPassword ? (
-                                            <EyeOff size={20} color="#2f6618fe" />
-                                        ) : (
-                                            <Eye size={20} color="#2f6618fe" />
-                                        )}
-                                    </Pressable>
-                                </View>
-
-                                {confirmPassword && (
-                                    <View style={styles.matchContainer}>
-                                        {password === confirmPassword ? (
-                                            <>
-                                                <Check size={16} color="#2f6618fe" />
-                                                <Text style={[styles.matchText, { color: '#2f6618fe' }]}>Passwords match</Text>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <X size={16} color="#d32f2f" />
-                                                <Text style={[styles.matchText, { color: '#d32f2f' }]}>Passwords do not match</Text>
-                                            </>
-                                        )}
-                                    </View>
-                                )}
-                            </View>
-
-                            <Pressable
-                                style={[styles.signupButton, (loading || passwordStrength.score < 2) && styles.disabledButton]}
-                                onPress={handleSignUp}
-                                disabled={loading || passwordStrength.score < 2}
-                            >
-                                <Text style={styles.signupButtonText}>
-                                    {loading ? 'Creating Account...' : 'Create Account'}
-                                </Text>
-                            </Pressable>
-
-                            {password && passwordStrength.score < 2 && (
-                                <View style={styles.warningContainer}>
-                                    <Text style={styles.warningText}>
-                                        Password must be at least Medium strength
-                                    </Text>
-                                </View>
-                            )}
-
-                            <View style={styles.divider}>
-                                <View style={styles.dividerLine} />
-                                <Text style={styles.dividerText}>OR</Text>
-                                <View style={styles.dividerLine} />
-                            </View>
-
-                            <View style={styles.loginContainer}>
-                                <Text style={styles.loginText}>Already have an account? </Text>
-                                <Pressable onPress={() => navigation.navigate('Login')}>
-                                    <Text style={styles.loginLink}>Sign In</Text>
-                                </Pressable>
                             </View>
                         </View>
+                        
 
+                        <View style={styles.inputGroup}>
+                            <Text style={styles.label}>Passport/IC.</Text>
+                            <View style={styles.inputContainer}>
+                                <IdCard size={20} color="#2f6618fe" style={styles.icon} />
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="Enter your IC"
+                                    placeholderTextColor="#8f8f8f"           
+                                />
+                            </View>
+                        </View>
+                        
+                        {/* Resume/CV */}
+                        <View>
+                            <Text style={styles.label}>Resume / CV (PDF or Word)</Text>
+                            {!file ? (
+                                <Pressable style={({pressed})=>[
+                                    styles.uploadBox, pressed && {backgroundColor: '#f0fdf4'}
+                                ]}
+                                onPress={handleUpload}>
+                                    <FileUp size={32} color="#666"/>
+                                    <Text style={styles.uploadText}>Click here to upload resume</Text>
+                                    <Text style={styles.subtext}>PDF, DOC, or DOCX (Max 5MB)</Text>
+                                </Pressable>
+                            ):(
+                                <View style={styles.fileCard}>
+                                    <View style={styles.fileInfo}>
+                                        <FileCheck size={24} color="#0a6340"/>
+                                        <Text style={styles.fileName} numberOfLines={1}>{file.name}</Text>
+                                    </View>
+                                    <Pressable onPress={removeFile} style={styles.removeBtn}>
+                                        <X size={20} color="#ff4d4d"/>
+                                    </Pressable>
+                                </View>
+                            )}
+                        </View>
+
+                        {/* <Pressable
+                            style={[styles.signupButton, (loading || passwordStrength.score < 2) && styles.disabledButton]}
+                            onPress={handleSignUp}
+                        >
+                            <Text style={styles.signupButtonText}>
+                                {loading ? 'Creating Account...' : 'Create Account'}
+                            </Text>
+                        </Pressable> */}
+                        <Pressable
+                            style={styles.signupButton}
+                            onPress={handleSignUp}
+                        >
+                            <Text style={styles.signupButtonText}>
+                                {loading ? 'Creating Account...' : 'Create Account'}
+                            </Text>
+                        </Pressable>
+
+                        <View style={styles.loginContainer}>
+                            <Text style={styles.loginText}>Already have an account? </Text>
+                            <Pressable onPress={() => navigation.navigate('Login')}>
+                                <Text style={styles.loginLink}>Sign In</Text>
+                            </Pressable>
+                        </View>
                     </View>
+
                 </View>
-            </ScrollView>
+            </View>
+        </ScrollView>
         </View>
     );
 };
 
 const styles = StyleSheet.create({
     container: {
-        flex: 1,
+        height: '100vh', 
         backgroundColor: '#e8efe7',
     },
-    scrollView: {
-        flex: 1,
-    },
     scrollContent: {
-        flexGrow: 1,
+        flexGrow:1,
         justifyContent: 'flex-start',
         alignItems: 'center',
         padding: 24,
@@ -306,7 +237,6 @@ const styles = StyleSheet.create({
         backgroundColor: '#ffffff',
         borderWidth: 1,
         borderColor: '#d8e2d6',
-        minHeight: 700,
     },
     shellDesktop: {
         flexDirection: 'row',
@@ -315,9 +245,8 @@ const styles = StyleSheet.create({
         flexDirection: 'column',
     },
     heroPanel: {
-        flex: 1.05,
+        width:'45%',
         justifyContent: 'flex-end',
-        minHeight: 320,
         position: 'relative',
         overflow: 'hidden',
     },
@@ -412,6 +341,7 @@ const styles = StyleSheet.create({
     },
     inputGroup: {
         gap: 8,
+        flex:1
     },
     label: {
         fontSize: 14,
@@ -432,10 +362,10 @@ const styles = StyleSheet.create({
     icon: {
         marginRight: 10,
     },
-    input: {
-        flex: 1,
-        fontSize: 16,
-        color: '#333',
+    input:{
+        flex:1,
+        height:40,
+        outlineStyle:'none'
     },
     strengthContainer: {
         flexDirection: 'row',
@@ -515,7 +445,7 @@ const styles = StyleSheet.create({
     },
     loginContainer: {
         flexDirection: 'row',
-        justifyContent: 'flex-start',
+        justifyContent: 'center',
         alignItems: 'center',
     },
     loginText: {
@@ -527,6 +457,83 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontWeight: '600',
     },
+    row:{
+        flexDirection:'row',
+        gap:10
+    },
+    buttonContainer:{
+        flexDirection:'row',
+        gap:15,
+        width:'100%',
+        marginVertical:10,
+        userSelect:'none',
+    },
+    roleCard:{
+        backgroundColor:'#ffffff',
+        borderRadius:13,
+        paddingVertical:10,
+        width:130,
+        alignItems:'center',
+        borderWidth:1,
+        borderColor:'#eee',
+        backgroundColor:'#6f9c53',
+    },
+    cardHover:{
+        borderColor:'#0a6340',
+        backgroundColor:'#397e1bfe',
+        transform:[{scale:1.02}]
+    },
+    roleText:{
+        color:'white',
+        fontSize:14,
+        fontWeight:'600'
+    },
+    uploadBox:{
+        borderWidth:2,
+        borderStyle:'dashed',
+        borderColor:'#ccc',
+        borderRadius:12,
+        padding:30,
+        alignItems:'center',
+        backgroundColor:'#fafafa',
+        marginTop:10
+    },
+    uploadText:{
+        marginTop:10,
+        fontSize:16,
+        color:'#333',
+        fontWeight:'500',
+    },
+    subtext:{
+        fontSize:12,
+        color:'#888',
+        marginTop:4
+    },
+    fileCard:{
+        flexDirection:'row',
+        alignItems:"center",
+        justifyContent:'space-between',
+        padding:15,
+        backgroundColor:'#eafaf1',
+        borderRadius:12,
+        borderWidth:1,
+        borderColor:'#0a6340',
+        marginTop:10
+    },
+    fileInfo:{
+        flexDirection:'row',
+        alignItems:'center',
+        flex:1,
+        gap:10,
+    },
+    fileName:{
+        fontSize:14,
+        color:'#333',
+        fontWeight:'500'
+    },
+    removeBtn:{
+        padding:5
+    }
 });
 
 export default SignUp;

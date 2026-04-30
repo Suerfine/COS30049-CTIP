@@ -118,8 +118,8 @@ export default function ParkGuideNavigator() {
 
   // Web view with sidebar
   return (
-    <View style={{ flex: 1, flexDirection: "row" }}>
-      <NavBar />
+    <View style={{ flex: 1, flexDirection: "column" }}>
+      <NavBar/>
       <View style={{ flex: 1 }}>
         <Stack.Navigator
           screenOptions={{
