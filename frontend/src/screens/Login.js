@@ -2,45 +2,22 @@ import { useState } from 'react';
 import { View, Text, StyleSheet, Pressable, ScrollView, TextInput, Alert, Image, useWindowDimensions } from 'react-native';
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react-native';
 import { CommonActions } from '@react-navigation/native';
-import { useAuth } from '../context/AuthContext';
+
+// Import other hook and component
+import { useLogin } from '../hooks/useLogin';
 
 const Login = ({ navigation }) => {
     const { width } = useWindowDimensions();
     const isDesktop = width >= 980;
-    const { login } = useAuth();
+    const {
+        email, setEmail,
+        password, setPassword,
+        loading, setLoading,
+        loginError, setLoginError,
+        login, handleLogin
+    }=useLogin();
 
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
-    const [loading, setLoading] = useState(false);
-    const [loginError, setLoginError] = useState('');
-
-    const handleLogin = async () => {
-        if (!email || !password) {
-            setLoginError('Please fill in all fields');
-            return;
-        }
-
-        setLoginError('');
-        setLoading(true);
-        try {
-            const user = await login(email, password);
-            const nextRoute = user?.role === 'admin' ? 'Course Management' : 'User Dashboard';
-            const roleLabel = user?.role === 'admin' ? 'Admin' : 'Park Ranger';
-
-            Alert.alert('Success', `Login successful as ${roleLabel}.`);
-            navigation.dispatch(
-                CommonActions.reset({
-                    index: 0,
-                    routes: [{ name: nextRoute }],
-                })
-            );
-        } catch (error) {
-            setLoginError(error?.message || 'Login failed. Please try again.');
-        } finally {
-            setLoading(false);
-        }
-    };
 
     return (
         <View style={styles.container}>
@@ -149,16 +126,10 @@ const Login = ({ navigation }) => {
                                 <Text style={styles.errorText}>{loginError}</Text>
                             )}
 
-                            <View style={styles.divider}>
-                                <View style={styles.dividerLine} />
-                                <Text style={styles.dividerText}>OR</Text>
-                                <View style={styles.dividerLine} />
-                            </View>
-
                             <View style={styles.signupContainer}>
-                                <Text style={styles.signupText}>Need an account? </Text>
+                                <Text style={styles.signupText}>Don't have an account? </Text>
                                 <Pressable onPress={() => navigation.navigate('SignUp')}>
-                                    <Text style={styles.signupLink}>Create one</Text>
+                                    <Text style={styles.signupLink}>Create Account</Text>
                                 </Pressable>
                             </View>
                         </View>
@@ -193,7 +164,8 @@ const styles = StyleSheet.create({
         backgroundColor: '#ffffff',
         borderWidth: 1,
         borderColor: '#d8e2d6',
-        minHeight: 620,
+        minHeight: 560,
+        marginVertical:'auto'
     },
     shellDesktop: {
         flexDirection: 'row',
@@ -253,7 +225,6 @@ const styles = StyleSheet.create({
     formPanel: {
         flex: 1,
         padding: 28,
-        justifyContent: 'space-between',
     },
     brandRow: {
         flexDirection: 'row',
@@ -277,6 +248,7 @@ const styles = StyleSheet.create({
     },
     header: {
         marginBottom: 26,
+        marginTop:20
     },
     title: {
         fontSize: 34,
@@ -285,7 +257,7 @@ const styles = StyleSheet.create({
         marginBottom: 6,
     },
     subtitle: {
-        fontSize: 15,
+        fontSize: 14,
         color: '#60735b',
     },
     form: {
@@ -313,21 +285,20 @@ const styles = StyleSheet.create({
     icon: {
         marginRight: 10,
     },
-    input: {
-        flex: 1,
-        fontSize: 16,
-        color: '#333',
+    input:{
+        flex:1,
+        height:40,
+        outlineStyle:'none'
     },
     forgotPassword: {
         color: '#2f6618fe',
         fontSize: 13,
         fontWeight: '600',
         alignSelf: 'flex-end',
-        marginTop: -8,
     },
     loginButton: {
         backgroundColor: '#2f6618fe',
-        paddingVertical: 14,
+        paddingVertical: 10,
         borderRadius: 12,
         alignItems: 'center',
         marginTop: 6,
@@ -347,25 +318,11 @@ const styles = StyleSheet.create({
         marginTop: 2,
         textAlign: 'left',
     },
-    divider: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginVertical: 20,
-    },
-    dividerLine: {
-        flex: 1,
-        height: 1,
-        backgroundColor: '#e0e0e0',
-    },
-    dividerText: {
-        marginHorizontal: 10,
-        color: '#999',
-        fontSize: 12,
-    },
     signupContainer: {
         flexDirection: 'row',
-        justifyContent: 'flex-start',
+        justifyContent: 'center',
         alignItems: 'center',
+        marginTop:10
     },
     signupText: {
         color: '#60735b',
