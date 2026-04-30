@@ -1,4 +1,4 @@
-import { API_BASE_URL } from "../config/apiConfig";
+import { API_BASE_URL } from "../config/DummyapiConfig";
 
 const BASE_URL = `${API_BASE_URL}/api`;
 

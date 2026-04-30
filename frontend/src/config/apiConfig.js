@@ -1,12 +1,16 @@
-import { Platform } from "react-native";
+import {Platform} from "react-native";
 
-const getBaseUrl=()=>{
-    if(Platform.OS === 'web'){
-        return 'http://localhost:4000';
+const BASE_URL=()=>{
+    if(Platform.OS==='web'){
+        return 'http://localhost:5000/api';
     }
     if(Platform.OS==='android'){
-        return 'http://10.0.2.2:4000';
+        return 'http://10.0.2.2:5000/api';
+    }
+}
+
+export const API_ENDPOINTS={
+    USER:{
+        SIGNUP: `${BASE_URL}/registrations`,
     }
 };
-
-export const API_BASE_URL=getBaseUrl();

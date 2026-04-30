@@ -1,6 +1,8 @@
 import React, {useState} from 'react';
 import * as DocumentPicker from 'expo-document-picker';
 
+// Import other hook and service
+
 export const useSignUp=()=>{
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
@@ -76,7 +78,7 @@ export const useSignUp=()=>{
     const handleUpload=async()=>{
         try{
             const result=await DocumentPicker.getDocumentAsync({
-                type:['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordpressingml.document'],
+                type:['application/pdf'],
                 copyToCacheDirectory:true,
             });
 
