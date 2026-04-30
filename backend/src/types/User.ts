@@ -13,6 +13,8 @@ export interface UserResponse {
   firstname: string;
   lastname: string;
   role: UserRoles;
+  identification: string;
+  personal_email:string;
   last_login_at: Date | null;
   created_at: Date;
   updated_at: Date;

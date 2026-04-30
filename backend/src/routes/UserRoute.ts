@@ -47,7 +47,9 @@ const userPfpUpload = profilePictureUpload.single("pfp");
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-userRouter.post("/", auth, userPfpUpload, UserController.createUser);
+
+// Sin Mim: I delete this userpfpupload cuz i think by default every new acc will have a default profile image
+userRouter.post("/", UserController.createUser);
 
 /**
  * @swagger
@@ -133,7 +135,7 @@ userRouter.post("/", auth, userPfpUpload, UserController.createUser);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-userRouter.get("/", auth, UserController.getAllUsers);
+userRouter.get("/",  UserController.getAllUsers);
 
 /**
  * @swagger
@@ -195,7 +197,7 @@ userRouter.get("/me", UserController.getCurrentUser);
  *               $ref: '#/components/schemas/ErrorResponse'
  */
 // Read single user
-userRouter.get("/:id", auth, UserController.getUserById);
+userRouter.get("/:id",  UserController.getUserById);
 
 /**
  * @swagger
@@ -245,7 +247,7 @@ userRouter.get("/:id", auth, UserController.getUserById);
  *               $ref: '#/components/schemas/ErrorResponse'
  */
 // Update user
-userRouter.put("/:id", auth, userPfpUpload, UserController.upsertUser);
+userRouter.put("/:id", userPfpUpload, UserController.upsertUser);
 
 /**
  * @swagger
@@ -293,6 +295,6 @@ userRouter.put("/:id", auth, userPfpUpload, UserController.upsertUser);
  *               $ref: '#/components/schemas/ErrorResponse'
  */
 // Delete user
-userRouter.delete("/:id", auth, UserController.deleteUser);
+userRouter.delete("/:id", UserController.deleteUser);
 
 export default userRouter;
