@@ -2,7 +2,7 @@ import { API_ENDPOINTS } from "../config/apiConfig";
 
 export const RegisterService={
     // GET: fetch all registration
-    getAll: async(page=1, size=100)=>{
+    getAll: async(page=1, size=10)=>{
         try{
             const response=await fetch(`${API_ENDPOINTS.USER.SIGNUP}?page=${page}&size=${size}`,{
                 method:'GET',

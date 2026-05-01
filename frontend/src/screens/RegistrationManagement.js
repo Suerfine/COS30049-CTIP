@@ -10,14 +10,10 @@ import { formatDate } from '../utils/formatDate';
 import { useSearchFilter } from '../hooks/useSearchFilter';
 
 const RegistrationManagement=()=>{
-    const {users, loading, handleCreateUser,isCreating,setIsCreating,}=useRegisterManagement();
-    const [currentPage, setCurrentPage]=useState(1);
-    const itemsPerPage=10;
-
+    const {users, loading, handleCreateUser,isCreating,setIsCreating,currentPage, setCurrentPage, totalPages, totalUsers}=useRegisterManagement();
     const [modalVisible, setModalVisible]=useState(false);
     const [selectedUser, setSelectedUser]=useState(null);
     const [currentStatus, setCurrentStatus]=useState('All');
-    
     const [isOpen, setIsOpen]=useState(false);
 
     // Search Function
@@ -33,11 +29,28 @@ const RegistrationManagement=()=>{
         setModalVisible(true);
     };
 
+    const handleNextPage=()=>{
+        if(currentPage<totalPages){
+            setCurrentPage(prev=>prev+1);
+        }
+    };
+
+    const handlePrevPage=()=>{
+        if(currentPage>1){
+            setCurrentPage(prev=>prev-1);
+        }
+    };
+
+    const itemsPerPage = 10; 
+    const indexOfFirstItem = (currentPage - 1) * itemsPerPage;
+    const indexOfLastItem = indexOfFirstItem + users.length;
+    const estimatedTotal = totalPages * itemsPerPage;
+    const pageNumbers = [];
+    for (let i = 1; i <= totalPages; i++) {
+        pageNumbers.push(i);
+    }
     // Caluculate the pagination
-    const indexOfLastItem=currentPage*itemsPerPage;
-    const indexOfFirstItem=indexOfLastItem-itemsPerPage;
-    const currentUsers=filteredUsers.slice(indexOfFirstItem, indexOfLastItem);
-    const totalPages=Math.ceil(filteredUsers.length/itemsPerPage);
+    const currentUsers=filteredUsers;
 
     const renderHeader=()=>(
         <View style={[styles.tableHeader, styles.row]}>
@@ -100,13 +113,13 @@ const RegistrationManagement=()=>{
         return (
             <View style={[styles.paginationContainer, styles.row]}> 
                 <Text style={styles.pageInfo}>
-                    Showing {users.length>0 ? indexOfFirstItem+1 : 0} to {Math.min(indexOfLastItem, users.length)} of {users.length} users
+                    Showing {users.length>0 ? indexOfFirstItem+1 : 0} to {indexOfLastItem} of {totalUsers} users
                 </Text>
                 <View style={styles.row}>
                     <Pressable disabled={currentPage==1} onPress={()=>setCurrentPage(1)} style={[styles.pageBtn, currentPage==1 && styles.btnDisabled]}>
                         <Text style={[currentPage==1 ? styles.disabledText : styles.pageBtnText,styles.arrowBtn]}><ChevronsLeft size={20}/></Text>
                     </Pressable>
-                    <Pressable disabled={currentPage==1} onPress={()=>setCurrentPage(prev=>prev-1)} style={[styles.pageBtn, currentPage==1 && styles.btnDisabled]}>
+                    <Pressable disabled={currentPage==1} onPress={()=>handlePrevPage()} style={[styles.pageBtn, currentPage==1 && styles.btnDisabled]}>
                         <Text style={[currentPage==1 ? styles.disabledText : styles.pageBtnText,styles.arrowBtn]}><ChevronLeft size={20}/></Text>
                     </Pressable>
                     {pageNumbers.map((number)=>(
@@ -114,7 +127,7 @@ const RegistrationManagement=()=>{
                             <Text style={[styles.pageBtnText, currentPage===number && styles.activePageBtn]}>{number}</Text>
                         </Pressable>
                     ))}
-                    <Pressable disabled={currentPage==totalPages} onPress={()=>setCurrentPage(prev=>prev+1)} style={[styles.pageBtn, currentPage==totalPages && styles.btnDisabled]}>
+                    <Pressable disabled={currentPage==totalPages} onPress={()=>handleNextPage()} style={[styles.pageBtn, currentPage==totalPages && styles.btnDisabled]}>
                         <Text style={[currentPage==totalPages ? styles.disabledText : styles.pageBtnText, styles.arrowBtn]}><ChevronRight size={20}/></Text>
                     </Pressable>
                     <Pressable disabled={currentPage==totalPages} onPress={()=>setCurrentPage(totalPages)} style={[styles.pageBtn, currentPage==totalPages && styles.btnDisabled]}>

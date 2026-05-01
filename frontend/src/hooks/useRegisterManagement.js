@@ -6,15 +6,20 @@ export const useRegisterManagement=()=>{
     const [users, setUsers]=useState([]);
     const [loading, setLoading]=useState(false);
     const [isCreating, setIsCreating]=useState(false);
+    const [currentPage, setCurrentPage]=useState(1);
+    const [totalPages, setTotalPages]=useState(1);
+    const [totalUsers, setTotalUsers]=useState(0);
 
     // Fetch all users
     const fetchUsers=async()=>{
         setLoading(true);
         try{
-            const response=await RegisterService.getAll(1,100);
+            const response=await RegisterService.getAll(currentPage,10);
             const rawUsers=Array.isArray(response) ? response : (response.data || response.registrations || []);
             const initializedData=rawUsers.map(u=>({...u, selected:false}));
             setUsers(initializedData);
+            setTotalUsers(response.totalElements);
+            setTotalPages(response.totalPages);
         }catch(err){
             console.log("Failed to fetch all users: ",err);
             setUsers([]);
@@ -25,7 +30,7 @@ export const useRegisterManagement=()=>{
 
     useEffect(()=>{
         fetchUsers();
-    },[]);
+    },[currentPage]);
 
     const handleCreateUser=async(formData)=>{
         setIsCreating(true);
@@ -63,6 +68,8 @@ export const useRegisterManagement=()=>{
         loading,
         refresh:fetchUsers,
         isCreating,setIsCreating,
-        handleCreateUser
+        handleCreateUser,
+        currentPage, setCurrentPage,
+        totalPages, totalUsers
     }
 }
