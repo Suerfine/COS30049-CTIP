@@ -1,4 +1,5 @@
 import { API_ENDPOINTS } from "../config/apiConfig";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export const RegisterService={
     // GET: fetch all registration
@@ -82,10 +83,12 @@ export const RegisterService={
 
     // POST: approve account
     approve:async (id)=>{
+        const token=await AsyncStorage.getItem("accessToken");
         const response=await fetch(`${API_ENDPOINTS.REGISTER}/${id}/approve`,{
             method:'POST',
             headers:{
                 'Content-Type':'application/json',
+                'Authorization':`Bearer ${token}`
             },
         });
         if (!response.ok) {
