@@ -13,7 +13,7 @@ const BASE_URL=()=>{
 }
 
 const apiClient=axios.create({
-    baseURL: getBaseURL(),
+    baseURL: BASE_URL(),
     headers:{
         'Content-Type':'application/json',
     },
