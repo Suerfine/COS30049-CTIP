@@ -9,6 +9,7 @@ import {LinearGradient} from 'expo-linear-gradient';
 import CourseCard from '../components/CourseCard.js';
 import { useUserDashboard } from '../hooks/useUserDashboard';
 import SlidingTabs from '../components/SlidingTabs.js';
+import { formatDate } from '../utils/formatDate.js';
 
 const UserDashboard=({navigation})=>{
     const {
@@ -19,14 +20,13 @@ const UserDashboard=({navigation})=>{
         loading, 
         setTodos, 
         user, 
-        account,
         selectedDate, setSelectedDate,
         filter, setFilter,
         courseFilter, setCourseFilter,
         currentDate, setCurrentDate,
         isExpanded, setIsExpanded,
         weekDates, getDaysInMonth, filteredTodos, inProgressCourses,
-        toggleTodo, hasPendingTodoOnDate,
+        toggleTodo, hasPendingTodoOnDate,formatLocalDate,
         weekLabels,todoTab, courseTab, categories
     } = useUserDashboard();
 
@@ -43,14 +43,14 @@ const UserDashboard=({navigation})=>{
                     <View style={styles.infoTop}>
                         <Image source={{ uri: user?.profileImage }} style={styles.profilePic}/>
                         <View>
-                            <Text style={styles.welcomeText}>Welcome, {user?.fname}</Text>
+                            <Text style={styles.welcomeText}>Welcome, {user?.firstname}</Text>
                             <Text style={styles.idBadge}>ID: {user?.id}</Text>
                         </View>
                     </View>
                     <View style={styles.detailRow}>
                         <ClockFading size={16} color='#0a2400fe' style={styles.icon}/>
                         <Text style={styles.subText}>
-                            Joined since {account?.joinedDate}
+                            Joined since {formatDate(user?.created_at,false)}
                         </Text>
                     </View>
                     <View style={styles.infoDetails}>
@@ -63,7 +63,7 @@ const UserDashboard=({navigation})=>{
                         <View style={styles.detailRow}>
                             <Mail size={16} color='#0a2400fe' style={styles.icon}/>
                             <Text style={styles.subText}>
-                                {user?.email}
+                                {user?.personal_email}
                             </Text>
                         </View>
                     </View>

@@ -11,7 +11,7 @@ import ChangePfpContent from '../components/ChangePfpContent';
 
 const UserProfile=({navigation})=>{
     const {
-        user,account,
+        user,
         firstName, setFirstName,
         lastName,setLastName,
         icPassport, setIcPassport,

@@ -50,7 +50,7 @@ const UserDashboard = ({ navigation }) => {
                                         <View style={styles.row}>
                                             <ClockFading size={16} color='white' style={styles.icon}/>
                                             <Text style={styles.subText}>
-                                                Joined since {formatDate(user?.created_at)}
+                                                Joined since {formatDate(user?.created_at,false)}
                                             </Text>
                                         </View>
 

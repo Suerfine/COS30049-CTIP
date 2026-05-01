@@ -4,7 +4,7 @@ import {useState, useEffect} from 'react';
 import { useUserDashboard } from './useUserDashboard';
 
 export const useUserProfile=()=>{
-    const {user,account} = useUserDashboard();
+    const {user} = useUserDashboard();
     // Personal Information state
     const [firstName, setFirstName] = useState('');
     const [lastName, setLastName] = useState('');
@@ -59,20 +59,18 @@ export const useUserProfile=()=>{
     // Populate fields
     useEffect(() => {
         if (user) {
-            setFirstName(user.fname || '');
-            setLastName(user.lname || '');
-            setIcPassport(user.ic || '');
-            setEmail(user.email || '');
+            setFirstName(user.firstname || '');
+            setLastName(user.lastname || '');
+            setIcPassport(user.identification || '');
+            setEmail(user.personal_email || '');
             setPhone(user.telefon || '');
             setResume(user.resume || '');
+            setUsername(user.username || '');
         }
-        if (account) {
-            setUsername(account.username || '');
-        }
-    }, [user, account]);
+    }, [user]);
 
     return{
-        user,account,
+        user,
         firstName, setFirstName,
         lastName,setLastName,
         icPassport, setIcPassport,
