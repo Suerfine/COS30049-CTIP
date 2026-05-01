@@ -603,3 +603,4 @@ const styles = StyleSheet.create({
 export default RegistrationManagement;
 
 // Add user and add user ui add role and change img to resume
+// time for user register is not accurate

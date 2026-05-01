@@ -2,9 +2,9 @@ import { API_ENDPOINTS } from "../config/apiConfig";
 
 export const RegisterService={
     // GET: fetch all registration
-    getAll: async()=>{
+    getAll: async(page=1, size=100)=>{
         try{
-            const response=await fetch(API_ENDPOINTS.USER.SIGNUP,{
+            const response=await fetch(`${API_ENDPOINTS.USER.SIGNUP}?page=${page}&size=${size}`,{
                 method:'GET',
                 headers:{
                     'Content-Type':'application/json',
@@ -35,22 +35,30 @@ export const RegisterService={
             formData.append('tel', userData.telephone);
 
             if(userData.file){
-                formData.append('document', {
+                formData.append('file', {
                     uri:userData.file.uri,
                     name: userData.file.name,
                     type: userData.file.type || 'application/pdf',
                 });
             }
 
-            const response=await fetch(API_ENDPOINTS.USER.SIGNUP,{
-                method:'POST',
-                body:formData,
-                headers:{'Accept' : 'application/json'},
+            const response = await fetch(API_ENDPOINTS.USER.SIGNUP, {
+                method: 'POST',
+                body: formData,
+                headers: { Accept: 'application/json' },
             });
 
-            const data=await response.json();
+            const text = await response.text();
+            console.log("RAW RESPONSE:", text);
 
-            if(!response.ok){
+            let data;
+            try {
+                data = JSON.parse(text);
+            } catch {
+                throw new Error("Server did not return valid JSON");
+            }
+
+            if (!response.ok) {
                 throw new Error(data.message || 'Registration failed.');
             }
 
@@ -61,16 +69,16 @@ export const RegisterService={
         }
     },
 
-    // PUT: update user status
-    // Dont have id on api and database for user
-    updateStatus: async (id, status) => {
-        const response = await fetch(`${API_ENDPOINTS.REGISTER}/${id}/status`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status }),
-        });
-        if (!response.ok) throw new Error("Failed to update status");
-        return await response.json();
-    }
+    // // PUT: update user status
+    // // Dont have id on api and database for user
+    // updateStatus: async (id, status) => {
+    //     const response = await fetch(`${API_ENDPOINTS.REGISTER}/${id}/status`, {
+    //     method: 'PATCH',
+    //     headers: { 'Content-Type': 'application/json' },
+    //     body: JSON.stringify({ status }),
+    //     });
+    //     if (!response.ok) throw new Error("Failed to update status");
+    //     return await response.json();
+    // }
 
 };

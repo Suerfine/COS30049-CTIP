@@ -27,7 +27,7 @@ export default function RootNavigator() {
     return (
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         <Stack.Screen
-          name="UnloggedIn"
+          name="SFC"
           component={UnloggedInNavigator}
           options={{
             animationEnabled: false,

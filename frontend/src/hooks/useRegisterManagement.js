@@ -11,7 +11,7 @@ export const useRegisterManagement=()=>{
     const fetchUsers=async()=>{
         setLoading(true);
         try{
-            const response=await RegisterService.getAll();
+            const response=await RegisterService.getAll(1,100);
             const rawUsers=Array.isArray(response) ? response : (response.data || response.registrations || []);
             const initializedData=rawUsers.map(u=>({...u, selected:false}));
             setUsers(initializedData);
@@ -30,7 +30,7 @@ export const useRegisterManagement=()=>{
     const handleCreateUser=async(formData)=>{
         setIsCreating(true);
         try{
-            const generatedUsername=`${formData.firstname.toLowerCase().trim()}${formData.identification.slice(-4)}}`
+            const generatedUsername=`${formData.firstname.toLowerCase().trim()}${formData.identification.slice(-4)}`
             const generatedPassword="Password";
             const payload={
                 username:generatedUsername,
@@ -43,6 +43,7 @@ export const useRegisterManagement=()=>{
             };
 
             await AccountService.create(payload);
+            await fetchUsers();
             return{
                 success:true,
                 username: generatedUsername,
