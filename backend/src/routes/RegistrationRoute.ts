@@ -209,7 +209,6 @@ registrationRouter.get("/", RegistrationController.getAllRegistrations);
  */
 registrationRouter.get(
   "/:id",
-  auth,
   RegistrationController.getRegistrationById,
 );
 
@@ -361,7 +360,6 @@ registrationRouter.delete(
  */
 registrationRouter.post(
   "/:id/approve",
-  auth,
   RegistrationController.approveRegistration,
 );
 

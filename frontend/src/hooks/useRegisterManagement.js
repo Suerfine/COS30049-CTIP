@@ -9,6 +9,7 @@ export const useRegisterManagement=()=>{
     const [currentPage, setCurrentPage]=useState(1);
     const [totalPages, setTotalPages]=useState(1);
     const [totalUsers, setTotalUsers]=useState(0);
+    const [selectedUser, setSelectedUser]=useState(null);
 
     // Fetch all users
     const fetchUsers=async()=>{
@@ -35,26 +36,14 @@ export const useRegisterManagement=()=>{
     const handleCreateUser=async(formData)=>{
         setIsCreating(true);
         try{
-            const generatedUsername=`${formData.firstname.toLowerCase().trim()}${formData.identification.slice(-4)}`
-            const generatedPassword="Password";
-            const payload={
-                username:generatedUsername,
-                password:generatedPassword,
-                firstname:formData.firstname,
-                lastname:formData.lastname,
-                role: 'park_guide',
-                identification: formData.identification,
-                personal_email: formData.personal_email,
-            };
-
-            await AccountService.create(payload);
-            await fetchUsers();
-            return{
-                success:true,
-                username: generatedUsername,
-                password: generatedPassword,
-            };
+           const result=await RegisterService.approve(formData.id);
+           await fetchUsers();
+           setSelectedUsers(null);
             
+           return{
+            success:true,
+            data:result
+           };
         }catch(err){
             console.error("Create Account Error:", err);
             throw err;
@@ -70,6 +59,8 @@ export const useRegisterManagement=()=>{
         isCreating,setIsCreating,
         handleCreateUser,
         currentPage, setCurrentPage,
-        totalPages, totalUsers
+        totalPages, totalUsers,
+        selectedUser,setSelectedUser
     }
 }
+// Update status got problem

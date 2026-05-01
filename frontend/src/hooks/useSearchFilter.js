@@ -27,7 +27,9 @@ export const useSearchFilter=(data, searchTerm, status, searchFields)=>{
                 return valueToSearch?.toString().toLowerCase().includes(searchTerm.toLowerCase());
             });
 
-            const matchesStatus=status==='All' || item.status?.toLowerCase()===status.toLowerCase();
+            const matchesStatus =
+                status === 'All' ||
+                (item.status && item.status.toLowerCase().trim() === status.toLowerCase().trim());
             return matchesSearch && matchesStatus;
         });
 

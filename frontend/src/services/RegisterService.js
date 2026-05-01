@@ -2,9 +2,20 @@ import { API_ENDPOINTS } from "../config/apiConfig";
 
 export const RegisterService={
     // GET: fetch all registration
-    getAll: async(page=1, size=10)=>{
+    getAll: async(page=1, size=10, search, status)=>{
         try{
-            const response=await fetch(`${API_ENDPOINTS.USER.SIGNUP}?page=${page}&size=${size}`,{
+            let url = `${API_ENDPOINTS.USER.SIGNUP}?page=${page}&size=${size}`;
+            let filters = [];
+            if (status && status !== 'All') {
+                filters.push(`status eq ${status.toLowerCase()}`);
+            }
+            if (search) {
+                filters.push(`firstname lk ${search}`);
+            }
+            if (filters.length > 0) {
+                url += `&filter=${filters.join(' and ')}`;
+            }
+            const response=await fetch(url,{
                 method:'GET',
                 headers:{
                     'Content-Type':'application/json',
@@ -69,16 +80,21 @@ export const RegisterService={
         }
     },
 
-    // // PUT: update user status
-    // // Dont have id on api and database for user
-    // updateStatus: async (id, status) => {
-    //     const response = await fetch(`${API_ENDPOINTS.REGISTER}/${id}/status`, {
-    //     method: 'PATCH',
-    //     headers: { 'Content-Type': 'application/json' },
-    //     body: JSON.stringify({ status }),
-    //     });
-    //     if (!response.ok) throw new Error("Failed to update status");
-    //     return await response.json();
-    // }
+    // POST: approve account
+    approve:async (id)=>{
+        const response=await fetch(`${API_ENDPOINTS.REGISTER}/${id}/approve`,{
+            method:'POST',
+            headers:{
+                'Content-Type':'application/json',
+            },
+        });
+        if (!response.ok) {
+            // Log the text so you can see the HTML error in the console
+            const errorHtml = await response.text();
+            console.log("Server Error HTML:", errorHtml);
+            throw new Error("Check console for HTML error");
+        }
+        return await response.json();
+    }
 
 };

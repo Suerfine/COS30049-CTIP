@@ -10,9 +10,8 @@ import { formatDate } from '../utils/formatDate';
 import { useSearchFilter } from '../hooks/useSearchFilter';
 
 const RegistrationManagement=()=>{
-    const {users, loading, handleCreateUser,isCreating,setIsCreating,currentPage, setCurrentPage, totalPages, totalUsers}=useRegisterManagement();
+    const {users, loading, handleCreateUser,isCreating,setIsCreating,currentPage, setCurrentPage, totalPages, totalUsers,selectedUser,setSelectedUser}=useRegisterManagement();
     const [modalVisible, setModalVisible]=useState(false);
-    const [selectedUser, setSelectedUser]=useState(null);
     const [currentStatus, setCurrentStatus]=useState('All');
     const [isOpen, setIsOpen]=useState(false);
 
