@@ -64,13 +64,16 @@ const NavBar = () => {
   const dropdownRef = useRef(null);
 
   const currentRoute = useNavigationState((state) => {
-      if (!state) return null;
-      let route=state.routes[state.index];
-      while(route.state){
-          route=route.state.routes[route.state.index];
-      }
-      return route.name;
+    let route = state.routes[state.index];
+
+    while (route.state) {
+      route = route.state.routes[route.state.index];
+    }
+
+    return route.name;
   });
+
+  console.log("CURRENT ROUTE:", currentRoute);
 
   const isActiveRoute = (routeName) =>{
     return currentRoute === routeName;
@@ -189,7 +192,12 @@ const NavBar = () => {
                   styles.dropdownItem,
                   isActiveRoute("UserProfile") && styles.dropdownItemActive,
                   hovered && styles.dropdownItemHover,
-                ]} onPress={() => navigation.navigate('ParkGuideStack',{screen:"UserProfile"})}>
+                ]} onPress={() => navigation.navigate("ParkGuideStack", {
+                  screen: "ProfileStack",
+                  params: {
+                    screen: "UserProfile",
+                  },
+                })}>
                 <Text style={styles.name}>
                   {user?.firstname}
                 </Text>
@@ -198,13 +206,19 @@ const NavBar = () => {
                 </Text>
               </Pressable>
 
-              {/* notifications */}
+              {/* preferences */}
               <Pressable style={({ hovered, pressed }) => [
-                  styles.dropdownItem, isActiveRoute("Notification") && styles.dropdownItemActive,
+                  styles.dropdownItem, isActiveRoute("Preferences") && styles.dropdownItemActive,
                   hovered && styles.dropdownItemHover,
                 ]}
+                onPress={() => navigation.navigate("ParkGuideStack", {
+                  screen: "ProfileStack",
+                  params:{
+                    screen: "Preferences"
+                  }
+                })}
               >
-                <Text>Notification</Text>
+                <Text>Preference</Text>
               </Pressable>
 
               {/* security */}
@@ -212,6 +226,12 @@ const NavBar = () => {
                   styles.dropdownItem, isActiveRoute("Security") && styles.dropdownItemActive,
                   hovered && styles.dropdownItemHover,
                 ]}
+                onPress={() => navigation.navigate("ParkGuideStack", {
+                  screen: "ProfileStack",
+                  param:{
+                    screen: "Security"
+                  }
+                })}
               >
                 <Text>Security</Text>
               </Pressable>

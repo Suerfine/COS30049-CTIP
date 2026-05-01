@@ -124,7 +124,9 @@ const UserProfile = ({ navigation }) => {
                                 placeholderTextColor="grey"
                             />
                         </View>
-
+                    </View>
+                    
+                    <View style={styles.fieldRow}>
                         <View style={styles.fieldGroup}>
                             <Text style={styles.fieldLabel}>IC / Passport No.</Text>
                             <TextInput
@@ -135,10 +137,7 @@ const UserProfile = ({ navigation }) => {
                                 placeholderTextColor="grey"
                             />
                         </View>
-                    </View>
 
-                    {/* email, phone and resume row */}
-                    <View style={styles.fieldRow}>
                         <View style={styles.fieldGroup}>
                             <Text style={styles.fieldLabel}>Email</Text>
                             <TextInput
@@ -151,7 +150,10 @@ const UserProfile = ({ navigation }) => {
                                 autoCapitalize="none"
                             />
                         </View>
+                    </View>
 
+                    {/* email, phone and resume row */}
+                    <View style={styles.fieldRow}>
                         <View style={styles.fieldGroup}>
                             <Text style={styles.fieldLabel}>Phone Number</Text>
                             <TextInput

@@ -3,6 +3,7 @@ import { createStackNavigator } from "@react-navigation/stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { View, Platform } from "react-native";
 import { LayoutDashboard, Book, Award, ListTodo } from "lucide-react-native";
+import { useNavigationState, useNavigation } from '@react-navigation/native';
 
 // Import screens
 import UserDashboard from "../screens/UserDashboard";
@@ -17,6 +18,7 @@ import Settings from "../screens/Settings.native";
 import MobileTopBar from "../components/MobileTopBar";
 import MobileSideBar from "../components/MobileSideBar";
 import NavBar from "../components/NavBar";
+import ProfileStack from "./ProfileStack";
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -136,7 +138,23 @@ export default function ParkGuideNavigator() {
     );
   }
 
-  // Web view with sidebar
+  const currentRoute = useNavigationState((state) => {
+    if (!state) return null;
+
+    let route = state.routes[state.index];
+    while (route.state) {
+      route = route.state.routes[route.state.index];
+    }
+
+    return route.name;
+  });
+
+  const showProfileSidebar =
+    currentRoute === "UserProfile" ||
+    currentRoute === "Preferences" ||
+    currentRoute === "Security";
+
+  // Web view with navbar
   return (
     <View style={{ flex: 1, flexDirection: "column" }}>
       <View style={{ zIndex: 9999, elevation: 999 }}>
@@ -152,7 +170,9 @@ export default function ParkGuideNavigator() {
           <Stack.Screen name="Dashboard" component={UserDashboard} />
           <Stack.Screen name="Courses" component={UserCourse} />
           <Stack.Screen name="UserModule" component={UserModule} />
-          <Stack.Screen name="UserProfile" component={UserProfile} />
+
+          {/* UserProfile, Preferences and Security screens */}
+          <Stack.Screen name="ProfileStack" component={ProfileStack} />
         </Stack.Navigator>
       </View>
     </View>
