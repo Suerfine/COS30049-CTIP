@@ -18,7 +18,6 @@ const UserDashboard = ({ navigation }) => {
         loading, 
         setTodos, 
         user, 
-        account,
         selectedDate, setSelectedDate,
         filter, setFilter,
         courseFilter, setCourseFilter,
@@ -44,13 +43,13 @@ const UserDashboard = ({ navigation }) => {
                                     {/* info card left side */}
                                     <View style={styles.infoLeft}>
                                         <Text style={styles.welcomeText}>
-                                            Welcome, {user?.fname}
+                                            Welcome, {user?.firstname}
                                         </Text>
 
                                         <View style={styles.row}>
                                             <ClockFading size={16} color='white' style={styles.icon}/>
                                             <Text style={styles.subText}>
-                                                Joined since {account?.joinedDate}
+                                                Joined since {user?.created_at}
                                             </Text>
                                         </View>
 
@@ -65,7 +64,7 @@ const UserDashboard = ({ navigation }) => {
                                             <View style={styles.row}>
                                                 <Mail size={16} color='white' style={styles.icon}/>
                                                 <Text style={styles.subText}>
-                                                    {user?.email}
+                                                    {user?.personal_email}
                                                 </Text>
                                             </View>
                                         </View>
