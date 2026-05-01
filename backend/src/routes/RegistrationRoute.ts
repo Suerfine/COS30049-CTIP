@@ -171,7 +171,7 @@ registrationRouter.get(
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-registrationRouter.get("/", RegistrationController.getAllRegistrations);
+registrationRouter.get("/", auth, RegistrationController.getAllRegistrations);
 
 /**
  * @swagger
@@ -209,6 +209,7 @@ registrationRouter.get("/", RegistrationController.getAllRegistrations);
  */
 registrationRouter.get(
   "/:id",
+  auth,
   RegistrationController.getRegistrationById,
 );
 
@@ -360,6 +361,7 @@ registrationRouter.delete(
  */
 registrationRouter.post(
   "/:id/approve",
+  auth,
   RegistrationController.approveRegistration,
 );
 

@@ -103,8 +103,8 @@ export const createRegistration = async (
 ) => {
   try {
     const created = await Registration.create({
-      user_id: req.body.user_id,
-      reviewed_by_user_id: req.body.reviewed_by_user_id ?? null,
+      user_id: null,
+      reviewed_by_user_id: null,
       status: req.body.status ?? RegistrationStatus.PENDING,
       firstname: req.body.firstname,
       lastname: req.body.lastname,

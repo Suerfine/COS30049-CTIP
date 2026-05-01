@@ -1,22 +1,12 @@
-import { API_ENDPOINTS } from "../config/apiConfig";
+import apiClient from "../config/apiConfig";
+import { API_ENDPOINTS } from "../config/ApiEndpoints";
 
 export const AccountService={
     // GET: fetch all accounts
-    getAll: async()=>{
+    getAll: async(page=1, size=10)=>{
         try{
-            const response=await fetch(API_ENDPOINTS.USER.ACCOUNT,{
-                method:'GET',
-                headers:{
-                    'Content-Type':'application/json',
-                },
-            });
-            const data=await response.json();
-
-            if(!response.ok){
-                throw new Error(data.message || 'Failed to fetch account records');
-            }
-
-            return data;
+            const response=await apiClient.get(API_ENDPOINTS.USER.ACCOUNT);
+            return response.data;
         } catch(error){
             console.error('Get Account Error:', error);
             throw error;

@@ -12,9 +12,36 @@ const BASE_URL=()=>{
     return 'http://localhost:5000/api';
 }
 
-export const API_ENDPOINTS={
-    USER:{
-        SIGNUP: `${BASE_URL()}/registrations`,
-        ACCOUNT: `${BASE_URL()}/users`,
+const apiClient=axios.create({
+    baseURL: BASE_URL(),
+    headers:{
+        'Content-Type':'application/json',
+    },
+});
+
+apiClient.interceptors.request.use(async (config)=>{
+    try{
+        const token=await AsyncStorage.getItem("accessToken");
+        if(token){
+            config.headers.Authorization=`Bearer ${token}`;
+        }
+    }catch(err){
+        console.error("Token retrieval error", err);
     }
-};
+    return config;
+},(error)=>{
+    return Promise.reject(error);
+});
+
+apiClient.interceptors.response.use(
+    (response)=>response,
+    async(error)=>{
+        if(error.response && error.response.data.message==="jwt expired"){
+            await AsyncStorage.multiRemove(["accessToken", "currentUser"]);
+        }
+        return Promise.reject(error);
+    }
+);
+
+export default apiClient;
+
