@@ -16,6 +16,7 @@ class User extends Model<InferAttributes<User>, InferCreationAttributes<User>> {
   declare lastname: string;
   declare identification: string;
   declare personal_email: string;
+  declare tel: string;
   declare role: UserRoles;
   declare password_hash: string;
   declare last_login_at: CreationOptional<Date | null>;
@@ -53,6 +54,10 @@ User.init(
       type: DataTypes.STRING(255),
       allowNull: false,
       unique: true,
+    },
+    tel: {
+      type: DataTypes.STRING(30),
+      allowNull: false,
     },
     role: {
       type: DataTypes.ENUM(...Object.values(UserRoles)),
@@ -106,6 +111,9 @@ User.init(
         }
         if (typeof user.personal_email === "string") {
           user.personal_email = user.personal_email.trim().toLowerCase();
+        }
+        if (typeof user.tel === "string") {
+          user.tel = user.tel.trim();
         }
       },
       beforeSave: async (user) => {

@@ -14,7 +14,8 @@ export interface UserResponse {
   lastname: string;
   role: UserRoles;
   identification: string;
-  personal_email:string;
+  personal_email: string;
+  tel: string;
   last_login_at: Date | null;
   created_at: Date;
   updated_at: Date;
@@ -28,6 +29,7 @@ export interface CreateUserRequest {
   lastname: string;
   identification: string;
   personal_email: string;
+  tel: string;
 }
 
 export interface UpdateUserRequest {
@@ -38,4 +40,5 @@ export interface UpdateUserRequest {
   lastname?: string;
   identification?: string;
   personal_email?: string;
+  tel?: string;
 }

@@ -346,6 +346,7 @@ export const approveRegistration = async (
       lastname: registration.lastname,
       identification: registration.identification,
       personal_email: registration.personal_email,
+      tel: registration.tel,
       role: UserRoles.PARK_GUIDE,
       password_hash: hashPassword(temporary_password),
     });

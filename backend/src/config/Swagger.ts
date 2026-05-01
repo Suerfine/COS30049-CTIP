@@ -49,6 +49,7 @@ const options: swaggerJSDoc.Options = {
             "role",
             "identification",
             "personal_email",
+            "tel",
           ],
           properties: {
             username: { type: "string", example: "john.doe" },
@@ -66,6 +67,7 @@ const options: swaggerJSDoc.Options = {
               format: "email",
               example: "john.doe@example.com",
             },
+            tel: { type: "string", maxLength: 30, example: "+610412345678" },
             pfp: {
               type: "string",
               format: "binary",
@@ -81,6 +83,13 @@ const options: swaggerJSDoc.Options = {
             firstname: { type: "string", example: "John" },
             lastname: { type: "string", example: "Doe" },
             role: { type: "string", example: "ADMIN" },
+            identification: { type: "string", example: "S1234567" },
+            personal_email: {
+              type: "string",
+              format: "email",
+              example: "john.doe@example.com",
+            },
+            tel: { type: "string", maxLength: 30, example: "+610412345678" },
             last_login_at: {
               type: "string",
               format: "date-time",
@@ -117,6 +126,7 @@ const options: swaggerJSDoc.Options = {
               format: "email",
               example: "john.doe@example.com",
             },
+            tel: { type: "string", maxLength: 30, example: "+610412345678" },
             pfp: {
               type: "string",
               format: "binary",
