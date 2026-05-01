@@ -94,9 +94,10 @@ const UserCourse = ({ navigation }) => {
                                 expiry={course.expiryDate}
                                 progress={course.progress}
                                 userType={userType}
-                                onPress={() =>
-                                    navigation.navigate('User Module', { id: course.id })
-                                }
+                                onPress={() => navigation.navigate('ParkGuideStack', {
+                                    screen: 'UserModule', 
+                                    params: { id: course.id }
+                                })}
                                 onEnroll={() => {
                                     setSelectedCourse(course);
                                     setModalVisible(true);

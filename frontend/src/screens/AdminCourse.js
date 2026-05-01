@@ -108,7 +108,10 @@ const AdminCourse = ({navigation}) => {
                         duration={course.duration}
                         expiry={course.expiryDate}
                         userType="admin"
-                        onPress={()=> navigation.navigate('Course Details', {id:course.id})}
+                        onPress={() => navigation.navigate('AdminStack', {
+                            screen: 'Course Details',
+                            params: { id: course.id }
+                        })}
                         onEdit={()=>handleEdit(course)}
                         onDelete={()=>handleDelete(course.id)}
                     />)
