@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React, { useRef, useState,useEffect } from "react";
 import {
   View,
   Text,
@@ -8,14 +8,14 @@ import {
   TextInput,
   Animated,
 } from "react-native";
-import { Bell, Search } from "lucide-react-native";
+import { Bell, Search, LogOut, ChevronDown, ChevronUp} from "lucide-react-native";
 import {
   CommonActions,
   useNavigation,
   useNavigationState,
 } from "@react-navigation/native";
 import { useAuth } from "../context/AuthContext";
-import { userDashboardService } from "../services/userDashboardService";
+import { useUserDashboard } from "../hooks/useUserDashboard";
 
 // Navigation links animation
 const NavItem = ({ name, route, onPress, isActive }) => {
@@ -57,8 +57,11 @@ const NavItem = ({ name, route, onPress, isActive }) => {
 };
 
 const NavBar = () => {
+  const { user } = useUserDashboard();
   const navigation = useNavigation();
   const { logout } = useAuth();
+  const [dropdownVisible, setDropdownVisible] = useState(false);
+  const dropdownRef = useRef(null);
 
   const currentRoute = useNavigationState((state) => {
       if (!state) return null;
@@ -68,6 +71,30 @@ const NavBar = () => {
       }
       return route.name;
   });
+
+  const isActiveRoute = (routeName) =>{
+    return currentRoute === routeName;
+  }
+
+  // close dropdown when click anywhere else
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (!dropdownVisible) return;
+
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target)
+      ) {
+        setDropdownVisible(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [dropdownVisible]);
 
   const displayRoute = (currentRoute === 'ParkGuideStack' || !currentRoute) 
           ? 'Dashboard' 
@@ -135,42 +162,69 @@ const NavBar = () => {
             placeholderTextColor="#8f8f8f"
           />
         </View>
+
         <Pressable style={styles.notificationBtn}>
           <Bell size={20} />
         </Pressable>
 
         <View style={styles.profileWrapper}>
-          <Pressable style={styles.profileBtn} onPress={() => setDropdownVisible((prev) => !prev)}>
-            <Image source={{ uri: user?.profileImage }} style={styles.profile} />
+          <Pressable style={styles.profileBtn} onPress={() => setDropdownVisible((prev) => !prev)} >
+              <View style={styles.profileRow}>
+                {dropdownVisible ? (
+                  <ChevronUp size={16}/>
+                ) : (
+                  <ChevronDown size={16}/>
+                )}
+
+                <Image
+                  source={require("../../assets/profile.png")}
+                  style={styles.profile}
+                />
+              </View>
           </Pressable>
           {dropdownVisible && (
-            <View style={styles.dropdown}>
+            <View ref={dropdownRef} style={styles.dropdown}>
               {/* user info */}
-              <Pressable style={styles.dropdownItem}>
+              <Pressable style={({ hovered, pressed }) => [
+                  styles.dropdownItem,
+                  isActiveRoute("UserProfile") && styles.dropdownItemActive,
+                  hovered && styles.dropdownItemHover,
+                ]} onPress={() => navigation.navigate('ParkGuideStack',{screen:"UserProfile"})}>
                 <Text style={styles.name}>
-                  {user?.firstname} {user?.lastname}
+                  {user?.firstname}
                 </Text>
-                <Text style={styles.username}>@{profileData?.username}</Text>
+                <Text style={styles.username}> @
+                  {user?.username}
+                </Text>
               </Pressable>
 
               {/* notifications */}
-              <Pressable style={styles.dropdownItem}>
-                <Text>Notifications</Text>
+              <Pressable style={({ hovered, pressed }) => [
+                  styles.dropdownItem, isActiveRoute("Notification") && styles.dropdownItemActive,
+                  hovered && styles.dropdownItemHover,
+                ]}
+              >
+                <Text>Notification</Text>
               </Pressable>
 
               {/* security */}
-              <Pressable style={styles.dropdownItem}>
+              <Pressable style={({ hovered, pressed }) => [
+                  styles.dropdownItem, isActiveRoute("Security") && styles.dropdownItemActive,
+                  hovered && styles.dropdownItemHover,
+                ]}
+              >
                 <Text>Security</Text>
               </Pressable>
 
               {/* logout */}
-              <Pressable
-                style={styles.dropdownItem}
-                onPress={logout}
+              <Pressable style={({ hovered }) => [
+                  styles.dropdownItem,
+                  hovered && styles.dropdownItemHover,
+                ]} onPress={handleLogout}
               >
                 <View style={styles.logoutBtn}>
-                  <LogOut size={16} />
-                  <Text>Logout</Text>
+                    <LogOut size={16} />
+                    <Text style={{ color: 'red'}}>Logout</Text>
                 </View>
               </Pressable>
             </View>
@@ -180,10 +234,6 @@ const NavBar = () => {
     </View>
   );
 };
-
-// onPress={() => {
-//                 navigation.navigate('ParkGuideStack',{
-//                     screen:"UserProfile"
 const styles = StyleSheet.create({
   navbar: {
     width: "100%",
@@ -195,6 +245,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderBottomWidth: 1,
     borderBottomColor: "#ccc",
+    overflow: 'visible',
   },
   left: {
     flex: 1,
@@ -249,7 +300,6 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
     borderRadius: 15,
     alignItems: "center",
-    marginHorizontal: 20,
     width: 220,
   },
   input: {
@@ -260,13 +310,61 @@ const styles = StyleSheet.create({
   notificationBtn: {
     padding: 5,
   },
-  profileBtn: {},
   profile: {
     width: 35,
     height: 35,
     borderRadius: 50,
     resizeMode: "contain",
   },
+  profileBtn: {
+    padding: 5,
+  },
+  profileRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  profileWrapper: {
+    position: "relative",
+  },
+  dropdown: {
+    position: "absolute",
+    top: 45,
+    right: 0,
+    backgroundColor: "#fff",
+    borderRadius: 8,
+    padding: 10,
+    elevation: 5,
+    zIndex: 9999,
+    minWidth: 180,
+    shadowColor: '#000',
+    shadowOffset: { width: -2, height: 0 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+  },
+  dropdownItem:{
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    marginVertical: 3,
+    borderRadius: 6,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  dropdownItemHover: {
+    backgroundColor: "#E8F5E9",
+  },
+  dropdownItemActive: {
+    backgroundColor: "#E8F5E9",
+  },
+  name:{
+    fontWeight: 'bold',
+    fontSize: 17
+  },  
+  logoutBtn:{
+    flexDirection: 'row',
+    gap: 10,
+    color: 'red',
+  }
 });
 
 export default NavBar;
