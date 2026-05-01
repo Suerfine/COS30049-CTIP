@@ -1,5 +1,6 @@
 import { View, Text, StyleSheet, ScrollView, Pressable, StatusBar, Modal, TextInput, Switch } from 'react-native';
-import { useEffect, useState } from 'react'; 
+import { useEffect, useState, useCallback } from 'react'; 
+import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 import { LayoutList, StretchHorizontal, ChevronLeft, Plus, ChevronRight, X, Check } from 'lucide-react-native';
 import {Calendar as RNCalendar} from 'react-native-calendars'; 
@@ -10,7 +11,8 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { useUserDashboard } from '../hooks/useUserDashboard';
 import SlidingTabs from '../components/SlidingTabs.js';
 
-const Calendar=({layout,navigation})=>{
+const Calendar=({route,navigation})=>{
+    const layout=route.params?.layout ?? 'list';
     const [currentLayout, setCurrentLayout]=useState(layout);
     const {currentDate, todos, hasPendingTodoOnDate, filteredTodos, todoTab, setFilter, filter, toggleTodo} =useUserDashboard();
     const [selectedDate, setSelectedDate]=useState('');
@@ -30,6 +32,13 @@ const Calendar=({layout,navigation})=>{
             setEndDate(newDate);
         }
     }, [selectedDate]);
+
+    useEffect(() => {
+        
+        if (route.params?.layout) {
+            setCurrentLayout(route.params.layout);
+        }
+    }, [route.params?.layout]);
 
     const getMarkedDates=()=>{
         let marks={};
@@ -51,7 +60,7 @@ const Calendar=({layout,navigation})=>{
     };
 
     const RenderTodo=()=>{
-        const displayTodos=selectedDate ? todos.filter(todo=>todo.date === selectedDate) : todos;
+        const displayTodos=selectedDate ? filteredTodos.filter(todo=>todo.date === selectedDate) : filteredTodos;
         return (
             <>
             <RNCalendar
@@ -205,12 +214,14 @@ const Calendar=({layout,navigation})=>{
     return (
         <SafeAreaView style={styles.container} edges={['left', 'right']}>
             <StatusBar barStyle="dark-content"/>
+            <ScrollView>
             <View style={styles.topSection}>
                 {/* Top Section */}
                 <Pressable onPress={()=>navigation.goBack()} style={({pressed})=>[styles.backButton, pressed && styles.btnPressed]}>
                     <ChevronLeft size={24} color="black"/>
                 </Pressable>
                 <View style={styles.toolbtn}>
+                    
                     <Pressable onPress={()=>setCurrentLayout(currentLayout==='calendar' ? 'list' : 'calendar')}>
                         {currentLayout==='calendar' ? (<StretchHorizontal size={24} color="black"/>) : (<LayoutList size={24} color="black"/>)}
                     </Pressable>
@@ -221,6 +232,7 @@ const Calendar=({layout,navigation})=>{
             </View>
             {/* Layout */}
             {currentLayout==='calendar' ? (<RenderCalendar />) : (<RenderTodo/>)}
+            </ScrollView>
             {/* Modal */}
             <Modal animationType="slide" transparent={true} visible={isModalVisible} onRequestClose={()=>setIsModalVisible(false)}>
                 <View style={styles.fullModalOverlay}>

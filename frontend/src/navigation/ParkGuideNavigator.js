@@ -76,9 +76,19 @@ function MobileTabNavigator() {
           options={{
             tabBarIcon: ({ color }) => <ListTodo color={color} size={20} />,
           }}
+          listeners={({ navigation }) => ({
+            tabPress: (e) => {
+              e.preventDefault();
+
+              navigation.navigate('To Do', {
+                screen: 'To Do Calendar',
+                params: { layout: 'list' },
+              });
+            },
+          })}
         />
         <Tab.Screen
-          name="Badges"
+          name="Badge"
           component={Award}
           options={{
             tabBarIcon: ({ color }) => <Award color={color} size={20} />,

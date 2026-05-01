@@ -108,25 +108,11 @@ const UserProfile=({navigation})=>{
                         <View style={styles.fieldGroup}>
                             <Text style={styles.fieldLabel}>First Name</Text>
                             <Text style={styles.fieldValue}>{firstName}</Text>
-                            {/* <TextInput
-                                style={styles.input}
-                                value={firstName}
-                                onChangeText={setFirstName}
-                                placeholder="First name" 
-                                placeholderTextColor="grey"
-                            /> */}
                         </View>
 
                         <View style={styles.fieldGroup}>
                             <Text style={styles.fieldLabel}>Last Name</Text>
                             <Text style={styles.fieldValue}>{lastName}</Text>
-                            {/* <TextInput
-                                style={styles.input}
-                                value={lastName}
-                                onChangeText={setLastName}
-                                placeholder="Last name"
-                                placeholderTextColor="grey"
-                            /> */}
                         </View>
                     </View>
 
@@ -134,13 +120,6 @@ const UserProfile=({navigation})=>{
                         <View style={styles.fieldGroup}>
                             <Text style={styles.fieldLabel}>IC / Passport No.</Text>
                             <Text style={styles.fieldValue}>{icPassport}</Text>
-                            {/* <TextInput
-                                style={styles.input}
-                                value={icPassport}
-                                onChangeText={setIcPassport}
-                                placeholder="IC or passport number"
-                                placeholderTextColor="grey"
-                            /> */}
                         </View>
                     </View>
 
@@ -149,28 +128,11 @@ const UserProfile=({navigation})=>{
                         <View style={styles.fieldGroup}>
                             <Text style={styles.fieldLabel}>Email</Text>
                             <Text style={styles.fieldValue}>{email}</Text>
-                            {/* <TextInput
-                                style={styles.input}
-                                value={email}
-                                onChangeText={setEmail}
-                                placeholder="Email address"
-                                placeholderTextColor="grey"
-                                keyboardType="email-address"
-                                autoCapitalize="none"
-                            /> */}
                         </View>
 
                         <View style={styles.fieldGroup}>
                             <Text style={styles.fieldLabel}>Phone Number</Text>
                             <Text style={styles.fieldValue}>{phone}</Text>
-                            {/* <TextInput
-                                style={styles.input}
-                                value={phone}
-                                onChangeText={setPhone}
-                                placeholder="Phone number"
-                                placeholderTextColor="grey"
-                                keyboardType="phone-pad"
-                            /> */}
                         </View>
                     </View>
                 </View>

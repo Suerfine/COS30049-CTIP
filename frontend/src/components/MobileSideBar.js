@@ -59,10 +59,20 @@ const MobileSideBar=({isOpen, onClose})=>{
 
                     {/* Content */}
                         {menuItems.map((item) => (
-                            <Pressable key={item.id} style={styles.menuItem} onPress={()=>{
+                            <Pressable key={item.id} style={styles.menuItem} onPress={() => {
                                 onClose();
+                                
+                                const navParams = {};
+                                if (item.id === 'calendar') {
+                                    navParams.layout = 'calendar'; 
+                                }
+
                                 navigation.navigate('ParkGuideMobileRoot', {
                                     screen: item.route, 
+                                    params:{
+                                        screen: 'To Do Calendar',
+                                        params:{layout: 'calendar'}
+                                    } 
                                 });
                             }}>
                                 <item.icon size={22} color="#333" />
