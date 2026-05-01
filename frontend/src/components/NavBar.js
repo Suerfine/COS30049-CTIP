@@ -15,6 +15,7 @@ import {
   useNavigationState,
 } from "@react-navigation/native";
 import { useAuth } from "../context/AuthContext";
+import { userDashboardService } from "../services/userDashboardService";
 
 // Navigation links animation
 const NavItem = ({ name, route, onPress, isActive }) => {
@@ -137,23 +138,52 @@ const NavBar = () => {
         <Pressable style={styles.notificationBtn}>
           <Bell size={20} />
         </Pressable>
-        <Pressable style={styles.profileBtn} onPress={() => {
-              navigation.navigate('ParkGuideStack',{
-                  screen:"UserProfile"
-              })
 
-          }}>
-          <Image
-            source={require("../../assets/profile.png")}
-            style={styles.profile}
-            accessibilityLabel="User Profile"
-          />
-        </Pressable>
+        <View style={styles.profileWrapper}>
+          <Pressable style={styles.profileBtn} onPress={() => setDropdownVisible((prev) => !prev)}>
+            <Image source={{ uri: user?.profileImage }} style={styles.profile} />
+          </Pressable>
+          {dropdownVisible && (
+            <View style={styles.dropdown}>
+              {/* user info */}
+              <Pressable style={styles.dropdownItem}>
+                <Text style={styles.name}>
+                  {user?.firstname} {user?.lastname}
+                </Text>
+                <Text style={styles.username}>@{profileData?.username}</Text>
+              </Pressable>
+
+              {/* notifications */}
+              <Pressable style={styles.dropdownItem}>
+                <Text>Notifications</Text>
+              </Pressable>
+
+              {/* security */}
+              <Pressable style={styles.dropdownItem}>
+                <Text>Security</Text>
+              </Pressable>
+
+              {/* logout */}
+              <Pressable
+                style={styles.dropdownItem}
+                onPress={logout}
+              >
+                <View style={styles.logoutBtn}>
+                  <LogOut size={16} />
+                  <Text>Logout</Text>
+                </View>
+              </Pressable>
+            </View>
+          )}
+        </View>
       </View>
     </View>
   );
 };
 
+// onPress={() => {
+//                 navigation.navigate('ParkGuideStack',{
+//                     screen:"UserProfile"
 const styles = StyleSheet.create({
   navbar: {
     width: "100%",
