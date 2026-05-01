@@ -20,6 +20,10 @@ const options: swaggerJSDoc.Options = {
     ],
     tags: [
       {
+        name: "Auth",
+        description: "Authentication endpoints",
+      },
+      {
         name: "Users",
         description: "User management endpoints",
       },
@@ -30,12 +34,16 @@ const options: swaggerJSDoc.Options = {
     ],
     components: {
       securitySchemes: {
-        bearerAuth: {
-          type: "http",
-          scheme: "bearer",
-          bearerFormat: "JWT",
-          description:
-            "JWT Bearer token. Obtain a token by calling POST /token with email and password.",
+        OAuth2: {
+          type: "oauth2",
+          flows: {
+            password: {
+              tokenUrl: "/api/token",
+              scopes: {
+                all: "Access to all protected resources",
+              },
+            },
+          },
         },
       },
       schemas: {
@@ -331,7 +339,7 @@ const options: swaggerJSDoc.Options = {
         },
       },
     },
-    security: [{ OAuth2: ["read", "write"] }],
+    security: [{ OAuth2: ["all"] }],
   },
   apis: [
     path.join(__dirname, "../routes/*.ts"),

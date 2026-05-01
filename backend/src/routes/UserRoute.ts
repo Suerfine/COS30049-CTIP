@@ -14,7 +14,7 @@ const userPfpUpload = profilePictureUpload.single("pfp");
  *     description: Creates a user using form inputs in Swagger UI.
  *     tags: [Users]
  *     security:
- *       - bearerAuth: []
+ *       - OAuth2: ["all"]
  *     requestBody:
  *       required: true
  *       content:
@@ -58,7 +58,7 @@ userRouter.post("/", auth, UserController.createUser);
  *     description: Returns a paginated list of users. Supports filtering, sorting, and pagination query parameters.
  *     tags: [Users]
  *     security:
- *       - bearerAuth: []
+ *       - OAuth2: ["all"]
  *     parameters:
  *       - in: query
  *         name: page
@@ -134,7 +134,7 @@ userRouter.post("/", auth, UserController.createUser);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-userRouter.get("/",  UserController.getAllUsers);
+userRouter.get("/", auth, UserController.getAllUsers);
 
 /**
  * @swagger
@@ -144,7 +144,7 @@ userRouter.get("/",  UserController.getAllUsers);
  *     description: Returns the profile of the authenticated user associated with the current request.
  *     tags: [Users]
  *     security:
- *       - bearerAuth: []
+ *       - OAuth2: ["all"]
  *     responses:
  *       200:
  *         description: Current user retrieved successfully
@@ -168,7 +168,7 @@ userRouter.get("/me", auth, UserController.getCurrentUser);
  *     summary: Get user by ID
  *     tags: [Users]
  *     security:
- *       - bearerAuth: []
+ *       - OAuth2: ["all"]
  *     parameters:
  *       - in: path
  *         name: id
@@ -196,7 +196,7 @@ userRouter.get("/me", auth, UserController.getCurrentUser);
  *               $ref: '#/components/schemas/ErrorResponse'
  */
 // Read single user
-userRouter.get("/:id",  UserController.getUserById);
+userRouter.get("/:id", auth, UserController.getUserById);
 
 /**
  * @swagger
@@ -206,7 +206,7 @@ userRouter.get("/:id",  UserController.getUserById);
  *     description: Admin can update any user. Non-admin can update only their own account.
  *     tags: [Users]
  *     security:
- *       - bearerAuth: []
+ *       - OAuth2: ["all"]
  *     parameters:
  *       - in: path
  *         name: id
@@ -246,7 +246,7 @@ userRouter.get("/:id",  UserController.getUserById);
  *               $ref: '#/components/schemas/ErrorResponse'
  */
 // Update user
-userRouter.put("/:id", userPfpUpload, UserController.upsertUser);
+userRouter.put("/:id", auth, userPfpUpload, UserController.upsertUser);
 
 /**
  * @swagger
@@ -256,7 +256,7 @@ userRouter.put("/:id", userPfpUpload, UserController.upsertUser);
  *     description: Soft deletes a user by setting deleted_at.
  *     tags: [Users]
  *     security:
- *       - bearerAuth: []
+ *       - OAuth2: ["all"]
  *     parameters:
  *       - in: path
  *         name: id

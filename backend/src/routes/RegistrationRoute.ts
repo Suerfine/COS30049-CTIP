@@ -18,7 +18,7 @@ const registrationRouter = Router();
  *     description: Creates a registration record using the submitted personal details.
  *     tags: [Registrations]
  *     security:
- *       - bearerAuth: []
+ *       - OAuth2: ["all"]
  *     requestBody:
  *       required: true
  *       content:
@@ -65,7 +65,7 @@ registrationRouter.post(
  *     description: Returns the private document for the registration if the authenticated user is allowed to view it.
  *     tags: [Registrations]
  *     security:
- *       - bearerAuth: []
+ *       - OAuth2: ["all"]
  *     parameters:
  *       - in: path
  *         name: id
@@ -95,7 +95,7 @@ registrationRouter.get(
  *     description: Returns a paginated list of registrations. Supports filtering, sorting, pagination, and soft-deleted records.
  *     tags: [Registrations]
  *     security:
- *       - bearerAuth: []
+ *       - OAuth2: ["all"]
  *     parameters:
  *       - in: query
  *         name: page
@@ -180,7 +180,7 @@ registrationRouter.get("/", auth, RegistrationController.getAllRegistrations);
  *     summary: Get registration by ID
  *     tags: [Registrations]
  *     security:
- *       - bearerAuth: []
+ *       - OAuth2: ["all"]
  *     parameters:
  *       - in: path
  *         name: id
@@ -221,7 +221,7 @@ registrationRouter.get(
  *     description: Updates the registration fields provided in the request body.
  *     tags: [Registrations]
  *     security:
- *       - bearerAuth: []
+ *       - OAuth2: ["all"]
  *     parameters:
  *       - in: path
  *         name: id
@@ -275,7 +275,7 @@ registrationRouter.put(
  *     description: Permanently deletes a registration record.
  *     tags: [Registrations]
  *     security:
- *       - bearerAuth: []
+ *       - OAuth2: ["all"]
  *     parameters:
  *       - in: path
  *         name: id
@@ -320,7 +320,7 @@ registrationRouter.delete(
  *     description: Approves a pending registration, creates the related user account, and links the new user to the registration.
  *     tags: [Registrations]
  *     security:
- *       - bearerAuth: []
+ *       - OAuth2: ["all"]
  *     parameters:
  *       - in: path
  *         name: id
@@ -373,7 +373,7 @@ registrationRouter.post(
  *     description: Rejects a registration and stores the admin remark provided in the request body.
  *     tags: [Registrations]
  *     security:
- *       - bearerAuth: []
+ *       - OAuth2: ["all"]
  *     parameters:
  *       - in: path
  *         name: id

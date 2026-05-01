@@ -16,7 +16,7 @@ router.use("/users", userRouter);
  *     tags:
  *       - Auth
  *     summary: Issue JWT access token
- *     description: Authenticate with email and password to receive a JWT access token for OAuth2 authentication
+ *     description: Authenticate with username and password to receive a JWT access token for OAuth2 authentication. The username is matched against the personal_email column.
  *     security: []
  *     requestBody:
  *       required: true
@@ -25,12 +25,13 @@ router.use("/users", userRouter);
  *           schema:
  *             type: object
  *             required:
- *               - personal_email
+ *               - username
  *               - password
  *             properties:
- *               personal_email:
+ *               username:
  *                 type: string
  *                 format: email
+ *                 description: Your personal email address.
  *               password:
  *                 type: string
  *     responses:
