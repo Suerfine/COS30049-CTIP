@@ -13,7 +13,7 @@ import { useUserProfile } from '../hooks/useUserProfile';
 
 const UserProfile = ({ navigation }) => {
     const {
-        user,account,
+        user,
         firstName, setFirstName,
         lastName,setLastName,
         icPassport, setIcPassport,
@@ -236,7 +236,7 @@ const UserProfile = ({ navigation }) => {
                                     ]}
                                     onPress={() => {
                                         setEditingUsername(false);
-                                        setUsername(account?.username || '');
+                                        setUsername(user?.username || '');
                                     }}
                                 >
                                     <Text style={styles.cancelBtnText}>Cancel</Text>
