@@ -2,81 +2,37 @@ import {useState, useEffect} from 'react';
 import { View, Text, TextInput, StyleSheet, Pressable, ScrollView, Image, ImageBackground, Dimensions, Modal } from 'react-native';
 import { SquarePen } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
-import NavBar from '../components/NavBar';
-import ModalLayout from '../components/ModalLayout';
-import { ModalStyle } from '../components/ModalStyle';
 import { Eye, EyeOff } from 'lucide-react-native';
-import { useUserDashboard } from '../hooks/useUserDashboard';
+
+// Import other hooks and components
 import ChangePfpContent from '../components/ChangePfpContent';
 import ChangePasswordContent from '../components/ChangePasswordContent';
+import ModalLayout from '../components/ModalLayout';
+import { ModalStyle } from '../components/ModalStyle';
+import { useUserProfile } from '../hooks/useUserProfile';
 
 const UserProfile = ({ navigation }) => {
-    const {user,account} = useUserDashboard();
-    // Personal Information state
-    const [firstName, setFirstName] = useState('');
-    const [lastName, setLastName] = useState('');
-    const [icPassport, setIcPassport] = useState('');
-    const [email, setEmail] = useState('');
-    const [phone, setPhone] = useState('');
-    const [resume, setResume] = useState('');
-
-    // Account Security state
-    const [username, setUsername] = useState('');
-    const [password, setPassword] = useState('');
- 
-    // Edit mode toggles
-    const [editingUsername, setEditingUsername] = useState(false);
-    const [editingPassword, setEditingPassword] = useState(false);
-
-    // Modal visibility
-    const [pfpModalVisible, setPfpModalVisible] = useState(false);
-    const [passwordModalVisible, setPasswordModalVisible] = useState(false);
-
-    // Dummy image path
-    const [newImagePath, setNewImagePath] = useState('');
-
-    // Password visibility
-    const [showCurrentPassword, setShowCurrentPassword] = useState(false);
-    const [showNewPassword, setShowNewPassword] = useState(false);
-    const [currentPassword, setCurrentPassword] = useState('');
-
-    // select image for ChangePfpContent modal
-    const pickImage = async () => {
-        const { status } =
-            await ImagePicker.requestMediaLibraryPermissionsAsync();
-
-        if (status !== 'granted') {
-            alert('Permission to access gallery is required!');
-            return;
-        }
-
-        let result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images,
-            allowsEditing: true,
-            aspect: [1, 1],
-            quality: 1,
-        });
-
-        if (!result.canceled) {
-            setNewImagePath(result.assets[0].uri);
-        }
-    };
-
-    // Populate fields
-    useEffect(() => {
-        if (user) {
-            setFirstName(user.fname || '');
-            setLastName(user.lname || '');
-            setIcPassport(user.ic || '');
-            setEmail(user.email || '');
-            setPhone(user.telefon || '');
-            setResume(user.resume || '');
-        }
-        if (account) {
-            setUsername(account.username || '');
-        }
-    }, [user, account]);
-    
+    const {
+        user,account,
+        firstName, setFirstName,
+        lastName,setLastName,
+        icPassport, setIcPassport,
+        email, setEmail,
+        phone,setPhone,
+        resume, setResume,
+        username,setUsername,
+        password,setPassword,
+        editingUsername, setEditingUsername,
+        editingPassword, setEditingPassword,
+        pfpModalVisible, setPfpModalVisible,
+        passwordModalVisible, setPasswordModalVisible,
+        newImagePath, setNewImagePath,
+        showCurrentPassword, setShowCurrentPassword,
+        showNewPassword, setShowNewPassword,
+        currentPassword, setCurrentPassword,
+        pickImage,
+        isEditing, setIsEditing,
+    }=useUserProfile();
     return(
         <View style={styles.container}>
             <ScrollView>
@@ -110,7 +66,7 @@ const UserProfile = ({ navigation }) => {
                                 ]}
                                 onPress={() => setPfpModalVisible(true)}
                             >
-                                <SquarePen style={styles.pfpEditIcon}/>
+                                <SquarePen size={18} color="white"/>
                             </Pressable>
                         </View>
 
@@ -401,11 +357,6 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         borderWidth: 2,
         borderColor: 'white',
-    },
-    pfpEditIcon:{
-        color: 'white',
-        fontSize: 20,
-        padding: 4,
     },
     name:{
         fontSize: 20,

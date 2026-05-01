@@ -1,32 +1,51 @@
 import React from 'react';
 import {View, Text, TextInput, Pressable, StyleSheet} from 'react-native';
-import { Menu, Search, Bell, SlidersHorizontal} from 'lucide-react-native';
+import { Menu, Search, Bell, SlidersHorizontal, Settings} from 'lucide-react-native';
 
 const MobileTopBar=({onToggleSidebar, routeName, onFilterPress})=>{
     return (
         <View style={styles.header}>
             {/* Expand Icon */}
-            <Pressable onPress={onToggleSidebar} style={styles.iconBtn}>
-                <Menu size={24} color="#333"/>
-            </Pressable>
-            {/* Search Component */}
-            <View style={styles.search}>
-                <Search size={18}/>
-                <TextInput style={styles.input} placeholder='Search...' placeholderTextColor="#AAAAAA"/>
+            <View style={styles.titleSection}>
+                <Pressable onPress={onToggleSidebar} style={styles.iconBtn}>
+                    <Menu size={24} color="#333"/>
+                </Pressable>
+                {routeName === 'Profile' && (
+                    <Text style={styles.title}>Profile</Text>
+                )}
             </View>
-            {routeName==='Courses' && (<Pressable 
-                onPress={
-                    onFilterPress
-                }
-                style={styles.iconBtn}
-            >
-                <SlidersHorizontal size={22} color="#333"/>
-            </Pressable>)}
-            {/* Notification */}
-            <Pressable style={styles.iconBtn}>
-                <Bell size={22} color="#333"/>
-                <View style={styles.badge}></View>
-            </Pressable>
+
+            {/* Search Component */}
+            {routeName !== 'Profile' && (
+                <View style={styles.search}>
+                    <Search size={18}/>
+                    <TextInput style={styles.input} placeholder='Search...' placeholderTextColor="#AAAAAA"/>
+                </View>
+            )}
+            
+            <View style={styles.toolIcon}>
+                {/* Settings icon */}
+                {routeName === 'Profile' && (
+                    <Pressable style={styles.iconBtn}>
+                        <Settings size={22} color="#333"/>
+                        <View style={styles.badge}></View>
+                    </Pressable>
+                )}
+                {routeName==='Courses' && (<Pressable 
+                    onPress={
+                        onFilterPress
+                    }
+                    style={styles.iconBtn}
+                >
+                    <SlidersHorizontal size={22} color="#333"/>
+                </Pressable>)}
+                {/* Notification */}
+                <Pressable style={styles.iconBtn}>
+                    <Bell size={22} color="#333"/>
+                    <View style={styles.badge}></View>
+                </Pressable>
+            </View>
+            
         </View>
     );
 };
@@ -66,6 +85,19 @@ const styles=StyleSheet.create({
         padding:8,
         position:'relative'
     },
+    toolIcon:{
+        flexDirection:'row',
+    },
+    titleSection:{
+        flexDirection:'row',
+        alignItems:'center',
+        gap:20
+    },
+    title:{
+        fontSize: 18,
+        fontWeight: '600',
+        color: '#1a1a1a'
+    }
 });
 
 export default MobileTopBar;

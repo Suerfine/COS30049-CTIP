@@ -221,6 +221,7 @@ const Calendar=({layout,navigation})=>{
             </View>
             {/* Layout */}
             {currentLayout==='calendar' ? (<RenderCalendar />) : (<RenderTodo/>)}
+            {/* Modal */}
             <Modal animationType="slide" transparent={true} visible={isModalVisible} onRequestClose={()=>setIsModalVisible(false)}>
                 <View style={styles.fullModalOverlay}>
                     <View style={styles.fullModalContent}>
