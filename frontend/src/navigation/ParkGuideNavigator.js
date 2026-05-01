@@ -78,7 +78,7 @@ function MobileTabNavigator() {
           }}
         />
         <Tab.Screen
-          name="Badge"
+          name="Badges"
           component={Award}
           options={{
             tabBarIcon: ({ color }) => <Award color={color} size={20} />,

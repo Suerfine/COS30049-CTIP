@@ -4,11 +4,11 @@ import { UserPen, Calendar, Award, Settings, LogOut } from 'lucide-react-native'
 import { useUserDashboard } from '../hooks/useUserDashboard';
 import { useNavigation } from '@react-navigation/native';
 import UserProfile from '../screens/UserProfile.native';
-import { navigate } from '../utils/navigationRef';
 
 const {width}=Dimensions.get('window');
 
 const MobileSideBar=({isOpen, onClose})=>{
+    const navigation=useNavigation();
     const slideAnim=useRef(new Animated.Value(-width)).current;
     const [shouldRender, setShouldRender]=useState(isOpen);
     const {user=user}=useUserDashboard();
@@ -36,8 +36,8 @@ const MobileSideBar=({isOpen, onClose})=>{
     }
 
     const menuItems=[
-        {id: 'profile', label:'Profile', icon: UserPen, route:'UserProfile'},
-        {id: 'calendar', label:'Calendar', icon: Calendar},
+        {id: 'profile', label:'Profile', icon: UserPen, route:'Profile'},
+        {id: 'calendar', label:'Calendar', icon: Calendar, route:'To Do'},
         {id: 'badges', label:'Badges', icon: Award},
         {id: 'settings', label:'Settings', icon: Settings},
     ];
@@ -61,7 +61,9 @@ const MobileSideBar=({isOpen, onClose})=>{
                         {menuItems.map((item) => (
                             <Pressable key={item.id} style={styles.menuItem} onPress={()=>{
                                 onClose();
-                                navigate(item.route);
+                                navigation.navigate('ParkGuideMobileRoot', {
+                                    screen: item.route, 
+                                });
                             }}>
                                 <item.icon size={22} color="#333" />
                                 <Text style={styles.menuText}>{item.label}</Text>
