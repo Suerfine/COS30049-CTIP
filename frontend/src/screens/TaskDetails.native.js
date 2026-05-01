@@ -9,7 +9,7 @@ const TaskDetails=({navigation, route})=>{
     const [isEditing, setIsEditing]=useState(false);
     
     return (
-        <SafeAreaView style={StyleSheet.container} edges={['left', 'right']}>
+        <SafeAreaView style={styles.container} edges={['left', 'right']}>
             <StatusBar barStyle="dark-content"/>
             {/* Top section */}
             <View style={styles.topSection}>
@@ -25,7 +25,6 @@ const TaskDetails=({navigation, route})=>{
                         <Check size={22} color="black"/>
                     </Pressable>
                 )}
-                
             </View>
             
             <ScrollView contentContainerStyle={styles.content}>

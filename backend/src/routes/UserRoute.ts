@@ -48,8 +48,7 @@ const userPfpUpload = profilePictureUpload.single("pfp");
  *               $ref: '#/components/schemas/ErrorResponse'
  */
 
-// Sin Mim: I delete this userpfpupload cuz i think by default every new acc will have a default profile image
-userRouter.post("/", UserController.createUser);
+userRouter.post("/", auth, UserController.createUser);
 
 /**
  * @swagger
@@ -160,7 +159,7 @@ userRouter.get("/",  UserController.getAllUsers);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-userRouter.get("/me", UserController.getCurrentUser);
+userRouter.get("/me", auth, UserController.getCurrentUser);
 
 /**
  * @swagger

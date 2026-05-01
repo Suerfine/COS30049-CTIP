@@ -11,6 +11,7 @@ import UserModule from "../screens/UserModule";
 import UserProfile from "../screens/UserProfile";
 import Calendar from "../screens/Calendar.native";
 import TaskDetails from "../screens/TaskDetails.native";
+import Settings from "../screens/Settings.native";
 
 // Import components
 import MobileTopBar from "../components/MobileTopBar";
@@ -46,6 +47,7 @@ function MobileTabNavigator() {
             return (
               <MobileTopBar
                 {...props}
+                navigation={props.navigation}
                 routeName={props.route.name}
                 onToggleSidebar={() => setIsSidebarOpen(true)}
                 onFilterPress={routeParams.openFilters}
@@ -97,6 +99,14 @@ function MobileTabNavigator() {
         <Tab.Screen
           name="Profile"
           component={UserProfile}
+          options={{
+            tabBarButton: () => null,
+            tabBarItemStyle: { display: "none" },
+          }}
+        />
+        <Tab.Screen
+          name="Settings"
+          component={Settings}
           options={{
             tabBarButton: () => null,
             tabBarItemStyle: { display: "none" },

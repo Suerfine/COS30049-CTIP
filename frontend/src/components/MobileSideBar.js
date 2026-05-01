@@ -39,7 +39,7 @@ const MobileSideBar=({isOpen, onClose})=>{
         {id: 'profile', label:'Profile', icon: UserPen, route:'Profile'},
         {id: 'calendar', label:'Calendar', icon: Calendar, route:'To Do'},
         {id: 'badges', label:'Badges', icon: Award},
-        {id: 'settings', label:'Settings', icon: Settings},
+        {id: 'settings', label:'Settings', icon: Settings, route:'Settings'},
     ];
 
     return (

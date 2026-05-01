@@ -2,7 +2,7 @@ import React from 'react';
 import {View, Text, TextInput, Pressable, StyleSheet} from 'react-native';
 import { Menu, Search, Bell, SlidersHorizontal, Settings} from 'lucide-react-native';
 
-const MobileTopBar=({onToggleSidebar, routeName, onFilterPress})=>{
+const MobileTopBar=({onToggleSidebar, routeName, onFilterPress, navigation})=>{
     return (
         <View style={styles.header}>
             {/* Expand Icon */}
@@ -10,13 +10,13 @@ const MobileTopBar=({onToggleSidebar, routeName, onFilterPress})=>{
                 <Pressable onPress={onToggleSidebar} style={styles.iconBtn}>
                     <Menu size={24} color="#333"/>
                 </Pressable>
-                {routeName === 'Profile' && (
-                    <Text style={styles.title}>Profile</Text>
+                {(routeName === 'Profile' || routeName === 'Settings') && (
+                    <Text style={styles.title}>{routeName}</Text>
                 )}
             </View>
 
             {/* Search Component */}
-            {routeName !== 'Profile' && (
+            {(routeName !== 'Profile' && routeName !== 'Settings') && (
                 <View style={styles.search}>
                     <Search size={18}/>
                     <TextInput style={styles.input} placeholder='Search...' placeholderTextColor="#AAAAAA"/>
@@ -26,7 +26,11 @@ const MobileTopBar=({onToggleSidebar, routeName, onFilterPress})=>{
             <View style={styles.toolIcon}>
                 {/* Settings icon */}
                 {routeName === 'Profile' && (
-                    <Pressable style={styles.iconBtn}>
+                    <Pressable style={styles.iconBtn} onPress={()=>{
+                        navigation.navigate('ParkGuideMobileRoot', {
+                            screen: 'Settings'
+                        });
+                    }}>
                         <Settings size={22} color="#333"/>
                         <View style={styles.badge}></View>
                     </Pressable>

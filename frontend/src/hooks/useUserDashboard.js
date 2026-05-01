@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo} from 'react';
 import { userDashboardService } from '../services/userDashboardService';
+import { useAuth } from '../context/AuthContext';
 
 export const useUserDashboard = () => {
     const [courses, setCourses] = useState([]);
@@ -9,6 +10,7 @@ export const useUserDashboard = () => {
     const [loading, setLoading] = useState(false);
     const [user, setUser] = useState(null);
     const [account, setAccount] = useState(null);
+    const {currentUser}=useAuth();
 
     // Share between Mobile and Web
     const [selectedDate, setSelectedDate] = useState(null);
@@ -38,24 +40,27 @@ export const useUserDashboard = () => {
         { id: '5', name: 'History' },
     ];
 
+
     const fetchDashboardData = async () => {
+        if(!currentUser){
+            return;
+        }
+        
         setLoading(true);
         try {
-            const [userType, progress, courses, todos, user, account] = await Promise.all([
-                userDashboardService.getUserType(),
+            const [progress, courses, todos, fullProfile] = await Promise.all([
                 userDashboardService.getProgress(),
                 userDashboardService.getCourses(),
                 userDashboardService.getTodos(),
-                userDashboardService.getUserProfile(),
-                userDashboardService.getAccount()
+                userDashboardService.getUserProfile()
             ]);
 
-            setUserType(userType);
             setProgressData(progress);
             setCourses(courses);
             setTodos(todos);
-            setUser(user);
-            setAccount(account);
+
+            setUser(fullProfile);
+            console.log(JSON.stringify(fullProfile, null, 2));
 
         } catch (err) {
             console.error("Dashboard fetch error:", err);
@@ -66,7 +71,7 @@ export const useUserDashboard = () => {
 
     useEffect(() => {
         fetchDashboardData();
-    }, []);
+    }, [currentUser]);
 
     // CALENDAR LOGIC
     // get start of week (Sunday)
@@ -167,13 +172,11 @@ export const useUserDashboard = () => {
 
     return { 
         courses, 
-        todos, 
-        userType, 
+        todos,  
         progressData, 
         loading, 
         setTodos, 
         user, 
-        account,
         selectedDate, setSelectedDate,
         filter, setFilter,
         courseFilter, setCourseFilter,

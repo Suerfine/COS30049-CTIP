@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Pressable, ScrollView, Image, ImageBackground, 
 import { ListPlus, ChevronRight, ChevronLeft, ClockFading, Phone, Mail, ChevronsUpDown, ChevronsDownUp} from 'lucide-react-native';
 import Checkbox from 'expo-checkbox';
 import {Animated} from 'react-native';
+import { formatDate } from '../utils/formatDate.js';
 
 // Import from other hook and components
 import CourseCard from '../components/CourseCard.js';
@@ -18,7 +19,6 @@ const UserDashboard = ({ navigation }) => {
         loading, 
         setTodos, 
         user, 
-        account,
         selectedDate, setSelectedDate,
         filter, setFilter,
         courseFilter, setCourseFilter,
@@ -44,13 +44,13 @@ const UserDashboard = ({ navigation }) => {
                                     {/* info card left side */}
                                     <View style={styles.infoLeft}>
                                         <Text style={styles.welcomeText}>
-                                            Welcome, {user?.fname}
+                                            Welcome, {user?.firstname}
                                         </Text>
 
                                         <View style={styles.row}>
                                             <ClockFading size={16} color='white' style={styles.icon}/>
                                             <Text style={styles.subText}>
-                                                Joined since {account?.joinedDate}
+                                                Joined since {formatDate(user?.created_at)}
                                             </Text>
                                         </View>
 
@@ -65,7 +65,7 @@ const UserDashboard = ({ navigation }) => {
                                             <View style={styles.row}>
                                                 <Mail size={16} color='white' style={styles.icon}/>
                                                 <Text style={styles.subText}>
-                                                    {user?.email}
+                                                    {user?.personal_email}
                                                 </Text>
                                             </View>
                                         </View>
