@@ -5,6 +5,6 @@ export const API_ENDPOINTS={
         ME:'/users/me',
     },
     ADMIN:{
-        APPROVE: (id)=>`registrations/${id}/approve`,
+        APPROVE: (id)=>`/registrations/${id}/approve`,
     }
 };
