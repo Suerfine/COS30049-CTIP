@@ -2,6 +2,7 @@ import React from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { StatusBar } from "expo-status-bar";
 import { StyleSheet } from "react-native";
+import './src/i18n';
 
 // Import navigation
 import RootNavigator from "./src/navigation/RootNavigator";

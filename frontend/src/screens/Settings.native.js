@@ -9,8 +9,11 @@ import ModalLayout from '../components/ModalLayout';
 import { ModalStyle } from '../components/ModalStyle';
 import ChangePasswordContent from '../components/ChangePasswordContent';
 import { useSetLanguage } from '../hooks/useSetLanguage';
+import { useTranslation } from 'react-i18next';
 
 const Settings=({navigation})=>{
+    const {t, i18n}=useTranslation();
+
     const {
         firstName, lastName, user,editingUsername, setEditingUsername,
         editingPassword, setEditingPassword,username,setUsername,
@@ -26,6 +29,12 @@ const Settings=({navigation})=>{
         selectLanguage,
         getLanguageDisplay,
     }=useSetLanguage();
+
+    const handleLanguageSelect=(langVal)=>{
+        selectLanguage(langVal);
+        const langCode=langVal==='Bahasa Melayu' ? 'bm':'en';
+        i18n.changeLanguage(langCode);
+    };
 
     return(
         <SafeAreaView style={styles.container} edges={['left', 'right']}>
@@ -169,7 +178,7 @@ const Settings=({navigation})=>{
                                 <Languages size={20} color="#0a6340"/>
                             </View>
                             <Text style={styles.listItemText}>
-                                Language
+                                {t('language')}
                             </Text>
                         </View>
                         <View style={styles.row}>
@@ -203,7 +212,7 @@ const Settings=({navigation})=>{
                                 <X size={24}/>
                             </Pressable>
                             <Pressable onPress={closeLanguageModal} style={styles.modalTitle}>
-                                <Text style={styles.modalTitle}>Change Language</Text>
+                                <Text style={styles.modalTitle}>{t('language')}</Text>
                             </Pressable>
                             <Pressable style={({pressed})=>[styles.backButton, pressed && styles.btnPressed]}>
                                 <Check size={24}/>
@@ -216,7 +225,7 @@ const Settings=({navigation})=>{
                             <Pressable 
                                 key={item.val} 
                                 style={styles.langItem} 
-                                onPress={() => selectLanguage(item.val)}
+                                onPress={() => handleLanguageSelect(item.val)}
                             >
                                 <View>
                                     <Text style={styles.langLabel}>{item.label}</Text>
