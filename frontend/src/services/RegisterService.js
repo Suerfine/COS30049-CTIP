@@ -1,4 +1,3 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import apiClient from "../config/apiConfig";
 import { API_ENDPOINTS } from "../config/ApiEndpoints";
 
@@ -17,7 +16,7 @@ export const RegisterService={
             if (filters.length > 0) {
                 url += `&filter=${filters.join(' and ')}`;
             }
-            const response=await apiClient.get(API_ENDPOINTS.USER.SIGNUP,{params})
+            const response=await apiClient.get(API_ENDPOINTS.USER.SIGNUP,{params});
             return response.data;
         } catch(error){
             const message = error.response?.data?.message || 'Failed to fetch registration records';
