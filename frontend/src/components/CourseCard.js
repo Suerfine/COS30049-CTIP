@@ -1,8 +1,10 @@
 import { View, Pressable, Image, Text, StyleSheet, Platform} from 'react-native';
 import {BookOpenText, Timer, ClockAlert, SquarePen, Trash2} from 'lucide-react-native'
 import ProgressBar from './ProgressBar.js';
+import { useTranslation } from 'react-i18next';
 
 const CourseCard=({imagePath, courseTitle, numModules,duration,expiry,userType, progress, onPress, onEdit, onDelete, onEnroll})=>{
+    const {t, i18n}=useTranslation();
     const isWeb=Platform.OS==='web';
 
     return (
@@ -23,7 +25,7 @@ const CourseCard=({imagePath, courseTitle, numModules,duration,expiry,userType, 
                     <View>
                         <View style={styles.courseDetails}>
                             <BookOpenText size={isWeb ? 20 : 15}/>
-                            <Text style={styles.DetailsText}>{numModules} Modules</Text>
+                            <Text style={styles.DetailsText}>{numModules} {t("modules")}</Text>
                         </View>
                         <View style={styles.courseDetails}>
                             <Timer size={isWeb ? 20 : 15}/>
@@ -40,7 +42,7 @@ const CourseCard=({imagePath, courseTitle, numModules,duration,expiry,userType, 
                         {progress === null || progress === 0 ? (
                             <Pressable style={styles.enrollBtn} onPress={onEnroll}>
                                 <Text style={styles.enrollText}>
-                                    Enroll
+                                    {t('enroll')}
                                 </Text>
                             </Pressable>
                         ) : (

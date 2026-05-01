@@ -1,7 +1,9 @@
 import { useState, useEffect, useMemo} from 'react';
 import { useUserDashboard } from './useUserDashboard';
+import { useTranslation } from 'react-i18next';
 
 export const useUserCourse=()=>{
+    const {t, i18n}=useTranslation();
     const { courses, progressData  } = useUserDashboard();
     const [selectedCourse, setSelectedCourse] = useState(null);
     const [modalVisible, setModalVisible] = useState(false);
@@ -16,15 +18,15 @@ export const useUserCourse=()=>{
     const [tempFilters, setTempFilters] = useState(filters);
 
     const statusLabels = {
-        inProgress: 'In Progress',
-        completed: 'Completed',
-        notEnrolled: 'Not Enrolled',
+        inProgress: t('status.in progress'),
+        completed: t('status.completed'),
+        notEnrolled: t('not enrolled'),
     };
 
     const tabs=[
-        {id:'all', label:'All'},
-        {id:'basic', label:'Basic'},
-        {id:'advanced',label:'Advanced'}
+        {id:'all', label:t('status.all')},
+        {id:'basic', label:t('status.basic')},
+        {id:'advanced',label:t('status.advanced')}
     ];
 
     const coursesWithStatus = useMemo(() => {

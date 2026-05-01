@@ -6,12 +6,14 @@ import { LayoutList, StretchHorizontal, ChevronLeft, Plus, ChevronRight, X, Chec
 import {Calendar as RNCalendar} from 'react-native-calendars'; 
 import Checkbox from 'expo-checkbox';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { useTranslation } from 'react-i18next';
 
 // Import other hook and components
 import { useUserDashboard } from '../hooks/useUserDashboard';
 import SlidingTabs from '../components/SlidingTabs.js';
 
 const Calendar=({route,navigation})=>{
+    const {t, i18n}=useTranslation();
     const layout=route.params?.layout ?? 'list';
     const [currentLayout, setCurrentLayout]=useState(layout);
     const {currentDate, todos, hasPendingTodoOnDate, filteredTodos, todoTab, setFilter, filter, toggleTodo} =useUserDashboard();
@@ -120,7 +122,7 @@ const Calendar=({route,navigation})=>{
             <View style={{ flex: 1, minHeight: 0 }}>
                 <View style={styles.todoList}>
                     <View style={styles.todoHeader}>
-                        <Text style={styles.todoListTitle}>Todo List</Text>
+                        <Text style={styles.todoListTitle}>{t("todo list")}</Text>
                     </View>
                     <SlidingTabs tabs={todoTab} activeTab={filter} onTabChange={(id)=>setFilter(id)}/>
                     <ScrollView showsVerticalScrollIndicator={true} indicatorStyle='white'>

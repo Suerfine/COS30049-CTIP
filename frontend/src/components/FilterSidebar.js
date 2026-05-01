@@ -1,15 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { Circle, CircleCheckBig } from 'lucide-react-native';
+import { useTranslation } from 'react-i18next';
 
-const statusLabels = {
-    inProgress: 'In Progress',
-    completed: 'Completed',
-    notEnrolled: 'Not Enrolled',
-};
 
 const FilterSidebar = ({ visible, tempFilters, setTempFilters, onApply, onReset, onClose }) => {
+    const {t, i18n}=useTranslation();
     const [translateX, setTranslateX] = useState(300);
+
+    const statusLabels = {
+        inProgress: t('status.in progress'),
+        completed: t('status.completed'),
+        notEnrolled: t('status.not enrolled'),
+    };
 
     useEffect(() => {
         setTranslateX(visible ? 0 : 300);
@@ -56,10 +59,10 @@ const FilterSidebar = ({ visible, tempFilters, setTempFilters, onApply, onReset,
             )}
 
             <View style={[styles.sidebar, { transform: [{ translateX }] }]}>
-                <Text style={styles.title}>Filters</Text>
+                <Text style={styles.title}>{t("filters")}</Text>
 
                 {/* filter by status */}
-                <Text style={styles.section}>Status</Text>
+                <Text style={styles.section}>{t('progress')}</Text>
                 {['inProgress', 'completed', 'notEnrolled'].map(status => (
                     <FilterItem
                         key={status}
@@ -75,7 +78,7 @@ const FilterSidebar = ({ visible, tempFilters, setTempFilters, onApply, onReset,
                 />
 
                 {/* Tag Filter */}
-                <Text style={styles.section}>Categories</Text>
+                <Text style={styles.section}>{t("categories")}</Text>
                 {['Flora & Fauna', 'Navigation', 'First Aid','Survival', 'History'].map(category => (
                     <FilterItem
                         key={category}
@@ -93,13 +96,13 @@ const FilterSidebar = ({ visible, tempFilters, setTempFilters, onApply, onReset,
                 {/* apply and reset buttons */}
                 <View style={styles.buttons}>
                     <Pressable style={styles.applyBtn} onPress={onApply}>
-                        <Text style={{ color: 'white' }}>Apply</Text>
+                        <Text style={{ color: 'white' }}>{t("apply")}</Text>
                     </Pressable>
                     <Pressable
                         style={styles.resetBtn}
                         onPress={() => { onReset(); onClose(); }}
                     >
-                        <Text style={{ color: 'white' }}>Reset</Text>
+                        <Text style={{ color: 'white' }}>{t("reset")}</Text>
                     </Pressable>
                 </View>
             </View>

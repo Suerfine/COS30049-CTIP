@@ -10,8 +10,10 @@ import CourseCard from '../components/CourseCard.js';
 import { useUserDashboard } from '../hooks/useUserDashboard';
 import SlidingTabs from '../components/SlidingTabs.js';
 import { formatDate } from '../utils/formatDate.js';
+import { useTranslation } from 'react-i18next';
 
 const UserDashboard=({navigation})=>{
+    const {t, i18n}=useTranslation();
     const {
         courses, 
         todos, 
@@ -43,14 +45,14 @@ const UserDashboard=({navigation})=>{
                     <View style={styles.infoTop}>
                         <Image source={{ uri: user?.profileImage }} style={styles.profilePic}/>
                         <View>
-                            <Text style={styles.welcomeText}>Welcome, {user?.firstname}</Text>
+                            <Text style={styles.welcomeText}>{t('welcome')}, {user?.firstname}</Text>
                             <Text style={styles.idBadge}>ID: {user?.id}</Text>
                         </View>
                     </View>
                     <View style={styles.detailRow}>
                         <ClockFading size={16} color='#0a2400fe' style={styles.icon}/>
                         <Text style={styles.subText}>
-                            Joined since {formatDate(user?.created_at,false)}
+                            {t('joined')} {t('since')} {formatDate(user?.created_at,false)}
                         </Text>
                     </View>
                     <View style={styles.infoDetails}>
@@ -69,7 +71,8 @@ const UserDashboard=({navigation})=>{
                     </View>
                 </ImageBackground>
                 <View style={styles.sectionHeader}>
-                    <Text style={styles.sectionTitle}>My Courses</Text>
+                    <Text style={styles.sectionTitle}>{t('my courses')} </Text>
+
                     <SlidingTabs tabs={courseTab} activeTab={courseFilter} onTabChange={(id)=>setCourseFilter(id)}/>
 
                     <View style={styles.cardContainer}>
@@ -96,7 +99,7 @@ const UserDashboard=({navigation})=>{
                 </View>
                 <View style={styles.sectionHeader}>
                     <Text style={styles.sectionTitle}>
-                        Explore Categories
+                        {t('explore')} {t('categories')}
                     </Text>
                     <View style={styles.tagContainer}>
                         {categories.map((item)=>(

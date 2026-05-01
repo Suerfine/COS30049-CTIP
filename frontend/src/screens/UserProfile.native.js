@@ -3,6 +3,7 @@ import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 import { View, Text, TextInput, StyleSheet, Pressable, ScrollView, Image, ImageBackground, StatusBar, Modal } from 'react-native';
 import { ChevronLeft, SquarePen, X, Check } from 'lucide-react-native';
 import {LinearGradient} from 'expo-linear-gradient';
+import { useTranslation } from 'react-i18next';
 
 // Import other hooks and components
 import { useUserProfile } from '../hooks/useUserProfile';
@@ -10,6 +11,7 @@ import ModalLayout from '../components/ModalLayout';
 import ChangePfpContent from '../components/ChangePfpContent';
 
 const UserProfile=({navigation})=>{
+    const {t, i18n}=useTranslation();
     const {
         user,
         firstName, setFirstName,
@@ -97,9 +99,9 @@ const UserProfile=({navigation})=>{
                 {/* Personal Information */}
                 <View style={styles.section}>
                     <View style={styles.sectionHeader}>
-                        <Text style={styles.sectionTitle}>Personal Information</Text>
+                        <Text style={styles.sectionTitle}>{t("personal information")}</Text>
                         <Pressable style={styles.editBtn} onPress={()=>setIsEditing(true)}>
-                            <Text style={styles.editBtnText}>Edit</Text>
+                            <Text style={styles.editBtnText}>{t("edit")}</Text>
                         </Pressable>
                     </View>
                     

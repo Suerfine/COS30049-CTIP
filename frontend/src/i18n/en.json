@@ -4,7 +4,7 @@
     "approve":"Approve",
     "settings":"Settings",
     "logout":"Logout",
-    "welcome":"Welcome, {{name}}",
+    "welcome":"Welcome",
     "status":{
         "all":"All",
         "pending":"Pending",
@@ -20,8 +20,7 @@
     "since":"since",
     "modules":"Modules",
     "hours":"Hours",
-    "my":"My",
-    "courses":"Courses",
+    "my courses":"My Courses",
     "explore":"Explore",
     "categories":"Categories",
     "date":{
@@ -49,7 +48,7 @@
     },
     "badges":"Badges",
     "anomaly":"Anomaly",
-    "todo":"Todo",
+    "todo list":"Todo List",
     "list":"List",
     "here you can find all courses":"Here you can find all courses",
     "search":"Search",
@@ -74,5 +73,10 @@
     "view profile":"View Profile",
     "general":"General",
     "language":"Language",
-    "to do":"To Do"
+    "to do":"To Do",
+    "no courses found":"No courses found",
+    "all courses":"All Courses",
+    "enroll":"Enroll",
+    "filters":"Filters",
+    "progress":"Progress"
 }
