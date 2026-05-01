@@ -1,5 +1,6 @@
 import { createContext, useContext, useMemo, useState, useEffect } from "react";
 import { authService } from "../services/authService";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const AuthContext = createContext(null);
 
@@ -12,8 +13,8 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const initializeAuth = async () => {
       try {
-        const storedUser=localStorage.getItem("currentUser");
-        const storedToken=localStorage.getItem("accessToken");
+        const storedUser=await AsyncStorage.getItem("currentUser");
+        const storedToken=await AsyncStorage.getItem("accessToken");
         if(storedUser && storedToken){
           setCurrentUser(JSON.parse(storedUser));
           setAccessToken(storedToken);
@@ -44,8 +45,8 @@ export const AuthProvider = ({ children }) => {
     setCurrentUser(user);
     setAccessToken(token);
 
-    localStorage.setItem("currentUser", JSON.stringify(user));
-    localStorage.setItem("accessToken", token);
+    await AsyncStorage.setItem("currentUser", JSON.stringify(user));
+    await AsyncStorage.setItem("accessToken", token);
     return user;
   };
 
@@ -53,8 +54,8 @@ export const AuthProvider = ({ children }) => {
     setCurrentUser(null);
     setAccessToken(null);
 
-    localStorage.removeItem("currentUser");
-    localStorage.removeItem("accessToken");
+    await AsyncStorage.removeItem("currentUser");
+    await AsyncStorage.removeItem("accessToken");
   };
 
   const value = useMemo(
