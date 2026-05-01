@@ -102,9 +102,10 @@ const Login = ({ navigation }) => {
                                     />
                                     <Pressable onPress={() => setShowPassword(!showPassword)}>
                                         {showPassword ? (
-                                            <EyeOff size={20} color="#2f6618fe" />
-                                        ) : (
                                             <Eye size={20} color="#2f6618fe" />
+                                        ) : (
+                                            
+                                            <EyeOff size={20} color="#2f6618fe" />
                                         )}
                                     </Pressable>
                                 </View>

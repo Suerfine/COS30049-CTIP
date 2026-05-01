@@ -4,14 +4,14 @@
     "approve": "Sahkan",
     "settings": "Tetapan",
     "logout": "Log Keluar",
-    "welcome": "Selamat Datang, {{name}}",
+    "welcome": "Selamat Datang",
     "status": {
         "all": "Semua",
         "pending": "Menunggu",
         "approved": "Disahkan",
         "rejected": "Ditolak",
         "completed": "Selesai",
-        "in progress": "Sedang Berjalan",
+        "in progress": "Berjalan",
         "basic": "Asas",
         "advanced": "Lanjutan",
         "not enrolled": "Tidak Mendaftar"
@@ -20,8 +20,7 @@
     "since": "sejak",
     "modules": "Modul",
     "hours": "Jam",
-    "my": "Saya",
-    "courses": "Kursus",
+    "my courses": "Kursus Saya",
     "explore": "Teroka",
     "categories": "Kategori",
     "date": {
@@ -49,7 +48,7 @@
     },
     "badges": "Lencana",
     "anomaly": "Anomali",
-    "todo": "Tugasan",
+    "todo list": "Senarai Tugasan",
     "list": "Senarai",
     "here you can find all courses": "Di sini anda boleh mencari semua kursus",
     "search": "Cari",
@@ -74,5 +73,10 @@
     "view profile": "Lihat Profil",
     "general": "Umum",
     "language": "Bahasa",
-    "to do": "Tugasan"
+    "to do": "Tugasan",
+    "no courses found":"Tidak kursus yang dapat dicari",
+    "all courses":"Semua Kursus",
+    "enroll":"Daftar",
+    "filters":"Penapis",
+    "progress":"Kemajuan"
 }

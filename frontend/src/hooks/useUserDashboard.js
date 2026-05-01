@@ -1,8 +1,10 @@
 import { useState, useEffect, useMemo} from 'react';
 import { userDashboardService } from '../services/userDashboardService';
 import { useAuth } from '../context/AuthContext';
+import { useTranslation } from 'react-i18next';
 
 export const useUserDashboard = () => {
+    const {t, i18n}=useTranslation();
     const [courses, setCourses] = useState([]);
     const [todos, setTodos] = useState([]);
     const [userType, setUserType] = useState('');
@@ -19,16 +21,16 @@ export const useUserDashboard = () => {
     const [currentDate, setCurrentDate] = useState(new Date());
     const [isExpanded, setIsExpanded]=useState(false);
 
-    const weekLabels=['Fri', 'Sat','Sun', 'Mon', 'Tue', 'Wed', 'Thu'];
+    const weekLabels=[t('Fri'), t('Sat'),t('Sun'), t('Mon'), t('Tue'), t('Wed'), t('Thu')];
     const todoTab=[
-        {id: 'all', label:'All'},
-        {id: 'completed', label:'Completed'},
-        {id: 'pending', label:'Pending'},
+        {id: 'all', label:t('status.all')},
+        {id: 'completed', label:t('status.completed')},
+        {id: 'pending', label:t('status.pending')},
     ];
 
     const courseTab=[
-        {id: 'in progress', label:'In Progress'},
-        {id: 'completed', label:'Completed'}
+        {id: 'in progress', label:t('status.in progress')},
+        {id: 'completed', label:t('status.completed')}
     ];
 
     // Dummy tag

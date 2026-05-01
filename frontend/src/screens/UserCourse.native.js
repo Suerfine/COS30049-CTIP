@@ -10,8 +10,10 @@ import ConfirmEnroll from '../components/ConfirmEnroll';
 import SlidingTabs from '../components/SlidingTabs';
 import FilterSidebar from '../components/FilterSidebar';
 import CourseCard from '../components/CourseCard';
+import { useTranslation } from 'react-i18next';
 
 const UserCourse=({navigation})=>{
+    const {t, i18n}=useTranslation();
     const { courses, progressData, userType  } = useUserDashboard();
     const {selectedCourse, setSelectedCourse,
         modalVisible, setModalVisible,
@@ -52,8 +54,8 @@ const UserCourse=({navigation})=>{
                         </Pressable>
                         <View style={styles.courseHeader}>
                             <View>
-                                <Text style={styles.description}>Here you can find all courses</Text>
-                                <Text style={styles.title}>All Courses</Text>
+                                <Text style={styles.description}>{t('here you can find all courses')}</Text>
+                                <Text style={styles.title}>{t('all courses')}</Text>
                             </View>
                         </View>
                     </ImageBackground>
@@ -83,7 +85,7 @@ const UserCourse=({navigation})=>{
                 <View style={styles.cardContainer}>
                     {filteredCourses.length === 0?(
                         <View style={styles.emptyContainer}>
-                            <Text style={styles.emptyText}>No courses found</Text>
+                            <Text style={styles.emptyText}>{t('no courses found')}</Text>
                         </View>
                     ) : ( filteredCourses.map(course => (
                         <CourseCard
