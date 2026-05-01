@@ -220,10 +220,11 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     alignItems: "center",
     marginHorizontal: 20,
+    width: 220,
   },
   input: {
     flex: 1,
-    maxWidth: 140,
+    maxWidth: 220,
     outlineStyle: "none",
   },
   notificationBtn: {
