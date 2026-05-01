@@ -228,7 +228,7 @@ const NavBar = () => {
                 ]}
                 onPress={() => navigation.navigate("ParkGuideStack", {
                   screen: "ProfileStack",
-                  param:{
+                  params:{
                     screen: "Security"
                   }
                 })}
