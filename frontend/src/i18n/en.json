@@ -82,5 +82,9 @@
     "update your personal details below.":"Update your personal details below.",
     "email address":"Email Address",
     "no file selected":"No File Selected",
-    "upload":"Upload"
+    "upload":"Upload",
+    "save":"Save",
+    "current password": "Current Password",
+    "new password":"New Password",
+    "confirm":"Confirm"
 }

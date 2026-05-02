@@ -1,8 +1,10 @@
 import React from 'react';
 import {View, Text, TextInput, Pressable, StyleSheet} from 'react-native';
 import { Menu, Search, Bell, SlidersHorizontal, Settings} from 'lucide-react-native';
+import { useTranslation } from 'react-i18next';
 
 const MobileTopBar=({onToggleSidebar, routeName, onFilterPress, navigation})=>{
+    const {t, i18n}=useTranslation();
     return (
         <View style={styles.header}>
             {/* Expand Icon */}
@@ -11,7 +13,7 @@ const MobileTopBar=({onToggleSidebar, routeName, onFilterPress, navigation})=>{
                     <Menu size={24} color="#333"/>
                 </Pressable>
                 {(routeName === 'Profile' || routeName === 'Settings') && (
-                    <Text style={styles.title}>{routeName}</Text>
+                    <Text style={styles.title}>{t(routeName.toLowerCase())}</Text>
                 )}
             </View>
 

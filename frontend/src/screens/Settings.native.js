@@ -63,7 +63,7 @@ const Settings=({navigation})=>{
                         <Text style={styles.name}>
                             {firstName+" "+lastName}
                         </Text>
-                        <Text style={styles.subText}>View Profile</Text>
+                        <Text style={styles.subText}>{t('view profile')}</Text>
                     </View>
                 </View>
                 
@@ -71,11 +71,11 @@ const Settings=({navigation})=>{
             </Pressable>
             {/* Security */}
             <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Account Security</Text>
+                <Text style={styles.sectionTitle}>{t('account')} {t("security")}</Text>
 
                 {/* Username */}
                 <View style={styles.securityField}>
-                    <Text style={styles.fieldLabel}>Username</Text>
+                    <Text style={styles.fieldLabel}>{t('username')}</Text>
                     <View style={styles.securityRow}>
                         <TextInput
                             style={[styles.input, styles.securityInput, !editingUsername && styles.inputDisabled]}
@@ -101,7 +101,7 @@ const Settings=({navigation})=>{
                             }}
                         >
                             <Text style={styles.changeBtnText}>
-                                {editingUsername ? 'Confirm' : 'Change'}
+                                {editingUsername ? t('confirm'): t('change')}
                             </Text>
                         </Pressable>
 
@@ -123,7 +123,7 @@ const Settings=({navigation})=>{
 
                 {/* Password */}
                 <View style={styles.securityField}>
-                    <Text style={styles.fieldLabel}>Password</Text>
+                    <Text style={styles.fieldLabel}>{t("password")}</Text>
                     <View style={styles.securityRow}>
                         <TextInput
                             style={[styles.input, styles.securityInput, !editingPassword && styles.inputDisabled]}
@@ -141,7 +141,7 @@ const Settings=({navigation})=>{
                             onPress={() => setPasswordModalVisible(true)}
                         >
                             <Text style={styles.changeBtnText}>
-                                {editingPassword ? 'Save' : 'Change'}
+                                {editingUsername ? t('save'): t('change')}
                             </Text>
                         </Pressable>
                     </View>
@@ -167,7 +167,7 @@ const Settings=({navigation})=>{
             </View>
             {/* General */}
             <View style={styles.section}>
-                <Text style={styles.sectionTitle}>General</Text>
+                <Text style={styles.sectionTitle}>{t('general')}</Text>
                 <View style={styles.listGroup}>
                     {/* Language */}
                     <Pressable style={styles.listItem}
@@ -195,7 +195,7 @@ const Settings=({navigation})=>{
                             <View style={[styles.iconBox, {backgroundColor:'#fff3e0'}]}>
                                 <Bell size={20} color="#f57c00"/>
                             </View>
-                            <Text style={styles.listItemText}>Notifications</Text>
+                            <Text style={styles.listItemText}>{t("notification")}</Text>
                         </View>
                         <ChevronRight size={18} color="#ccc"/>
                     </Pressable>
@@ -213,9 +213,6 @@ const Settings=({navigation})=>{
                             </Pressable>
                             <Pressable onPress={closeLanguageModal} style={styles.modalTitle}>
                                 <Text style={styles.modalTitle}>{t('language')}</Text>
-                            </Pressable>
-                            <Pressable style={({pressed})=>[styles.backButton, pressed && styles.btnPressed]}>
-                                <Check size={24}/>
                             </Pressable>
                         </View>
                         {[
