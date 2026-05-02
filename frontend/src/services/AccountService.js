@@ -3,7 +3,7 @@ import { API_ENDPOINTS } from "../config/ApiEndpoints";
 
 export const AccountService={
     // GET: fetch all accounts
-    getAll: async(page=1, size=10, searchQuery='')=>{
+    getAll: async(page=1, size=10, searchQuery='', sortConfig)=>{
         try{
             const q = searchQuery.trim();
             const params = { page, size };
@@ -16,6 +16,10 @@ export const AccountService={
                     or tel like "%${q}%"
                     or username like "%${q}%"
                     `;
+            }
+
+            if(sortConfig?.key){
+                params.orderBy=`${sortConfig.key} ${sortConfig.direction}`;
             }
             const response=await apiClient.get(API_ENDPOINTS.USER.ACCOUNT,{params});
             return response.data;

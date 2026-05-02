@@ -7,18 +7,12 @@ import { useRegisterManagement } from '../hooks/useRegisterManagement';
 import ModalLayout from '../components/ModalLayout';
 import UsersFormContent from '../components/UsersFormContent';
 import { formatDate } from '../utils/formatDate';
-import { useSearchFilter } from '../hooks/useSearchFilter';
 
 const RegistrationManagement=()=>{
-    const {users, loading, handleCreateUser,isCreating,setIsCreating,currentPage, setCurrentPage, totalPages, totalUsers,selectedUser,setSelectedUser,handleSearch, searchQuery}=useRegisterManagement();
+    const {users, loading, handleCreateUser,isCreating,setIsCreating,currentPage, setCurrentPage, totalPages, totalUsers,selectedUser,setSelectedUser,handleSearch, searchQuery,sortConfig, requestSort,resetSort}=useRegisterManagement();
     const [modalVisible, setModalVisible]=useState(false);
     const [currentStatus, setCurrentStatus]=useState('All');
     const [isOpen, setIsOpen]=useState(false);
-
-    const { 
-        requestSort, 
-        sortConfig, setSortConfig 
-    } = useSearchFilter(users, currentStatus);
 
     const handleAdd=()=>{
         setModalVisible(true);
@@ -49,9 +43,9 @@ const RegistrationManagement=()=>{
 
     const renderHeader=()=>(
         <View style={[styles.tableHeader, styles.row]}>
-            <Pressable onPress={()=>requestSort('fullName')} style={[styles.headerRow, {flex:3}]}>
+            <Pressable onPress={()=>requestSort('firstname')} style={[styles.headerRow, {flex:3}]}>
                 <Text style={styles.headerText}>Full Name</Text>
-                {sortConfig.key==='fullName' &&
+                {sortConfig.key==='firstname' &&
                 sortConfig.direction==='asc' ? <ArrowUpNarrowWide size={14} color="white"/> : <ArrowDownWideNarrow size={14} color="white"/>}
             </Pressable>
             
@@ -138,7 +132,7 @@ const RegistrationManagement=()=>{
             <Text style={styles.title}>Registration Management</Text>
             <View style={[styles.toolbar,styles.row]}>
                 <View style={styles.row}>
-                    <Pressable onPress={()=>setSortConfig({key:null, asc:true})} style={({ hovered }) => [
+                    <Pressable onPress={resetSort} style={({ hovered }) => [
                         styles.iconBtn,
                         hovered && styles.iconBtnHover,
                     ]}>

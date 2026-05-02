@@ -3,7 +3,7 @@ import { API_ENDPOINTS } from "../config/ApiEndpoints";
 
 export const RegisterService={
     // GET: fetch all registration
-    getAll: async (page = 1, size = 10, searchQuery = '') => {
+    getAll: async (page = 1, size = 10, searchQuery = '', sortConfig) => {
         try {
             const q = searchQuery.trim();
             const params = { page, size };
@@ -15,6 +15,10 @@ export const RegisterService={
                     or personal_email like "%${q}%"
                     or tel like "%${q}%"
                     `;
+            }
+
+            if(sortConfig?.key){
+                params.orderBy=`${sortConfig.key} ${sortConfig.direction}`;
             }
 
             const response = await apiClient.get(API_ENDPOINTS.USER.SIGNUP, { params });

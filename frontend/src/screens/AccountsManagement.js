@@ -5,20 +5,14 @@ import { Pressable, StyleSheet, FlatList, View,Text, Image, TextInput} from 'rea
 // Import other components and hooks
 import { useAccountManagement } from '../hooks/useAccountManagement';
 import { formatDate } from '../utils/formatDate';
-import { useSearchFilter } from '../hooks/useSearchFilter';
 
 const AccountManagement=()=>{
-    const {accounts,currentPage, setCurrentPage, totalPages, totalUsers, searchQuery, handleSearch} = useAccountManagement();
+    const {accounts,currentPage, setCurrentPage, totalPages, totalUsers, searchQuery, handleSearch,sortConfig, requestSort, resetSort} = useAccountManagement();
 
     const [selectedAcc, setSelectedAcc]=useState(null);
     const [activeMenuId, setActiveMenuId]=useState(null);
     const [isOpen, setIsOpen]=useState(false);
     const [isEditing, setIsEditing]=useState(false);
-
-    const { 
-        requestSort, 
-        sortConfig, setSortConfig 
-    } = useSearchFilter(accounts, "All");
 
     // Caluculate the pagination
     const itemsPerPage = 10; 
@@ -34,9 +28,9 @@ const AccountManagement=()=>{
 
     const renderHeader=()=>(
         <View style={[styles.tableHeader, styles.row]}>
-            <Pressable onPress={()=>requestSort('fullName')} style={[styles.headerRow, {flex:3}]}>
+            <Pressable onPress={()=>requestSort('firstname')} style={[styles.headerRow, {flex:3}]}>
                 <Text style={styles.headerText}>Full Name</Text>
-                {sortConfig.key==='fullName' &&
+                {sortConfig.key==='firstname' &&
                 sortConfig.direction==='asc' ? <ArrowUpNarrowWide size={14} color="white"/> : <ArrowDownWideNarrow size={14} color="white"/>}
             </Pressable>
             <Pressable onPress={()=>requestSort('username')} style={[styles.headerRow, {flex:2}]}>
@@ -44,19 +38,17 @@ const AccountManagement=()=>{
                 {sortConfig.key==='username' &&
                 sortConfig.direction==='asc' ? <ArrowUpNarrowWide size={14} color="white"/> : <ArrowDownWideNarrow size={14} color="white"/>}
             </Pressable>
-            <Pressable onPress={()=>requestSort('workEmail')} style={[styles.headerRow, {flex:3}]}>
+            <Text style={[styles.headerRow, {flex:3}]}>
                 <Text style={styles.headerText}>Work Email</Text>
-                {sortConfig.key==='workEmail' &&
-                sortConfig.direction==='asc' ? <ArrowUpNarrowWide size={14} color="white"/> : <ArrowDownWideNarrow size={14} color="white"/>}
-            </Pressable>
-            <Pressable onPress={()=>requestSort('joinedDate')} style={[styles.headerRow, {flex:2}]}>
+            </Text>
+            <Pressable onPress={()=>requestSort('created_at')} style={[styles.headerRow, {flex:2}]}>
                 <Text style={styles.headerText}>Joined On</Text>
-                {sortConfig.key==='joinedDate' &&
+                {sortConfig.key==='created_at' &&
                 sortConfig.direction==='asc' ? <ArrowUpNarrowWide size={14} color="white"/> : <ArrowDownWideNarrow size={14} color="white"/>}
             </Pressable>
-            <Pressable onPress={()=>requestSort('lastLogin')} style={[styles.headerRow, {flex:2}]}>
+            <Pressable onPress={()=>requestSort('last_login_at')} style={[styles.headerRow, {flex:2}]}>
                 <Text style={styles.headerText}>Last Login</Text>
-                {sortConfig.key==='lastLogin' &&
+                {sortConfig.key==='last_login_at' &&
                 sortConfig.direction==='asc' ? <ArrowUpNarrowWide size={14} color="white"/> : <ArrowDownWideNarrow size={14} color="white"/>}
             </Pressable>
         </View>
@@ -119,7 +111,7 @@ const AccountManagement=()=>{
             <Text style={styles.title}>Account Management</Text>
             <View style={styles.toolbar}>
                 <View style={styles.row}>
-                    <Pressable onPress={()=>setSortConfig({key:null, asc:true})} style={({ hovered }) => [
+                    <Pressable onPress={resetSort} style={({ hovered }) => [
                         styles.iconBtn,
                         hovered && styles.iconBtnHover,
                     ]}>

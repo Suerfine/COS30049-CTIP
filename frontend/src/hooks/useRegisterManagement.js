@@ -11,12 +11,16 @@ export const useRegisterManagement=()=>{
     const [totalUsers, setTotalUsers]=useState(0);
     const [selectedUser, setSelectedUser]=useState(null);
     const [searchQuery, setSearchQuery]=useState('');
+    const [sortConfig, setSortConfig]=useState({
+        key:null,
+        direction:'asc'
+    });
 
     // Fetch all users
     const fetchUsers=async()=>{
         setLoading(true);
         try{
-            const response=await RegisterService.getAll(currentPage,10,searchQuery);
+            const response=await RegisterService.getAll(currentPage,10,searchQuery,sortConfig);
             const rawUsers=Array.isArray(response) ? response : (response.data || response.registrations || []);
             const initializedData=rawUsers.map(u=>({...u, selected:false}));
             setUsers(initializedData);
@@ -32,11 +36,24 @@ export const useRegisterManagement=()=>{
 
     useEffect(()=>{
         fetchUsers();
-    },[currentPage,searchQuery]);
+    },[currentPage,searchQuery, sortConfig]);
 
     const handleSearch=(query)=>{
         setSearchQuery(query);
         setCurrentPage(1);
+    }
+
+    const requestSort=(key)=>{
+        let direction='asc';
+
+        if(sortConfig.key===key && sortConfig.direction ==='asc'){
+            direction='desc';
+        }
+        setSortConfig({key,direction});
+    };
+
+    const resetSort=()=>{
+        setSortConfig({key:null, direction:'asc'});
     }
 
     const handleCreateUser=async(formData)=>{
@@ -67,6 +84,7 @@ export const useRegisterManagement=()=>{
         currentPage, setCurrentPage,
         totalPages, totalUsers,
         selectedUser,setSelectedUser,
-        handleSearch, searchQuery
+        handleSearch, searchQuery,
+        sortConfig, requestSort, resetSort
     }
 }
