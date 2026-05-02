@@ -73,21 +73,19 @@ const UserDashboard = ({ navigation }) => {
 
                                     {/* info card right side */}
                                     <View style={styles.infoRight}>
-                                        <View style={styles.prfpWrapper}>
-                                            {user?.profileImage ? (
-                                            <Image source={{ uri: user.profileImage }} style={styles.pfp}/>
-                                            ) : (
-                                                <View style={styles.pfpPlaceholder}>
-                                                    <Text style={styles.pfpInitials}>
-                                                        {user?.firstname ? user?.firstname[0].toUpperCase() : '?'}
-                                                    </Text>
-                                                </View>
-                                            )}
+                                        {user?.profileImage ? (
+                                        <Image source={{ uri: user.profileImage }} style={styles.pfp}/>
+                                        ) : (
+                                            <View style={styles.pfpPlaceholder}>
+                                                <Text style={styles.pfpInitials}>
+                                                    {user?.firstname ? user?.firstname[0].toUpperCase() : '?'}
+                                                </Text>
+                                            </View>
+                                        )}
 
-                                            <Text style={styles.idBadge}>
-                                                ID: {user?.id}
-                                            </Text>
-                                        </View>
+                                        <Text style={styles.idBadge}>
+                                            ID: {user?.id}
+                                        </Text>
                                     </View>
                                 </ImageBackground>
                             </View>

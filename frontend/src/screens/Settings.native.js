@@ -56,8 +56,14 @@ const Settings=({navigation})=>{
                 }}
                 >
                 <View style={styles.info}>
-                    {user?.profileImage && (
-                        <Image source={{ uri: user.profileImage }} style={styles.avatar}/>
+                    {user?.profileImage ? (
+                    <Image source={{ uri: user.profileImage }} style={styles.avatar}/>
+                    ) : (
+                        <View style={styles.pfpPlaceholder}>
+                            <Text style={styles.pfpInitials}>
+                                {user?.firstname ? user?.firstname[0].toUpperCase() : '?'}
+                            </Text>
+                        </View>
                     )}
                     <View style={styles.textContainer}>
                         <Text style={styles.name}>
@@ -264,10 +270,27 @@ const styles=StyleSheet.create({
         elevation:2
     },
     avatar:{
-        width:60,
-        height:60,
-        borderRadius:30,
-        borderWidth:1
+        width: 60,
+        height: 60,
+        borderRadius: 60,
+        borderWidth: 3,
+        borderColor: 'white',
+    },
+    pfpPlaceholder:{
+        width: 90,
+        height: 90,
+        marginBottom: 10,
+        borderRadius: 60,
+        backgroundColor: '#2f6618fe',
+        borderWidth: 3,
+        borderColor: 'white',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    pfpInitials:{
+        fontSize: 32,
+        fontWeight: '700',
+        color: 'white',
     },
     sectionPressed: {
         backgroundColor: '#f0f0f0',
