@@ -1,4 +1,5 @@
 import { RegistrationStatus } from "../enum/RegistrationStatus";
+import { UserResponse } from "./User";
 
 export interface RegistrationResponse {
   id: number;
@@ -51,15 +52,5 @@ export interface RejectRegistrationRequest {
 
 export interface ApproveRegistrationResponse {
   registration: RegistrationResponse;
-  user: {
-    id: number;
-    username: string;
-    firstname: string;
-    lastname: string;
-    identification: string;
-    personal_email: string;
-    role: string;
-    created_at: Date;
-    updated_at: Date;
-  };
+  user: UserResponse;
 }

@@ -1,5 +1,6 @@
 import { UserRoles } from "../enum/UserRoles";
 import { PaginateRequestParams } from "./common";
+import { User } from "../models";
 
 export interface GetAllUserRequest extends PaginateRequestParams {}
 
@@ -41,4 +42,20 @@ export interface UpdateUserRequest {
   identification?: string;
   personal_email?: string;
   tel?: string;
+}
+
+export function toUserResponse(user: User): UserResponse {
+  return {
+    id: user.id,
+    username: user.username,
+    firstname: user.firstname,
+    lastname: user.lastname,
+    role: user.role,
+    identification: user.identification,
+    personal_email: user.personal_email,
+    tel: user.tel,
+    last_login_at: user.last_login_at,
+    created_at: user.created_at,
+    updated_at: user.updated_at,
+  };
 }

@@ -20,6 +20,7 @@ import {
 } from "../types/Registration";
 import { hashPassword } from "../utils/password";
 import { PRIVATE_UPLOAD_STORAGE_PATH } from "../middelware/PrivateDocumentUpload";
+import { toUserResponse } from "../types/User";
 
 type RegistrationRequestWithFile = Request & {
   user?: User;
@@ -334,12 +335,10 @@ export const approveRegistration = async (
       return res.status(400).json({ message: "User already registered" });
     }
 
-    // Generate default password
+    // Create new ParkGuide with a default username and password
     const temporary_password = "SFC@" + registration.identification.slice(-4);
-
-    // Create new user with username as firstname + lastname
     const username =
-      `${registration.firstname}${registration.lastname}`.toLowerCase();
+      `${registration.firstname}#${Math.floor(1000 + Math.random() * 9000)}`.toLowerCase();
     const user = await User.create({
       username,
       firstname: registration.firstname,
@@ -359,19 +358,10 @@ export const approveRegistration = async (
       reviewed_at: new Date(),
     });
 
+    // Return the created user and registration details (excluding password hash)
     return res.status(200).json({
       registration: toRegistrationResponse(registration),
-      user: {
-        id: user.id,
-        username: user.username,
-        firstname: user.firstname,
-        lastname: user.lastname,
-        identification: user.identification,
-        personal_email: user.personal_email,
-        role: user.role,
-        created_at: user.created_at,
-        updated_at: user.updated_at,
-      },
+      user: toUserResponse(user),
     });
   } catch (err) {
     if (err instanceof ValidationError) {
