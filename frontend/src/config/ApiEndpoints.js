@@ -7,5 +7,9 @@ export const API_ENDPOINTS={
     },
     ADMIN:{
         APPROVE: (id)=>`/registrations/${id}/approve`,
+    },
+    COURSE:{
+        LIST:'/courses',
+        DETAIL:(id)=>`/courses/${id}`,
     }
 };
