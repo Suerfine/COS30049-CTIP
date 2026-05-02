@@ -9,7 +9,7 @@ import ModalLayout from '../components/ModalLayout';
 import UsersFormContent from '../components/UsersFormContent';
 
 const AccountManagement=()=>{
-    const {accounts,currentPage, setCurrentPage, totalPages, totalUsers, searchQuery, handleSearch,sortConfig, requestSort, resetSort, loading} = useAccountManagement();
+    const {accounts,currentPage, setCurrentPage, totalPages, totalUsers, searchQuery, handleSearch,sortConfig, requestSort, resetSort, handleCreateAccount, loading, refresh} = useAccountManagement();
 
     const [selectedAcc, setSelectedAcc]=useState(null);
     const [activeMenuId, setActiveMenuId]=useState(null);
@@ -21,6 +21,10 @@ const AccountManagement=()=>{
         setModalVisible(true);
     };
 
+    const onCreateSuccess=async ()=>{
+        setModalVisible(false);
+        await refresh();
+    }
     // Caluculate the pagination
     const itemsPerPage = 10; 
     const indexOfFirstItem = (currentPage - 1) * itemsPerPage;
@@ -141,6 +145,12 @@ const AccountManagement=()=>{
             <ModalLayout visible={modalVisible} onClose={()=>setModalVisible(false)}>
                 <UsersFormContent
                     onCancel={()=>setModalVisible(false)}
+                    onSubmit={async (formData)=>{
+                        const result=await handleCreateAccount(formData);
+                        if(result?.success){
+                            await onCreateSuccess();
+                        }
+                    }}
                     isLoading={loading}
                 />
             </ModalLayout>
@@ -544,4 +554,4 @@ const styles = StyleSheet.create({
 
 export default AccountManagement;
 
-// Edit user and delete user
+// Edit user and delete user, validation msg, add role, add status to filter role, filter for registration also does not work

@@ -6,7 +6,6 @@ import { ModalStyle as styles } from './ModalStyle';
 
 const UsersFormContent=({onSubmit, onCancel, isLoading})=>{
     const [form, setForm]=useState({
-        username:'',
         ic: '',
         email: '',
         image: null,
@@ -15,6 +14,43 @@ const UsersFormContent=({onSubmit, onCancel, isLoading})=>{
         telefon: '',
         role:'parkguide'
     });
+
+    const [errors, setErrors]=useState({
+        email:'',
+        fname:'',
+        lname:'',
+        ic:'',
+        telefon:'',
+    });
+
+    const handleSubmit = async () => {
+        const result = await onSubmit(form);
+
+        if (!result) {
+            console.log("No response from submit");
+            return;
+        }
+
+        setErrors(prev=>({
+            ...prev,
+            ...result.errors
+        }));
+
+        if (result.success) {
+            setForm({
+                ic: '',
+                email: '',
+                image: null,
+                fname: '',
+                lname: '',
+                telefon: '',
+                role:'parkguide'
+            });
+
+            setErrors({});
+            onCancel?.();
+        }
+    };
 
     const pickImage=async()=>{
         // Ask for permission
@@ -27,7 +63,7 @@ const UsersFormContent=({onSubmit, onCancel, isLoading})=>{
         let result=await ImagePicker.launchImageLibraryAsync({
             mediaTypes: 'images',
             allowsEditing:true,
-            aspect:[16,9],
+            aspect:[1,1],
             quality:1,
         });
 
@@ -43,7 +79,9 @@ const UsersFormContent=({onSubmit, onCancel, isLoading})=>{
                 <Pressable onPress={onCancel}>
                     <X />
                 </Pressable>
+                
             </View>
+            
             <View style={styles.row}>
                 <View style={styles.content}>
                     {/* Full Name */}
@@ -109,11 +147,21 @@ const UsersFormContent=({onSubmit, onCancel, isLoading})=>{
                             </View>
                         )}
                     </Pressable>
+                    
                 </View>
+               
             </View>
+            {errors.fname ? <Text style={{color:'red'}}>{errors.fname}</Text> : null}
+            {errors.lname ? <Text style={{color:'red'}}>{errors.lname}</Text> : null}
+            {errors.ic ? <Text style={{color:'red'}}>{errors.ic}</Text> : null}
+            {errors.telefon ? <Text style={{color:'red'}}>{errors.telefon}</Text> : null}
+            {errors.email ? <Text style={{color:'red'}}>{errors.email}</Text> : null}
+            {/* {Object.values(errors).map((msg, i) =>
+                msg ? <Text key={i} style={{color:'red'}}>{msg}</Text> : null
+                )} */}
             <Pressable 
                 style={styles.Btn} 
-                onPress={() => onSubmit(form)}
+                onPress={handleSubmit}
                 disabled={isLoading}
             >
                 {isLoading ? <ActivityIndicator color="white" /> : <Text>Add User</Text>}
@@ -171,4 +219,4 @@ const localStyles=StyleSheet.create({
 
 export default UsersFormContent;
 
-// Havent do the validation message, add user function, edit user function, delete user function, two tab, approved user, active/deactive user
+// Havent do the validation message, edit user function, delete user function

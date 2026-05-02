@@ -5,7 +5,6 @@ import { AccountService } from '../services/AccountService';
 export const useRegisterManagement=()=>{
     const [users, setUsers]=useState([]);
     const [loading, setLoading]=useState(false);
-    const [isCreating, setIsCreating]=useState(false);
     const [currentPage, setCurrentPage]=useState(1);
     const [totalPages, setTotalPages]=useState(1);
     const [totalUsers, setTotalUsers]=useState(0);
@@ -56,31 +55,10 @@ export const useRegisterManagement=()=>{
         setSortConfig({key:null, direction:'asc'});
     }
 
-    const handleCreateUser=async(formData)=>{
-        setIsCreating(true);
-        try{
-           const result=await RegisterService.approve(formData.id);
-           await fetchUsers();
-           setSelectedUsers(null);
-            
-           return{
-            success:true,
-            data:result
-           };
-        }catch(err){
-            console.error("Create Account Error:", err);
-            throw err;
-        }finally{
-            setIsCreating(false);
-        }
-    }
-
     return {
         users,
         loading,
         refresh:fetchUsers,
-        isCreating,setIsCreating,
-        handleCreateUser,
         currentPage, setCurrentPage,
         totalPages, totalUsers,
         selectedUser,setSelectedUser,
