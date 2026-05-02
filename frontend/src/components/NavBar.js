@@ -73,8 +73,6 @@ const NavBar = () => {
     return route.name;
   });
 
-  console.log("CURRENT ROUTE:", currentRoute);
-
   const isActiveRoute = (routeName) =>{
     return currentRoute === routeName;
   }
@@ -180,10 +178,17 @@ const NavBar = () => {
                   <ChevronDown size={16}/>
                 )}
 
-                <Image
-                  source={require("../../assets/profile.png")}
-                  style={styles.profile}
-                />
+                <View style={styles.prfpWrapper}>
+                  {user?.profileImage ? (
+                  <Image source={{ uri: user.profileImage }} style={styles.pfp}/>
+                  ) : (
+                      <View style={styles.pfpPlaceholder}>
+                          <Text style={styles.pfpInitials}>
+                              {user?.firstname ? user?.firstname[0].toUpperCase() : '?'}
+                          </Text>
+                      </View>
+                    )}
+                </View>
               </View>
           </Pressable>
           {dropdownVisible && (
@@ -199,12 +204,14 @@ const NavBar = () => {
                     screen: "UserProfile",
                   },
                 })}>
-                <Text style={styles.name}>
-                  {user?.firstname}
-                </Text>
-                <Text style={styles.username}> @
-                  {user?.username}
-                </Text>
+                <View style={styles.nameSection}>
+                  <Text style={styles.name}>
+                    {user?.firstname}
+                  </Text>
+                  <Text style={styles.username}>@
+                    {user?.username}
+                  </Text>
+                </View>
               </Pressable>
 
               {/* preferences */}
@@ -377,15 +384,42 @@ const styles = StyleSheet.create({
   dropdownItemActive: {
     backgroundColor: "#E8F5E9",
   },
+  nameSection:{
+    flexDirection: 'column',
+  },  
   name:{
     fontWeight: 'bold',
     fontSize: 17
+  },  
+  username:{
+    fontSize: 12,
+    color: '#818181'
   },  
   logoutBtn:{
     flexDirection: 'row',
     gap: 10,
     color: 'red',
-  }
+  },
+  pfp:{
+    width: 33,
+    height: 33,
+    borderRadius: 60,
+    borderColor: 'white',
+  },
+  pfpPlaceholder:{
+    width: 33,
+    height: 33,
+    borderRadius: 60,
+    backgroundColor: '#2f6618fe',
+    borderColor: 'white',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pfpInitials:{
+    fontSize: 14,
+    fontWeight: '700',
+    color: 'white',
+  },
 });
 
 export default NavBar;

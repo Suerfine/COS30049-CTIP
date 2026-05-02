@@ -48,7 +48,7 @@ const UserDashboard = ({ navigation }) => {
                                         </Text>
 
                                         <View style={styles.row}>
-                                            <ClockFading size={16} color='white' style={styles.icon}/>
+                                            <ClockFading size={16} style={styles.icon}/>
                                             <Text style={styles.subText}>
                                                 Joined since {formatDate(user?.created_at,false)}
                                             </Text>
@@ -56,14 +56,14 @@ const UserDashboard = ({ navigation }) => {
 
                                         <View style={styles.infoRow1}>
                                             <View style={styles.row}>
-                                                <Phone size={16} color='white' style={styles.icon}/>
+                                                <Phone size={16} style={styles.icon}/>
                                                 <Text style={styles.subText}>
-                                                    {user?.telefon}
+                                                    {user?.tel}
                                                 </Text>
                                             </View>
                                             
                                             <View style={styles.row}>
-                                                <Mail size={16} color='white' style={styles.icon}/>
+                                                <Mail size={16} style={styles.icon}/>
                                                 <Text style={styles.subText}>
                                                     {user?.personal_email}
                                                 </Text>
@@ -73,11 +73,21 @@ const UserDashboard = ({ navigation }) => {
 
                                     {/* info card right side */}
                                     <View style={styles.infoRight}>
-                                        <Image source={{ uri: user?.profileImage }} style={styles.profilePic}/>
+                                        <View style={styles.prfpWrapper}>
+                                            {user?.profileImage ? (
+                                            <Image source={{ uri: user.profileImage }} style={styles.pfp}/>
+                                            ) : (
+                                                <View style={styles.pfpPlaceholder}>
+                                                    <Text style={styles.pfpInitials}>
+                                                        {user?.firstname ? user?.firstname[0].toUpperCase() : '?'}
+                                                    </Text>
+                                                </View>
+                                            )}
 
-                                        <Text style={styles.idBadge}>
-                                            ID: {user?.id}
-                                        </Text>
+                                            <Text style={styles.idBadge}>
+                                                ID: {user?.id}
+                                            </Text>
+                                        </View>
                                     </View>
                                 </ImageBackground>
                             </View>
@@ -478,7 +488,8 @@ const styles = StyleSheet.create({
         marginLeft: 3
     },
     icon:{
-        alignSelf:'center'
+        alignSelf:'center',
+        color: 'white',
     },
     idBadge: {
         backgroundColor: 'rgba(255, 255, 255, 0.2)',
@@ -527,6 +538,29 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: 'white',
         fontWeight: '500',
+    },
+    pfp:{
+        width: 90,
+        height: 90,
+        borderRadius: 60,
+        borderWidth: 3,
+        borderColor: 'white',
+    },
+    pfpPlaceholder:{
+        width: 90,
+        height: 90,
+        marginBottom: 10,
+        borderRadius: 60,
+        backgroundColor: '#2f6618fe',
+        borderWidth: 3,
+        borderColor: 'white',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    pfpInitials:{
+        fontSize: 32,
+        fontWeight: '700',
+        color: 'white',
     },
 });
 

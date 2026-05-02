@@ -66,7 +66,7 @@ const styles = StyleSheet.create({
         backgroundColor:"white",
     },
     link:{
-        gap:15,
+        gap:30,
         paddingBottom:25,
     },
     linkbtn:{
@@ -76,7 +76,7 @@ const styles = StyleSheet.create({
         flexDirection:'row',
         gap:10,
         paddingHorizontal:10,
-        paddingVertical:8,
+        paddingVertical:13,
         minWidth:166,
         borderRadius:'5px',
         alignItems:'center'

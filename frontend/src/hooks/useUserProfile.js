@@ -63,7 +63,7 @@ export const useUserProfile=()=>{
             setLastName(user.lastname || '');
             setIcPassport(user.identification || '');
             setEmail(user.personal_email || '');
-            setPhone(user.telefon || '');
+            setPhone(user.tel || '');
             setResume(user.resume || '');
             setUsername(user.username || '');
         }

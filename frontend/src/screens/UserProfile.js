@@ -137,7 +137,9 @@ const UserProfile = ({ navigation }) => {
                                 placeholderTextColor="grey"
                             />
                         </View>
+                    </View>
 
+                    <View style={styles.fieldRow}>
                         <View style={styles.fieldGroup}>
                             <Text style={styles.fieldLabel}>Email</Text>
                             <TextInput
@@ -150,10 +152,7 @@ const UserProfile = ({ navigation }) => {
                                 autoCapitalize="none"
                             />
                         </View>
-                    </View>
 
-                    {/* email, phone and resume row */}
-                    <View style={styles.fieldRow}>
                         <View style={styles.fieldGroup}>
                             <Text style={styles.fieldLabel}>Phone Number</Text>
                             <TextInput
@@ -165,7 +164,8 @@ const UserProfile = ({ navigation }) => {
                                 keyboardType="phone-pad"
                             />
                         </View>
-
+                    </View>
+                    <View style={styles.fieldRow}>
                         <View style={styles.fieldGroup}>
                             <Text style={styles.fieldLabel}>Resume</Text>
                             <View style={styles.resumeRow}>
@@ -188,109 +188,6 @@ const UserProfile = ({ navigation }) => {
                                 </Pressable>
                             </View>
                         </View>
-                    </View>
-                </View>
-
-                {/* Divider */}
-                <View style={styles.divider} />
-            
-                {/* Account Security */}
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Account Security</Text>
-
-                    {/* Username */}
-                    <View style={styles.securityField}>
-                        <Text style={styles.fieldLabel}>Username</Text>
-                        <View style={styles.securityRow}>
-                            <TextInput
-                                style={[styles.input, styles.securityInput, !editingUsername && styles.inputDisabled]}
-                                value={username}
-                                onChangeText={setUsername}
-                                placeholder="Username"
-                                placeholderTextColor="grey"
-                                editable={editingUsername}
-                                autoCapitalize="none"
-                            />
-                            <Pressable 
-                                style={({ hovered }) => [
-                                    styles.changeBtn,
-                                    hovered && styles.hoverBtn
-                                ]}
-                                onPress={() => {
-                                    if (editingUsername) {
-                                        // user click confirm button, save changes and exit edit mode
-                                        setEditingUsername(false);
-                                    } else {
-                                        setEditingUsername(true);
-                                    }
-                                }}
-                            >
-                                <Text style={styles.changeBtnText}>
-                                    {editingUsername ? 'Confirm' : 'Change'}
-                                </Text>
-                            </Pressable>
-
-                            {editingUsername && (
-                                <Pressable 
-                                    style={({ hovered }) => [
-                                        styles.cancelBtn,
-                                        hovered && styles.hoverBtnOutline
-                                    ]}
-                                    onPress={() => {
-                                        setEditingUsername(false);
-                                        setUsername(user?.username || '');
-                                    }}
-                                >
-                                    <Text style={styles.cancelBtnText}>Cancel</Text>
-                                </Pressable>
-                            )}
-                        </View>
-                    </View>
-
-                    {/* Password */}
-                    <View style={styles.securityField}>
-                        <Text style={styles.fieldLabel}>Password</Text>
-                        <View style={styles.securityRow}>
-                            <TextInput
-                                style={[styles.input, styles.securityInput, !editingPassword && styles.inputDisabled]}
-                                value={editingPassword ? password : '••••••••'}
-                                onChangeText={setPassword}
-                                placeholder="New password"
-                                placeholderTextColor="grey"
-                                secureTextEntry={editingPassword}
-                                editable={editingPassword}
-                                autoCapitalize="none"
-                            />
-                            <Pressable 
-                                style={({ hovered }) => [
-                                    styles.changeBtn,
-                                    hovered && styles.hoverBtn
-                                ]}
-                                onPress={() => setPasswordModalVisible(true)}
-                            >
-                                <Text style={styles.changeBtnText}>
-                                    {editingPassword ? 'Save' : 'Change'}
-                                </Text>
-                            </Pressable>
-                        </View>
-
-                        {/* Change password modal */}
-                        <ModalLayout 
-                            visible={passwordModalVisible} 
-                            onClose={() => setPasswordModalVisible(false)}
-                        >
-                            <ChangePasswordContent
-                                currentPassword={currentPassword}
-                                setCurrentPassword={setCurrentPassword}
-                                password={password}
-                                setPassword={setPassword}
-                                showCurrentPassword={showCurrentPassword}
-                                setShowCurrentPassword={setShowCurrentPassword}
-                                showNewPassword={showNewPassword}
-                                setShowNewPassword={setShowNewPassword}
-                                onClose={() => setPasswordModalVisible(false)}
-                            />
-                        </ModalLayout>
                     </View>
                 </View>
             </ScrollView>
@@ -370,8 +267,9 @@ const styles = StyleSheet.create({
     // Personal info section
     section:{
         backgroundColor: 'white',
-        marginHorizontal: 50,
+        marginHorizontal: 100,
         marginVertical: 16,
+        marginBottom: 30,
         borderRadius: 12,
         padding: 30,
         shadowColor: '#000',
@@ -423,7 +321,7 @@ const styles = StyleSheet.create({
     fieldRow:{
         flexDirection: 'row',
         gap: 40,
-        marginBottom: 16,
+        marginBottom: 25,
         flexWrap: 'wrap',
     },
     fieldGroup:{
@@ -471,13 +369,6 @@ const styles = StyleSheet.create({
         color: '#2f6618fe',
         fontWeight: '500',
     },
-    // Divider
-    divider:{
-        height: 1,
-        backgroundColor: '#2f6618fe',
-        marginHorizontal: 50,
-        marginVertical: 20,
-    },
     // Account Security
     securityField:{
         marginBottom: 18,
@@ -490,23 +381,10 @@ const styles = StyleSheet.create({
     securityInput:{
         flex: 1,
     },
-    changeBtn:{
-        borderWidth: 1,
-        borderColor: '#2f6618fe',
-        borderRadius: 8,
-        paddingHorizontal: 16,
-        paddingVertical: 10,
-    },
-    changeBtnText:{
-        fontSize: 13,
-        color: '#2f6618fe',
-        fontWeight: '500',
-    },
     // hover button styles
     hoverBtn: {
         backgroundColor: '#A5D6A7',
     },
-
     hoverBtnOutline: {
         backgroundColor: '#e6f2e6',
     },

@@ -26,7 +26,6 @@ const UserModule = ({ navigation }) => {
 
     return(
         <View style={{ flex: 1 }}>
-            <NavBar/>
             {/* Outlinebar */}
             <OutlineBar course={course} onSelectPage={setSelectedPage} editable={false}/>
             {/* Content */}
