@@ -40,3 +40,7 @@ export interface PaginateResponse<T> {
     };
   };
 }
+
+export interface ErrorResponse {
+  message: string;
+}

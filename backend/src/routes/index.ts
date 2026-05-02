@@ -1,6 +1,7 @@
 import { Router } from "express";
 import userRouter from "./UserRoute";
 import registrationRouter from "./RegistrationRoute";
+import courseRouter from "./CourseRoute";
 import * as AuthController from "../controllers/AuthController";
 const router = Router();
 
@@ -64,5 +65,10 @@ router.post("/token", AuthController.token);
 =     REGISTRATION ROUTES      =
 ===============================*/
 router.use("/registrations", registrationRouter);
+
+/*===============================
+=        COURSE ROUTES         =
+===============================*/
+router.use("/courses", courseRouter);
 
 export default router;

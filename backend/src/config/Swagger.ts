@@ -1,5 +1,6 @@
 import path from "path";
 import swaggerJSDoc from "swagger-jsdoc";
+import { CourseStatus } from "../enum/CourseStatus";
 import { UserRoles } from "../enum/UserRoles";
 import { RegistrationStatus } from "../enum/RegistrationStatus";
 import { auth } from "../middelware/Auth";
@@ -30,6 +31,10 @@ const options: swaggerJSDoc.Options = {
       {
         name: "Registrations",
         description: "Registration management endpoints",
+      },
+      {
+        name: "Courses",
+        description: "Course management endpoints",
       },
     ],
     components: {
@@ -281,6 +286,214 @@ const options: swaggerJSDoc.Options = {
               format: "date-time",
               nullable: true,
               example: "2026-04-24T08:00:00.000Z",
+            },
+          },
+        },
+        Course: {
+          type: "object",
+          properties: {
+            id: { type: "integer", example: 1 },
+            title: { type: "string", example: "Wildlife Safety Basics" },
+            description: {
+              type: "string",
+              nullable: true,
+              example: "Introduction to wildlife safety procedures.",
+            },
+            status: {
+              type: "string",
+              enum: Object.values(CourseStatus),
+              example: CourseStatus.UNRELEASED,
+            },
+            released_at: {
+              type: "string",
+              format: "date-time",
+              nullable: true,
+              example: null,
+            },
+            expected_completion_weeks: {
+              type: "integer",
+              nullable: true,
+              example: 6,
+            },
+            must_complete_in_weeks: {
+              type: "integer",
+              nullable: true,
+              example: 8,
+            },
+            badge_expire_in_months: {
+              type: "integer",
+              example: 24,
+            },
+            badge_path_id: {
+              type: "string",
+              nullable: true,
+              example:
+                "C:/Users/User/Documents/COS30049-CTIP/backend/storage/uploads/private/courses/badges/8b89f43a-9bb4-47ca-a269-f0554e651067.png",
+            },
+            prerequisite_groups: {
+              type: "array",
+              items: {
+                $ref: "#/components/schemas/PrerequisiteGroup",
+              },
+            },
+            created_at: {
+              type: "string",
+              format: "date-time",
+              example: "2026-04-24T08:00:00.000Z",
+            },
+            updated_at: {
+              type: "string",
+              format: "date-time",
+              example: "2026-04-24T08:00:00.000Z",
+            },
+          },
+        },
+        Prerequisite: {
+          type: "object",
+          properties: {
+            id: { type: "integer", example: 1 },
+            course_id: { type: "integer", example: 2 },
+            prerequisite_group_id: { type: "integer", example: 1 },
+            created_at: {
+              type: "string",
+              format: "date-time",
+              example: "2026-04-24T08:00:00.000Z",
+            },
+            updated_at: {
+              type: "string",
+              format: "date-time",
+              example: "2026-04-24T08:00:00.000Z",
+            },
+          },
+        },
+        PrerequisiteGroup: {
+          type: "object",
+          properties: {
+            id: { type: "integer", example: 1 },
+            course_id: { type: "integer", example: 10 },
+            prerequisites: {
+              type: "array",
+              items: {
+                $ref: "#/components/schemas/Prerequisite",
+              },
+            },
+            created_at: {
+              type: "string",
+              format: "date-time",
+              example: "2026-04-24T08:00:00.000Z",
+            },
+            updated_at: {
+              type: "string",
+              format: "date-time",
+              example: "2026-04-24T08:00:00.000Z",
+            },
+          },
+        },
+        CreateCourseRequest: {
+          type: "object",
+          required: ["title"],
+          properties: {
+            title: { type: "string", example: "Wildlife Safety Basics" },
+            description: {
+              type: "string",
+              nullable: true,
+              example: "Introduction to wildlife safety procedures.",
+            },
+            status: {
+              type: "string",
+              enum: Object.values(CourseStatus),
+              example: CourseStatus.UNRELEASED,
+              description: "Defaults to unreleased when omitted.",
+            },
+            released_at: {
+              type: "string",
+              format: "date-time",
+              nullable: true,
+              example: null,
+            },
+            expected_completion_weeks: {
+              type: "integer",
+              example: 6,
+            },
+            must_complete_in_weeks: {
+              type: "integer",
+              example: 8,
+            },
+            badge_expire_in_months: {
+              type: "integer",
+              example: 24,
+            },
+            prerequisite_course_ids: {
+              type: "array",
+              description:
+                "Array of prerequisite groups. Each inner array represents OR logic; groups represent AND logic.",
+              items: {
+                type: "array",
+                items: {
+                  type: "integer",
+                  example: 2,
+                },
+              },
+              example: [[2, 3], [4]],
+            },
+            badge: {
+              type: "string",
+              format: "binary",
+              description: "Optional course badge image file",
+            },
+          },
+        },
+        UpdateCourseRequest: {
+          type: "object",
+          properties: {
+            title: { type: "string", example: "Advanced Wildlife Safety" },
+            description: {
+              type: "string",
+              nullable: true,
+              example: "Updated course description.",
+            },
+            status: {
+              type: "string",
+              enum: Object.values(CourseStatus),
+              example: CourseStatus.RELEASED,
+            },
+            released_at: {
+              type: "string",
+              format: "date-time",
+              nullable: true,
+              example: "2026-04-24T08:00:00.000Z",
+            },
+            expected_completion_weeks: {
+              type: "integer",
+              nullable: true,
+              example: 7,
+            },
+            must_complete_in_weeks: {
+              type: "integer",
+              nullable: true,
+              example: 10,
+            },
+            badge_expire_in_months: {
+              type: "integer",
+              example: 24,
+            },
+            prerequisite_course_ids: {
+              type: "array",
+              description:
+                "Array of prerequisite groups. Each inner array represents OR logic; groups represent AND logic.",
+              items: {
+                type: "array",
+                items: {
+                  type: "integer",
+                  example: 2,
+                },
+              },
+              example: [[2, 3], [4]],
+            },
+            badge: {
+              type: "string",
+              format: "binary",
+              description: "Optional course badge image file",
             },
           },
         },
