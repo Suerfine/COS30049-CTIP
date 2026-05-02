@@ -4,6 +4,7 @@ import { Alert } from 'react-native';
 
 // Import other hook and service
 import { RegisterService } from '../services/RegisterService';
+import { isValidEmail, isOnlyLetters, phoneRegex } from '../utils/Validation';
 
 export const useSignUp=()=>{
     const [fname, setFname]=useState('');
@@ -14,7 +15,6 @@ export const useSignUp=()=>{
     const [loading, setLoading] = useState(false);
     const [file, setFile]=useState(null);
     const [error, setError]=useState({});
-    const phoneRegex = /^(01[0-9]{1}-?[0-9]{7,8}|0[1-9]{1}-?[0-9]{6,7})$/;
 
     // // Password strength calculation
     // const calculatePasswordStrength = (pwd) => {
@@ -34,11 +34,6 @@ export const useSignUp=()=>{
     // };
 
     // const passwordStrength = calculatePasswordStrength(password);
-
-    const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-    const isOnlyLetters=(str)=>{
-        return /^[A-Za-z\s]+$/.test(str.trim());
-    }
 
     const validateForm = () => {
         let tempErrors={};

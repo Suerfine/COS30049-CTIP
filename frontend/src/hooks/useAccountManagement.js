@@ -54,16 +54,9 @@ export const useAccountManagement=()=>{
     }
 
     const handleCreateAccount=async (formData)=>{
-        if (!formData.fname || !formData.email || !formData.ic || !formData.telefon) {
-            return {
-                success: false,
-                errors: {
-                    fname: !formData.fname ? "First name required" : "",
-                    email: !formData.email ? "Email required" : "",
-                    ic: !formData.ic ? "IC required" : "",
-                    telefon: !formData.telefon ? "Phone required" : ""
-                }
-            };
+        if(!formData.fname || !formData.email || !formData.ic || !formData.telefon){
+            Alert.alert("Missing fields", "Please ensure First Name, Email, Telephone and IC are filled.");
+            return;
         }
         setLoading(true);
         try{
@@ -72,22 +65,11 @@ export const useAccountManagement=()=>{
 
             return {success:true};
         } catch(err){
-           const message = err.response?.data?.message || "";
-            if (err.response?.status === 500) {
-                return {
-                    success: false,
-                    errors: {
-                        email: "Email already exists"
-                    }
-                };
-            }
-            return {
-                success: false,
-                errors: {
-                    general: message || "Something went wrong"
-                }
+            const serverMessage=err.response?.data?.message || "Internal Server Error";
+            return{
+                success:false,
+                serverError:serverMessage
             };
-
         }finally{
             setLoading(false);
         }
