@@ -3,35 +3,32 @@ import { View, Text, TextInput, StyleSheet, Pressable, Image, ActivityIndicator,
 import * as ImagePicker from 'expo-image-picker';
 import {X} from 'lucide-react-native';
 import { ModalStyle as styles } from './ModalStyle';
+import * as DocumentPicker from "expo-document-picker";
 
 const UsersFormContent=({onSubmit, onCancel, isLoading})=>{
     const [form, setForm]=useState({
-        username:'',
         ic: '',
         email: '',
         image: null,
         fname: '',
         lname: '',
-        telefon: '',
+        telephone: '',
+        role:'parkguide'
     });
 
-    const pickImage=async()=>{
-        // Ask for permission
-        const {status}=await ImagePicker.requestMediaLibraryPermissionsAsync();
+    
+    const pickDocument=async()=>{
+        try{
+            const result=await DocumentPicker.getDocumentAsync({
+                type:'application/pdf',
+                copyToCacheDirectory:true,
+            });
 
-        if(status !=='granted'){
-            alert('Permission to access gallery is required!');
-            return;
-        }
-        let result=await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: 'images',
-            allowsEditing:true,
-            aspect:[16,9],
-            quality:1,
-        });
-
-        if(!result.canceled){
-            setForm({...form, image:result.assets[0].uri});
+            if(!result.canceled){
+                setForm({...form, resume: result.assets[0].uri, resumeName: result.assets[0].name});
+            }
+        }catch(err){
+            console.error('Error picking document:',err);
         }
     };
 
@@ -78,17 +75,40 @@ const UsersFormContent=({onSubmit, onCancel, isLoading})=>{
                             placeholderTextColor="#8f8f8f"  onChangeText={(text)=> setForm({...form, telefon: text})}/>
                         </View>
                     </View>
-                    
+                     <View>
+                        <Text style={styles.label}>Role:</Text>
+                        <View style={localStyles.row}>
+                            <TouchableOpacity style={styles.row} onPress={()=>setForm({...form, role:'admin'})}>
+                                <View style={localStyles.radioCircle}>
+                                    {form.role==='admin' && <View style={localStyles.selectedRb}></View>}
+                                </View>
+                                <Text style={localStyles.radioText}>Admin</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={styles.row} onPress={()=>setForm({...form, role:'parkguide'})}>
+                                <View style={localStyles.radioCircle}>
+                                    {form.role==='parkguide' && <View style={localStyles.selectedRb}></View>}
+                                </View>
+                                <Text style={localStyles.radioText}>Park Guide</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
                 </View>
                 <View style={styles.upload}>
-                    <Text style={styles.label}>Upload Images</Text>
-                    <Pressable style={styles.imagePicker} onPress={pickImage}>
-                        {form.image ? (
-                            <Image source={{uri: form.image}} style={styles.previewImage}/>
-                        ): (
+                    <Text style={styles.label}>Upload Resume (PDF)</Text>
+                    <Pressable style={styles.imagePicker} onPress={pickDocument}>
+                        {form.resume ? (
+                            <View style={localStyles.fileSelectedContainer}>
+                                <Text style={styles.fileNameText}>{form.resumeName || 'Resume Selected'}</Text>
+                                <Text style={localStyles.changeText}>Tap to change file</Text>
+                            </View>
+                        ) : (
                             <View style={localStyles.uploadPlaceholder}>
-                                <Image source={require('../../assets/upload_placeholder.png')} accessibilityLabel='Upload Placeholder Image' style={localStyles.placeholder}/>
-                                <Text style={localStyles.muted}>Select your image</Text>
+                                <Image 
+                                    source={require('../../assets/upload_placeholder.png')} 
+                                    accessibilityLabel='Upload Resume' 
+                                    style={localStyles.placeholder}
+                                />
+                                <Text style={localStyles.muted}>Click to Upload</Text>
                             </View>
                         )}
                     </Pressable>
@@ -132,6 +152,37 @@ const localStyles=StyleSheet.create({
     row:{
         flexDirection:'row',
         gap:20
+    },
+     radioCircle:{
+        height:18,
+        width:18,
+        borderRadius:10,
+        borderWidth:2,
+        borderColor:'#2c3e50',
+        alignItems:'center',
+        justifyContent:'center',
+        marginRight:10
+    },
+    selectedRb:{
+        width:10,
+        height:10,
+        borderRadius:5,
+        backgroundColor:'#2c3e50'
+    },
+    fileSelectedContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 20,
+    },
+    muted: {
+        color: '#888',
+        fontSize: 14,
+    },
+    changeText: {
+        color: '#007AFF', 
+        marginTop: 8,
+        fontSize: 12,
     }
 })
 ;
