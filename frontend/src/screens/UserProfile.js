@@ -195,39 +195,6 @@ const UserProfile = ({ navigation }) => {
             </View>
           </View>
         </View>
-        <View style={styles.section}>
-          {/* Resume/CV */}
-          <View>
-            <Text style={styles.label}>Resume / CV (PDF or Word)</Text>
-            {!file ? (
-              <Pressable
-                style={({ pressed }) => [
-                  styles.uploadBox,
-                  pressed && { backgroundColor: "#f0fdf4" },
-                ]}
-                onPress={handleUpload}
-              >
-                <FileUp size={32} color="#666" />
-                <Text style={styles.uploadText}>
-                  Click here to upload resume
-                </Text>
-                <Text style={styles.subtext}>PDF, DOC, or DOCX (Max 5MB)</Text>
-              </Pressable>
-            ) : (
-              <View style={styles.fileCard}>
-                <View style={styles.fileInfo}>
-                  <FileCheck size={24} color="#0a6340" />
-                  <Text style={styles.fileName} numberOfLines={1}>
-                    {file.name}
-                  </Text>
-                </View>
-                <Pressable onPress={removeFile} style={styles.removeBtn}>
-                  <X size={20} color="#ff4d4d" />
-                </Pressable>
-              </View>
-            )}
-          </View>
-        </View>
       </ScrollView>
     </View>
   );
@@ -307,7 +274,6 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
     marginHorizontal: 100,
     marginVertical: 16,
-    marginBottom: 30,
     borderRadius: 12,
     padding: 30,
     shadowColor: "#000",
@@ -413,59 +379,6 @@ const styles = StyleSheet.create({
   },
   hoverBtnOutline: {
     backgroundColor: "#e6f2e6",
-  },
-  // Resume section
-  label: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#333",
-    marginLeft: 5,
-  },
-  uploadBox: {
-    borderWidth: 2,
-    borderStyle: "dashed",
-    borderColor: "#ccc",
-    borderRadius: 12,
-    padding: 30,
-    alignItems: "center",
-    backgroundColor: "#fafafa",
-    marginTop: 10,
-  },
-  uploadText: {
-    marginTop: 10,
-    fontSize: 16,
-    color: "#333",
-    fontWeight: "500",
-  },
-  subtext: {
-    fontSize: 12,
-    color: "#888",
-    marginTop: 4,
-  },
-  fileCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    padding: 15,
-    backgroundColor: "#eafaf1",
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#0a6340",
-    marginTop: 10,
-  },
-  fileInfo: {
-    flexDirection: "row",
-    alignItems: "center",
-    flex: 1,
-    gap: 10,
-  },
-  fileName: {
-    fontSize: 14,
-    color: "#333",
-    fontWeight: "500",
-  },
-  removeBtn: {
-    padding: 5,
   },
   errorText: {
     color: "#b42318",
