@@ -10,4 +10,5 @@ export interface SaveFileOptions {
 export interface StorageService {
   save(file: SaveFileOptions): Promise<string>;
   delete(filePath: string): Promise<void>;
+  exists(filePath: string): Promise<boolean>;
 }

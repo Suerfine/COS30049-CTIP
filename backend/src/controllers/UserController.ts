@@ -8,6 +8,7 @@ import {
   GetAllUserRequest,
   UpdateUserRequest,
   UserResponse,
+  toUserResponse,
 } from "../types/User";
 import { formatPaginateResponse, paginateModel } from "../utils/paginate";
 import { PaginateRequestParams, PaginateResponse } from "../types/common";
@@ -24,25 +25,9 @@ class HttpError extends Error {
   }
 }
 
-function toUserResponse(user: User): UserResponse {
-  return {
-    id: user.id,
-    username: user.username,
-    firstname: user.firstname,
-    lastname: user.lastname,
-    role: user.role,
-    identification: user.identification,
-    personal_email: user.personal_email,
-    tel: user.tel,
-    last_login_at: user.last_login_at,
-    created_at: user.created_at,
-    updated_at: user.updated_at,
-  };
-}
-
 export const getAllUsers = async (
   req: Request<PaginateRequestParams>,
-  res: Response<PaginateResponse<UserResponse>>,
+  res: Response<PaginateResponse<UserResponse> | { message: string }>,
   next: NextFunction,
 ) => {
   try {
@@ -70,42 +55,51 @@ export const getAllUsers = async (
     );
     res.json(formattedResponse);
   } catch (err) {
-    next(err);
+    if (err instanceof HttpError) {
+      res.status(err.status).json({ message: err.message });
+    } else {
+      res.status(500).json({ message: "Internal server error\n" + err });
+    }
   }
 };
 
 export const getUserById = async (
   req: Request<{ id: string }>,
-  res: Response<UserResponse | any>,
+  res: Response<UserResponse | { message: string }>,
   next: NextFunction,
 ) => {
-  User.findByPk(req.params.id)
-    .then((user) => {
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      res.json(toUserResponse(user));
-    })
-    .catch((err) => {
-      return res
-        .status(500)
-        .json({ message: "Internal server error\n" + err.message });
-    });
+  try {
+    const user = await User.findByPk(req.params.id);
+    if (!user) {
+      throw new HttpError(404, "User not found");
+    }
+    res.json(toUserResponse(user));
+  } catch (err) {
+    if (err instanceof HttpError) {
+      res.status(err.status).json({ message: err.message });
+    } else {
+      res.status(500).json({ message: "Internal server error\n" + err });
+    }
+  }
 };
 
 export const getCurrentUser = async (
-  req: Request & { user?: User },
+  req: Request,
   res: Response<UserResponse | { message: string }>,
   next: NextFunction,
 ) => {
   try {
     if (!req.user) {
-      return res.status(401).json({ message: "Unauthorized" });
+      throw new HttpError(401, "Unauthorized");
     }
 
     return res.json(toUserResponse(req.user));
   } catch (err) {
-    next(err);
+    if (err instanceof HttpError) {
+      res.status(err.status).json({ message: err.message });
+    } else {
+      res.status(500).json({ message: "Internal server error\n" + err });
+    }
   }
 };
 
@@ -114,19 +108,21 @@ export const deleteUser = async (
   res: Response,
   next: NextFunction,
 ) => {
-  // Soft delete by setting deleted_at to current timestamp
-  User.update({ deleted_at: new Date() }, { where: { id: req.params.id } })
-    .then(([affectedRows]) => {
-      if (affectedRows === 0) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      res.json({ message: "User deleted successfully" });
-    })
-    .catch((err) => {
-      return res
-        .status(500)
-        .json({ message: "Internal server error\n" + err.message });
-    });
+  try {
+    const user = await User.findByPk(req.params.id);
+    if (!user) {
+      throw new HttpError(404, "User not found");
+    }
+
+    await user.destroy();
+    return res.status(200).send();
+  } catch (err) {
+    if (err instanceof HttpError) {
+      res.status(err.status).json({ message: err.message });
+    } else {
+      res.status(500).json({ message: "Internal server error\n" + err });
+    }
+  }
 };
 
 export const upsertUser = async (
@@ -238,6 +234,8 @@ export const upsertUser = async (
         folder: "public",
         subfolder: `users/${targetUser.id}/pfp`,
       });
+      targetUser.pfp_url = path;
+      await targetUser.save();
     }
 
     return res.json(toUserResponse(targetUser));
@@ -318,22 +316,12 @@ export const createUser = async (
         folder: "public",
         subfolder: `users/${newUser.id}/pfp`,
       });
+      newUser.pfp_url = path;
+      await newUser.save();
     }
 
     // Return the created user (excluding the password hash)
-    res.status(201).json({
-      id: newUser.id,
-      username: newUser.username,
-      firstname: newUser.firstname,
-      lastname: newUser.lastname,
-      role: newUser.role,
-      identification: newUser.identification,
-      personal_email: newUser.personal_email,
-      tel: newUser.tel,
-      last_login_at: newUser.last_login_at,
-      created_at: newUser.created_at,
-      updated_at: newUser.updated_at,
-    });
+    res.status(201).json(toUserResponse(newUser));
   } catch (err) {
     if (err instanceof HttpError) {
       res.status(err.status).json({ message: err.message });

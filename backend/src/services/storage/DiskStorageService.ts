@@ -31,4 +31,14 @@ export class DiskStorageService implements StorageService {
       console.warn("File deletion failed:", err);
     }
   }
+
+  async exists(filePath: string) {
+    const fullPath = path.join(this.basePath, filePath);
+    try {
+      await fs.access(fullPath);
+      return true;
+    } catch {
+      return false;
+    }
+  }
 }
