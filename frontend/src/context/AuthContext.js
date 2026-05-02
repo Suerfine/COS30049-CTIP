@@ -49,7 +49,7 @@ export const AuthProvider = ({ children }) => {
       return user;
     }catch(err){
       console.error("Auth Login Error: ", err);
-      throw error;
+      throw err;
     }
   };
 
