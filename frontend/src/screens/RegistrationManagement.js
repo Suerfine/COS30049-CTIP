@@ -6,9 +6,8 @@ import { Pressable, StyleSheet, FlatList, View,Text, Image, TextInput, ActivityI
 import { useRegisterManagement } from '../hooks/useRegisterManagement';
 import { formatDate } from '../utils/formatDate';
 
-
 const RegistrationManagement=()=>{
-    const {users, loading, handleCreateUser,isCreating,setIsCreating,currentPage, setCurrentPage, totalPages, totalUsers,selectedUser,setSelectedUser,handleSearch, searchQuery,sortConfig, requestSort,resetSort}=useRegisterManagement();
+    const {users, loading,currentPage, setCurrentPage, totalPages, totalUsers,selectedUser,setSelectedUser,handleSearch, searchQuery,sortConfig, requestSort,resetSort}=useRegisterManagement();
     const [currentStatus, setCurrentStatus]=useState('All');
     const [isOpen, setIsOpen]=useState(false);    
 
@@ -582,6 +581,3 @@ const styles = StyleSheet.create({
 });
 
 export default RegistrationManagement;
-
-// Add user and add user ui add role and change img to resume
-// time for user register is not accurate

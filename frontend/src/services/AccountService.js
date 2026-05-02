@@ -1,5 +1,7 @@
 import apiClient from "../config/apiConfig";
 import { API_ENDPOINTS } from "../config/ApiEndpoints";
+import { UserRoles } from "../enum/UserRoles";
+import { formatDate } from "../utils/formatDate";
 
 export const AccountService={
     // GET: fetch all accounts
@@ -28,24 +30,29 @@ export const AccountService={
             throw error;
         }
     },
-    // // POST: create new account
-    // create: async(userData)=>{
-    //     try{
-    //         const response=await fetch(API_ENDPOINTS.USER.ACCOUNT, {
-    //             method:'POST',
-    //             headers:{
-    //                 'Content-Type':'application/json',
-    //             },
-    //             body: JSON.stringify(userData),
-    //         });
-    //         const data=await response.json();
-    //         if(!response.ok){
-    //             throw new Error(data.message || 'Failed to create account');
-    //         }
-    //         return data;
-    //     }catch(error){
-    //         console.error("Create Account Error:", error);
-    //         throw error;
-    //     }
-    // },
+    // POST: create new account
+    create: async(userData)=>{
+        try{
+            const randomNum=Math.floor(100+Math.random()*900);
+            const generatedUsername=`${userData.fname.replace(/\s+/g, '').toLowerCase()}${randomNum}`;
+
+            const payload={
+                username: generatedUsername,
+                firstname:userData.fname,
+                lastname:userData.lname,
+                identification:userData.ic,
+                personal_email:userData.email,
+                tel:userData.telefon,
+                role:userData.role=="parkguide" ? UserRoles.PARK_GUIDE : UserRoles.ADMIN,
+                pfp: userData.image || null,
+                password: userData.role=="parkguide" ? `SFC@${randomNum}` : 'admin',
+            };
+
+            const response=await apiClient.post(API_ENDPOINTS.USER.ACCOUNT, payload);
+            return response.data;
+        }catch(error){
+            console.error("Create Account Error:", error);
+            return Promise.reject(error);
+        }
+    },
 };

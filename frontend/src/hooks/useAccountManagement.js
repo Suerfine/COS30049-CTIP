@@ -1,5 +1,6 @@
 import {useState, useEffect} from 'react';
 import { AccountService} from '../services/AccountService';
+import { Alert } from 'react-native';
 
 export const useAccountManagement=()=>{
     const [accounts, setAccounts]=useState([]);
@@ -12,6 +13,7 @@ export const useAccountManagement=()=>{
         key:null,
         direction:'asc'
     })
+    const [loading, setLoading]=useState(false);
     
     // Fetch all accounts
     const fetchAccounts=async()=>{
@@ -51,12 +53,55 @@ export const useAccountManagement=()=>{
         setSortConfig({key:null, direction:'asc'});
     }
 
+    const handleCreateAccount=async (formData)=>{
+        if (!formData.fname || !formData.email || !formData.ic || !formData.telefon) {
+            return {
+                success: false,
+                errors: {
+                    fname: !formData.fname ? "First name required" : "",
+                    email: !formData.email ? "Email required" : "",
+                    ic: !formData.ic ? "IC required" : "",
+                    telefon: !formData.telefon ? "Phone required" : ""
+                }
+            };
+        }
+        setLoading(true);
+        try{
+            await AccountService.create(formData);
+            Alert.alert("Success", "Account created successfully.");
+
+            return {success:true};
+        } catch(err){
+           const message = err.response?.data?.message || "";
+            if (err.response?.status === 500) {
+                return {
+                    success: false,
+                    errors: {
+                        email: "Email already exists"
+                    }
+                };
+            }
+            return {
+                success: false,
+                errors: {
+                    general: message || "Something went wrong"
+                }
+            };
+
+        }finally{
+            setLoading(false);
+        }
+    };
+
+
     return{
-        accounts, refresh: fetchAccounts,
+        accounts,
         currentPage, setCurrentPage,
         totalPages, totalUsers,
         selectedUser,setSelectedUser,
         handleSearch, searchQuery,
-        sortConfig, requestSort, resetSort
+        sortConfig, requestSort, resetSort,
+        handleCreateAccount, loading,
+        refresh:fetchAccounts
     };
 }
