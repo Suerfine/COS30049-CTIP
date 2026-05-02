@@ -2,6 +2,7 @@
 import fs from "fs/promises";
 import path from "path";
 import { StorageService, SaveFileOptions } from "./StorageService";
+import { logger } from "sequelize/lib/utils/logger";
 
 export class DiskStorageService implements StorageService {
   private basePath = path.join(process.cwd(), "storage");
@@ -34,11 +35,16 @@ export class DiskStorageService implements StorageService {
 
   async exists(filePath: string) {
     const fullPath = path.join(this.basePath, filePath);
+    logger.warn("Checking file existence:" + fullPath);
     try {
       await fs.access(fullPath);
       return true;
     } catch {
       return false;
     }
+  }
+
+  fullPath(filePath: string) {
+    return path.join(this.basePath, filePath);
   }
 }

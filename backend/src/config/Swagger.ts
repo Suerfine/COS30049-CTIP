@@ -222,17 +222,6 @@ const options: swaggerJSDoc.Options = {
             "tel",
           ],
           properties: {
-            user_id: { type: "integer", nullable: true },
-            reviewed_by_user_id: {
-              type: "integer",
-              nullable: true,
-              example: 1,
-            },
-            status: {
-              type: "string",
-              enum: Object.values(RegistrationStatus),
-              example: RegistrationStatus.PENDING,
-            },
             firstname: { type: "string", example: "John" },
             lastname: { type: "string", example: "Doe" },
             identification: { type: "string", example: "S1234567" },
@@ -246,17 +235,6 @@ const options: swaggerJSDoc.Options = {
               type: "string",
               format: "binary",
               description: "Optional registration document file",
-            },
-            admin_remark: {
-              type: "string",
-              nullable: true,
-              example: "Pending identity verification",
-            },
-            reviewed_at: {
-              type: "string",
-              format: "date-time",
-              nullable: true,
-              example: "2026-04-24T08:00:00.000Z",
             },
           },
         },

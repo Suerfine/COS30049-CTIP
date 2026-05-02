@@ -8,7 +8,6 @@ import {
   GetAllUserRequest,
   UpdateUserRequest,
   UserResponse,
-  toUserResponse,
 } from "../types/User";
 import { formatPaginateResponse, paginateModel } from "../utils/paginate";
 import { PaginateRequestParams, PaginateResponse } from "../types/common";
@@ -23,6 +22,27 @@ class HttpError extends Error {
     super(message);
     this.status = status;
   }
+}
+
+function toUserResponse(user: User, req: Request<any>): UserResponse {
+  let full_url_pfp = user.pfp_url
+    ? `${req.protocol}:\\${req.get("host")}\\${user.pfp_url}`
+    : null;
+
+  return {
+    id: user.id,
+    username: user.username,
+    firstname: user.firstname,
+    lastname: user.lastname,
+    role: user.role,
+    identification: user.identification,
+    personal_email: user.personal_email,
+    tel: user.tel,
+    pfp_url: full_url_pfp,
+    last_login_at: user.last_login_at,
+    created_at: user.created_at,
+    updated_at: user.updated_at,
+  };
 }
 
 export const getAllUsers = async (
@@ -42,7 +62,7 @@ export const getAllUsers = async (
     });
     const baseUrl = `${req.protocol}://${req.get("host")}${req.originalUrl}`;
     const formattedResponse = formatPaginateResponse(
-      users.data.map(toUserResponse),
+      users.data.map((user) => toUserResponse(user, req)),
       req.query,
       true,
       {
@@ -73,7 +93,7 @@ export const getUserById = async (
     if (!user) {
       throw new HttpError(404, "User not found");
     }
-    res.json(toUserResponse(user));
+    return res.status(200).json(toUserResponse(user, req));
   } catch (err) {
     if (err instanceof HttpError) {
       res.status(err.status).json({ message: err.message });
@@ -93,7 +113,7 @@ export const getCurrentUser = async (
       throw new HttpError(401, "Unauthorized");
     }
 
-    return res.json(toUserResponse(req.user));
+    return res.status(200).json(toUserResponse(req.user, req));
   } catch (err) {
     if (err instanceof HttpError) {
       res.status(err.status).json({ message: err.message });
@@ -238,7 +258,7 @@ export const upsertUser = async (
       await targetUser.save();
     }
 
-    return res.json(toUserResponse(targetUser));
+    return res.status(200).json(toUserResponse(targetUser, req));
   } catch (err) {
     next(err);
   }
@@ -320,8 +340,7 @@ export const createUser = async (
       await newUser.save();
     }
 
-    // Return the created user (excluding the password hash)
-    res.status(201).json(toUserResponse(newUser));
+    return res.status(201).json(toUserResponse(newUser, req));
   } catch (err) {
     if (err instanceof HttpError) {
       res.status(err.status).json({ message: err.message });
