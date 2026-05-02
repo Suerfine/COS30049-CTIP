@@ -1,8 +1,6 @@
 import React, {useState} from 'react';
 import { useNavigation, CommonActions } from '@react-navigation/native';
 import { UserRoles } from '../enum/UserRoles';
-
-
 // Import other hook and service
 import { useAuth } from '../context/AuthContext';
 
@@ -22,8 +20,15 @@ export const useLogin=()=>{
         }
 
         setLoginError('');
-        setLoading(true);
-        await login(email, password);
+        setLoading(true); 
+
+        try {
+            const user = await login(email, password);
+        } catch (err) {
+            setLoginError(err.message || '* Login failed. Please try again.');
+        } finally {
+            setLoading(false); 
+        }
     };
 
     return {
