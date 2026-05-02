@@ -43,7 +43,17 @@ const UserDashboard=({navigation})=>{
                     <LinearGradient colors={['transparent', 'rgba(242, 242, 242, 0.2)', '#f2f2f2']} 
                     style={StyleSheet.absoluteFillObject}/>
                     <View style={styles.infoTop}>
-                        <Image source={{ uri: user?.profileImage }} style={styles.profilePic}/>
+                        <View style={styles.pfpWrapper}>
+                        {user?.profileImage ? (
+                            <Image source={{ uri: user.profileImage }} style={styles.profilePic}/>
+                            ) : (
+                                <View style={styles.pfpPlaceholder}>
+                                    <Text style={styles.pfpInitials}>
+                                        {user?.firstname ? user?.firstname[0].toUpperCase() : '?'}
+                                    </Text>
+                                </View>
+                            )}
+                        </View>
                         <View>
                             <Text style={styles.welcomeText}>{t('welcome')}, {user?.firstname}</Text>
                             <Text style={styles.idBadge}>ID: {user?.id}</Text>
@@ -59,7 +69,7 @@ const UserDashboard=({navigation})=>{
                          <View style={styles.detailRow}>
                             <Phone size={16} color='#0a2400fe' style={styles.icon}/>
                             <Text style={styles.subText}>
-                                {user?.telefon}
+                                {user?.tel}
                             </Text>
                         </View>
                         <View style={styles.detailRow}>
@@ -123,13 +133,30 @@ const styles=StyleSheet.create({
         marginBottom:20,
         elevation: 5,
     },
-    profilePic: {
+    pfpWrapper:{
+        marginEnd: 12,
+    },
+    profilePic:{
         width: 60,
         height: 60,
-        borderRadius: 30,
-        marginRight:15,
-        borderWidth: 2,
-        borderColor: 'rgba(255, 255, 255, 0.5)',
+        borderRadius: 60,
+        borderWidth: 3,
+        borderColor: 'white',
+    },
+    pfpPlaceholder:{
+        width: 60,
+        height: 60,
+        borderRadius: 60,
+        backgroundColor: '#2f6618fe',
+        borderWidth: 3,
+        borderColor: 'white',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    pfpInitials:{
+        fontSize: 20,
+        fontWeight: '700',
+        color: 'white',
     },
     welcomeText:{
         fontSize: 18,

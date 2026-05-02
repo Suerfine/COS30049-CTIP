@@ -13,7 +13,7 @@ const MobileSideBar=({isOpen, onClose})=>{
     const { logout } = useAuth();
     const slideAnim=useRef(new Animated.Value(-width)).current;
     const [shouldRender, setShouldRender]=useState(isOpen);
-    const {user=user}=useUserDashboard();
+    const {user}=useUserDashboard();
 
     const handleLogout = async () => {
         await logout();
@@ -59,32 +59,42 @@ const MobileSideBar=({isOpen, onClose})=>{
             ]}>
                 <View style={styles.content}>
                     <View>
-                    {/* Profile  */}
-                    <Image source={{ uri: user?.profileImage }} style={styles.profilePic}/>
-                    <Text style={styles.username}>{user?.username}</Text>
+                        <View style={styles.pfpWrapper}>
+                            {/* Profile  */}
+                            {user?.profileImage ? (
+                                <Image source={{ uri: user.profileImage }} style={styles.profilePic}/>
+                                ) : (
+                                    <View style={styles.pfpPlaceholder}>
+                                        <Text style={styles.pfpInitials}>
+                                            {user?.firstname ? user?.firstname[0].toUpperCase() : '?'}
+                                        </Text>
+                                    </View>
+                                )}
+                            <Text style={styles.username}>{user?.username}</Text>
+                        </View>
 
-                    {/* Content */}
-                        {menuItems.map((item) => (
-                            <Pressable key={item.id} style={styles.menuItem} onPress={() => {
-                                onClose();
-                                
-                                const navParams = {};
-                                if (item.id === 'calendar') {
-                                    navParams.layout = 'calendar'; 
-                                }
+                            {/* Content */}
+                            {menuItems.map((item) => (
+                                <Pressable key={item.id} style={styles.menuItem} onPress={() => {
+                                    onClose();
+                                    
+                                    const navParams = {};
+                                    if (item.id === 'calendar') {
+                                        navParams.layout = 'calendar'; 
+                                    }
 
-                                navigation.navigate('ParkGuideMobileRoot', {
-                                    screen: item.route, 
-                                    params:{
-                                        screen: 'To Do Calendar',
-                                        params:{layout: 'calendar'}
-                                    } 
-                                });
-                            }}>
-                                <item.icon size={22} color="#333" />
-                                <Text style={styles.menuText}>{item.label}</Text>
-                            </Pressable>
-                        ))}  
+                                    navigation.navigate('ParkGuideMobileRoot', {
+                                        screen: item.route, 
+                                        params:{
+                                            screen: 'To Do Calendar',
+                                            params:{layout: 'calendar'}
+                                        } 
+                                    });
+                                }}>
+                                    <item.icon size={22} color="#333" />
+                                    <Text style={styles.menuText}>{item.label}</Text>
+                                </Pressable>
+                            ))}  
                     </View> 
                     <View>
                         <View style={styles.divider} />
@@ -126,14 +136,31 @@ const styles = StyleSheet.create({
         paddingVertical: 15, 
         gap: 15,
     },
-    profilePic: {
+    pfpWrapper:{
+        alignSelf:'center',
+    },
+    profilePic:{
         width: 60,
         height: 60,
-        borderRadius: 30,
-        marginRight:15,
-        borderWidth: 2,
-        borderColor: 'rgba(0,0,0,0.1)',
-        alignSelf:'center',
+        borderRadius: 60,
+        borderWidth: 3,
+        borderColor: '#ccc',
+    },
+    pfpPlaceholder:{
+        width: 90,
+        height: 90,
+        marginBottom: 10,
+        borderRadius: 60,
+        backgroundColor: '#2f6618fe',
+        borderWidth: 3,
+        borderColor: '#ccc',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    pfpInitials:{
+        fontSize: 32,
+        fontWeight: '700',
+        color: 'white',
     },
     menuText: { 
         fontSize: 16, 
