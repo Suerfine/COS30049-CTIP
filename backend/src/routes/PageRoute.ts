@@ -1,19 +1,19 @@
 import { Router } from "express";
-import * as ModuleController from "../controllers/ModuleController";
+import * as PageController from "../controllers/PageController";
 import { auth } from "../middelware/Auth";
-import pageRouter from "./PageRoute";
+import elementRouter from "./ElementRoute";
 
-const moduleRouter = Router({ mergeParams: true });
+const pageRouter = Router({ mergeParams: true });
 
-moduleRouter.use("/:module_id/pages", pageRouter);
+pageRouter.use("/:page_id/elements", elementRouter);
 
 /**
  * @swagger
- * /api/courses/{course_Id}/modules:
+ * /api/courses/{course_Id}/modules/{module_id}/pages:
  *   get:
- *     summary: Get all modules for a course
- *     description: Returns all modules that belong to the specified course, ordered by module order.
- *     tags: [Modules]
+ *     summary: Get all pages for a module
+ *     description: Returns all pages that belong to the specified module, ordered by page order.
+ *     tags: [Pages]
  *     security:
  *       - OAuth2: ["all"]
  *     parameters:
@@ -22,17 +22,22 @@ moduleRouter.use("/:module_id/pages", pageRouter);
  *         required: true
  *         schema:
  *           type: string
+ *       - in: path
+ *         name: module_id
+ *         required: true
+ *         schema:
+ *           type: string
  *     responses:
  *       200:
- *         description: Modules retrieved successfully
+ *         description: Pages retrieved successfully
  *         content:
  *           application/json:
  *             schema:
  *               type: array
  *               items:
- *                 $ref: '#/components/schemas/Module'
+ *                 $ref: '#/components/schemas/Page'
  *       400:
- *         description: Invalid course ID
+ *         description: Invalid path parameters
  *         content:
  *           application/json:
  *             schema:
@@ -44,21 +49,21 @@ moduleRouter.use("/:module_id/pages", pageRouter);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *       404:
- *         description: Course not found
+ *         description: Course or module not found
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-moduleRouter.get("/", auth, ModuleController.getAllModules);
+pageRouter.get("/", auth, PageController.getAllPages);
 
 /**
  * @swagger
- * /api/courses/{course_Id}/modules:
+ * /api/courses/{course_Id}/modules/{module_id}/pages:
  *   post:
- *     summary: Create a module for a course
- *     description: Creates a new module under the specified course.
- *     tags: [Modules]
+ *     summary: Create a page for a module
+ *     description: Creates a new page under the specified module.
+ *     tags: [Pages]
  *     security:
  *       - OAuth2: ["all"]
  *     parameters:
@@ -67,19 +72,24 @@ moduleRouter.get("/", auth, ModuleController.getAllModules);
  *         required: true
  *         schema:
  *           type: string
+ *       - in: path
+ *         name: module_id
+ *         required: true
+ *         schema:
+ *           type: string
  *     requestBody:
  *       required: true
  *       content:
  *         application/x-www-form-urlencoded:
  *           schema:
- *             $ref: '#/components/schemas/CreateModuleRequest'
+ *             $ref: '#/components/schemas/CreatePageRequest'
  *     responses:
  *       201:
- *         description: Module created successfully
+ *         description: Page created successfully
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Module'
+ *               $ref: '#/components/schemas/Page'
  *       400:
  *         description: Invalid request data
  *         content:
@@ -93,21 +103,21 @@ moduleRouter.get("/", auth, ModuleController.getAllModules);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *       404:
- *         description: Course not found
+ *         description: Course or module not found
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-moduleRouter.post("/", auth, ModuleController.createModule);
+pageRouter.post("/", auth, PageController.createPage);
 
 /**
  * @swagger
- * /api/courses/{course_Id}/modules/{module_id}:
+ * /api/courses/{course_Id}/modules/{module_id}/pages/{page_id}:
  *   get:
- *     summary: Get module by ID
- *     description: Retrieves a specific module by its ID within the specified course.
- *     tags: [Modules]
+ *     summary: Get page by ID
+ *     description: Retrieves a specific page by its ID within the specified module.
+ *     tags: [Pages]
  *     security:
  *       - OAuth2: ["all"]
  *     parameters:
@@ -121,13 +131,18 @@ moduleRouter.post("/", auth, ModuleController.createModule);
  *         required: true
  *         schema:
  *           type: string
+ *       - in: path
+ *         name: page_id
+ *         required: true
+ *         schema:
+ *           type: string
  *     responses:
  *       200:
- *         description: Module retrieved successfully
+ *         description: Page retrieved successfully
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Module'
+ *               $ref: '#/components/schemas/Page'
  *       400:
  *         description: Invalid path parameters
  *         content:
@@ -141,21 +156,21 @@ moduleRouter.post("/", auth, ModuleController.createModule);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *       404:
- *         description: Module not found
+ *         description: Course, module, or page not found
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-moduleRouter.get("/:module_id", auth, ModuleController.getModuleById);
+pageRouter.get("/:page_id", auth, PageController.getPageById);
 
 /**
  * @swagger
- * /api/courses/{course_Id}/modules/{module_id}:
+ * /api/courses/{course_Id}/modules/{module_id}/pages/{page_id}:
  *   put:
- *     summary: Update module
- *     description: Updates one or more fields of a module in the specified course.
- *     tags: [Modules]
+ *     summary: Update page
+ *     description: Updates one or more fields of a page in the specified module.
+ *     tags: [Pages]
  *     security:
  *       - OAuth2: ["all"]
  *     parameters:
@@ -169,19 +184,24 @@ moduleRouter.get("/:module_id", auth, ModuleController.getModuleById);
  *         required: true
  *         schema:
  *           type: string
+ *       - in: path
+ *         name: page_id
+ *         required: true
+ *         schema:
+ *           type: string
  *     requestBody:
  *       required: true
  *       content:
  *         application/x-www-form-urlencoded:
  *           schema:
- *             $ref: '#/components/schemas/UpdateModuleRequest'
+ *             $ref: '#/components/schemas/UpdatePageRequest'
  *     responses:
  *       200:
- *         description: Module updated successfully
+ *         description: Page updated successfully
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Module'
+ *               $ref: '#/components/schemas/Page'
  *       400:
  *         description: Invalid update payload
  *         content:
@@ -195,21 +215,21 @@ moduleRouter.get("/:module_id", auth, ModuleController.getModuleById);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *       404:
- *         description: Module not found
+ *         description: Course, module, or page not found
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-moduleRouter.put("/:module_id", auth, ModuleController.upsertModule);
+pageRouter.put("/:page_id", auth, PageController.upsertPage);
 
 /**
  * @swagger
- * /api/courses/{course_Id}/modules/{module_id}:
+ * /api/courses/{course_Id}/modules/{module_id}/pages/{page_id}:
  *   delete:
- *     summary: Delete module
- *     description: Soft deletes a module in the specified course.
- *     tags: [Modules]
+ *     summary: Delete page
+ *     description: Soft deletes a page in the specified module.
+ *     tags: [Pages]
  *     security:
  *       - OAuth2: ["all"]
  *     parameters:
@@ -223,9 +243,14 @@ moduleRouter.put("/:module_id", auth, ModuleController.upsertModule);
  *         required: true
  *         schema:
  *           type: string
+ *       - in: path
+ *         name: page_id
+ *         required: true
+ *         schema:
+ *           type: string
  *     responses:
  *       200:
- *         description: Module deleted successfully
+ *         description: Page deleted successfully
  *         content:
  *           application/json:
  *             schema:
@@ -233,7 +258,7 @@ moduleRouter.put("/:module_id", auth, ModuleController.upsertModule);
  *               properties:
  *                 message:
  *                   type: string
- *                   example: Module deleted successfully
+ *                   example: Page deleted successfully
  *       400:
  *         description: Invalid path parameters
  *         content:
@@ -247,12 +272,12 @@ moduleRouter.put("/:module_id", auth, ModuleController.upsertModule);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *       404:
- *         description: Module not found
+ *         description: Course, module, or page not found
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-moduleRouter.delete("/:module_id", auth, ModuleController.deleteModule);
+pageRouter.delete("/:page_id", auth, PageController.deletePage);
 
-export default moduleRouter;
+export default pageRouter;
