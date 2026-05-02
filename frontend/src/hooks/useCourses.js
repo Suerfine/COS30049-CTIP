@@ -24,7 +24,7 @@ export const useCourses=()=>{
             setLoading(false);
             return true;
         } catch(error){
-            console.error("Update failed: ", error);
+            console.error("Create failed: ", error);
             setLoading(false);
             return false;
         }
@@ -45,9 +45,17 @@ export const useCourses=()=>{
     };
 
     const deleteCourse=async(id)=>{
-        const res=await courseService.delete(id);
-        if(res.ok) setCourses(prev=>prev.filter(c=>c.id !== id));
-        return res.ok;
+        setLoading(true);
+        try{
+            const res=await courseService.delete(id);
+            await loadCourses();
+            setLoading(false);
+            return true;
+        } catch(error){
+            console.error("Delete failed: ", error);
+            setLoading(false);
+            return false;
+        }
     };
 
     return {courses, loading, addCourse, editCourse, deleteCourse};

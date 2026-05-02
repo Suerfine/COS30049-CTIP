@@ -1,4 +1,3 @@
-const API_URL='http://localhost:4000/api/courses';
 import apiClient from "../config/apiConfig";
 import { API_ENDPOINTS } from "../config/ApiEndpoints";
 
@@ -76,26 +75,11 @@ export const courseService={
 
     // Delete: delete existing course
     delete:async(id)=>{
-        return await fetch(`${API_URL}/${id}`,{
-            method:"DELETE",
-            headers:{'Accept':'application/json'}
-        });
+        try{
+            const response=await apiClient.delete(API_ENDPOINTS.COURSE.DETAIL(id));
+            return response.data;
+        }catch(error){
+            return Promise.reject(error.response?.data?.message || "Failed to delete a course.");
+        }
     }
 };
-
-async function transformFormData(formData){
-    const data=new FormData();
-    data.append('courseTitle', formData.courseTitle);
-    data.append('duration', formData.duration);
-    const dateString = formData.expiryDate instanceof Date 
-    ? formData.expiryDate.toISOString().split('T')[0] 
-    : formData.expiryDate;
-    data.append('expiryDate', dateString);
-    data.append('description', formData.description);
-    if(formData.image){
-        const response = await fetch(formData.image);
-        const blob = await response.blob();
-        data.append('image', blob, 'course_photo.jpg');
-    }
-    return data;
-}
