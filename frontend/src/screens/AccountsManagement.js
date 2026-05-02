@@ -5,14 +5,21 @@ import { Pressable, StyleSheet, FlatList, View,Text, Image, TextInput} from 'rea
 // Import other components and hooks
 import { useAccountManagement } from '../hooks/useAccountManagement';
 import { formatDate } from '../utils/formatDate';
+import ModalLayout from '../components/ModalLayout';
+import UsersFormContent from '../components/UsersFormContent';
 
 const AccountManagement=()=>{
-    const {accounts,currentPage, setCurrentPage, totalPages, totalUsers, searchQuery, handleSearch,sortConfig, requestSort, resetSort} = useAccountManagement();
+    const {accounts,currentPage, setCurrentPage, totalPages, totalUsers, searchQuery, handleSearch,sortConfig, requestSort, resetSort, loading} = useAccountManagement();
 
     const [selectedAcc, setSelectedAcc]=useState(null);
     const [activeMenuId, setActiveMenuId]=useState(null);
     const [isOpen, setIsOpen]=useState(false);
     const [isEditing, setIsEditing]=useState(false);
+    const [modalVisible, setModalVisible]=useState(false);
+
+    const handleAdd=()=>{
+        setModalVisible(true);
+    };
 
     // Caluculate the pagination
     const itemsPerPage = 10; 
@@ -109,7 +116,7 @@ const AccountManagement=()=>{
     return(
         <View style={styles.container}>
             <Text style={styles.title}>Account Management</Text>
-            <View style={styles.toolbar}>
+            <View style={[styles.toolbar, styles.row]}>
                 <View style={styles.row}>
                     <Pressable onPress={resetSort} style={({ hovered }) => [
                         styles.iconBtn,
@@ -122,7 +129,21 @@ const AccountManagement=()=>{
                         <TextInput style={styles.input} placeholder='Search...' placeholderTextColor="#8f8f8f" value={searchQuery} onChangeText={handleSearch}/>
                     </View>
                 </View>
+                <Pressable onPress={handleAdd} style={({ hovered }) => [
+                        styles.btn,
+                        hovered && styles.btnHover, 
+                    ]}>
+                    <Plus size={16}/>
+                    <Text style={styles.btnText}>Add User</Text>
+                </Pressable>
             </View>
+            {/* Create Users Modal */}
+            <ModalLayout visible={modalVisible} onClose={()=>setModalVisible(false)}>
+                <UsersFormContent
+                    onCancel={()=>setModalVisible(false)}
+                    isLoading={loading}
+                />
+            </ModalLayout>
 
             <View style={styles.tableContainer}>
                 <FlatList style={styles.table} 
@@ -500,6 +521,24 @@ const styles = StyleSheet.create({
         gap:10,
         paddingHorizontal:10,
         alignItems:'center',
+    },
+     btn:{
+        flexDirection:'row',
+        gap:4,
+        alignItems:'center',
+        alignSelf:'center',
+        backgroundColor:"#217837",
+        borderRadius:50,
+        color:'white',
+        paddingHorizontal:23,
+        paddingVertical:10,
+    },
+    btnText:{
+        color:'white',
+        fontSize:14
+    },
+    btnHover:{
+        backgroundColor:'#5a993ffe'
     },
 });
 

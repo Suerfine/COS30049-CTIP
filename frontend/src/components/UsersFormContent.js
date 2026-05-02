@@ -3,32 +3,36 @@ import { View, Text, TextInput, StyleSheet, Pressable, Image, ActivityIndicator,
 import * as ImagePicker from 'expo-image-picker';
 import {X} from 'lucide-react-native';
 import { ModalStyle as styles } from './ModalStyle';
-import * as DocumentPicker from "expo-document-picker";
 
 const UsersFormContent=({onSubmit, onCancel, isLoading})=>{
     const [form, setForm]=useState({
+        username:'',
         ic: '',
         email: '',
         image: null,
         fname: '',
         lname: '',
-        telephone: '',
+        telefon: '',
         role:'parkguide'
     });
 
-    
-    const pickDocument=async()=>{
-        try{
-            const result=await DocumentPicker.getDocumentAsync({
-                type:'application/pdf',
-                copyToCacheDirectory:true,
-            });
+    const pickImage=async()=>{
+        // Ask for permission
+        const {status}=await ImagePicker.requestMediaLibraryPermissionsAsync();
 
-            if(!result.canceled){
-                setForm({...form, resume: result.assets[0].uri, resumeName: result.assets[0].name});
-            }
-        }catch(err){
-            console.error('Error picking document:',err);
+        if(status !=='granted'){
+            alert('Permission to access gallery is required!');
+            return;
+        }
+        let result=await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: 'images',
+            allowsEditing:true,
+            aspect:[16,9],
+            quality:1,
+        });
+
+        if(!result.canceled){
+            setForm({...form, image:result.assets[0].uri});
         }
     };
 
@@ -94,21 +98,14 @@ const UsersFormContent=({onSubmit, onCancel, isLoading})=>{
                     </View>
                 </View>
                 <View style={styles.upload}>
-                    <Text style={styles.label}>Upload Resume (PDF)</Text>
-                    <Pressable style={styles.imagePicker} onPress={pickDocument}>
-                        {form.resume ? (
-                            <View style={localStyles.fileSelectedContainer}>
-                                <Text style={styles.fileNameText}>{form.resumeName || 'Resume Selected'}</Text>
-                                <Text style={localStyles.changeText}>Tap to change file</Text>
-                            </View>
-                        ) : (
+                    <Text style={styles.label}>Upload Images</Text>
+                    <Pressable style={styles.imagePicker} onPress={pickImage}>
+                        {form.image ? (
+                            <Image source={{uri: form.image}} style={styles.previewImage}/>
+                        ): (
                             <View style={localStyles.uploadPlaceholder}>
-                                <Image 
-                                    source={require('../../assets/upload_placeholder.png')} 
-                                    accessibilityLabel='Upload Resume' 
-                                    style={localStyles.placeholder}
-                                />
-                                <Text style={localStyles.muted}>Click to Upload</Text>
+                                <Image source={require('../../assets/upload_placeholder.png')} accessibilityLabel='Upload Placeholder Image' style={localStyles.placeholder}/>
+                                <Text style={localStyles.muted}>Select your image</Text>
                             </View>
                         )}
                     </Pressable>
@@ -153,7 +150,7 @@ const localStyles=StyleSheet.create({
         flexDirection:'row',
         gap:20
     },
-     radioCircle:{
+    radioCircle:{
         height:18,
         width:18,
         borderRadius:10,
@@ -168,21 +165,6 @@ const localStyles=StyleSheet.create({
         height:10,
         borderRadius:5,
         backgroundColor:'#2c3e50'
-    },
-    fileSelectedContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: 20,
-    },
-    muted: {
-        color: '#888',
-        fontSize: 14,
-    },
-    changeText: {
-        color: '#007AFF', 
-        marginTop: 8,
-        fontSize: 12,
     }
 })
 ;

@@ -4,19 +4,13 @@ import { Pressable, StyleSheet, FlatList, View,Text, Image, TextInput, ActivityI
 
 // Import other components and hooks
 import { useRegisterManagement } from '../hooks/useRegisterManagement';
-import ModalLayout from '../components/ModalLayout';
-import UsersFormContent from '../components/UsersFormContent';
 import { formatDate } from '../utils/formatDate';
+
 
 const RegistrationManagement=()=>{
     const {users, loading, handleCreateUser,isCreating,setIsCreating,currentPage, setCurrentPage, totalPages, totalUsers,selectedUser,setSelectedUser,handleSearch, searchQuery,sortConfig, requestSort,resetSort}=useRegisterManagement();
-    const [modalVisible, setModalVisible]=useState(false);
     const [currentStatus, setCurrentStatus]=useState('All');
-    const [isOpen, setIsOpen]=useState(false);
-
-    const handleAdd=()=>{
-        setModalVisible(true);
-    };
+    const [isOpen, setIsOpen]=useState(false);    
 
     const handleNextPage=()=>{
         if(currentPage<totalPages){
@@ -179,22 +173,7 @@ const RegistrationManagement=()=>{
                         )}
                     </View>
                 </View>
-                <Pressable onPress={handleAdd} style={({ hovered }) => [
-                        styles.btn,
-                        hovered && styles.btnHover, 
-                    ]}>
-                    <Plus size={16}/>
-                    <Text style={styles.btnText}>Add User</Text>
-                </Pressable>
             </View>
-
-            {/* Create Users Modal */}
-            <ModalLayout visible={modalVisible} onClose={()=>setModalVisible(false)}>
-                <UsersFormContent
-                    onCancel={()=>setModalVisible(false)}
-                    isLoading={loading}
-                />
-            </ModalLayout>
 
             <View style={styles.tableContainer}>
                 <FlatList style={styles.table} 
