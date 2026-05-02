@@ -10,12 +10,13 @@ export const useRegisterManagement=()=>{
     const [totalPages, setTotalPages]=useState(1);
     const [totalUsers, setTotalUsers]=useState(0);
     const [selectedUser, setSelectedUser]=useState(null);
+    const [searchQuery, setSearchQuery]=useState('');
 
     // Fetch all users
     const fetchUsers=async()=>{
         setLoading(true);
         try{
-            const response=await RegisterService.getAll(currentPage,10);
+            const response=await RegisterService.getAll(currentPage,10,searchQuery);
             const rawUsers=Array.isArray(response) ? response : (response.data || response.registrations || []);
             const initializedData=rawUsers.map(u=>({...u, selected:false}));
             setUsers(initializedData);
@@ -31,7 +32,12 @@ export const useRegisterManagement=()=>{
 
     useEffect(()=>{
         fetchUsers();
-    },[currentPage]);
+    },[currentPage,searchQuery]);
+
+    const handleSearch=(query)=>{
+        setSearchQuery(query);
+        setCurrentPage(1);
+    }
 
     const handleCreateUser=async(formData)=>{
         setIsCreating(true);
@@ -60,6 +66,7 @@ export const useRegisterManagement=()=>{
         handleCreateUser,
         currentPage, setCurrentPage,
         totalPages, totalUsers,
-        selectedUser,setSelectedUser
+        selectedUser,setSelectedUser,
+        handleSearch, searchQuery
     }
 }

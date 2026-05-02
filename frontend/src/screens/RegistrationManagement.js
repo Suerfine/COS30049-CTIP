@@ -10,19 +10,15 @@ import { formatDate } from '../utils/formatDate';
 import { useSearchFilter } from '../hooks/useSearchFilter';
 
 const RegistrationManagement=()=>{
-    const {users, loading, handleCreateUser,isCreating,setIsCreating,currentPage, setCurrentPage, totalPages, totalUsers,selectedUser,setSelectedUser}=useRegisterManagement();
+    const {users, loading, handleCreateUser,isCreating,setIsCreating,currentPage, setCurrentPage, totalPages, totalUsers,selectedUser,setSelectedUser,handleSearch, searchQuery}=useRegisterManagement();
     const [modalVisible, setModalVisible]=useState(false);
     const [currentStatus, setCurrentStatus]=useState('All');
     const [isOpen, setIsOpen]=useState(false);
 
-    // Search Function
-    const [searchTerm, setSearchTerm]=useState('');
-    const searchFields=['fullName', 'identification','personal_email','tel'];
     const { 
-        filteredData: filteredUsers, 
         requestSort, 
         sortConfig, setSortConfig 
-    } = useSearchFilter(users, searchTerm, currentStatus, searchFields);
+    } = useSearchFilter(users, currentStatus);
 
     const handleAdd=()=>{
         setModalVisible(true);
@@ -49,7 +45,7 @@ const RegistrationManagement=()=>{
         pageNumbers.push(i);
     }
     // Caluculate the pagination
-    const currentUsers=filteredUsers;
+    const currentUsers=users;
 
     const renderHeader=()=>(
         <View style={[styles.tableHeader, styles.row]}>
@@ -150,7 +146,7 @@ const RegistrationManagement=()=>{
                     </Pressable>
                     <View style={[styles.search,styles.row]}>
                         <Search size={18}/>
-                        <TextInput style={styles.input} placeholder='Search...' placeholderTextColor="#8f8f8f" value={searchTerm} onChangeText={(text)=>{setSearchTerm(text); setCurrentPage(1);}}/>
+                        <TextInput style={styles.input} placeholder='Search...' placeholderTextColor="#8f8f8f" value={searchQuery} onChangeText={handleSearch}/>
                     </View>
                     {/* Status Dropdown */}
                     <View style={styles.dropdownWrapper}>

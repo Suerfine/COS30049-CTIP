@@ -3,16 +3,25 @@ import { API_ENDPOINTS } from "../config/ApiEndpoints";
 
 export const RegisterService={
     // GET: fetch all registration
-    getAll: async(page=1, size=10)=>{
-        try{
-            const params={
-                page, size
-            };
-            const response=await apiClient.get(API_ENDPOINTS.USER.SIGNUP,{params});
+    // RegisterService.js
+    getAll: async (page = 1, size = 10, searchQuery = '') => {
+        try {
+            const q = searchQuery.trim();
+            const params = { page, size };
+            if (q) {
+                params.filter = `
+                    firstname like "%${q}%"
+                    or lastname like "%${q}%"
+                    or identification like "%${q}%"
+                    or personal_email like "%${q}%"
+                    or tel like "%${q}%"
+                    `;
+            }
+
+            const response = await apiClient.get(API_ENDPOINTS.USER.SIGNUP, { params });
             return response.data;
-        } catch(error){
-            const message = error.response?.data?.message || 'Failed to fetch registration records';
-            throw new Error(message);
+        } catch (error) {
+            throw new Error(error.response?.data?.message || 'Failed to fetch registration records');
         }
     },
 

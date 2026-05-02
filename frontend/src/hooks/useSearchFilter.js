@@ -1,7 +1,7 @@
 import {useMemo, useState} from 'react';
 import { Avatar } from 'react-native-paper';
 
-export const useSearchFilter=(data, searchTerm, status, searchFields)=>{
+export const useSearchFilter=(data, status)=>{
     const [sortConfig,setSortConfig]=useState({key:null, direction:'asc'});
     const requestSort = (key) => {
         let direction = 'asc';
@@ -15,24 +15,7 @@ export const useSearchFilter=(data, searchTerm, status, searchFields)=>{
     };
     const filteredData= useMemo(()=>{
         if(!data) return [];
-        // Filter Logic
-        let result= data.filter((item)=>{
-            const matchesSearch=searchFields.some((field)=>{
-                let valueToSearch="";
-                if (field==='fullName'){
-                    valueToSearch=`${item.firstname || ''} ${item.lastname || ''}`;
-                }else{
-                    valueToSearch=item[field] || "";
-                }
-                return valueToSearch?.toString().toLowerCase().includes(searchTerm.toLowerCase());
-            });
-
-            const matchesStatus =
-                status === 'All' ||
-                (item.status && item.status.toLowerCase().trim() === status.toLowerCase().trim());
-            return matchesSearch && matchesStatus;
-        });
-
+        let result="";
         // Sorting Logic
         if(sortConfig && sortConfig.key){
             result=[...result].sort((a,b)=>{
@@ -61,6 +44,6 @@ export const useSearchFilter=(data, searchTerm, status, searchFields)=>{
             });
         }
         return result;
-    }, [data,searchTerm, status, searchFields]);
+    }, [data, status]);
     return { filteredData, requestSort, sortConfig, setSortConfig };
 };
