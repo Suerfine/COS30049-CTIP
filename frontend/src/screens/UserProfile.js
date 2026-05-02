@@ -59,26 +59,26 @@ const UserProfile = ({ navigation }) => {
             {/* Pfp and name */}
             <View style={styles.pfpRow}>
                 <View style={styles.pfpWrapper}>
-                {user?.profileImage ? (
-                    <Image source={{ uri: user.profileImage }} style={styles.pfp} />
-                ) : (
-                    <View style={styles.pfpPlaceholder}>
-                    <Text style={styles.pfpInitials}>
-                        {form.firstname ? form.firstname[0].toUpperCase() : "?"}
-                    </Text>
-                    </View>
-                )}
+                    {user?.profileImage ? (
+                        <Image source={{ uri: user.profileImage }} style={styles.pfp} />
+                    ) : (
+                        <View style={styles.pfpPlaceholder}>
+                        <Text style={styles.pfpInitials}>
+                            {form.firstname ? form.firstname[0].toUpperCase() : "?"}
+                        </Text>
+                        </View>
+                    )}
 
-                {/* edit profile button */}
-                <Pressable
-                    style={({ hovered }) => [
-                    styles.pfpEditBtn,
-                    hovered && styles.hoverBtn,
-                    ]}
-                    onPress={() => setPfpModalVisible(true)}
-                >
-                    <SquarePen size={18} color="white" />
-                </Pressable>
+                    {/* edit profile button */}
+                    <Pressable
+                        style={({ hovered }) => [
+                        styles.pfpEditBtn,
+                        hovered && styles.hoverBtn,
+                        ]}
+                        onPress={() => setPfpModalVisible(true)}
+                    >
+                        <SquarePen size={18} color="white" />
+                    </Pressable>
                 </View>
 
                 <Text style={styles.name}>

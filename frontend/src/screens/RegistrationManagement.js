@@ -61,7 +61,15 @@ const RegistrationManagement=()=>{
         <Pressable onPress={()=>setSelectedUser(item)} style={({hovered})=>[styles.row, styles.tableRow, hovered && {backgroundColor:'#f9f9f9'}, selectedUser?.id === item.id && {backgroundColor:'#fff8e1'}]}>
             {/* Full Name and profile image */}
             <View style={[{flex:3}, styles.userInfo, styles.row]}>
-                <Image source={{uri:item.profileImage}} style={styles.avatar} accessibilityLabel={`Profile Image of ${item.fullName}`}/>
+                {item.profileImage ? (
+                <Image source={{ uri: item.profileImage }} style={styles.avatar} accessibilityLabel={`Profile Image of ${item.firstname+" "+item.lastname}`}/>
+                ) : (
+                    <View style={styles.pfpPlaceholder}>
+                        <Text style={styles.pfpInitials}>
+                            {item.firstname ? item.firstname[0].toUpperCase() : '?'}
+                        </Text>
+                    </View>
+                )}
                 <Text>{item.firstname + " " + item.lastname}</Text>
             </View>
             {/* IC */}
@@ -196,7 +204,14 @@ const RegistrationManagement=()=>{
                     </View>
                     <View style={styles.panelContent}>
                         
-                        <Image source={{uri:selectedUser.profileImage}} style={styles.largeAvatar}/>
+                        <Image source={{uri:selectedUser?.profileImage}} style={styles.largeAvatar}/>
+                        <View style={styles.pfpPlaceholder}>
+                            <Text style={styles.pfpInitials}>
+                                {selectedUser?.firstname
+                                    ? selectedUser.firstname[0].toUpperCase()
+                                    : "?"}
+                            </Text>
+                        </View>
                         <Text style={styles.fullname}>{selectedUser.firstname + " " + selectedUser.lastname}</Text>
                         
                         <View style={styles.user}>
@@ -443,6 +458,29 @@ const styles = StyleSheet.create({
         fontSize:18,
         fontWeight:500,
         marginRight:15
+    },
+    avatar:{
+        width: 90,
+        height: 90,
+        borderRadius: 60,
+        borderWidth: 3,
+        borderColor: 'white',
+    },
+    pfpPlaceholder:{
+        width: 90,
+        height: 90,
+        marginBottom: 10,
+        borderRadius: 60,
+        backgroundColor: '#2f6618fe',
+        borderWidth: 3,
+        borderColor: 'white',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    pfpInitials:{
+        fontSize: 32,
+        fontWeight: '700',
+        color: 'white',
     },
     largeAvatar:{
         width:130,

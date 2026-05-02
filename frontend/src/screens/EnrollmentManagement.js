@@ -64,7 +64,15 @@ const EnrollmentManagement = () => {
         <View style={[styles.row, styles.tableRow, {backgroundColor:'#f9f9f9'}]}>
             {/* Full Name and profile image */}
             <View style={[{flex:2}, styles.userInfo, styles.row]}>
-                <Image source={{uri:item.profileImage}} style={styles.avatar} accessibilityLabel={`Profile Image of ${item.fullName}`}/>
+                {item.profileImage ? (
+                <Image source={{ uri: item.profileImage }} style={styles.avatar} accessibilityLabel={`Profile Image of ${item.fullName}`}/>
+                ) : (
+                    <View style={styles.pfpPlaceholder}>
+                        <Text style={styles.pfpInitials}>
+                            {item.firstname ? item.firstname[0].toUpperCase() : '?'}
+                        </Text>
+                    </View>
+                )}
                 <Text>{item.fullName}</Text>
             </View>
             {/* Course Code */}
@@ -416,9 +424,27 @@ const styles = StyleSheet.create({
         color:'white'
     },
     avatar:{
-        width:35,
-        height:35,
-        borderRadius:50,
+        width: 35,
+        height: 35,
+        borderRadius: 60,
+        borderWidth: 3,
+        borderColor: 'white',
+    },
+    pfpPlaceholder:{
+        width: 35,
+        height: 35,
+        marginBottom: 10,
+        borderRadius: 60,
+        backgroundColor: '#2f6618fe',
+        borderWidth: 3,
+        borderColor: 'white',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    pfpInitials:{
+        fontSize: 15,
+        fontWeight: '700',
+        color: 'white',
     },
 });
 export default EnrollmentManagement;

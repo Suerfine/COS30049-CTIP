@@ -8,10 +8,10 @@ import { formatDate } from '../utils/formatDate';
 import ModalLayout from '../components/ModalLayout';
 import UsersFormContent from '../components/UsersFormContent';
 import { ScrollView } from 'react-native-gesture-handler';
+import { useUserDashboard } from '../hooks/useUserDashboard';
 
 const AccountManagement=()=>{
     const {accounts,currentPage, setCurrentPage, totalPages, totalUsers, searchQuery, handleSearch,sortConfig, requestSort, resetSort, handleCreateAccount, loading, refresh, handleUpdateAccount,handleDeleteAccount,currentRole, setCurrentRole} = useAccountManagement();
-
     const [selectedAcc, setSelectedAcc]=useState(null);
     const [activeMenuId, setActiveMenuId]=useState(null);
     const [isOpen, setIsOpen]=useState(false);
@@ -125,7 +125,15 @@ const AccountManagement=()=>{
             <Text style={{flex:1, textAlign:'center'}}>{item.id}</Text>
             {/* Full Name and profile image */}
             <View style={[{flex:3}, styles.userInfo, styles.row]}>
-                <Image source={{uri:item.profileImage}} style={styles.avatar} accessibilityLabel={`Profile Image of ${item.firstname+" "+item.lastname}`}/>
+                {item.profileImage ? (
+                <Image source={{ uri: item.profileImage }} style={styles.avatar} accessibilityLabel={`Profile Image of ${item.firstname+" "+item.lastname}`}/>
+                ) : (
+                    <View style={styles.pfpPlaceholder}>
+                        <Text style={styles.pfpInitials}>
+                            {item.firstname ? item.firstname[0].toUpperCase() : '?'}
+                        </Text>
+                    </View>
+                )}
                 <Text>{item.firstname+" "+item.lastname}</Text>
             </View>
             {/* Username */}
@@ -293,7 +301,14 @@ const AccountManagement=()=>{
                                 </View>
                             )}
                         </View>
-                        <Image source={{uri:selectedAcc.profileImage}} style={styles.largeAvatar}/>
+                        <Image source={{uri:selectedAcc?.profileImage}} style={styles.largeAvatar}/>
+                        <View style={styles.pfpPlaceholder}>
+                            <Text style={styles.pfpInitials}>
+                                {selectedAcc?.firstname
+                                    ? selectedAcc.firstname[0].toUpperCase()
+                                    : "?"}
+                            </Text>
+                        </View>
                         {isEditing ? (
                             <View style={styles.nameEditRow}>
                                 <View style={{ flex: 1 }}>
@@ -480,9 +495,27 @@ const styles = StyleSheet.create({
         flexDirection:'row'
     },
     avatar:{
-        width:35,
-        height:35,
-        borderRadius:50,
+        width: 90,
+        height: 90,
+        borderRadius: 60,
+        borderWidth: 3,
+        borderColor: 'white',
+    },
+    pfpPlaceholder:{
+        width: 90,
+        height: 90,
+        marginBottom: 10,
+        borderRadius: 60,
+        backgroundColor: '#2f6618fe',
+        borderWidth: 3,
+        borderColor: 'white',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    pfpInitials:{
+        fontSize: 32,
+        fontWeight: '700',
+        color: 'white',
     },
     userInfo:{
         gap:10,
