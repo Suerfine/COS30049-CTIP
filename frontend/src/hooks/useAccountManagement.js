@@ -14,11 +14,12 @@ export const useAccountManagement=()=>{
         direction:'asc'
     })
     const [loading, setLoading]=useState(false);
+    const [currentRole, setCurrentRole]=useState('All');
     
     // Fetch all accounts
     const fetchAccounts=async()=>{
         try{
-            const response=await AccountService.getAll(currentPage, 10, searchQuery, sortConfig);
+            const response=await AccountService.getAll(currentPage, 10, searchQuery, sortConfig, currentRole);
             const rawUsers=Array.isArray(response) ? response : (response.data || response.users || []);
             const initializedData=rawUsers.map(u=>({...u, selected:false}));
             setAccounts(initializedData);
@@ -32,7 +33,7 @@ export const useAccountManagement=()=>{
     
     useEffect(()=>{
         fetchAccounts();
-    },[currentPage,searchQuery, sortConfig]);
+    },[currentPage,searchQuery, sortConfig, currentRole]);
 
     const handleSearch=(query)=>{
         setSearchQuery(query);
@@ -115,5 +116,6 @@ export const useAccountManagement=()=>{
         handleCreateAccount, loading,
         refresh:fetchAccounts,
         handleUpdateAccount, handleDeleteAccount,
+        currentRole, setCurrentRole
     };
 }

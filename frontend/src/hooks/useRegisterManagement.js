@@ -14,12 +14,13 @@ export const useRegisterManagement=()=>{
         key:null,
         direction:'asc'
     });
+    const [currentStatus, setCurrentStatus]=useState('All');
 
     // Fetch all users
     const fetchUsers=async()=>{
         setLoading(true);
         try{
-            const response=await RegisterService.getAll(currentPage,10,searchQuery,sortConfig);
+            const response=await RegisterService.getAll(currentPage,10,searchQuery,sortConfig,currentStatus);
             const rawUsers=Array.isArray(response) ? response : (response.data || response.registrations || []);
             const initializedData=rawUsers.map(u=>({...u, selected:false}));
             setUsers(initializedData);
@@ -35,7 +36,7 @@ export const useRegisterManagement=()=>{
 
     useEffect(()=>{
         fetchUsers();
-    },[currentPage,searchQuery, sortConfig]);
+    },[currentPage,searchQuery, sortConfig, currentStatus]);
 
     const handleSearch=(query)=>{
         setSearchQuery(query);
@@ -63,6 +64,7 @@ export const useRegisterManagement=()=>{
         totalPages, totalUsers,
         selectedUser,setSelectedUser,
         handleSearch, searchQuery,
-        sortConfig, requestSort, resetSort
+        sortConfig, requestSort, resetSort,
+        currentStatus, setCurrentStatus
     }
 }

@@ -1,4 +1,4 @@
-import { Pen, Trash2, Search, Plus, Circle, ChevronLeft, ChevronsLeft, ChevronRight, ChevronsRight, X, User2, IdCard, Mail, ShieldUser, Calendar, FileUser, EllipsisVertical, ChevronDown, ChevronUp, CirclePlus, CircleMinus,  MessageSquare, Phone, ArrowUpNarrowWide, ArrowDownWideNarrow, RotateCcw} from 'lucide-react-native';
+import { Pen, Trash2, Search, Plus, Circle, ChevronLeft, ChevronsLeft, ChevronRight, ChevronsRight, X, User2, IdCard, Mail, ShieldUser, Calendar, FileUser, EllipsisVertical, ChevronDown, ChevronUp, CirclePlus, CircleMinus,  MessageSquare, Phone, ArrowUpNarrowWide, ArrowDownWideNarrow, RotateCcw, UserRoundKey} from 'lucide-react-native';
 import React, {useState} from 'react';
 import { Pressable, StyleSheet, FlatList, View,Text, Image, TextInput, Platform} from 'react-native';
 
@@ -7,9 +7,10 @@ import { useAccountManagement } from '../hooks/useAccountManagement';
 import { formatDate } from '../utils/formatDate';
 import ModalLayout from '../components/ModalLayout';
 import UsersFormContent from '../components/UsersFormContent';
+import { ScrollView } from 'react-native-gesture-handler';
 
 const AccountManagement=()=>{
-    const {accounts,currentPage, setCurrentPage, totalPages, totalUsers, searchQuery, handleSearch,sortConfig, requestSort, resetSort, handleCreateAccount, loading, refresh, handleUpdateAccount,handleDeleteAccount} = useAccountManagement();
+    const {accounts,currentPage, setCurrentPage, totalPages, totalUsers, searchQuery, handleSearch,sortConfig, requestSort, resetSort, handleCreateAccount, loading, refresh, handleUpdateAccount,handleDeleteAccount,currentRole, setCurrentRole} = useAccountManagement();
 
     const [selectedAcc, setSelectedAcc]=useState(null);
     const [activeMenuId, setActiveMenuId]=useState(null);
@@ -17,6 +18,7 @@ const AccountManagement=()=>{
     const [isEditing, setIsEditing]=useState(false);
     const [modalVisible, setModalVisible]=useState(false);
     const [editForm, setEditForm]=useState(null);
+    
 
     const handleStartEdit=()=>{
         setEditForm({...selectedAcc});
@@ -85,6 +87,9 @@ const AccountManagement=()=>{
 
     const renderHeader=()=>(
         <View style={[styles.tableHeader, styles.row]}>
+            <Text style={[styles.headerRow, {flex:1, textAlign:'center'}]}>
+                <Text style={styles.headerText}>ID.</Text>
+            </Text>
             <Pressable onPress={()=>requestSort('firstname')} style={[styles.headerRow, {flex:3}]}>
                 <Text style={styles.headerText}>Full Name</Text>
                 {sortConfig.key==='firstname' &&
@@ -97,6 +102,9 @@ const AccountManagement=()=>{
             </Pressable>
             <Text style={[styles.headerRow, {flex:3}]}>
                 <Text style={styles.headerText}>Work Email</Text>
+            </Text>
+            <Text style={[styles.headerRow, {flex:1}]}>
+                <Text style={styles.headerText}>Role</Text>
             </Text>
             <Pressable onPress={()=>requestSort('created_at')} style={[styles.headerRow, {flex:2}]}>
                 <Text style={styles.headerText}>Joined On</Text>
@@ -113,6 +121,8 @@ const AccountManagement=()=>{
 
     const renderUserItem=({item})=>(
         <Pressable onPress={()=>setSelectedAcc(item)} style={({hovered})=>[styles.row, styles.tableRow, hovered && {backgroundColor:'#f9f9f9'}, selectedAcc?.id === item.id && {backgroundColor:'#fff8e1'}]}>
+            {/* ID */}
+            <Text style={{flex:1, textAlign:'center'}}>{item.id}</Text>
             {/* Full Name and profile image */}
             <View style={[{flex:3}, styles.userInfo, styles.row]}>
                 <Image source={{uri:item.profileImage}} style={styles.avatar} accessibilityLabel={`Profile Image of ${item.firstname+" "+item.lastname}`}/>
@@ -122,6 +132,8 @@ const AccountManagement=()=>{
             <Text style={{flex:2}}>{item.username}</Text>
             {/* Work Email */}
             <Text style={{flex:3}}>{item.username + " @example.com"}</Text>
+            {/* Role */}
+            <Text style={{flex:1}}>{item.role === "admin" ? "Admin" : "Park Guide"}</Text>
             {/* Joined On */}
             <Text style={{flex:2}}>{formatDate(item.created_at)}</Text>
             {/* Last Login */}
@@ -178,6 +190,42 @@ const AccountManagement=()=>{
                         <Search size={18}/>
                         <TextInput style={styles.input} placeholder='Search...' placeholderTextColor="#8f8f8f" value={searchQuery} onChangeText={handleSearch}/>
                     </View>
+                    {/* Role Dropdown */}
+                    <View style={styles.dropdownWrapper}>
+                        <Pressable 
+                            style={styles.pillTrigger} 
+                            onPress={() => setIsOpen(!isOpen)}
+                        > 
+                            <Text style={styles.pillText}>Role</Text>
+                            {isOpen ? (<ChevronUp size={16} color="#4b5563" />) : (<ChevronDown size={16} color="#4b5563" />)}
+                        </Pressable>
+
+                        {/* Dropdown Menu */}
+                        {isOpen && (
+                            <View style={styles.dropdownMenu}>
+                                {['All','Admin','Park Guide'].map((role) => (
+                                    <Pressable 
+                                        key={role}
+                                        style={({hovered})=>[
+                                            styles.menuItem,
+                                            currentRole === role && styles.menuItemActive,
+                                            (hovered && currentRole!=role) && styles.menuItemHover 
+                                        ]}
+                                        onPress={() => {
+                                            setCurrentRole(role);
+                                            setIsOpen(false);
+                                        }}
+                                    >
+                                        <Text style={[
+                                            currentRole === role && styles.menuItemTextActive 
+                                        ]}>
+                                            {role}
+                                        </Text>
+                                    </Pressable>
+                                ))}
+                            </View>
+                        )}
+                    </View>
                 </View>
                 <Pressable onPress={handleAdd} style={({ hovered }) => [
                         styles.btn,
@@ -213,7 +261,9 @@ const AccountManagement=()=>{
             {totalPages>1 ? renderPagination() : null}
             {/* Side panel: show user details */}
             {selectedAcc && (
+                
                 <View style={styles.sidePanel}>
+                    <ScrollView styles={styles.ScrollView}>
                     <View style={styles.panelHeader}>
                         <Text style={styles.panelTitle}>
                             User Information
@@ -325,6 +375,14 @@ const AccountManagement=()=>{
                                 onChangeText={(text)=> setEditForm(prev=>({...prev, personal_email: text}))}
                             />) : (<Text style={styles.userDetails}>{selectedAcc.personal_email}</Text>)}
                             </View>
+                            {/* Role */}
+                            <View style={styles.details}>
+                                <View style={styles.row}>
+                                    <UserRoundKey size={18} color="#4f4f4f"/>
+                                    <Text style={styles.panelLabel}>Role:</Text>
+                                </View>
+                                <Text style={styles.userDetails}>{selectedAcc.role == 'admin' ? "Admin" : "Park Guide"}</Text>
+                            </View>
                             {/* Joined Date */}
                             <View style={styles.details}>
                                 <View style={styles.row}>
@@ -349,7 +407,9 @@ const AccountManagement=()=>{
                         </View>)}
                         
                     </View>
+                    </ScrollView>
                 </View>
+                
             )}
         </View>
     );
@@ -366,7 +426,6 @@ const styles = StyleSheet.create({
         borderBottomWidth:1,
         borderBottomColor:"#8f8f8f84",
         alignItems:'center',
-        paddingHorizontal:12,
     },
     table:{
         backgroundColor:"white",
@@ -409,7 +468,6 @@ const styles = StyleSheet.create({
     },
     tableHeader:{
         backgroundColor:'#0a6340',
-        paddingHorizontal:12,
         paddingVertical:8,
         userSelect:'none',
     },
@@ -629,8 +687,61 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
         marginTop: 15,
     },
+    ScrollView:{
+        flex:1,
+        height:"100vh"
+    },
+    dropdownMenu:{
+        position:'absolute',
+        top:37,
+        left:20,
+        backgroundColor:'white',
+        shadowColor: '#000',
+        shadowOpacity: 0.1,
+        shadowRadius: 10,
+        elevation: 5,
+        borderWidth: 1,
+        borderColor: '#f0f0f0',
+        userSelect:"none"
+    },
+    dropdownWrapper:{
+        position:'relative',
+    },
+    pillText: {
+        fontSize: 14,
+        color: '#374151',
+        fontWeight: '500',
+    },
+    menuItem:{
+        padding:14,
+        alignItems:'center'
+    },
+    menuItemActive:{
+        backgroundColor:"#7d9f7a"
+    },
+    menuItemTextActive:{
+        color:'white'
+    },
+    menuItemHover:{
+        backgroundColor:"#f9f9f9"
+    },
+    pillTrigger:{
+        border:'1px solid #0a6340',
+        width:110,
+        flexDirection:"row",
+        gap:10,
+        height:35,
+        marginTop:2,
+        justifyContent:'center',
+        alignItems:'center',
+        marginLeft:15,
+        borderRadius:20,
+        userSelect:'none',
+        backgroundColor:'white',
+        paddingLeft:4
+    },
 });
 
 export default AccountManagement;
 
-// validation msg, add id and role, add status to filter role, filter for registration also does not work
+// validation msg

@@ -5,12 +5,13 @@ import { formatDate } from "../utils/formatDate";
 
 export const AccountService={
     // GET: fetch all accounts
-    getAll: async(page=1, size=10, searchQuery='', sortConfig)=>{
+    getAll: async(page=1, size=10, searchQuery='', sortConfig, role="All")=>{
         try{
             const q = searchQuery.trim();
             const params = { page, size };
+            let filters=[];
             if (q) {
-                params.filter = `
+                filters.push = `
                     firstname like "%${q}%"
                     or lastname like "%${q}%"
                     or identification like "%${q}%"
@@ -18,6 +19,19 @@ export const AccountService={
                     or tel like "%${q}%"
                     or username like "%${q}%"
                     `;
+            }
+
+            if (role && role !== 'All') {
+                const roleMap={
+                    'Admin':'admin',
+                    'Park Guide':'park_guide'
+                };
+                const dbRole=roleMap[role] || role.toLowerCase();
+                filters.push(`role eq "${dbRole}"`);
+            }
+
+            if (filters.length > 0) {
+                params.filter = filters.join(' and ');
             }
 
             if(sortConfig?.key){
