@@ -37,6 +37,7 @@ export async function runSeeders(
 
   // Default Admin user
   const adminUser = buildUser({
+    id: 260000, //Fixed ID for admin user to be used in test cases
     firstname: "Admin",
     lastname: "Admin",
     personal_email: "admin@sfc.gov.my",
