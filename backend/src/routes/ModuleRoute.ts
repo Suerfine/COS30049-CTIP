@@ -1,8 +1,11 @@
 import { Router } from "express";
 import * as ModuleController from "../controllers/ModuleController";
 import { auth } from "../middelware/Auth";
+import pageRouter from "./PageRoute";
 
 const moduleRouter = Router({ mergeParams: true });
+
+moduleRouter.use("/:module_id/pages", pageRouter);
 
 /**
  * @swagger

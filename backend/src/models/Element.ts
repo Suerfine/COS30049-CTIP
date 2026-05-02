@@ -20,6 +20,7 @@ class Element extends Model<
   declare type: ElementTypes;
   declare content: Record<string, unknown>;
   declare score: CreationOptional<number | null>;
+  declare file_id: CreationOptional<string | null>;
   declare created_at: CreationOptional<Date>;
   declare updated_at: CreationOptional<Date>;
   declare deleted_at: CreationOptional<Date | null>;
@@ -58,6 +59,13 @@ Element.init(
     score: {
       type: DataTypes.INTEGER,
       allowNull: true,
+    },
+    file_id: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      defaultValue: null,
+      comment:
+        "Internal use only - stores UUID of uploaded file, not modifiable by users",
     },
     created_at: {
       type: DataTypes.DATE,

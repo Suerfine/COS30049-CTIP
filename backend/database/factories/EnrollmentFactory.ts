@@ -23,7 +23,7 @@ export type EnrollmentFactoryAttributes = {
   completed_at: Date | null;
   reviewed_by_user_id: number | null;
   reviewed_at: Date | null;
-  review_comment: string | null;
+  reviewed_comment: string | null;
   badge_expire_at: Date | null;
   created_at?: Date;
   updated_at?: Date;
@@ -55,13 +55,17 @@ const addYears = (date: Date, years: number): Date => {
 };
 
 const getLatestDate = (dates: Array<Date | null | undefined>): Date => {
-  const resolvedDates = dates.filter((date): date is Date => date instanceof Date);
+  const resolvedDates = dates.filter(
+    (date): date is Date => date instanceof Date,
+  );
 
   if (resolvedDates.length === 0) {
     return new Date();
   }
 
-  return resolvedDates.reduce((latest, current) => (current > latest ? current : latest));
+  return resolvedDates.reduce((latest, current) =>
+    current > latest ? current : latest,
+  );
 };
 
 const getRandomDateBetween = (start: Date, end: Date): Date => {
@@ -71,7 +75,9 @@ const getRandomDateBetween = (start: Date, end: Date): Date => {
   return faker.date.between({ from: safeStart, to: safeEnd });
 };
 
-const resolveAdminUser = async (adminUsers: EnrollmentFactoryUser[] = []): Promise<EnrollmentFactoryUser> => {
+const resolveAdminUser = async (
+  adminUsers: EnrollmentFactoryUser[] = [],
+): Promise<EnrollmentFactoryUser> => {
   if (adminUsers.length > 0) {
     const selectedAdmin = faker.helpers.arrayElement(adminUsers);
 
@@ -95,21 +101,25 @@ const resolveAdminUser = async (adminUsers: EnrollmentFactoryUser[] = []): Promi
 export const buildEnrollment = async (
   options: BuildEnrollmentOptions,
 ): Promise<EnrollmentFactoryResult> => {
-  const {
-    user,
-    course,
-    adminUsers = [],
-    enrollmentOverrides = {},
-  } = options;
+  const { user, course, adminUsers = [], enrollmentOverrides = {} } = options;
 
   const status = enrollmentOverrides.status ?? EnrollmentStatus.IN_PROGRESS;
-  const baseEnrollmentDate = getLatestDate([user.created_at, course.created_at]);
+  const baseEnrollmentDate = getLatestDate([
+    user.created_at,
+    course.created_at,
+  ]);
   const enrolledDate =
     enrollmentOverrides.enrolled_at instanceof Date
       ? enrollmentOverrides.enrolled_at > baseEnrollmentDate
         ? enrollmentOverrides.enrolled_at
-        : getRandomDateBetween(addDays(baseEnrollmentDate, 1), addDays(baseEnrollmentDate, 30))
-      : getRandomDateBetween(addDays(baseEnrollmentDate, 1), addDays(baseEnrollmentDate, 30));
+        : getRandomDateBetween(
+            addDays(baseEnrollmentDate, 1),
+            addDays(baseEnrollmentDate, 30),
+          )
+      : getRandomDateBetween(
+          addDays(baseEnrollmentDate, 1),
+          addDays(baseEnrollmentDate, 30),
+        );
 
   const expiredDate = addYears(enrolledDate, 3);
   const baseEnrollment: EnrollmentFactoryAttributes = {
@@ -120,7 +130,7 @@ export const buildEnrollment = async (
     completed_at: null,
     reviewed_by_user_id: null,
     reviewed_at: null,
-    review_comment: faker.lorem.sentence(),
+    reviewed_comment: faker.lorem.sentence(),
     badge_expire_at: expiredDate,
   };
 
@@ -136,11 +146,16 @@ export const buildEnrollment = async (
   if (status === EnrollmentStatus.COMPLETED) {
     const adminUser = await resolveAdminUser(adminUsers);
     const reviewDate =
-      enrollmentOverrides.reviewed_at instanceof Date && enrollmentOverrides.reviewed_at > enrolledDate
+      enrollmentOverrides.reviewed_at instanceof Date &&
+      enrollmentOverrides.reviewed_at > enrolledDate
         ? enrollmentOverrides.reviewed_at
-        : getRandomDateBetween(addDays(enrolledDate, 1), addDays(enrolledDate, 30));
+        : getRandomDateBetween(
+            addDays(enrolledDate, 1),
+            addDays(enrolledDate, 30),
+          );
     const completedDate =
-      enrollmentOverrides.completed_at instanceof Date && enrollmentOverrides.completed_at > reviewDate
+      enrollmentOverrides.completed_at instanceof Date &&
+      enrollmentOverrides.completed_at > reviewDate
         ? enrollmentOverrides.completed_at
         : getRandomDateBetween(addDays(reviewDate, 1), addDays(reviewDate, 60));
 
@@ -171,7 +186,9 @@ export const buildEnrollments = async (
   count: number,
   options: BuildEnrollmentOptions,
 ): Promise<EnrollmentFactoryResult[]> => {
-  return Promise.all(Array.from({ length: count }, () => buildEnrollment(options)));
+  return Promise.all(
+    Array.from({ length: count }, () => buildEnrollment(options)),
+  );
 };
 
 export default {

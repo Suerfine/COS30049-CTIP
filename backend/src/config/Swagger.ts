@@ -702,6 +702,13 @@ const options: swaggerJSDoc.Options = {
               example: 10,
               description: "Points associated with this element.",
             },
+            file_id: {
+              type: "string",
+              nullable: true,
+              example: "550e8400-e29b-41d4-a716-446655440000",
+              description:
+                "UUID of the uploaded file (internal use only, read-only)",
+            },
             created_at: {
               type: "string",
               format: "date-time",
@@ -716,13 +723,8 @@ const options: swaggerJSDoc.Options = {
         },
         CreateElementRequest: {
           type: "object",
-          required: ["page_id", "order", "type", "content"],
+          required: ["order", "type", "content"],
           properties: {
-            page_id: {
-              type: "integer",
-              example: 10,
-              description: "ID of the page this element belongs to.",
-            },
             order: {
               type: "integer",
               example: 1,
@@ -735,11 +737,10 @@ const options: swaggerJSDoc.Options = {
               description: "Type of element.",
             },
             content: {
-              type: "object",
-              example: {
-                text: "Element content",
-              },
-              description: "JSON content of the element.",
+              type: "string",
+              example: '{"text":"Element content"}',
+              description:
+                "JSON content of the element, sent as a JSON string in form-data.",
             },
             score: {
               type: "integer",
@@ -763,11 +764,10 @@ const options: swaggerJSDoc.Options = {
               description: "Updated display order within the page.",
             },
             content: {
-              type: "object",
-              example: {
-                text: "Updated element content",
-              },
-              description: "Updated JSON content of the element.",
+              type: "string",
+              example: '{"text":"Updated element content"}',
+              description:
+                "Updated JSON content of the element, sent as a JSON string in form-data.",
             },
             score: {
               type: "integer",
@@ -817,8 +817,10 @@ const options: swaggerJSDoc.Options = {
                     description: "Updated display order.",
                   },
                   content: {
-                    type: "object",
-                    description: "Updated JSON content.",
+                    type: "string",
+                    example: '{"text":"Updated content"}',
+                    description:
+                      "Updated JSON content, sent as a JSON string in form-data.",
                   },
                   score: {
                     type: "integer",
