@@ -40,6 +40,14 @@ const options: swaggerJSDoc.Options = {
         name: "Modules",
         description: "Module management endpoints",
       },
+      {
+        name: "Pages",
+        description: "Page management endpoints",
+      },
+      {
+        name: "Elements",
+        description: "Element management endpoints",
+      },
     ],
     components: {
       securitySchemes: {
@@ -566,6 +574,262 @@ const options: swaggerJSDoc.Options = {
               type: "integer",
               example: 3,
               description: "Updated recommended completion week.",
+            },
+          },
+        },
+        Page: {
+          type: "object",
+          properties: {
+            id: { type: "integer", example: 1 },
+            module_id: { type: "integer", example: 10 },
+            order: { type: "integer", example: 1 },
+            title: { type: "string", example: "Quiz" },
+            description: {
+              type: "string",
+              nullable: true,
+              example: "Final assessment quiz.",
+            },
+            passing_score: { type: "integer", example: 70 },
+            max_tries: {
+              type: "integer",
+              nullable: true,
+              example: 3,
+            },
+            final_quiz: {
+              type: "boolean",
+              example: true,
+              description: "Whether this page is a final quiz.",
+            },
+            created_at: {
+              type: "string",
+              format: "date-time",
+              example: "2026-04-24T08:00:00.000Z",
+            },
+            updated_at: {
+              type: "string",
+              format: "date-time",
+              example: "2026-04-24T08:00:00.000Z",
+            },
+          },
+        },
+        CreatePageRequest: {
+          type: "object",
+          required: ["order", "title", "passing_score"],
+          properties: {
+            order: {
+              type: "integer",
+              example: 1,
+              description: "Display order of the page within a module.",
+            },
+            title: { type: "string", example: "Quiz" },
+            description: {
+              type: "string",
+              nullable: true,
+              example: "Final assessment quiz.",
+            },
+            passing_score: {
+              type: "integer",
+              example: 70,
+              description: "Minimum score required to pass this page.",
+            },
+            max_tries: {
+              type: "integer",
+              nullable: true,
+              example: 3,
+              description: "Maximum number of attempts allowed.",
+            },
+            final_quiz: {
+              type: "boolean",
+              example: true,
+              description: "Whether this page is a final quiz.",
+            },
+          },
+        },
+        UpdatePageRequest: {
+          type: "object",
+          properties: {
+            order: {
+              type: "integer",
+              example: 2,
+              description: "Updated display order within the module.",
+            },
+            title: { type: "string", example: "Final Assessment" },
+            description: {
+              type: "string",
+              nullable: true,
+              example: "Updated page description.",
+            },
+            passing_score: {
+              type: "integer",
+              example: 75,
+              description: "Updated minimum passing score.",
+            },
+            max_tries: {
+              type: "integer",
+              nullable: true,
+              example: 5,
+              description: "Updated maximum number of attempts.",
+            },
+            final_quiz: {
+              type: "boolean",
+              example: false,
+              description: "Whether this page is a final quiz.",
+            },
+          },
+        },
+        Element: {
+          type: "object",
+          properties: {
+            id: { type: "integer", example: 1 },
+            page_id: { type: "integer", example: 10 },
+            order: { type: "integer", example: 1 },
+            type: {
+              type: "string",
+              enum: ["text", "image", "video", "file", "quiz_objective"],
+              example: "text",
+              description: "Type of element.",
+            },
+            content: {
+              type: "object",
+              example: {
+                text: "Element content",
+              },
+              description: "JSON content of the element.",
+            },
+            score: {
+              type: "integer",
+              nullable: true,
+              example: 10,
+              description: "Points associated with this element.",
+            },
+            file_id: {
+              type: "string",
+              nullable: true,
+              example: "550e8400-e29b-41d4-a716-446655440000",
+              description:
+                "UUID of the uploaded file (internal use only, read-only)",
+            },
+            created_at: {
+              type: "string",
+              format: "date-time",
+              example: "2026-04-24T08:00:00.000Z",
+            },
+            updated_at: {
+              type: "string",
+              format: "date-time",
+              example: "2026-04-24T08:00:00.000Z",
+            },
+          },
+        },
+        CreateElementRequest: {
+          type: "object",
+          required: ["order", "type", "content"],
+          properties: {
+            order: {
+              type: "integer",
+              example: 1,
+              description: "Display order of the element within a page.",
+            },
+            type: {
+              type: "string",
+              enum: ["text", "image", "video", "file", "quiz_objective"],
+              example: "text",
+              description: "Type of element.",
+            },
+            content: {
+              type: "string",
+              example: '{"text":"Element content"}',
+              description:
+                "JSON content of the element, sent as a JSON string in form-data.",
+            },
+            score: {
+              type: "integer",
+              nullable: true,
+              example: 10,
+              description: "Points associated with this element.",
+            },
+            file: {
+              type: "string",
+              format: "binary",
+              description: "Optional document file for FILE type elements.",
+            },
+          },
+        },
+        UpdateElementRequest: {
+          type: "object",
+          properties: {
+            order: {
+              type: "integer",
+              example: 2,
+              description: "Updated display order within the page.",
+            },
+            content: {
+              type: "string",
+              example: '{"text":"Updated element content"}',
+              description:
+                "Updated JSON content of the element, sent as a JSON string in form-data.",
+            },
+            score: {
+              type: "integer",
+              nullable: true,
+              example: 15,
+              description: "Updated points associated with this element.",
+            },
+            file: {
+              type: "string",
+              format: "binary",
+              description:
+                "Optional updated document file for FILE type elements.",
+            },
+          },
+        },
+        BulkCreateElementRequest: {
+          type: "object",
+          required: ["elements"],
+          properties: {
+            elements: {
+              type: "array",
+              items: {
+                $ref: "#/components/schemas/CreateElementRequest",
+              },
+              description: "Array of elements to create.",
+            },
+          },
+        },
+        BulkUpdateElementRequest: {
+          type: "object",
+          required: ["elements"],
+          properties: {
+            elements: {
+              type: "array",
+              items: {
+                type: "object",
+                required: ["id"],
+                properties: {
+                  id: {
+                    type: "integer",
+                    example: 1,
+                    description: "ID of the element to update.",
+                  },
+                  order: {
+                    type: "integer",
+                    example: 2,
+                    description: "Updated display order.",
+                  },
+                  content: {
+                    type: "string",
+                    example: '{"text":"Updated content"}',
+                    description:
+                      "Updated JSON content, sent as a JSON string in form-data.",
+                  },
+                  score: {
+                    type: "integer",
+                    nullable: true,
+                    description: "Updated points.",
+                  },
+                },
+              },
+              description: "Array of elements to update.",
             },
           },
         },

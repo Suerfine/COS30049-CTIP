@@ -3,6 +3,7 @@ import { View, Text, TextInput, StyleSheet, Pressable, Image, ActivityIndicator,
 import * as ImagePicker from 'expo-image-picker';
 import {X} from 'lucide-react-native';
 import { ModalStyle as styles } from './ModalStyle';
+import { isValidEmail, isOnlyLetters, phoneRegex } from '../utils/Validation';
 
 const UsersFormContent=({onSubmit, onCancel, isLoading})=>{
     const [form, setForm]=useState({
@@ -15,42 +16,63 @@ const UsersFormContent=({onSubmit, onCancel, isLoading})=>{
         role:'parkguide'
     });
 
-    const [errors, setErrors]=useState({
-        email:'',
-        fname:'',
-        lname:'',
-        ic:'',
-        telefon:'',
-    });
+    const [errors, setErrors]=useState({});
 
-    const handleSubmit = async () => {
-        const result = await onSubmit(form);
+    const validateForm=()=>{
+        let tempErrors={};
 
-        if (!result) {
-            console.log("No response from submit");
-            return;
+        if(!form.fname.trim()){
+            tempErrors.fname="* First name is required.";
+        }else if (!isOnlyLetters(form.fname)){
+            tempErrors.fname="* First name must only contain letters.";
         }
 
-        setErrors(prev=>({
-            ...prev,
-            ...result.errors
-        }));
-
-        if (result.success) {
-            setForm({
-                ic: '',
-                email: '',
-                image: null,
-                fname: '',
-                lname: '',
-                telefon: '',
-                role:'parkguide'
-            });
-
-            setErrors({});
-            onCancel?.();
+        if(!form.lname.trim()){
+            tempErrors.lname="* Last name is required.";
+        }else if (!isOnlyLetters(form.lname)){
+            tempErrors.lname="* Last name must only contain letters.";
         }
+
+        if(!form.ic.trim()){
+            tempErrors.ic="* IC/Passport No. is required.";
+        }
+
+        if(!form.email.trim()){
+            tempErrors.email="* Personal Email is required.";
+        }else if(!isValidEmail(form.email)){
+            tempErrors.fname="* Personal Email is invalid format.";
+        }
+
+        if(!form.telefon.trim()){
+            tempErrors.telefon="* Phone Number is required.";
+        }else if(!phoneRegex.test(form.telefon)){
+            tempErrors.telefon = "* Invalid phone number.";
+        }
+
+        setErrors(tempErrors);
+        return Object.keys(tempErrors).length===0;
     };
+
+    const handleSubmit=async()=>{
+        if(validateForm()){
+            const result=await onSubmit(form);
+            if(result && !result.success && result.serverError){
+                const msg=result.serverError.toLowerCase();
+                let serverErrors = {};
+
+                if (msg.includes('email')) {
+                    serverErrors.email = "* This email is already registered.";
+                } else if (msg.includes('identification') || msg.includes('ic')) {
+                    serverErrors.ic = "* This IC/Passport is already in use.";
+                } else {
+                    alert(result.serverError);
+                }
+
+                setErrors(prev => ({ ...prev, ...serverErrors }));
+            }
+        }
+    }
+    
 
     const pickImage=async()=>{
         // Ask for permission
@@ -151,14 +173,7 @@ const UsersFormContent=({onSubmit, onCancel, isLoading})=>{
                 </View>
                
             </View>
-            {errors.fname ? <Text style={{color:'red'}}>{errors.fname}</Text> : null}
-            {errors.lname ? <Text style={{color:'red'}}>{errors.lname}</Text> : null}
-            {errors.ic ? <Text style={{color:'red'}}>{errors.ic}</Text> : null}
-            {errors.telefon ? <Text style={{color:'red'}}>{errors.telefon}</Text> : null}
-            {errors.email ? <Text style={{color:'red'}}>{errors.email}</Text> : null}
-            {/* {Object.values(errors).map((msg, i) =>
-                msg ? <Text key={i} style={{color:'red'}}>{msg}</Text> : null
-                )} */}
+            {errors ? <Text style={{color:'red',marginTop:15}}>{errors.fname}</Text> : null}
             <Pressable 
                 style={styles.Btn} 
                 onPress={handleSubmit}

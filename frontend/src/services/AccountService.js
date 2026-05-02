@@ -52,7 +52,8 @@ export const AccountService={
             return response.data;
         }catch(error){
             console.error("Create Account Error:", error);
-            return Promise.reject(error);
+            const errorMessage = error.response?.data?.message || "Internal Server Error";
+            return Promise.reject(errorMessage);
         }
     },
 };
