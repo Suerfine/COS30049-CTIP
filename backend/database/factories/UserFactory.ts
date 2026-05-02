@@ -16,6 +16,7 @@ export type UserFactoryAttributes = {
   lastname: string;
   identification: string;
   personal_email: string;
+  tel: string;
   role: UserRoles;
   password_hash: string;
   last_login_at?: Date | null;
@@ -44,6 +45,7 @@ export const buildUser = (
     lastname: faker.person.lastName(),
     identification: `${faker.string.alphanumeric(10).toUpperCase()}`,
     personal_email: faker.internet.email().toLowerCase(),
+    tel: `+61${faker.string.numeric(9)}`,
     role: faker.helpers.arrayElement(Object.values(UserRoles)),
     password_hash: hashPassword(DEFAULT_PASSWORD),
     last_login_at: faker.helpers.arrayElement([

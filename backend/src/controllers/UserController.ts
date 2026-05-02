@@ -88,7 +88,8 @@ function toUserResponse(user: User): UserResponse {
     lastname: user.lastname,
     role: user.role,
     identification: user.identification,
-    personal_email:user.personal_email,
+    personal_email: user.personal_email,
+    tel: user.tel,
     last_login_at: user.last_login_at,
     created_at: user.created_at,
     updated_at: user.updated_at,
@@ -278,6 +279,10 @@ export const upsertUser = async (
       updates.personal_email = req.body.personal_email;
     }
 
+    if (typeof req.body.tel === "string" && req.body.tel.trim() !== "") {
+      updates.tel = req.body.tel;
+    }
+
     if (
       typeof req.body.password === "string" &&
       req.body.password.trim() !== ""
@@ -317,6 +322,7 @@ export const createUser = async (
     lastname,
     identification,
     personal_email,
+    tel,
   } = req.body;
   try {
     if (
@@ -325,26 +331,23 @@ export const createUser = async (
       typeof lastname !== "string" ||
       lastname.trim() === ""
     ) {
-      return res.status(400).json({
-        message: "firstname and lastname are required",
-      });
+      throw new Error("firstname and lastname are required");
     }
 
     const user_firstname = firstname.trim();
     const user_lastname = lastname.trim();
     const user_identification = identification?.trim();
     const user_personal_email = personal_email?.trim();
+    const user_tel = tel?.trim();
 
-    if (!user_identification || !user_personal_email) {
-      return res.status(400).json({
-        message: "identification and personal_email are required",
-      });
+    if (!user_identification || !user_personal_email || !user_tel) {
+      throw new Error("identification, personal_email, and tel are required");
     }
 
     // Checking if username already exists
     const existingUser = await User.findOne({ where: { username } });
     if (existingUser) {
-      return res.status(400).json({ message: "Username already exists" });
+      throw new Error("Username already exists");
     }
 
     //Checking if identification already exists
@@ -352,7 +355,7 @@ export const createUser = async (
       where: { identification: user_identification },
     });
     if (existingIdentification) {
-      return res.status(400).json({ message: "Identification already exists" });
+      throw new Error("Identification already exists");
     }
 
     // Hash the password before storing it in the database
@@ -367,6 +370,7 @@ export const createUser = async (
       lastname: user_lastname,
       identification: user_identification,
       personal_email: user_personal_email,
+      tel: user_tel,
     });
 
     await saveUserProfilePicture(newUser.id, req.file);
@@ -379,7 +383,8 @@ export const createUser = async (
       lastname: newUser.lastname,
       role: newUser.role,
       identification: newUser.identification,
-      personal_email:newUser.personal_email,
+      personal_email: newUser.personal_email,
+      tel: newUser.tel,
       last_login_at: newUser.last_login_at,
       created_at: newUser.created_at,
       updated_at: newUser.updated_at,

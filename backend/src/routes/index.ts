@@ -1,6 +1,7 @@
 import { Router } from "express";
 import userRouter from "./UserRoute";
 import registrationRouter from "./RegistrationRoute";
+import courseRouter from "./CourseRoute";
 import * as AuthController from "../controllers/AuthController";
 const router = Router();
 
@@ -16,7 +17,7 @@ router.use("/users", userRouter);
  *     tags:
  *       - Auth
  *     summary: Issue JWT access token
- *     description: Authenticate with email and password to receive a JWT access token for OAuth2 authentication
+ *     description: Authenticate with username and password to receive a JWT access token for OAuth2 authentication. The username is matched against the personal_email column.
  *     security: []
  *     requestBody:
  *       required: true
@@ -25,12 +26,13 @@ router.use("/users", userRouter);
  *           schema:
  *             type: object
  *             required:
- *               - personal_email
+ *               - username
  *               - password
  *             properties:
- *               personal_email:
+ *               username:
  *                 type: string
  *                 format: email
+ *                 description: Your personal email address.
  *               password:
  *                 type: string
  *     responses:
@@ -63,5 +65,10 @@ router.post("/token", AuthController.token);
 =     REGISTRATION ROUTES      =
 ===============================*/
 router.use("/registrations", registrationRouter);
+
+/*===============================
+=        COURSE ROUTES         =
+===============================*/
+router.use("/courses", courseRouter);
 
 export default router;

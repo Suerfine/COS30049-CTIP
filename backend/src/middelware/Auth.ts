@@ -33,6 +33,12 @@ export const auth = async (
     if (!user) {
       throw new Error("User not found");
     }
+
+    // Update user's last active timestamp
+    user.updated_at = new Date();
+    await user.save();
+
+    // Attach user to request object for downstream handlers
     req.user = user;
     return next();
   } catch (err) {

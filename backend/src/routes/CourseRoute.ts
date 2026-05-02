@@ -1,18 +1,25 @@
-import { Router, Request, Response } from "express";
-import * as UserController from "../controllers/UserController";
+import { Router } from "express";
+import * as CourseController from "../controllers/CourseController";
 import { auth } from "../middelware/Auth";
-import profilePictureUpload from "../middelware/UserPfpUpload";
+import { uploadPrivateDocument } from "../middelware/PrivateDocumentUpload";
+import moduleRouter from "./ModuleRoute";
 
-const userRouter = Router();
-const userPfpUpload = profilePictureUpload.single("pfp");
+const privateCourseBadgeUpload = uploadPrivateDocument({
+  subfolder: "courses/badges",
+  allowedMimeTypes: ["image/jpeg", "image/png", "image/webp", "image/gif"],
+}).single("badge");
+
+const courseRouter = Router();
+
+courseRouter.use("/:course_Id/modules", moduleRouter);
 
 /**
  * @swagger
- * /api/users:
+ * /api/courses:
  *   post:
- *     summary: Create a new user
- *     description: Creates a user using form inputs in Swagger UI.
- *     tags: [Users]
+ *     summary: Create a new course
+ *     description: Creates a course with optional badge image, status, release timestamp, and prerequisite groups.
+ *     tags: [Courses]
  *     security:
  *       - OAuth2: ["all"]
  *     requestBody:
@@ -20,16 +27,16 @@ const userPfpUpload = profilePictureUpload.single("pfp");
  *       content:
  *         multipart/form-data:
  *           schema:
- *             $ref: '#/components/schemas/CreateUserRequest'
+ *             $ref: '#/components/schemas/CreateCourseRequest'
  *     responses:
  *       201:
- *         description: User created successfully
+ *         description: Course created successfully
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/User'
+ *               $ref: '#/components/schemas/Course'
  *       400:
- *         description: Invalid input data
+ *         description: Invalid request data
  *         content:
  *           application/json:
  *             schema:
@@ -40,23 +47,21 @@ const userPfpUpload = profilePictureUpload.single("pfp");
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
- *       500:
- *         description: Internal server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
  */
-
-userRouter.post("/", auth, UserController.createUser);
+courseRouter.post(
+  "/",
+  auth,
+  privateCourseBadgeUpload,
+  CourseController.createCourse,
+);
 
 /**
  * @swagger
- * /api/users:
+ * /api/courses:
  *   get:
- *     summary: Get all users
- *     description: Returns a paginated list of users. Supports filtering, sorting, and pagination query parameters.
- *     tags: [Users]
+ *     summary: Get all courses
+ *     description: Returns a paginated list of courses with optional filtering, sorting, and soft-deleted records.
+ *     tags: [Courses]
  *     security:
  *       - OAuth2: ["all"]
  *     parameters:
@@ -79,28 +84,27 @@ userRouter.post("/", auth, UserController.createUser);
  *       - in: query
  *         name: orderBy
  *         required: false
- *         description: Sort expression format "attribute asc|desc". Multiple sort criteria can be separated by commas.
  *         schema:
  *           type: string
- *           example: id desc
+ *           example: created_at desc
+ *         description: Sort expression format "attribute asc|desc".
  *       - in: query
  *         name: filter
  *         required: false
  *         schema:
  *           type: string
- *           example: role eq park_guide
  *         description: Filter expression parsed by backend pagination utility.
  *       - in: query
  *         name: isDeleted
  *         required: false
- *         description: When true, include soft-deleted users in the result set. Defaults to false.
  *         schema:
  *           type: boolean
  *           default: false
  *           example: false
+ *         description: When true, include soft-deleted courses in the result set.
  *     responses:
  *       200:
- *         description: Users retrieved successfully.
+ *         description: Courses retrieved successfully
  *         content:
  *           application/json:
  *             schema:
@@ -109,7 +113,7 @@ userRouter.post("/", auth, UserController.createUser);
  *                 data:
  *                   type: array
  *                   items:
- *                     $ref: '#/components/schemas/User'
+ *                     $ref: '#/components/schemas/Course'
  *                 page:
  *                   type: integer
  *                   example: 1
@@ -118,10 +122,10 @@ userRouter.post("/", auth, UserController.createUser);
  *                   example: 10
  *                 totalElements:
  *                   type: integer
- *                   example: 42
+ *                   example: 25
  *                 totalPages:
  *                   type: integer
- *                   example: 5
+ *                   example: 3
  *                 _links:
  *                   type: object
  *                   additionalProperties:
@@ -134,39 +138,14 @@ userRouter.post("/", auth, UserController.createUser);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-userRouter.get("/", auth, UserController.getAllUsers);
+courseRouter.get("/", auth, CourseController.getAllCourses);
 
 /**
  * @swagger
- * /api/users/me:
+ * /api/courses/{id}:
  *   get:
- *     summary: Get the currently logged in user
- *     description: Returns the profile of the authenticated user associated with the current request.
- *     tags: [Users]
- *     security:
- *       - OAuth2: ["all"]
- *     responses:
- *       200:
- *         description: Current user retrieved successfully
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/User'
- *       401:
- *         description: Unauthorized
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- */
-userRouter.get("/me", auth, UserController.getCurrentUser);
-
-/**
- * @swagger
- * /api/users/{id}:
- *   get:
- *     summary: Get user by ID
- *     tags: [Users]
+ *     summary: Get course by ID
+ *     tags: [Courses]
  *     security:
  *       - OAuth2: ["all"]
  *     parameters:
@@ -177,11 +156,11 @@ userRouter.get("/me", auth, UserController.getCurrentUser);
  *           type: string
  *     responses:
  *       200:
- *         description: User retrieved successfully
+ *         description: Course retrieved successfully
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/User'
+ *               $ref: '#/components/schemas/Course'
  *       401:
  *         description: Unauthorized
  *         content:
@@ -189,22 +168,46 @@ userRouter.get("/me", auth, UserController.getCurrentUser);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *       404:
- *         description: User not found
+ *         description: Course not found
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-// Read single user
-userRouter.get("/:id", auth, UserController.getUserById);
+courseRouter.get("/:id", auth, CourseController.getCourseById);
 
 /**
  * @swagger
- * /api/users/{id}:
+ * /api/courses/{id}/badge:
+ *   get:
+ *     summary: Download course badge image
+ *     description: Returns the private badge image file associated with a course.
+ *     tags: [Courses]
+ *     security:
+ *       - OAuth2: ["all"]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Badge retrieved successfully
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Badge not found
+ */
+courseRouter.get("/:id/badge", auth, CourseController.getCourseBadge);
+
+/**
+ * @swagger
+ * /api/courses/{id}:
  *   put:
- *     summary: Update user
- *     description: Admin can update any user. Non-admin can update only their own account.
- *     tags: [Users]
+ *     summary: Update course
+ *     description: Updates an existing course with one or more fields, including status, release timestamp, prerequisites, and optional badge image.
+ *     tags: [Courses]
  *     security:
  *       - OAuth2: ["all"]
  *     parameters:
@@ -218,43 +221,47 @@ userRouter.get("/:id", auth, UserController.getUserById);
  *       content:
  *         multipart/form-data:
  *           schema:
- *             $ref: '#/components/schemas/UpdateUserRequest'
+ *             $ref: '#/components/schemas/UpdateCourseRequest'
  *     responses:
  *       200:
- *         description: User updated successfully
+ *         description: Course updated successfully
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/User'
+ *               $ref: '#/components/schemas/Course'
+ *       400:
+ *         description: Invalid update payload
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       401:
  *         description: Unauthorized
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
- *       403:
- *         description: Forbidden
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
  *       404:
- *         description: User not found
+ *         description: Course not found
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-// Update user
-userRouter.put("/:id", auth, userPfpUpload, UserController.upsertUser);
+courseRouter.put(
+  "/:id",
+  auth,
+  privateCourseBadgeUpload,
+  CourseController.upsertCourse,
+);
 
 /**
  * @swagger
- * /api/users/{id}:
+ * /api/courses/{id}:
  *   delete:
- *     summary: Delete user
- *     description: Soft deletes a user by setting deleted_at.
- *     tags: [Users]
+ *     summary: Delete course
+ *     description: Soft deletes a course record.
+ *     tags: [Courses]
  *     security:
  *       - OAuth2: ["all"]
  *     parameters:
@@ -265,7 +272,7 @@ userRouter.put("/:id", auth, userPfpUpload, UserController.upsertUser);
  *           type: string
  *     responses:
  *       200:
- *         description: User deleted successfully
+ *         description: Course deleted successfully
  *         content:
  *           application/json:
  *             schema:
@@ -273,7 +280,7 @@ userRouter.put("/:id", auth, userPfpUpload, UserController.upsertUser);
  *               properties:
  *                 message:
  *                   type: string
- *                   example: User deleted successfully
+ *                   example: Course deleted successfully
  *       401:
  *         description: Unauthorized
  *         content:
@@ -281,19 +288,12 @@ userRouter.put("/:id", auth, userPfpUpload, UserController.upsertUser);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *       404:
- *         description: User not found
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *       500:
- *         description: Internal server error
+ *         description: Course not found
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-// Delete user
-userRouter.delete("/:id", UserController.deleteUser);
+courseRouter.delete("/:id", auth, CourseController.deleteCourse);
 
-export default userRouter;
+export default courseRouter;

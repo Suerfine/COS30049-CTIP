@@ -5,7 +5,7 @@ import { verifyPassword } from "../utils/password";
 import { DatabaseError } from "sequelize/lib/errors/index";
 
 type TokenRequestBody = {
-  personal_email?: string;
+  username?: string;
   password?: string;
 };
 
@@ -15,14 +15,12 @@ export const token = async (
   next: NextFunction,
 ): Promise<void> => {
   try {
-    const { personal_email, password } = req.body as TokenRequestBody;
+    const { username, password } = req.body as TokenRequestBody;
     const normalizedEmail =
-      typeof personal_email === "string"
-        ? personal_email.trim().toLowerCase()
-        : "";
+      typeof username === "string" ? username.trim().toLowerCase() : "";
 
     if (!normalizedEmail || !password) {
-      res.status(401).json({ message: "Incorrect email or password" });
+      res.status(401).json({ message: "Incorrect username or password" });
       return;
     }
 
@@ -31,14 +29,14 @@ export const token = async (
     });
 
     if (!user) {
-      res.status(401).json({ message: "Incorrect email or password" });
+      res.status(401).json({ message: "Incorrect username or password" });
       return;
     }
 
     const isValidPassword = verifyPassword(password, user.password_hash);
 
     if (!isValidPassword) {
-      res.status(401).json({ message: "Incorrect email or password" });
+      res.status(401).json({ message: "Incorrect username or password" });
       return;
     }
 
