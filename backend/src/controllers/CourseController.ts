@@ -93,6 +93,10 @@ function toCourseResponse(course: Course): CourseResponse {
       };
     });
 
+  // TODO: Calculate final_quiz_max_score, total_max_score based on user's quiz attempts and course modules when that functionality is implemented. For now, we will set them to random values and some Mock data.
+  const final_quiz_max_score = 100;
+  const total_max_score = 100;
+
   return {
     id: course.id,
     title: course.title,
@@ -106,6 +110,8 @@ function toCourseResponse(course: Course): CourseResponse {
     prerequisite_groups,
     created_at: course.created_at,
     updated_at: course.updated_at,
+    final_quiz_max_score: final_quiz_max_score,
+    total_max_score: total_max_score,
   };
 }
 
