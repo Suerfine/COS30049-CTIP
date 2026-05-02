@@ -5,36 +5,39 @@ import { Pressable, StyleSheet, FlatList, View,Text, Image, TextInput} from 'rea
 // Import other components and hooks
 import { useAccountManagement } from '../hooks/useAccountManagement';
 import { formatDate } from '../utils/formatDate';
-import { useSearchFilter } from '../hooks/useSearchFilter';
+import ModalLayout from '../components/ModalLayout';
+import UsersFormContent from '../components/UsersFormContent';
 
 const AccountManagement=()=>{
-    const {accounts} = useAccountManagement();
-
-    const [currentPage, setCurrentPage]=useState(1);
-    const itemsPerPage=10;
+    const {accounts,currentPage, setCurrentPage, totalPages, totalUsers, searchQuery, handleSearch,sortConfig, requestSort, resetSort, loading} = useAccountManagement();
 
     const [selectedAcc, setSelectedAcc]=useState(null);
     const [activeMenuId, setActiveMenuId]=useState(null);
     const [isOpen, setIsOpen]=useState(false);
     const [isEditing, setIsEditing]=useState(false);
-    const [searchTerm, setSearchTerm]=useState('');
-    const searchFields = ['fullName', 'username', 'workEmail', 'ic', 'telephone', 'personal_email'];
-    const { 
-        filteredData: filteredUsers, 
-        requestSort, 
-        sortConfig, setSortConfig 
-    } = useSearchFilter(accounts, searchTerm, "All", searchFields);
+    const [modalVisible, setModalVisible]=useState(false);
+
+    const handleAdd=()=>{
+        setModalVisible(true);
+    };
+
     // Caluculate the pagination
-    const indexOfLastItem=currentPage*itemsPerPage;
-    const indexOfFirstItem=indexOfLastItem-itemsPerPage;
-    const currentAcc=filteredUsers.slice(indexOfFirstItem, indexOfLastItem);
-    const totalPages=Math.ceil(filteredUsers.length/itemsPerPage);
+    const itemsPerPage = 10; 
+    const indexOfFirstItem = (currentPage - 1) * itemsPerPage;
+    const indexOfLastItem = indexOfFirstItem + accounts.length;
+    const estimatedTotal = totalPages * itemsPerPage;
+    const pageNumbers = [];
+    for (let i = 1; i <= totalPages; i++) {
+        pageNumbers.push(i);
+    }
+    // Caluculate the pagination
+    const currentAcc=accounts;
 
     const renderHeader=()=>(
         <View style={[styles.tableHeader, styles.row]}>
-            <Pressable onPress={()=>requestSort('fullName')} style={[styles.headerRow, {flex:3}]}>
+            <Pressable onPress={()=>requestSort('firstname')} style={[styles.headerRow, {flex:3}]}>
                 <Text style={styles.headerText}>Full Name</Text>
-                {sortConfig.key==='fullName' &&
+                {sortConfig.key==='firstname' &&
                 sortConfig.direction==='asc' ? <ArrowUpNarrowWide size={14} color="white"/> : <ArrowDownWideNarrow size={14} color="white"/>}
             </Pressable>
             <Pressable onPress={()=>requestSort('username')} style={[styles.headerRow, {flex:2}]}>
@@ -42,19 +45,17 @@ const AccountManagement=()=>{
                 {sortConfig.key==='username' &&
                 sortConfig.direction==='asc' ? <ArrowUpNarrowWide size={14} color="white"/> : <ArrowDownWideNarrow size={14} color="white"/>}
             </Pressable>
-            <Pressable onPress={()=>requestSort('workEmail')} style={[styles.headerRow, {flex:3}]}>
+            <Text style={[styles.headerRow, {flex:3}]}>
                 <Text style={styles.headerText}>Work Email</Text>
-                {sortConfig.key==='workEmail' &&
-                sortConfig.direction==='asc' ? <ArrowUpNarrowWide size={14} color="white"/> : <ArrowDownWideNarrow size={14} color="white"/>}
-            </Pressable>
-            <Pressable onPress={()=>requestSort('joinedDate')} style={[styles.headerRow, {flex:2}]}>
+            </Text>
+            <Pressable onPress={()=>requestSort('created_at')} style={[styles.headerRow, {flex:2}]}>
                 <Text style={styles.headerText}>Joined On</Text>
-                {sortConfig.key==='joinedDate' &&
+                {sortConfig.key==='created_at' &&
                 sortConfig.direction==='asc' ? <ArrowUpNarrowWide size={14} color="white"/> : <ArrowDownWideNarrow size={14} color="white"/>}
             </Pressable>
-            <Pressable onPress={()=>requestSort('lastLogin')} style={[styles.headerRow, {flex:2}]}>
+            <Pressable onPress={()=>requestSort('last_login_at')} style={[styles.headerRow, {flex:2}]}>
                 <Text style={styles.headerText}>Last Login</Text>
-                {sortConfig.key==='lastLogin' &&
+                {sortConfig.key==='last_login_at' &&
                 sortConfig.direction==='asc' ? <ArrowUpNarrowWide size={14} color="white"/> : <ArrowDownWideNarrow size={14} color="white"/>}
             </Pressable>
         </View>
@@ -86,7 +87,7 @@ const AccountManagement=()=>{
         return (
             <View style={[styles.paginationContainer, styles.row]}> 
                 <Text style={styles.pageInfo}>
-                    Showing {accounts.length>0 ? indexOfFirstItem+1 : 0} to {Math.min(indexOfLastItem, accounts.length)} of {accounts.length} users
+                    Showing {accounts.length>0 ? indexOfFirstItem+1 : 0} to {indexOfLastItem} of {totalUsers} users
                 </Text>
                 <View style={styles.row}>
                     <Pressable disabled={currentPage==1} onPress={()=>setCurrentPage(1)} style={[styles.pageBtn, currentPage==1 && styles.btnDisabled]}>
@@ -115,9 +116,9 @@ const AccountManagement=()=>{
     return(
         <View style={styles.container}>
             <Text style={styles.title}>Account Management</Text>
-            <View style={styles.toolbar}>
+            <View style={[styles.toolbar, styles.row]}>
                 <View style={styles.row}>
-                    <Pressable onPress={()=>setSortConfig({key:null, asc:true})} style={({ hovered }) => [
+                    <Pressable onPress={resetSort} style={({ hovered }) => [
                         styles.iconBtn,
                         hovered && styles.iconBtnHover,
                     ]}>
@@ -125,10 +126,24 @@ const AccountManagement=()=>{
                     </Pressable>
                     <View style={[styles.search,styles.row]}>
                         <Search size={18}/>
-                        <TextInput style={styles.input} placeholder='Search...' placeholderTextColor="#8f8f8f" value={searchTerm} onChangeText={(text)=>{setSearchTerm(text); setCurrentPage(1);}}/>
+                        <TextInput style={styles.input} placeholder='Search...' placeholderTextColor="#8f8f8f" value={searchQuery} onChangeText={handleSearch}/>
                     </View>
                 </View>
+                <Pressable onPress={handleAdd} style={({ hovered }) => [
+                        styles.btn,
+                        hovered && styles.btnHover, 
+                    ]}>
+                    <Plus size={16}/>
+                    <Text style={styles.btnText}>Add User</Text>
+                </Pressable>
             </View>
+            {/* Create Users Modal */}
+            <ModalLayout visible={modalVisible} onClose={()=>setModalVisible(false)}>
+                <UsersFormContent
+                    onCancel={()=>setModalVisible(false)}
+                    isLoading={loading}
+                />
+            </ModalLayout>
 
             <View style={styles.tableContainer}>
                 <FlatList style={styles.table} 
@@ -136,6 +151,7 @@ const AccountManagement=()=>{
                     ListHeaderComponent={renderHeader}
                     renderItem={renderUserItem}
                     keyExtractor={item=>item.id.toString()}
+                    ListEmptyComponent={<View style={styles.tableRow}><Text style={{flex:1, paddingVertical:2}}>No Users Found.</Text></View>}
                 />
             </View>
             {totalPages>1 ? renderPagination() : null}
@@ -207,8 +223,8 @@ const AccountManagement=()=>{
                                 </View>
                                 {isEditing ? (<TextInput
                                 style={[styles.userDetails,styles.inputEditing]}
-                                value={selectedAcc.telephone}
-                            />) : (<Text style={styles.userDetails}>{selectedAcc.telephone}</Text>)}
+                                value={selectedAcc.tel}
+                            />) : (<Text style={styles.userDetails}>{selectedAcc.tel}</Text>)}
                             </View>
                             
                             {/* Email */}
@@ -505,6 +521,24 @@ const styles = StyleSheet.create({
         gap:10,
         paddingHorizontal:10,
         alignItems:'center',
+    },
+     btn:{
+        flexDirection:'row',
+        gap:4,
+        alignItems:'center',
+        alignSelf:'center',
+        backgroundColor:"#217837",
+        borderRadius:50,
+        color:'white',
+        paddingHorizontal:23,
+        paddingVertical:10,
+    },
+    btnText:{
+        color:'white',
+        fontSize:14
+    },
+    btnHover:{
+        backgroundColor:'#5a993ffe'
     },
 });
 

@@ -3,24 +3,28 @@ import { API_ENDPOINTS } from "../config/ApiEndpoints";
 
 export const RegisterService={
     // GET: fetch all registration
-    getAll: async(page=1, size=10, search, status)=>{
-        try{
-            const params={page, size};
-            let filters = [];
-            if (status && status !== 'All') {
-                filters.push(`status eq ${status.toLowerCase()}`);
+    getAll: async (page = 1, size = 10, searchQuery = '', sortConfig) => {
+        try {
+            const q = searchQuery.trim();
+            const params = { page, size };
+            if (q) {
+                params.filter = `
+                    firstname like "%${q}%"
+                    or lastname like "%${q}%"
+                    or identification like "%${q}%"
+                    or personal_email like "%${q}%"
+                    or tel like "%${q}%"
+                    `;
             }
-            if (search) {
-                filters.push(`firstname lk ${search}`);
+
+            if(sortConfig?.key){
+                params.orderBy=`${sortConfig.key} ${sortConfig.direction}`;
             }
-            if (filters.length > 0) {
-                url += `&filter=${filters.join(' and ')}`;
-            }
-            const response=await apiClient.get(API_ENDPOINTS.USER.SIGNUP,{params});
+
+            const response = await apiClient.get(API_ENDPOINTS.USER.SIGNUP, { params });
             return response.data;
-        } catch(error){
-            const message = error.response?.data?.message || 'Failed to fetch registration records';
-            throw new Error(message);
+        } catch (error) {
+            throw new Error(error.response?.data?.message || 'Failed to fetch registration records');
         }
     },
 

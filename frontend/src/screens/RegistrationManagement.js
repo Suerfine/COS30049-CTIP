@@ -4,29 +4,13 @@ import { Pressable, StyleSheet, FlatList, View,Text, Image, TextInput, ActivityI
 
 // Import other components and hooks
 import { useRegisterManagement } from '../hooks/useRegisterManagement';
-import ModalLayout from '../components/ModalLayout';
-import UsersFormContent from '../components/UsersFormContent';
 import { formatDate } from '../utils/formatDate';
-import { useSearchFilter } from '../hooks/useSearchFilter';
+
 
 const RegistrationManagement=()=>{
-    const {users, loading, handleCreateUser,isCreating,setIsCreating,currentPage, setCurrentPage, totalPages, totalUsers,selectedUser,setSelectedUser}=useRegisterManagement();
-    const [modalVisible, setModalVisible]=useState(false);
+    const {users, loading, handleCreateUser,isCreating,setIsCreating,currentPage, setCurrentPage, totalPages, totalUsers,selectedUser,setSelectedUser,handleSearch, searchQuery,sortConfig, requestSort,resetSort}=useRegisterManagement();
     const [currentStatus, setCurrentStatus]=useState('All');
-    const [isOpen, setIsOpen]=useState(false);
-
-    // Search Function
-    const [searchTerm, setSearchTerm]=useState('');
-    const searchFields=['fullName', 'identification','personal_email','tel'];
-    const { 
-        filteredData: filteredUsers, 
-        requestSort, 
-        sortConfig, setSortConfig 
-    } = useSearchFilter(users, searchTerm, currentStatus, searchFields);
-
-    const handleAdd=()=>{
-        setModalVisible(true);
-    };
+    const [isOpen, setIsOpen]=useState(false);    
 
     const handleNextPage=()=>{
         if(currentPage<totalPages){
@@ -49,13 +33,13 @@ const RegistrationManagement=()=>{
         pageNumbers.push(i);
     }
     // Caluculate the pagination
-    const currentUsers=filteredUsers;
+    const currentUsers=users;
 
     const renderHeader=()=>(
         <View style={[styles.tableHeader, styles.row]}>
-            <Pressable onPress={()=>requestSort('fullName')} style={[styles.headerRow, {flex:3}]}>
+            <Pressable onPress={()=>requestSort('firstname')} style={[styles.headerRow, {flex:3}]}>
                 <Text style={styles.headerText}>Full Name</Text>
-                {sortConfig.key==='fullName' &&
+                {sortConfig.key==='firstname' &&
                 sortConfig.direction==='asc' ? <ArrowUpNarrowWide size={14} color="white"/> : <ArrowDownWideNarrow size={14} color="white"/>}
             </Pressable>
             
@@ -142,7 +126,7 @@ const RegistrationManagement=()=>{
             <Text style={styles.title}>Registration Management</Text>
             <View style={[styles.toolbar,styles.row]}>
                 <View style={styles.row}>
-                    <Pressable onPress={()=>setSortConfig({key:null, asc:true})} style={({ hovered }) => [
+                    <Pressable onPress={resetSort} style={({ hovered }) => [
                         styles.iconBtn,
                         hovered && styles.iconBtnHover,
                     ]}>
@@ -150,7 +134,7 @@ const RegistrationManagement=()=>{
                     </Pressable>
                     <View style={[styles.search,styles.row]}>
                         <Search size={18}/>
-                        <TextInput style={styles.input} placeholder='Search...' placeholderTextColor="#8f8f8f" value={searchTerm} onChangeText={(text)=>{setSearchTerm(text); setCurrentPage(1);}}/>
+                        <TextInput style={styles.input} placeholder='Search...' placeholderTextColor="#8f8f8f" value={searchQuery} onChangeText={handleSearch}/>
                     </View>
                     {/* Status Dropdown */}
                     <View style={styles.dropdownWrapper}>
@@ -189,22 +173,7 @@ const RegistrationManagement=()=>{
                         )}
                     </View>
                 </View>
-                <Pressable onPress={handleAdd} style={({ hovered }) => [
-                        styles.btn,
-                        hovered && styles.btnHover, 
-                    ]}>
-                    <Plus size={16}/>
-                    <Text style={styles.btnText}>Add User</Text>
-                </Pressable>
             </View>
-
-            {/* Create Users Modal */}
-            <ModalLayout visible={modalVisible} onClose={()=>setModalVisible(false)}>
-                <UsersFormContent
-                    onCancel={()=>setModalVisible(false)}
-                    isLoading={loading}
-                />
-            </ModalLayout>
 
             <View style={styles.tableContainer}>
                 <FlatList style={styles.table} 
