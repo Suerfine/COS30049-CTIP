@@ -3,7 +3,6 @@ import { API_ENDPOINTS } from "../config/ApiEndpoints";
 
 export const RegisterService={
     // GET: fetch all registration
-    // RegisterService.js
     getAll: async (page = 1, size = 10, searchQuery = '') => {
         try {
             const q = searchQuery.trim();

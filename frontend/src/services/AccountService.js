@@ -3,11 +3,20 @@ import { API_ENDPOINTS } from "../config/ApiEndpoints";
 
 export const AccountService={
     // GET: fetch all accounts
-    getAll: async(page=1, size=10)=>{
+    getAll: async(page=1, size=10, searchQuery='')=>{
         try{
-            const params={
-                page, size
-            };
+            const q = searchQuery.trim();
+            const params = { page, size };
+            if (q) {
+                params.filter = `
+                    firstname like "%${q}%"
+                    or lastname like "%${q}%"
+                    or identification like "%${q}%"
+                    or personal_email like "%${q}%"
+                    or tel like "%${q}%"
+                    or username like "%${q}%"
+                    `;
+            }
             const response=await apiClient.get(API_ENDPOINTS.USER.ACCOUNT,{params});
             return response.data;
         } catch(error){

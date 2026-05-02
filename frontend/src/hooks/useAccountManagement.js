@@ -7,11 +7,12 @@ export const useAccountManagement=()=>{
     const [totalPages, setTotalPages]=useState(1);
     const [totalUsers, setTotalUsers]=useState(0);
     const [selectedUser, setSelectedUser]=useState(null);
+    const [searchQuery, setSearchQuery]=useState('');
     
     // Fetch all accounts
     const fetchAccounts=async()=>{
         try{
-            const response=await AccountService.getAll(currentPage, 10);
+            const response=await AccountService.getAll(currentPage, 10, searchQuery);
             const rawUsers=Array.isArray(response) ? response : (response.data || response.users || []);
             const initializedData=rawUsers.map(u=>({...u, selected:false}));
             setAccounts(initializedData);
@@ -25,12 +26,18 @@ export const useAccountManagement=()=>{
     
     useEffect(()=>{
         fetchAccounts();
-    },[currentPage]);
+    },[currentPage,searchQuery]);
+
+    const handleSearch=(query)=>{
+        setSearchQuery(query);
+        setCurrentPage(1);
+    }
 
     return{
         accounts, refresh: fetchAccounts,
         currentPage, setCurrentPage,
         totalPages, totalUsers,
-        selectedUser,setSelectedUser
+        selectedUser,setSelectedUser,
+        handleSearch, searchQuery
     };
 }

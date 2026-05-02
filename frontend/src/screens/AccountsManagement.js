@@ -8,20 +8,17 @@ import { formatDate } from '../utils/formatDate';
 import { useSearchFilter } from '../hooks/useSearchFilter';
 
 const AccountManagement=()=>{
-    const {accounts,currentPage, setCurrentPage, totalPages, totalUsers} = useAccountManagement();
+    const {accounts,currentPage, setCurrentPage, totalPages, totalUsers, searchQuery, handleSearch} = useAccountManagement();
 
     const [selectedAcc, setSelectedAcc]=useState(null);
     const [activeMenuId, setActiveMenuId]=useState(null);
     const [isOpen, setIsOpen]=useState(false);
     const [isEditing, setIsEditing]=useState(false);
-    const [searchTerm, setSearchTerm]=useState('');
-    const searchFields = ['fullName', 'username', 'workEmail', 'ic', 'telephone', 'personal_email'];
 
     const { 
-        filteredData: filteredUsers, 
         requestSort, 
         sortConfig, setSortConfig 
-    } = useSearchFilter(accounts, searchTerm, "All", searchFields);
+    } = useSearchFilter(accounts, "All");
 
     // Caluculate the pagination
     const itemsPerPage = 10; 
@@ -33,7 +30,7 @@ const AccountManagement=()=>{
         pageNumbers.push(i);
     }
     // Caluculate the pagination
-    const currentAcc=filteredUsers;
+    const currentAcc=accounts;
 
     const renderHeader=()=>(
         <View style={[styles.tableHeader, styles.row]}>
@@ -91,7 +88,7 @@ const AccountManagement=()=>{
         return (
             <View style={[styles.paginationContainer, styles.row]}> 
                 <Text style={styles.pageInfo}>
-                    Showing {accounts.length>0 ? indexOfFirstItem+1 : 0} to {Math.min(indexOfLastItem, accounts.length)} of {accounts.length} users
+                    Showing {accounts.length>0 ? indexOfFirstItem+1 : 0} to {indexOfLastItem} of {totalUsers} users
                 </Text>
                 <View style={styles.row}>
                     <Pressable disabled={currentPage==1} onPress={()=>setCurrentPage(1)} style={[styles.pageBtn, currentPage==1 && styles.btnDisabled]}>
@@ -130,7 +127,7 @@ const AccountManagement=()=>{
                     </Pressable>
                     <View style={[styles.search,styles.row]}>
                         <Search size={18}/>
-                        <TextInput style={styles.input} placeholder='Search...' placeholderTextColor="#8f8f8f" value={searchTerm} onChangeText={(text)=>{setSearchTerm(text); setCurrentPage(1);}}/>
+                        <TextInput style={styles.input} placeholder='Search...' placeholderTextColor="#8f8f8f" value={searchQuery} onChangeText={handleSearch}/>
                     </View>
                 </View>
             </View>
@@ -141,6 +138,7 @@ const AccountManagement=()=>{
                     ListHeaderComponent={renderHeader}
                     renderItem={renderUserItem}
                     keyExtractor={item=>item.id.toString()}
+                    ListEmptyComponent={<View style={styles.tableRow}><Text style={{flex:1, paddingVertical:2}}>No Users Found.</Text></View>}
                 />
             </View>
             {totalPages>1 ? renderPagination() : null}
@@ -212,8 +210,8 @@ const AccountManagement=()=>{
                                 </View>
                                 {isEditing ? (<TextInput
                                 style={[styles.userDetails,styles.inputEditing]}
-                                value={selectedAcc.telephone}
-                            />) : (<Text style={styles.userDetails}>{selectedAcc.telephone}</Text>)}
+                                value={selectedAcc.tel}
+                            />) : (<Text style={styles.userDetails}>{selectedAcc.tel}</Text>)}
                             </View>
                             
                             {/* Email */}
