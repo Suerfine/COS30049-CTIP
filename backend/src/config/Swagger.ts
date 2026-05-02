@@ -36,6 +36,10 @@ const options: swaggerJSDoc.Options = {
         name: "Courses",
         description: "Course management endpoints",
       },
+      {
+        name: "Modules",
+        description: "Module management endpoints",
+      },
     ],
     components: {
       securitySchemes: {
@@ -494,6 +498,74 @@ const options: swaggerJSDoc.Options = {
               type: "string",
               format: "binary",
               description: "Optional course badge image file",
+            },
+          },
+        },
+        Module: {
+          type: "object",
+          properties: {
+            id: { type: "integer", example: 1 },
+            course_id: { type: "integer", example: 10 },
+            order: { type: "integer", example: 1 },
+            title: { type: "string", example: "Introduction" },
+            description: {
+              type: "string",
+              nullable: true,
+              example: "Overview of this course module.",
+            },
+            complete_by_week: { type: "integer", example: 2 },
+            created_at: {
+              type: "string",
+              format: "date-time",
+              example: "2026-04-24T08:00:00.000Z",
+            },
+            updated_at: {
+              type: "string",
+              format: "date-time",
+              example: "2026-04-24T08:00:00.000Z",
+            },
+          },
+        },
+        CreateModuleRequest: {
+          type: "object",
+          required: ["order", "title", "complete_by_week"],
+          properties: {
+            order: {
+              type: "integer",
+              example: 1,
+              description: "Display order of the module within a course.",
+            },
+            title: { type: "string", example: "Introduction" },
+            description: {
+              type: "string",
+              nullable: true,
+              example: "Overview and learning outcomes.",
+            },
+            complete_by_week: {
+              type: "integer",
+              example: 2,
+              description: "Recommended completion week for this module.",
+            },
+          },
+        },
+        UpdateModuleRequest: {
+          type: "object",
+          properties: {
+            order: {
+              type: "integer",
+              example: 2,
+              description: "Updated display order within the course.",
+            },
+            title: { type: "string", example: "Module Introduction" },
+            description: {
+              type: "string",
+              nullable: true,
+              example: "Updated module description.",
+            },
+            complete_by_week: {
+              type: "integer",
+              example: 3,
+              description: "Updated recommended completion week.",
             },
           },
         },

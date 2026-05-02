@@ -2,6 +2,7 @@ import { Router } from "express";
 import * as CourseController from "../controllers/CourseController";
 import { auth } from "../middelware/Auth";
 import { uploadPrivateDocument } from "../middelware/PrivateDocumentUpload";
+import moduleRouter from "./ModuleRoute";
 
 const privateCourseBadgeUpload = uploadPrivateDocument({
   subfolder: "courses/badges",
@@ -9,6 +10,8 @@ const privateCourseBadgeUpload = uploadPrivateDocument({
 }).single("badge");
 
 const courseRouter = Router();
+
+courseRouter.use("/:course_Id/modules", moduleRouter);
 
 /**
  * @swagger
