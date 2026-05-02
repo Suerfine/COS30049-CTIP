@@ -5,7 +5,10 @@ export const AccountService={
     // GET: fetch all accounts
     getAll: async(page=1, size=10)=>{
         try{
-            const response=await apiClient.get(API_ENDPOINTS.USER.ACCOUNT);
+            const params={
+                page, size
+            };
+            const response=await apiClient.get(API_ENDPOINTS.USER.ACCOUNT,{params});
             return response.data;
         } catch(error){
             console.error('Get Account Error:', error);

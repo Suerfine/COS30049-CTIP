@@ -8,10 +8,7 @@ import { formatDate } from '../utils/formatDate';
 import { useSearchFilter } from '../hooks/useSearchFilter';
 
 const AccountManagement=()=>{
-    const {accounts} = useAccountManagement();
-
-    const [currentPage, setCurrentPage]=useState(1);
-    const itemsPerPage=10;
+    const {accounts,currentPage, setCurrentPage, totalPages, totalUsers} = useAccountManagement();
 
     const [selectedAcc, setSelectedAcc]=useState(null);
     const [activeMenuId, setActiveMenuId]=useState(null);
@@ -19,16 +16,24 @@ const AccountManagement=()=>{
     const [isEditing, setIsEditing]=useState(false);
     const [searchTerm, setSearchTerm]=useState('');
     const searchFields = ['fullName', 'username', 'workEmail', 'ic', 'telephone', 'personal_email'];
+
     const { 
         filteredData: filteredUsers, 
         requestSort, 
         sortConfig, setSortConfig 
     } = useSearchFilter(accounts, searchTerm, "All", searchFields);
+
     // Caluculate the pagination
-    const indexOfLastItem=currentPage*itemsPerPage;
-    const indexOfFirstItem=indexOfLastItem-itemsPerPage;
-    const currentAcc=filteredUsers.slice(indexOfFirstItem, indexOfLastItem);
-    const totalPages=Math.ceil(filteredUsers.length/itemsPerPage);
+    const itemsPerPage = 10; 
+    const indexOfFirstItem = (currentPage - 1) * itemsPerPage;
+    const indexOfLastItem = indexOfFirstItem + accounts.length;
+    const estimatedTotal = totalPages * itemsPerPage;
+    const pageNumbers = [];
+    for (let i = 1; i <= totalPages; i++) {
+        pageNumbers.push(i);
+    }
+    // Caluculate the pagination
+    const currentAcc=filteredUsers;
 
     const renderHeader=()=>(
         <View style={[styles.tableHeader, styles.row]}>

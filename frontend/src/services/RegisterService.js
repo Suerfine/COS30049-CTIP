@@ -3,19 +3,11 @@ import { API_ENDPOINTS } from "../config/ApiEndpoints";
 
 export const RegisterService={
     // GET: fetch all registration
-    getAll: async(page=1, size=10, search, status)=>{
+    getAll: async(page=1, size=10)=>{
         try{
-            const params={page, size};
-            let filters = [];
-            if (status && status !== 'All') {
-                filters.push(`status eq ${status.toLowerCase()}`);
-            }
-            if (search) {
-                filters.push(`firstname lk ${search}`);
-            }
-            if (filters.length > 0) {
-                url += `&filter=${filters.join(' and ')}`;
-            }
+            const params={
+                page, size
+            };
             const response=await apiClient.get(API_ENDPOINTS.USER.SIGNUP,{params});
             return response.data;
         } catch(error){

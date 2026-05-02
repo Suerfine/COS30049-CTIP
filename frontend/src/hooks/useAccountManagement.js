@@ -3,14 +3,20 @@ import { AccountService} from '../services/AccountService';
 
 export const useAccountManagement=()=>{
     const [accounts, setAccounts]=useState([]);
+    const [currentPage, setCurrentPage]=useState(1);
+    const [totalPages, setTotalPages]=useState(1);
+    const [totalUsers, setTotalUsers]=useState(0);
+    const [selectedUser, setSelectedUser]=useState(null);
     
     // Fetch all accounts
     const fetchAccounts=async()=>{
         try{
-            const response=await AccountService.getAll();
+            const response=await AccountService.getAll(currentPage, 10);
             const rawUsers=Array.isArray(response) ? response : (response.data || response.users || []);
             const initializedData=rawUsers.map(u=>({...u, selected:false}));
             setAccounts(initializedData);
+            setTotalUsers(response.totalElements);
+            setTotalPages(response.totalPages);
         }catch(err){
             console.log("Failed to fetch all users: ",err);
             setAccounts([]);
@@ -19,9 +25,12 @@ export const useAccountManagement=()=>{
     
     useEffect(()=>{
         fetchAccounts();
-    },[]);
+    },[currentPage]);
 
     return{
-        accounts, refresh: fetchAccounts
+        accounts, refresh: fetchAccounts,
+        currentPage, setCurrentPage,
+        totalPages, totalUsers,
+        selectedUser,setSelectedUser
     };
 }
