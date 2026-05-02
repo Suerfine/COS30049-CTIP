@@ -10,7 +10,6 @@ import { useCourses } from '../hooks/useCourses.js';
 
 const AdminCourse = ({navigation}) => {
     const {courses, loading, addCourse, editCourse, deleteCourse}=useCourses();
-
     const [modalVisible, setModalVisible]=useState(false);
     const [isEditing, setIsEditing]=useState(false);
     const [selectedCourse, setSelectedCourse]=useState(null);
@@ -96,17 +95,17 @@ const AdminCourse = ({navigation}) => {
 
             {/* Course Card */}
             <View style={styles.cardContainer}>
-                {courses.map(course=>{
+                {courses?.data?.map(course=>{
                     const numModules=course.modules? course.modules.length :0;
                     return(
                     <CourseCard
                         key={course.id}
                         id={course.id}
                         imagePath={{uri:course.image}}
-                        courseTitle={course.courseTitle}
-                        numModules={numModules}
-                        duration={course.duration}
-                        expiry={course.expiryDate}
+                        courseTitle={course.title}
+                        numModules={numModules || 16}
+                        duration={course.expected_completion_weeks}
+                        expiry={course.must_complete_in_weeks}
                         userType="admin"
                         onPress={() => navigation.navigate('AdminStack', {
                             screen: 'Course Details',

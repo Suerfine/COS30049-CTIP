@@ -7,8 +7,7 @@ import { useRegisterManagement } from '../hooks/useRegisterManagement';
 import { formatDate } from '../utils/formatDate';
 
 const RegistrationManagement=()=>{
-    const {users, loading,currentPage, setCurrentPage, totalPages, totalUsers,selectedUser,setSelectedUser,handleSearch, searchQuery,sortConfig, requestSort,resetSort}=useRegisterManagement();
-    const [currentStatus, setCurrentStatus]=useState('All');
+    const {users, loading,currentPage, setCurrentPage, totalPages, totalUsers,selectedUser,setSelectedUser,handleSearch, searchQuery,sortConfig, requestSort,resetSort,currentStatus, setCurrentStatus}=useRegisterManagement();
     const [isOpen, setIsOpen]=useState(false);    
 
     const handleNextPage=()=>{
@@ -254,7 +253,7 @@ const RegistrationManagement=()=>{
                                     <FileUser size={18} color="#4f4f4f"/>
                                     <Text style={styles.panelLabel}>Resume:</Text>
                                 </View>
-                                <Pressable style={styles.pdfBadge} onPress={()=>window.open(item.resumeUrl, '_blank')} ><FileText size={14} color="#0a6340" />
+                                <Pressable style={styles.pdfBadge} onPress={() => window.open(selectedUser.resumeUrl, '_blank')}><FileText size={14} color="#0a6340" />
                                     <Text style={styles.pdfText}>View_Resume.pdf</Text>
                                     <ExternalLink size={14} color="#666" />
                                 </Pressable>

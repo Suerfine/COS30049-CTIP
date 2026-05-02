@@ -1,10 +1,18 @@
 const API_URL='http://localhost:4000/api/courses';
+import apiClient from "../config/apiConfig";
+import { API_ENDPOINTS } from "../config/ApiEndpoints";
 
 export const courseService={
     // Get: fetch all course from backend api
     getAll:async()=>{
-        const res=await fetch(API_URL);
-        return await res.json();
+        try{
+            const response=await apiClient.get(API_ENDPOINTS.COURSE.LIST);
+            return response.data;
+        }catch(err){
+            console.error("Fetch Courses Error: ", err);
+            const errorMessage=error.response?.data?.message || 'Failed to fetch all courses.';
+            return Promise.reject(errorMessage);
+        }
     },
 
     // Post: create new course

@@ -29,11 +29,11 @@ const CourseCard=({imagePath, courseTitle, numModules,duration,expiry,userType, 
                         </View>
                         <View style={styles.courseDetails}>
                             <Timer size={isWeb ? 20 : 15}/>
-                            <Text style={styles.DetailsText}>{duration}</Text>
+                            <Text style={styles.DetailsText}>{duration} Weeks</Text>
                         </View>
                         <View style={styles.courseDetails}>
                             <ClockAlert size={isWeb ? 20 : 15}/>
-                            <Text style={styles.DetailsText}>{expiry}</Text>
+                            <Text style={styles.DetailsText}>Valid for {expiry} Weeks</Text>
                         </View>
                     </View>
                     
@@ -127,7 +127,7 @@ const styles=StyleSheet.create({
         borderBottomColor:'#8f8f8f',
         borderBottomWidth:1,
         fontSize: Platform.select({
-            web:19,
+            web:17,
             default:14
         }),
         paddingVertical: Platform.select({
@@ -135,11 +135,8 @@ const styles=StyleSheet.create({
             default:5
         }),
         marginBottom:10,
-        textAlign: Platform.select({
-            web:'center',
-            default:'left'
-        }),
-        fontWeight:'bold'
+        textAlign:'left',
+        fontWeight:'600'
     },
     courseDetails:{
         flexDirection:'row',

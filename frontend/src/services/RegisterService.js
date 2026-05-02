@@ -3,22 +3,31 @@ import { API_ENDPOINTS } from "../config/ApiEndpoints";
 
 export const RegisterService={
     // GET: fetch all registration
-    getAll: async (page = 1, size = 10, searchQuery = '', sortConfig) => {
+    getAll: async (page = 1, size = 10, searchQuery = '', sortConfig, status="All") => {
         try {
             const q = searchQuery.trim();
             const params = { page, size };
+            let filters = [];
             if (q) {
-                params.filter = `
+                filters.push(`(
                     firstname like "%${q}%"
                     or lastname like "%${q}%"
                     or identification like "%${q}%"
                     or personal_email like "%${q}%"
                     or tel like "%${q}%"
-                    `;
+                )`);
             }
 
-            if(sortConfig?.key){
-                params.orderBy=`${sortConfig.key} ${sortConfig.direction}`;
+            if (status && status !== 'All') {
+                filters.push(`status eq "${status.toLowerCase()}"`);
+            }
+
+            if (filters.length > 0) {
+                params.filter = filters.join(' and ');
+            }
+
+            if (sortConfig?.key) {
+                params.orderBy = `${sortConfig.key} ${sortConfig.direction}`;
             }
 
             const response = await apiClient.get(API_ENDPOINTS.USER.SIGNUP, { params });
