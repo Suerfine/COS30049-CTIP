@@ -18,24 +18,44 @@ export const useCourses=()=>{
 
     const addCourse=async(FormData)=>{
         setLoading(true);
-        const res=await courseService.create(FormData);
-        if(res.ok) await loadCourses();
-        setLoading(false);
-        return res.ok;
+        try{
+            const res=await courseService.create(FormData);
+            await loadCourses();
+            setLoading(false);
+            return true;
+        } catch(error){
+            console.error("Create failed: ", error);
+            setLoading(false);
+            return false;
+        }
     };
 
     const editCourse=async(id, formData)=>{
         setLoading(true);
-        const res=await courseService.update(id, formData);
-        if(res.ok) await loadCourses();
-        setLoading(false);
-        return res.ok;
+        try{
+            const res=await courseService.update(id, formData);
+            await loadCourses();
+            setLoading(false);
+            return true;
+        } catch(error){
+            console.error("Update failed: ", error);
+            setLoading(false);
+            return false;
+        }
     };
 
     const deleteCourse=async(id)=>{
-        const res=await courseService.delete(id);
-        if(res.ok) setCourses(prev=>prev.filter(c=>c.id !== id));
-        return res.ok;
+        setLoading(true);
+        try{
+            const res=await courseService.delete(id);
+            await loadCourses();
+            setLoading(false);
+            return true;
+        } catch(error){
+            console.error("Delete failed: ", error);
+            setLoading(false);
+            return false;
+        }
     };
 
     return {courses, loading, addCourse, editCourse, deleteCourse};
