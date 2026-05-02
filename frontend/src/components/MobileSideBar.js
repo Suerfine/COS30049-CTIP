@@ -2,16 +2,22 @@ import React,{useEffect, useRef, useState} from 'react';
 import {View, Text, TextInput, Pressable, StyleSheet, Animated, Dimensions, Image} from 'react-native';
 import { UserPen, Calendar, Award, Settings, LogOut } from 'lucide-react-native';
 import { useUserDashboard } from '../hooks/useUserDashboard';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, CommonActions } from '@react-navigation/native';
 import UserProfile from '../screens/UserProfile.native';
+import { useAuth } from '../context/AuthContext';
 
 const {width}=Dimensions.get('window');
 
 const MobileSideBar=({isOpen, onClose})=>{
     const navigation=useNavigation();
+    const { logout } = useAuth();
     const slideAnim=useRef(new Animated.Value(-width)).current;
     const [shouldRender, setShouldRender]=useState(isOpen);
     const {user=user}=useUserDashboard();
+
+    const handleLogout = async () => {
+        await logout();
+      };
 
     useEffect(()=>{
         if(isOpen){
@@ -83,7 +89,7 @@ const MobileSideBar=({isOpen, onClose})=>{
                     <View>
                         <View style={styles.divider} />
                         {/* Log out */}
-                        <Pressable style={styles.menuItem} onPress={onClose}>
+                        <Pressable style={styles.menuItem} onPress={handleLogout}>
                             <LogOut size={18} color='red'/>
                             <Text style={[styles.menuText, { color: 'red' }]}>Log Out</Text>
                         </Pressable>

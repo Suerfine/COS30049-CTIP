@@ -16,7 +16,11 @@ import { UserRoles } from "../enum/UserRoles";
 const Stack = createStackNavigator();
 
 export default function RootNavigator() {
-  const { currentUser, isLoading } = useAuth();
+  const { currentUser, isLoading, userToken } = useAuth();
+
+  {userToken == null && (
+    <Stack.Screen name="Auth" component={UnloggedInNavigator} />
+  )}
 
   if (isLoading) {
     return null;

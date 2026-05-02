@@ -108,19 +108,19 @@ const UserProfile=({navigation})=>{
                     {/* first name, last name and IC row*/}
                     <View style={styles.fieldRow}>
                         <View style={styles.fieldGroup}>
-                            <Text style={styles.fieldLabel}>First Name</Text>
+                            <Text style={styles.fieldLabel}>{t("first name")}</Text>
                             <Text style={styles.fieldValue}>{firstName}</Text>
                         </View>
 
                         <View style={styles.fieldGroup}>
-                            <Text style={styles.fieldLabel}>Last Name</Text>
+                            <Text style={styles.fieldLabel}>{t("last name")}</Text>
                             <Text style={styles.fieldValue}>{lastName}</Text>
                         </View>
                     </View>
 
                     <View style={styles.fieldRow}>
                         <View style={styles.fieldGroup}>
-                            <Text style={styles.fieldLabel}>IC / Passport No.</Text>
+                            <Text style={styles.fieldLabel}>{t("ic")} / {t("passport")} No.</Text>
                             <Text style={styles.fieldValue}>{icPassport}</Text>
                         </View>
                     </View>
@@ -128,25 +128,25 @@ const UserProfile=({navigation})=>{
                     {/* email, phone and resume row */}
                     <View style={styles.fieldRow}>
                         <View style={styles.fieldGroup}>
-                            <Text style={styles.fieldLabel}>Email</Text>
+                            <Text style={styles.fieldLabel}>{t("email address")}</Text>
                             <Text style={styles.fieldValue}>{email}</Text>
                         </View>
 
                         <View style={styles.fieldGroup}>
-                            <Text style={styles.fieldLabel}>Phone Number</Text>
+                            <Text style={styles.fieldLabel}>{t("phone number")}</Text>
                             <Text style={styles.fieldValue}>{phone}</Text>
                         </View>
                     </View>
                 </View>
                 <View style={styles.section}>
                     <View style={styles.fieldGroup}>
-                        <Text style={styles.fieldLabel}>Resume</Text>
+                        <Text style={styles.fieldLabel}>{t("resume")}</Text>
                         <View style={styles.resumeRow}>
                             <TextInput
                                 style={[styles.input, styles.resumeInput]}
                                 value={resume}
                                 onChangeText={setResume}
-                                placeholder="No file selected"
+                                placeholder={t("no file selected")}
                                 placeholderTextColor="grey"
                                 editable={false}
                             />
@@ -157,7 +157,7 @@ const UserProfile=({navigation})=>{
                                 ]}
                                 onPress={() => setPasswordModalVisible(true)}
                             >
-                                <Text style={styles.uploadBtnText}>Upload</Text>
+                                <Text style={styles.uploadBtnText}>{t('upload')}</Text>
                             </Pressable>
                         </View>
                     </View>
@@ -172,7 +172,7 @@ const UserProfile=({navigation})=>{
                                     <X size={24}/>
                                 </Pressable>
                                 <Pressable onPress={()=>setIsEditing(false)} style={styles.modalTitle}>
-                                    <Text style={styles.modalTitle}>Edit Profile</Text>
+                                    <Text style={styles.modalTitle}>{t("edit")} {t("profile")}</Text>
                                 </Pressable>
                                 <Pressable style={({pressed})=>[styles.icon, pressed && styles.btnPressed]}>
                                     <Check size={24}/>
@@ -180,12 +180,12 @@ const UserProfile=({navigation})=>{
                             </View>
                         
                             <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
-                                <Text style={styles.modalSectionHint}>Update your personal details below.</Text>
+                                <Text style={styles.modalSectionHint}>{t("update your personal details below.")}</Text>
 
                                 {/* Names Row */}
                                 <View style={styles.modalFieldRow}>
                                     <View style={[styles.modalFieldGroup, { marginRight: 10 }]}>
-                                        <Text style={styles.modalInputLabel}>First Name</Text>
+                                        <Text style={styles.modalInputLabel}>{t("first name")}</Text>
                                         <TextInput
                                             style={styles.modalInput}
                                             value={firstName}
@@ -194,7 +194,7 @@ const UserProfile=({navigation})=>{
                                         />
                                     </View>
                                     <View style={styles.modalFieldGroup}>
-                                        <Text style={styles.modalInputLabel}>Last Name</Text>
+                                        <Text style={styles.modalInputLabel}>{t("last name")}</Text>
                                         <TextInput
                                             style={styles.modalInput}
                                             value={lastName}
@@ -206,7 +206,7 @@ const UserProfile=({navigation})=>{
 
                                 {/* IC / Passport */}
                                 <View style={styles.modalFieldGroup}>
-                                    <Text style={styles.modalInputLabel}>IC / Passport No.</Text>
+                                    <Text style={styles.modalInputLabel}>{t("ic")} / {t("passport")} No.</Text>
                                     <TextInput
                                         style={styles.modalInput}
                                         value={icPassport}
@@ -217,7 +217,7 @@ const UserProfile=({navigation})=>{
 
                                 {/* Email */}
                                 <View style={styles.modalFieldGroup}>
-                                    <Text style={styles.modalInputLabel}>Email Address</Text>
+                                    <Text style={styles.modalInputLabel}>{t("email address")}</Text>
                                     <TextInput
                                         style={styles.modalInput}
                                         value={email}
@@ -229,7 +229,7 @@ const UserProfile=({navigation})=>{
 
                                 {/* Phone */}
                                 <View style={styles.modalFieldGroup}>
-                                    <Text style={styles.modalInputLabel}>Phone Number</Text>
+                                    <Text style={styles.modalInputLabel}>{t("phone number")}</Text>
                                     <TextInput
                                         style={styles.modalInput}
                                         value={phone}
@@ -438,7 +438,8 @@ const styles=StyleSheet.create({
         padding:8,
         borderRadius:50,
         marginLeft:10,
-    },modalBody: {
+    },
+    modalBody: {
         padding: 20,
     },
     modalSectionHint: {
@@ -449,7 +450,6 @@ const styles=StyleSheet.create({
     modalFieldRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        marginBottom: 20,
     },
     modalFieldGroup: {
         flex: 1,

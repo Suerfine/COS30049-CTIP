@@ -102,6 +102,7 @@ const NavBar = () => {
   const displayRoute = (currentRoute === 'ParkGuideStack' || !currentRoute) 
           ? 'Dashboard' 
           : currentRoute;
+          
   const handleLogout = async () => {
     await logout();
     navigation.dispatch(

@@ -34,28 +34,29 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = async (email, password) => {
-    const payload = await authService.login(email, password);
-    const user = payload?.user || null;
-    const token=payload?.access_token || null;
-
-    if (!user) {
-      throw new Error("Login failed");
+    try{
+      await AsyncStorage.clear();
+      const payload=await authService.login(email,password);
+      const user=payload?.user || null;
+      const token=payload?.access_token || null;
+      if (!user || !token) {
+        throw new Error("Login failed: Missing user data or token");
+      }
+      await AsyncStorage.setItem("currentUser", JSON.stringify(user));
+      await AsyncStorage.setItem("accessToken", token);
+      setAccessToken(token);
+      setCurrentUser(user);
+      return user;
+    }catch(err){
+      console.error("Auth Login Error: ", err);
+      throw error;
     }
-
-    setCurrentUser(user);
-    setAccessToken(token);
-
-    await AsyncStorage.setItem("currentUser", JSON.stringify(user));
-    await AsyncStorage.setItem("accessToken", token);
-    return user;
   };
 
   const logout = async () => {
+    await AsyncStorage.multiRemove(["currentUser", "accessToken"]);
     setCurrentUser(null);
     setAccessToken(null);
-
-    await AsyncStorage.removeItem("currentUser");
-    await AsyncStorage.removeItem("accessToken");
   };
 
   const value = useMemo(
