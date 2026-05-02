@@ -90,6 +90,20 @@ export const useAccountManagement=()=>{
         }
     };
 
+    const handleDeleteAccount=async(id)=>{
+        setLoading(true);
+        try{
+            await AccountService.delete(id);
+            if(refresh){
+                await refresh();
+            }
+            return {success:true};
+        } catch(errString){
+            return {success:false, serverError: errString};
+        }finally{
+            setLoading(false);
+        }
+    };
 
     return{
         accounts,
@@ -100,6 +114,6 @@ export const useAccountManagement=()=>{
         sortConfig, requestSort, resetSort,
         handleCreateAccount, loading,
         refresh:fetchAccounts,
-        handleUpdateAccount,
+        handleUpdateAccount, handleDeleteAccount,
     };
 }

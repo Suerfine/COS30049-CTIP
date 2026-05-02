@@ -76,5 +76,17 @@ export const AccountService={
             const errorMessage=error.response?.data?.message || 'Failed to update user details.';
             return Promise.reject(errorMessage);
         }
+    },
+
+    // DELETE: delete user
+    delete:async(id)=>{
+        try{
+            const response=await apiClient.delete(API_ENDPOINTS.USER.UPDATE(id));
+            return response.data;
+        }catch(error){
+            console.error("Delete account error: ", error);
+            const errorMessage=error.response?.data?.message || 'Failed to delete user account.';
+            return Promise.reject(errorMessage);
+        }
     }
 };

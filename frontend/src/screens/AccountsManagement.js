@@ -1,6 +1,6 @@
 import { Pen, Trash2, Search, Plus, Circle, ChevronLeft, ChevronsLeft, ChevronRight, ChevronsRight, X, User2, IdCard, Mail, ShieldUser, Calendar, FileUser, EllipsisVertical, ChevronDown, ChevronUp, CirclePlus, CircleMinus,  MessageSquare, Phone, ArrowUpNarrowWide, ArrowDownWideNarrow, RotateCcw} from 'lucide-react-native';
 import React, {useState} from 'react';
-import { Pressable, StyleSheet, FlatList, View,Text, Image, TextInput} from 'react-native';
+import { Pressable, StyleSheet, FlatList, View,Text, Image, TextInput, Platform} from 'react-native';
 
 // Import other components and hooks
 import { useAccountManagement } from '../hooks/useAccountManagement';
@@ -9,7 +9,7 @@ import ModalLayout from '../components/ModalLayout';
 import UsersFormContent from '../components/UsersFormContent';
 
 const AccountManagement=()=>{
-    const {accounts,currentPage, setCurrentPage, totalPages, totalUsers, searchQuery, handleSearch,sortConfig, requestSort, resetSort, handleCreateAccount, loading, refresh, handleUpdateAccount} = useAccountManagement();
+    const {accounts,currentPage, setCurrentPage, totalPages, totalUsers, searchQuery, handleSearch,sortConfig, requestSort, resetSort, handleCreateAccount, loading, refresh, handleUpdateAccount,handleDeleteAccount} = useAccountManagement();
 
     const [selectedAcc, setSelectedAcc]=useState(null);
     const [activeMenuId, setActiveMenuId]=useState(null);
@@ -42,9 +42,35 @@ const AccountManagement=()=>{
             setSelectedAcc(editForm);
         }catch(err){
             console.error("Failed to update:", err);
-        }
-            
+        }  
     }
+
+    const onDeletePress = () => {
+        if (!selectedAcc) return;
+        const confirmDelete = () => {
+            const message = `Are you sure you want to delete ${selectedAcc.firstname}?`;
+            
+            if (Platform.OS === 'web') {
+                if (window.confirm(message)) {
+                    executeDelete();
+                }
+            } else {
+                Alert.alert("Delete User", message, [
+                    { text: "Cancel", style: "cancel" },
+                    { text: "Delete", style: "destructive", onPress: executeDelete }
+                ]);
+            }
+        };
+
+        const executeDelete = async () => {
+            const result = await handleDeleteAccount(selectedAcc.id);
+            setSelectedAcc(null);
+            setIsEditing(false); 
+            await refresh();
+        };
+
+        confirmDelete();
+    };
     // Caluculate the pagination
     const itemsPerPage = 10; 
     const indexOfFirstItem = (currentPage - 1) * itemsPerPage;
@@ -209,7 +235,7 @@ const AccountManagement=()=>{
                                         <Pen size={16} color="orange" /><Text style={styles.menuText}>Edit</Text>
                                         </View>
                                     </Pressable>
-                                    <Pressable style={({hovered})=>[styles.menuItem, hovered && styles.menuItemHover]}>
+                                    <Pressable style={({hovered})=>[styles.menuItem, hovered && styles.menuItemHover]} onPress={onDeletePress}>
                                         <View style={[styles.row, styles.option]}>
                                         <Trash2 size={16} color="orange" /><Text style={styles.menuText}>Delete</Text>
                                         </View>
@@ -607,4 +633,4 @@ const styles = StyleSheet.create({
 
 export default AccountManagement;
 
-// delete user, validation msg, add id and role, add status to filter role, filter for registration also does not work
+// validation msg, add id and role, add status to filter role, filter for registration also does not work
