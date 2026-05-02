@@ -56,4 +56,25 @@ export const AccountService={
             return Promise.reject(errorMessage);
         }
     },
+
+    // PUT: update user
+    update:async(id, userData)=>{
+        try{
+            const payload={
+                firstname:userData.firstname,
+                lastname:userData.lastname,
+                username:userData.username,
+                identification:userData.identification,
+                tel:userData.tel,
+                personal_email:userData.personal_email,
+                pfp:userData.profileImage || null,
+            };
+            const response=await apiClient.put(API_ENDPOINTS.USER.UPDATE(id),payload);
+            return response.data;
+        } catch(error){
+            console.error("Update Account Error: ",error);
+            const errorMessage=error.response?.data?.message || 'Failed to update user details.';
+            return Promise.reject(errorMessage);
+        }
+    }
 };

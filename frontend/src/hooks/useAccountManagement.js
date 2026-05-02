@@ -75,6 +75,21 @@ export const useAccountManagement=()=>{
         }
     };
 
+    const handleUpdateAccount=async(IdleDeadline, formData)=>{
+        setLoading(true);
+        try{
+            const result=await AccountService.update(IdleDeadline, formData);
+            if(refresh){
+                await refresh();
+            }
+            return {success:true, data:result};
+        }catch(errString){
+            return {success:false, serverError:errString};
+        }finally{
+            setLoading(false);
+        }
+    };
+
 
     return{
         accounts,
@@ -84,6 +99,7 @@ export const useAccountManagement=()=>{
         handleSearch, searchQuery,
         sortConfig, requestSort, resetSort,
         handleCreateAccount, loading,
-        refresh:fetchAccounts
+        refresh:fetchAccounts,
+        handleUpdateAccount,
     };
 }

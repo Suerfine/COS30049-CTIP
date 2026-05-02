@@ -9,13 +9,20 @@ import ModalLayout from '../components/ModalLayout';
 import UsersFormContent from '../components/UsersFormContent';
 
 const AccountManagement=()=>{
-    const {accounts,currentPage, setCurrentPage, totalPages, totalUsers, searchQuery, handleSearch,sortConfig, requestSort, resetSort, handleCreateAccount, loading, refresh} = useAccountManagement();
+    const {accounts,currentPage, setCurrentPage, totalPages, totalUsers, searchQuery, handleSearch,sortConfig, requestSort, resetSort, handleCreateAccount, loading, refresh, handleUpdateAccount} = useAccountManagement();
 
     const [selectedAcc, setSelectedAcc]=useState(null);
     const [activeMenuId, setActiveMenuId]=useState(null);
     const [isOpen, setIsOpen]=useState(false);
     const [isEditing, setIsEditing]=useState(false);
     const [modalVisible, setModalVisible]=useState(false);
+    const [editForm, setEditForm]=useState(null);
+
+    const handleStartEdit=()=>{
+        setEditForm({...selectedAcc});
+        setIsEditing(true);
+        setActiveMenuId(null);
+    }
 
     const handleAdd=()=>{
         setModalVisible(true);
@@ -24,6 +31,19 @@ const AccountManagement=()=>{
     const onCreateSuccess=async ()=>{
         setModalVisible(false);
         await refresh();
+    }
+
+    const onSaveEdit=async()=>{
+        const result=await handleUpdateAccount(selectedAcc.id, editForm);
+        try{
+            setIsEditing(false);
+            setActiveMenuId(null);
+            await refresh();
+            setSelectedAcc(editForm);
+        }catch(err){
+            console.error("Failed to update:", err);
+        }
+            
     }
     // Caluculate the pagination
     const itemsPerPage = 10; 
@@ -184,7 +204,7 @@ const AccountManagement=()=>{
                             </Pressable>
                             {activeMenuId===selectedAcc.id && (
                                 <View style={styles.floatingMenu}>
-                                    <Pressable style={({hovered})=>[styles.menuItem, hovered && styles.menuItemHover]} onPress={()=>{setIsEditing(true); setActiveMenuId(null)}}>
+                                    <Pressable style={({hovered})=>[styles.menuItem, hovered && styles.menuItemHover]} onPress={handleStartEdit}>
                                         <View style={[styles.row, styles.option]}>
                                         <Pen size={16} color="orange" /><Text style={styles.menuText}>Edit</Text>
                                         </View>
@@ -198,7 +218,30 @@ const AccountManagement=()=>{
                             )}
                         </View>
                         <Image source={{uri:selectedAcc.profileImage}} style={styles.largeAvatar}/>
-                        <Text style={styles.fullname}>{selectedAcc.firstname+" "+selectedAcc.lastname}</Text>
+                        {isEditing ? (
+                            <View style={styles.nameEditRow}>
+                                <View style={{ flex: 1 }}>
+                                    <Text style={styles.panelLabel}>First Name</Text>
+                                    <TextInput
+                                        style={[styles.userDetails, styles.inputEditing]}
+                                        value={editForm.firstname}
+                                        onChangeText={(text) => setEditForm({ ...editForm, firstname: text })}
+                                    />
+                                </View>
+                                <View style={{ flex: 1 }}>
+                                    <Text style={styles.panelLabel}>Last Name</Text>
+                                    <TextInput
+                                        style={[styles.userDetails, styles.inputEditing]}
+                                        value={editForm.lastname}
+                                        onChangeText={(text) => setEditForm({ ...editForm, lastname: text })}
+                                    />
+                                </View>
+                            </View>
+                        ) : (
+                            <Text style={styles.fullname}>
+                                {selectedAcc.firstname + " " + selectedAcc.lastname}
+                            </Text>
+                        )}
                         
                         <View style={styles.user}>
                             {/* Username */}
@@ -209,7 +252,8 @@ const AccountManagement=()=>{
                                 </View>
                                 {isEditing ? (<TextInput
                                 style={[styles.userDetails,styles.inputEditing]}
-                                value={selectedAcc.username}
+                                value={editForm?.username}
+                                onChangeText={(text)=> setEditForm(prev=>({...prev, username: text}))}
                             />) : (<Text style={styles.userDetails}>{selectedAcc.username}</Text>)}
                                 
                             </View>
@@ -221,7 +265,8 @@ const AccountManagement=()=>{
                                 </View>
                                 {isEditing ? (<TextInput
                                 style={[styles.userDetails,styles.inputEditing]}
-                                value={selectedAcc.identification}
+                                value={editForm?.identification}
+                                onChangeText={(text)=> setEditForm(prev=>({...prev, identification: text}))}
                             />) : (<Text style={styles.userDetails}>{selectedAcc.identification}</Text>)}
                             </View>
 
@@ -233,7 +278,8 @@ const AccountManagement=()=>{
                                 </View>
                                 {isEditing ? (<TextInput
                                 style={[styles.userDetails,styles.inputEditing]}
-                                value={selectedAcc.tel}
+                                value={editForm?.tel}
+                                onChangeText={(text)=> setEditForm(prev=>({...prev, tel: text}))}
                             />) : (<Text style={styles.userDetails}>{selectedAcc.tel}</Text>)}
                             </View>
                             
@@ -249,7 +295,8 @@ const AccountManagement=()=>{
                                 </View>
                                 {isEditing ? (<TextInput
                                 style={[styles.userDetails,styles.inputEditing]}
-                                value={selectedAcc.personal_email}
+                                value={editForm?.personal_email}
+                                onChangeText={(text)=> setEditForm(prev=>({...prev, personal_email: text}))}
                             />) : (<Text style={styles.userDetails}>{selectedAcc.personal_email}</Text>)}
                             </View>
                             {/* Joined Date */}
@@ -269,6 +316,7 @@ const AccountManagement=()=>{
                             </Pressable>
                             <Pressable 
                                 style={styles.Btn} 
+                                onPress={onSaveEdit}
                             >
                                 <Text>Save</Text>
                             </Pressable>
@@ -550,8 +598,13 @@ const styles = StyleSheet.create({
     btnHover:{
         backgroundColor:'#5a993ffe'
     },
+    nameEditRow: {
+        gap: 10,
+        paddingHorizontal: 20,
+        marginTop: 15,
+    },
 });
 
 export default AccountManagement;
 
-// Edit user and delete user, validation msg, add id and role, add status to filter role, filter for registration also does not work
+// delete user, validation msg, add id and role, add status to filter role, filter for registration also does not work
