@@ -1,17 +1,25 @@
 import {useState, useEffect} from 'react';
-
-// Import other hooks and components
+import { userProfileService } from "../services/userProfileService";
+import { Alert } from "react-native";
 import { useUserDashboard } from './useUserDashboard';
 
 export const useUserProfile=()=>{
     const {user} = useUserDashboard();
     // Personal Information state
-    const [firstName, setFirstName] = useState('');
-    const [lastName, setLastName] = useState('');
-    const [icPassport, setIcPassport] = useState('');
-    const [email, setEmail] = useState('');
-    const [phone, setPhone] = useState('');
-    const [resume, setResume] = useState('');
+    const [form, setForm] = useState({
+        firstname: '',
+        lastname: '',
+        identification: '',
+        personal_email: '',
+        tel: '',
+    });
+
+    const updateField = (key, value) => {
+    setForm(prev => ({
+        ...prev,
+        [key]: value
+    }));
+};
     const [isEditing, setIsEditing]=useState(false);
 
     // Account Security state
@@ -33,6 +41,28 @@ export const useUserProfile=()=>{
     const [showCurrentPassword, setShowCurrentPassword] = useState(false);
     const [showNewPassword, setShowNewPassword] = useState(false);
     const [currentPassword, setCurrentPassword] = useState('');
+
+    const [loading, setLoading]=useState(false);
+
+    // save updated info
+    const handleSave = async () => {
+        setLoading(true);
+
+        try {
+            const result = await userProfileService.update(user.id, form);
+
+            if (result.success) {
+                Alert.alert("Success", "Profile updated successfully.");
+                setIsEditing(false);
+            } else {
+                Alert.alert("Error", result.serverError);
+            }
+
+            return result;
+        } finally {
+            setLoading(false);
+        }
+    };
 
     // select image for ChangePfpContent modal
     const pickImage = async () => {
@@ -59,24 +89,21 @@ export const useUserProfile=()=>{
     // Populate fields
     useEffect(() => {
         if (user) {
-            setFirstName(user.firstname || '');
-            setLastName(user.lastname || '');
-            setIcPassport(user.identification || '');
-            setEmail(user.personal_email || '');
-            setPhone(user.tel || '');
-            setResume(user.resume || '');
+            setForm({
+                firstname: user.firstname || '',
+                lastname: user.lastname || '',
+                identification: user.identification || '',
+                personal_email: user.personal_email || '',
+                tel: user.tel || '',
+            });
             setUsername(user.username || '');
         }
     }, [user]);
 
     return{
         user,
-        firstName, setFirstName,
-        lastName,setLastName,
-        icPassport, setIcPassport,
-        email, setEmail,
-        phone,setPhone,
-        resume, setResume,
+        form,
+        updateField,
         username,setUsername,
         password,setPassword,
         editingUsername, setEditingUsername,
@@ -89,5 +116,6 @@ export const useUserProfile=()=>{
         currentPassword, setCurrentPassword,
         pickImage,
         isEditing, setIsEditing,
+        handleSave,
     };
 };
