@@ -138,30 +138,6 @@ const UserProfile=({navigation})=>{
                         </View>
                     </View>
                 </View>
-                <View style={styles.section}>
-                    <View style={styles.fieldGroup}>
-                        <Text style={styles.fieldLabel}>{t("resume")}</Text>
-                        <View style={styles.resumeRow}>
-                            <TextInput
-                                style={[styles.input, styles.resumeInput]}
-                                value={resume}
-                                onChangeText={setResume}
-                                placeholder={t("no file selected")}
-                                placeholderTextColor="grey"
-                                editable={false}
-                            />
-                            <Pressable 
-                                style={({ hovered }) => [
-                                    styles.uploadBtn,
-                                    hovered && styles.hoverBtn
-                                ]}
-                                onPress={() => setPasswordModalVisible(true)}
-                            >
-                                <Text style={styles.uploadBtnText}>{t('upload')}</Text>
-                            </Pressable>
-                        </View>
-                    </View>
-                </View>
                 {/* Modal */}
                 <Modal animationType="slide" transparent={true} visible={isEditing} onRequestClose={()=>setIsEditing(false)}>
                     <View style={styles.fullModalOverlay}>
@@ -380,27 +356,6 @@ const styles=StyleSheet.create({
         fontSize:15,
         color:'#1a1a1a',
         fontWeight:'400',
-    },
-    // Upload resume
-    resumeRow:{
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 20,
-    },
-    resumeInput:{
-        flex: 1,
-    },
-    uploadBtn:{
-        borderWidth: 1,
-        borderColor: '#2f6618fe',
-        borderRadius: 8,
-        paddingHorizontal: 14,
-        paddingVertical: 10,
-    },
-    uploadBtnText:{
-        fontSize: 13,
-        color: '#2f6618fe',
-        fontWeight: '500',
     },
     fullModalOverlay:{
         justifyContent:'flex-end',
