@@ -1,7 +1,7 @@
 import {useState} from 'react';
 import { View, Text, TextInput, StyleSheet, Pressable, Image, ActivityIndicator} from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import {X, Plus, ChevronDown, Award} from 'lucide-react-native';
+import {X, Plus, ChevronDown, Award, ParenthesesIcon} from 'lucide-react-native';
 import { ModalStyle as styles } from './ModalStyle';
 
 const CourseFormContent=({onSubmit, onCancel, isLoading, initialData})=>{
@@ -9,6 +9,7 @@ const CourseFormContent=({onSubmit, onCancel, isLoading, initialData})=>{
         courseTitle: initialData?.title || '',
         duration: initialData?.expected_completion_weeks || '',
         expiryWeeks:initialData?.must_complete_in_weeks,
+        badgeExpiry:initialData?.badge_expire_in_months,
         image:initialData?.image || null,
         badgeImage: initialData?.badge || null,
         description:initialData?.description || '',
@@ -25,7 +26,7 @@ const CourseFormContent=({onSubmit, onCancel, isLoading, initialData})=>{
         setForm(prev => ({ ...prev, [key]: cleaned }));
     };
 
-    const pickImage=async()=>{
+    const pickImage=async(type)=>{
         // Ask for permission
         const {status}=await ImagePicker.requestMediaLibraryPermissionsAsync();
 
@@ -58,6 +59,28 @@ const CourseFormContent=({onSubmit, onCancel, isLoading, initialData})=>{
         onSubmit(finalPayload);
     };
 
+    const handlePublish=()=>{
+        const finalPayload={
+            ...form,
+            status:'released',
+            duration: parseInt(form.duration, 10) || 0,
+            expiryWeeks: parseInt(form.expiryWeeks, 10) || 0,
+            badgeExpiry: parseInt(form.badgeExpiry, 10) || 0,
+        };
+        onSubmit(finalPayload);
+    };
+
+    const handleUnpublish=()=>{
+        const finalPayload={
+            ...form,
+            status:'unreleased',
+            duration: parseInt(form.duration, 10) || 0,
+            expiryWeeks: parseInt(form.expiryWeeks, 10) || 0,
+            badgeExpiry: parseInt(form.badgeExpiry, 10) || 0,
+        };
+        onSubmit(finalPayload);
+    }
+
     return(
         <View style={styles.container}>
             <View style={[styles.header,styles.row]}>
@@ -74,23 +97,10 @@ const CourseFormContent=({onSubmit, onCancel, isLoading, initialData})=>{
                         <TextInput style={styles.input} placeholder='Course Title' placeholderTextColor="#8f8f8f" value={form.courseTitle} onChangeText={(text)=> setForm({...form, courseTitle: text})}/>
                     </View>
 
-                    {/* Duration */}
+                    {/* Expiry */}
                     <View style={[styles.row, {gap:15}]}>
                         <View>
-                            <Text style={styles.label}>Duration (Weeks):</Text>
-                            <TextInput 
-                                style={styles.input}
-                                value={form.duration} 
-                                placeholder='e.g. 4' 
-                                placeholderTextColor="#8f8f8f"
-                                keyboardType='numeric' 
-                                onChangeText={(text) => handleNumericInput('duration',text)}
-                            />
-                        </View>
-
-                        {/* Expiry */}
-                        <View>
-                            <Text style={styles.label}>Validity (Weeks):</Text>
+                            <Text style={styles.label}>Course Validity (Weeks):</Text>
                             <TextInput 
                                 style={styles.input} 
                                 placeholder='e.g. 4'
@@ -100,7 +110,19 @@ const CourseFormContent=({onSubmit, onCancel, isLoading, initialData})=>{
                                 onChangeText={(text) => handleNumericInput('expiryWeeks', text)} 
                             />
                         </View>
+                        <View>
+                            <Text style={styles.label}>Badge Validity (Months):</Text>
+                            <TextInput 
+                                style={styles.input} 
+                                placeholder='e.g. 12'
+                                placeholderTextColor="#8f8f8f"
+                                keyboardType="numeric"
+                                value={form.badgeExpiry} 
+                                onChangeText={(text) => handleNumericInput('badgeExpiry', text)} 
+                            />
+                        </View>
                     </View>
+                    
 
                     {/* Dummy Tags (Pills) */}
                     <View style={localStyles.inputGroup}>
@@ -154,7 +176,7 @@ const CourseFormContent=({onSubmit, onCancel, isLoading, initialData})=>{
                 <View style={styles.upload}>
                     {/* Course image */}
                     <Text style={styles.label}>Course Cover</Text>
-                    <Pressable style={styles.imagePicker} onPress={pickImage}>
+                    <Pressable style={styles.imagePicker} onPress={()=>pickImage('cover')}>
                         {form.image ? (
                             <Image source={{uri: form.image}} style={styles.previewImage}/>
                         ): (
@@ -186,12 +208,27 @@ const CourseFormContent=({onSubmit, onCancel, isLoading, initialData})=>{
                 >
                     {isLoading ? <ActivityIndicator color="white" /> : <Text>{initialData ? 'Update' : 'Add'}</Text>}
                 </Pressable>
-                {(initialData && initialData.status==="unreleased") && (
-                    <Pressable 
-                        style={[styles.Btn, localStyles.Publishbtn]}
-                    >
-                        <Text style={localStyles.publishText}>Publish</Text>
-                    </Pressable>
+                {/* Status Toggle Button */}
+                {initialData && (
+                    <>
+                        {form.status === "unreleased" ? (
+                            <Pressable 
+                                style={[styles.Btn, localStyles.Publishbtn]}
+                                onPress={handlePublish}
+                                disabled={isLoading}
+                            >
+                                {isLoading ? <ActivityIndicator color="white" /> : <Text style={localStyles.publishText}>Publish</Text>}
+                            </Pressable>
+                        ) : (
+                            <Pressable 
+                                style={[styles.Btn, localStyles.Publishbtn]}
+                                onPress={handleUnpublish}
+                                disabled={isLoading}
+                            >
+                                {isLoading ? <ActivityIndicator color="white" /> : <Text style={localStyles.publishText}>Unpublish</Text>}
+                            </Pressable>
+                        )}
+                    </>
                 )}
                 
             </View>
@@ -314,4 +351,4 @@ const localStyles=StyleSheet.create({
 
 export default CourseFormContent;
 
-// Havent do the validation message
+// Havent do the validation message, tag, pre-requisite
