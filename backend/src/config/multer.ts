@@ -77,3 +77,9 @@ export const uploadDocument = () =>
     allowedMimeTypes: ["application/pdf"],
     maxSizeMB: 10,
   });
+
+export const uploadBadgeImg = () =>
+  createUploader({
+    allowedMimeTypes: ["image/jpeg", "image/png", "image/webp", "image/gif"],
+    maxSizeMB: 5,
+  });

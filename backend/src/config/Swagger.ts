@@ -381,25 +381,13 @@ const options: swaggerJSDoc.Options = {
         },
         CreateCourseRequest: {
           type: "object",
-          required: ["title"],
+          required: ["title", "badge"],
           properties: {
             title: { type: "string", example: "Wildlife Safety Basics" },
             description: {
               type: "string",
               nullable: true,
               example: "Introduction to wildlife safety procedures.",
-            },
-            status: {
-              type: "string",
-              enum: Object.values(CourseStatus),
-              example: CourseStatus.UNRELEASED,
-              description: "Defaults to unreleased when omitted.",
-            },
-            released_at: {
-              type: "string",
-              format: "date-time",
-              nullable: true,
-              example: null,
             },
             expected_completion_weeks: {
               type: "integer",
@@ -430,6 +418,7 @@ const options: swaggerJSDoc.Options = {
               type: "string",
               format: "binary",
               description: "Optional course badge image file",
+              nullable: false,
             },
           },
         },
