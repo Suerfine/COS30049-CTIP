@@ -56,14 +56,16 @@ export const courseService = {
             if (formData.badgeImage) {
                 const badgeParts = formData.badgeImage.split('.');
                 const badgeType = badgeParts[badgeParts.length - 1];
-                data.append('badge', {
+                data.append('file', {
                     uri: formData.badgeImage,
                     name: `badge.${badgeType}`,
                     type: `image/${badgeType}`,
                 });
             }
             const response = await apiClient.post(API_ENDPOINTS.COURSE.LIST, data, {
-                headers: { 'Content-Type': 'multipart/form-data' },
+                headers: {
+                    Accept: 'application/json',
+                    }
             });
             return response.data;
         } catch (error) {

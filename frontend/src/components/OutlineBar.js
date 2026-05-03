@@ -33,14 +33,18 @@ const OutlineBar=({course, onSelectPage, editable, isCollapsed})=>{
         onSelectPage(item);
     }
 
+
     return(
         <View style={[styles.outlinebar, isCollapsed ? styles.collapsed : null]}>
-            {/* Search Component */}
-            <View style={styles.search}>
-                <Search size={18}/>
-                <TextInput style={styles.input} placeholder='Search...' placeholderTextColor="#8f8f8f"/>
-            </View>
+            {!isCollapsed && (
+                <View style={styles.search}>
+                    <Search size={18}/>
+                    <TextInput style={styles.input} placeholder='Search...' placeholderTextColor="#8f8f8f"/>
+                </View>
+            )}
+            
             {/* Overview */}
+            {!isCollapsed && (
             <Pressable style={[styles.item,selectedItem?.type === 'overview' && styles.selected]} 
             onPress={()=> handleSelect({type:'overview', course})} 
             onMouseEnter={()=>setHoveredItem({type: 'overview'})}
@@ -52,7 +56,7 @@ const OutlineBar=({course, onSelectPage, editable, isCollapsed})=>{
                         <Plus size={16}/>
                     </Pressable>
                 )}
-            </Pressable>
+            </Pressable>)}
             {/* Modules */}
             <FlatList
                 data={[...allModules].sort((a, b) => (a.order || 0) - (b.order || 0))}
@@ -193,7 +197,7 @@ const OutlineBar=({course, onSelectPage, editable, isCollapsed})=>{
                                                 </Text>
                                                 
                                                 {/* Trash Icon Logic */}
-                                                {editable && isHoveringPage && !isEditingPage && (
+                                                {editable && isHoveringPage && !isEditingPage && pageIndex!==0 && (
                                                     <Pressable onPress={() => deletePage(mid, page.id)}>
                                                         <Trash2 size={16} color="#ef4444" />
                                                     </Pressable>
@@ -238,7 +242,7 @@ const styles=StyleSheet.create({
         fontWeight:'600',
         paddingLeft:20,
         paddingVertical:5,
-        paddingRight:70
+        paddingRight:50
     },
     moduleBlock:{
         flexDirection:'row',

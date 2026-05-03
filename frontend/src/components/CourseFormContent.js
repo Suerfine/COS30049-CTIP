@@ -10,8 +10,8 @@ const CourseFormContent=({onSubmit, onCancel, isLoading, initialData})=>{
         duration: initialData?.expected_completion_weeks || '',
         expiryWeeks:initialData?.must_complete_in_weeks,
         badgeExpiry:initialData?.badge_expire_in_months,
-        image:initialData?.image || null,
-        badgeImage: initialData?.badge || null,
+        image:initialData?.image_url || null,
+        badgeImage: initialData?.badge_img_url || null,
         description:initialData?.description || '',
         status: initialData?.status,
         tags:['IoT', 'Medical','Hardware'],
@@ -35,7 +35,7 @@ const CourseFormContent=({onSubmit, onCancel, isLoading, initialData})=>{
             return;
         }
         let result=await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: 'images',
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
             allowsEditing:true,
             aspect: type==='badge' ? [1,1] : [16,9],
             quality:1,
@@ -52,9 +52,14 @@ const CourseFormContent=({onSubmit, onCancel, isLoading, initialData})=>{
 
     const handleSubmit=()=>{
         const finalPayload={
-            ...form,
+            title: form.courseTitle,
+            description:form.description,
             duration:parseInt(form.duration, 10) || 0,
-            expiryWeeks: parseInt(form.expiryWeeks,10) || 0,
+            expiryWeeks:parseInt(form.expiryWeeks, 10) || 0,
+            badgeExpiry:parseInt(form.badgeExpiry,10) || 0,
+            image:form.image,
+            badgeImage: form.badgeImage,
+            status:form.status,
         };
         onSubmit(finalPayload);
     };
@@ -63,9 +68,8 @@ const CourseFormContent=({onSubmit, onCancel, isLoading, initialData})=>{
         const finalPayload={
             ...form,
             status:'released',
-            duration: parseInt(form.duration, 10) || 0,
-            expiryWeeks: parseInt(form.expiryWeeks, 10) || 0,
-            badgeExpiry: parseInt(form.badgeExpiry, 10) || 0,
+            duration:parseInt(form.duration, 10) || 0,
+            expiryWeeks: parseInt(form.expiryWeeks,10) || 0,
         };
         onSubmit(finalPayload);
     };
@@ -95,6 +99,18 @@ const CourseFormContent=({onSubmit, onCancel, isLoading, initialData})=>{
                     <View> 
                         <Text style={styles.label}>Title:</Text>
                         <TextInput style={styles.input} placeholder='Course Title' placeholderTextColor="#8f8f8f" value={form.courseTitle} onChangeText={(text)=> setForm({...form, courseTitle: text})}/>
+                    </View>
+
+                    <View>
+                        <Text style={styles.label}>Course Completion (Recommend in Weeks):</Text>
+                        <TextInput 
+                            style={styles.input} 
+                            placeholder='e.g. 4'
+                            placeholderTextColor="#8f8f8f"
+                            keyboardType="numeric"
+                            value={form.duration} 
+                            onChangeText={(text) => handleNumericInput('duration', text)} 
+                        />
                     </View>
 
                     {/* Expiry */}
@@ -189,8 +205,8 @@ const CourseFormContent=({onSubmit, onCancel, isLoading, initialData})=>{
                     {/* Badge Image */}
                     <Text style={[styles.label, { marginTop: 25 }]}>Completion Badge (1:1)</Text>
                     <Pressable style={localStyles.badgePicker} onPress={() => pickImage('badge')}>
-                        {form.badgeImage ? (
-                            <Image source={{ uri: form.badgeImage }} style={localStyles.badgePreview} />
+                        {form.badge ? (
+                            <Image source={{ uri: form.badge }} style={localStyles.badgePreview} />
                         ) : (
                             <View style={localStyles.uploadPlaceholder}>
                                 <Award size={32} color="#ccc" />
