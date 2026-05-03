@@ -407,7 +407,7 @@ const styles = StyleSheet.create({
         borderRadius:13,
         width:'800px',
         height:'400px',
-        marginBottom:20
+        marginBottom:20,
     },
     contentWrapper:{
         marginTop:25
