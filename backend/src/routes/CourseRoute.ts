@@ -55,7 +55,10 @@ courseRouter.use("/:course_Id/modules", moduleRouter);
 courseRouter.post(
   "/",
   auth,
-  uploadCourseBadge.single("badge"),
+  uploadCourseBadge.fields([
+    { name: "badge", maxCount: 1 },
+    { name: "cover", maxCount: 1 },
+  ]),
   [
     body("title").isString().notEmpty(),
     body("description").optional().isString(),
@@ -112,14 +115,6 @@ courseRouter.post(
  *           default: false
  *           example: false
  *         description: When true, include soft-deleted courses in the result set.
-      - in: query
-        name: tags
-        required: false
-        schema:
-          type: array
-          items:
-            type: string
-        description: Filter courses by tags. Provide one or more tag strings.
  *     responses:
  *       200:
  *         description: Courses retrieved successfully

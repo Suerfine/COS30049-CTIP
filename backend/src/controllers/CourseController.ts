@@ -73,6 +73,10 @@ function toCourseResponse(course: Course, req?: Request<any>): CourseResponse {
     req && course.badge_img_path
       ? `${req.protocol}://${req.get("host")}${course.badge_img_path.startsWith("/") ? course.badge_img_path : `/${course.badge_img_path}`}`
       : null;
+  const cover_url =
+    req && course.cover_img_path
+      ? `${req.protocol}://${req.get("host")}${course.cover_img_path.startsWith("/") ? course.cover_img_path : `/${course.cover_img_path}`}`
+      : null;
 
   return {
     id: course.id,
@@ -84,6 +88,7 @@ function toCourseResponse(course: Course, req?: Request<any>): CourseResponse {
     must_complete_in_weeks: course.must_complete_in_weeks,
     badge_expire_in_months: course.badge_expire_in_months,
     badge_img_url: badge_url,
+    cover_img_url: cover_url,
     prerequisite_groups,
     created_at: course.created_at,
     updated_at: course.updated_at,
@@ -216,7 +221,7 @@ async function createPrerequisiteGroupsAndPrerequisites(
 }
 
 export const createCourse = async (
-  req: Request<{}, {}, CreateCourseRequest> & { file?: Express.Multer.File },
+  req: Request<{}, {}, CreateCourseRequest>,
   res: Response<CourseResponse | ErrorResponse>,
   next: NextFunction,
 ) => {
@@ -244,7 +249,8 @@ export const createCourse = async (
             process.env.DEFAULT_COURSE_BADGE_EXPIRE_IN_MONTHS ?? "24",
             10,
           ),
-        badge_img_path: null,
+        cover_img_path: "",
+        badge_img_path: "",
       },
       { transaction },
     );
@@ -257,22 +263,39 @@ export const createCourse = async (
         transaction,
       );
     }
-    await transaction.commit();
+    // Handle course cover and badge images from multipart field uploads.
+    const storage = getStorage();
+    const uploadedFiles: { [fieldname: string]: Express.Multer.File[] } =
+      req.files && !Array.isArray(req.files) ? req.files : {};
+    const coverFile = uploadedFiles.cover?.[0];
+    const badgeFile = uploadedFiles.badge?.[0];
 
-    // Handle the course badge Image: save to storage and update course record
-    if (req.file) {
-      const storage = getStorage();
-      const ext = req.file.originalname.split(".").pop();
+    if (coverFile) {
+      const ext = coverFile.originalname.split(".").pop();
       const savedPath = await storage.save({
-        buffer: req.file.buffer,
+        buffer: coverFile.buffer,
+        filename: `cover_${course.id}.${ext}`,
+        mimeType: coverFile.mimetype,
+        folder: "public",
+        subfolder: "courses/covers",
+      });
+      course.cover_img_path = savedPath;
+    }
+
+    if (badgeFile) {
+      const ext = badgeFile.originalname.split(".").pop();
+      const savedPath = await storage.save({
+        buffer: badgeFile.buffer,
         filename: `badge_${course.id}.${ext}`,
-        mimeType: req.file.mimetype,
+        mimeType: badgeFile.mimetype,
         folder: "public",
         subfolder: "courses/badges",
       });
       course.badge_img_path = savedPath;
-      await course.save();
     }
+
+    await course.save({ transaction });
+    await transaction.commit();
 
     //Returning the created course with its prerequisite groups and courses
     const createdCourse = await Course.findByPk(course.id, {
@@ -281,7 +304,7 @@ export const createCourse = async (
     if (!createdCourse) {
       return res.status(404).json({ message: "Course not found" });
     }
-    return res.status(201).json(toCourseResponse(createdCourse));
+    return res.status(201).json(toCourseResponse(createdCourse, req));
   } catch (err) {
     await transaction.rollback();
     if (err instanceof HttpError) {
