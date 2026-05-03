@@ -23,6 +23,8 @@ declare global {
 
 const app: Application = express();
 const port = Number(process.env.PORT) || 5000;
+
+// Configure storage path for public assets (e.g. user profile pictures)
 const publicStoragePath = path.resolve(__dirname, "../storage/public");
 
 // Enable URL-encoded form data parsing

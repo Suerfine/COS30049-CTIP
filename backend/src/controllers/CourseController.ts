@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response } from "express";
-import fs from "fs";
+import fs, { createReadStream } from "fs";
 import path from "path";
 import { Course, User, PrerequisiteGroup, Prerequisite } from "../models";
 import sequelize from "../config/Database";
@@ -13,47 +13,19 @@ import {
   PrerequisiteResponse,
   UpdateCourseRequest,
 } from "../types/Course";
-import { PRIVATE_UPLOAD_STORAGE_PATH } from "../middelware/PrivateDocumentUpload";
 import { ErrorResponse } from "../types/common";
+import { getStorage } from "../services/storage";
 
-function normalizePrivatePath(filePath: string): string {
-  return path.resolve(filePath);
-}
+class HttpError extends Error {
+  status: number;
 
-function isWithinPrivateStorage(filePath: string): boolean {
-  const normalizedPath = normalizePrivatePath(filePath);
-  const privateRoot = path.resolve(PRIVATE_UPLOAD_STORAGE_PATH);
-
-  return (
-    normalizedPath === privateRoot ||
-    normalizedPath.startsWith(`${privateRoot}${path.sep}`)
-  );
-}
-
-async function getAccessibleBadgePath(
-  courseId: string,
-  user?: User,
-): Promise<string | null> {
-  const course = await Course.findByPk(courseId);
-
-  if (!course || !course.badge_path_id || !user) {
-    return null;
-  }
-
-  const badgePath = normalizePrivatePath(course.badge_path_id);
-  if (!isWithinPrivateStorage(badgePath)) {
-    return null;
-  }
-
-  try {
-    await fs.promises.access(badgePath, fs.constants.R_OK);
-    return badgePath;
-  } catch {
-    return null;
+  constructor(status: number, message: string) {
+    super(message);
+    this.status = status;
   }
 }
 
-function toCourseResponse(course: Course): CourseResponse {
+function toCourseResponse(course: Course, req?: Request<any>): CourseResponse {
   const prerequisiteGroupsRaw =
     ((course.toJSON() as { prerequisite_groups?: unknown })
       .prerequisite_groups as
@@ -97,6 +69,11 @@ function toCourseResponse(course: Course): CourseResponse {
   const final_quiz_max_score = 100;
   const total_max_score = 100;
 
+  const badge_url =
+    req && course.badge_img_path
+      ? `${req.protocol}://${req.get("host")}${course.badge_img_path.startsWith("/") ? course.badge_img_path : `/${course.badge_img_path}`}`
+      : null;
+
   return {
     id: course.id,
     title: course.title,
@@ -106,7 +83,7 @@ function toCourseResponse(course: Course): CourseResponse {
     expected_completion_weeks: course.expected_completion_weeks,
     must_complete_in_weeks: course.must_complete_in_weeks,
     badge_expire_in_months: course.badge_expire_in_months,
-    badge_path_id: course.badge_path_id,
+    badge_img_url: badge_url,
     prerequisite_groups,
     created_at: course.created_at,
     updated_at: course.updated_at,
@@ -244,7 +221,6 @@ export const createCourse = async (
   next: NextFunction,
 ) => {
   const transaction = await sequelize.transaction();
-
   try {
     // Validate if the prerequisite_course_ids is a valid array of courses
     if (req.body.prerequisite_course_ids) {
@@ -253,23 +229,13 @@ export const createCourse = async (
       );
     }
 
-    const status =
-      parseCourseStatus(req.body.status) ?? CourseStatus.UNRELEASED;
-    const releasedAtInput = parseCourseReleasedAt(req.body.released_at);
-    const releasedAt =
-      releasedAtInput !== undefined
-        ? releasedAtInput
-        : status === CourseStatus.RELEASED
-          ? new Date()
-          : null;
-
     // Construct the course data from the request body and file
     const course = await Course.create(
       {
         title: req.body.title,
         description: req.body.description ?? null,
-        status,
-        released_at: releasedAt,
+        status: CourseStatus.UNRELEASED,
+        released_at: null,
         expected_completion_weeks: req.body.expected_completion_weeks ?? null,
         must_complete_in_weeks: req.body.must_complete_in_weeks ?? null,
         badge_expire_in_months:
@@ -278,7 +244,7 @@ export const createCourse = async (
             process.env.DEFAULT_COURSE_BADGE_EXPIRE_IN_MONTHS ?? "24",
             10,
           ),
-        badge_path_id: req.file ? req.file.path : null,
+        badge_img_path: null,
       },
       { transaction },
     );
@@ -291,23 +257,38 @@ export const createCourse = async (
         transaction,
       );
     }
-
     await transaction.commit();
 
+    // Handle the course badge Image: save to storage and update course record
+    if (req.file) {
+      const storage = getStorage();
+      const ext = req.file.originalname.split(".").pop();
+      const savedPath = await storage.save({
+        buffer: req.file.buffer,
+        filename: `badge_${course.id}.${ext}`,
+        mimeType: req.file.mimetype,
+        folder: "public",
+        subfolder: "courses/badges",
+      });
+      course.badge_img_path = savedPath;
+      await course.save();
+    }
+
+    //Returning the created course with its prerequisite groups and courses
     const createdCourse = await Course.findByPk(course.id, {
       include: COURSE_PREREQUISITE_INCLUDE,
     });
-
     if (!createdCourse) {
       return res.status(404).json({ message: "Course not found" });
     }
-
     return res.status(201).json(toCourseResponse(createdCourse));
   } catch (err) {
     await transaction.rollback();
-    return res.status(400).json({
-      message: err instanceof Error ? err.message : "Invalid request data",
-    });
+    if (err instanceof HttpError) {
+      res.status(err.status).json({ message: err.message });
+    } else {
+      res.status(500).json({ message: "Internal server error\n" + err });
+    }
   }
 };
 
@@ -330,7 +311,7 @@ export const getAllCourses = async (
 
     const baseUrl = `${req.protocol}://${req.get("host")}${req.originalUrl}`;
     const formattedResponse = formatPaginateResponse(
-      courses.data.map(toCourseResponse),
+      courses.data.map((c) => toCourseResponse(c, req)),
       req.query,
       true,
       {
@@ -361,7 +342,7 @@ export const getCourseById = async (
       return res.status(404).json({ message: "Course not found" });
     }
 
-    return res.json(toCourseResponse(course));
+    return res.json(toCourseResponse(course, req));
   } catch (err) {
     next(err);
   }
@@ -424,7 +405,16 @@ export const upsertCourse = async (
     }
 
     if (req.file) {
-      updates.badge_path_id = req.file.path;
+      const storage = getStorage();
+      const ext = req.file.originalname.split(".").pop();
+      const savedPath = await storage.save({
+        buffer: req.file.buffer,
+        filename: `badge_${course.id}.${ext}`,
+        mimeType: req.file.mimetype,
+        folder: "public",
+        subfolder: "courses/badges",
+      });
+      updates.badge_img_path = savedPath;
     }
 
     if (
@@ -464,7 +454,7 @@ export const upsertCourse = async (
       return res.status(404).json({ message: "Course not found" });
     }
 
-    return res.json(toCourseResponse(updatedCourse));
+    return res.json(toCourseResponse(updatedCourse, req));
   } catch (err) {
     if (transaction) {
       await transaction.rollback();
@@ -488,24 +478,6 @@ export const deleteCourse = async (
     }
 
     return res.json({ message: "Course deleted successfully" });
-  } catch (err) {
-    next(err);
-  }
-};
-
-export const getCourseBadge = async (
-  req: Request<{ id: string }> & { user?: User },
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const badgePath = await getAccessibleBadgePath(req.params.id, req.user);
-
-    if (!badgePath) {
-      return res.status(404).json({ message: "Badge not found" });
-    }
-
-    return res.sendFile(badgePath);
   } catch (err) {
     next(err);
   }

@@ -13,74 +13,22 @@ import { formatPaginateResponse, paginateModel } from "../utils/paginate";
 import { PaginateRequestParams, PaginateResponse } from "../types/common";
 import { UserRoles } from "../enum/UserRoles";
 import { hashPassword } from "../utils/password";
+import { getStorage } from "../services/storage";
 
-const USER_PFP_DIR = path.resolve(process.cwd(), "storage/public/user/pfp");
-const PFP_MAX_WIDTH = Number(process.env.PFP_MAX_WIDTH) || 512;
-const PFP_MAX_HEIGHT = Number(process.env.PFP_MAX_HEIGHT) || 512;
-const SUPPORTED_PFP_MIME_TYPES = new Set([
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-  "image/gif",
-]);
+class HttpError extends Error {
+  status: number;
 
-function extensionForMimeType(mimeType: string): string {
-  if (mimeType === "image/jpeg") {
-    return "jpg";
+  constructor(status: number, message: string) {
+    super(message);
+    this.status = status;
   }
-  if (mimeType === "image/png") {
-    return "png";
-  }
-  if (mimeType === "image/webp") {
-    return "webp";
-  }
-  if (mimeType === "image/gif") {
-    return "gif";
-  }
-
-  return "";
 }
 
-async function saveUserProfilePicture(
-  userId: number,
-  file?: Express.Multer.File,
-): Promise<void> {
-  if (!file) {
-    return;
-  }
+function toUserResponse(user: User, req: Request<any>): UserResponse {
+  let full_url_pfp = user.pfp_url
+    ? `${req.protocol}:\\${req.get("host")}\\${user.pfp_url}`
+    : null;
 
-  if (!SUPPORTED_PFP_MIME_TYPES.has(file.mimetype)) {
-    throw new Error("Unsupported profile image type");
-  }
-
-  const extension = extensionForMimeType(file.mimetype);
-  if (!extension) {
-    throw new Error("Unsupported profile image type");
-  }
-
-  await fs.mkdir(USER_PFP_DIR, { recursive: true });
-
-  // Keep a single active profile picture per user regardless of extension.
-  const existingFiles = await fs.readdir(USER_PFP_DIR);
-  const existingUserFiles = existingFiles.filter((name) =>
-    name.startsWith(`${userId}.`),
-  );
-  await Promise.all(
-    existingUserFiles.map((name) => fs.unlink(path.join(USER_PFP_DIR, name))),
-  );
-
-  const destination = path.join(USER_PFP_DIR, `${userId}.${extension}`);
-  await sharp(file.buffer)
-    .resize({
-      width: PFP_MAX_WIDTH,
-      height: PFP_MAX_HEIGHT,
-      fit: "inside",
-      withoutEnlargement: true,
-    })
-    .toFile(destination);
-}
-
-function toUserResponse(user: User): UserResponse {
   return {
     id: user.id,
     username: user.username,
@@ -90,6 +38,7 @@ function toUserResponse(user: User): UserResponse {
     identification: user.identification,
     personal_email: user.personal_email,
     tel: user.tel,
+    pfp_url: full_url_pfp,
     last_login_at: user.last_login_at,
     created_at: user.created_at,
     updated_at: user.updated_at,
@@ -98,7 +47,7 @@ function toUserResponse(user: User): UserResponse {
 
 export const getAllUsers = async (
   req: Request<PaginateRequestParams>,
-  res: Response<PaginateResponse<UserResponse>>,
+  res: Response<PaginateResponse<UserResponse> | { message: string }>,
   next: NextFunction,
 ) => {
   try {
@@ -113,7 +62,7 @@ export const getAllUsers = async (
     });
     const baseUrl = `${req.protocol}://${req.get("host")}${req.originalUrl}`;
     const formattedResponse = formatPaginateResponse(
-      users.data.map(toUserResponse),
+      users.data.map((user) => toUserResponse(user, req)),
       req.query,
       true,
       {
@@ -126,42 +75,51 @@ export const getAllUsers = async (
     );
     res.json(formattedResponse);
   } catch (err) {
-    next(err);
+    if (err instanceof HttpError) {
+      res.status(err.status).json({ message: err.message });
+    } else {
+      res.status(500).json({ message: "Internal server error\n" + err });
+    }
   }
 };
 
 export const getUserById = async (
   req: Request<{ id: string }>,
-  res: Response<UserResponse | any>,
+  res: Response<UserResponse | { message: string }>,
   next: NextFunction,
 ) => {
-  User.findByPk(req.params.id)
-    .then((user) => {
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      res.json(toUserResponse(user));
-    })
-    .catch((err) => {
-      return res
-        .status(500)
-        .json({ message: "Internal server error\n" + err.message });
-    });
+  try {
+    const user = await User.findByPk(req.params.id);
+    if (!user) {
+      throw new HttpError(404, "User not found");
+    }
+    return res.status(200).json(toUserResponse(user, req));
+  } catch (err) {
+    if (err instanceof HttpError) {
+      res.status(err.status).json({ message: err.message });
+    } else {
+      res.status(500).json({ message: "Internal server error\n" + err });
+    }
+  }
 };
 
 export const getCurrentUser = async (
-  req: Request & { user?: User },
+  req: Request,
   res: Response<UserResponse | { message: string }>,
   next: NextFunction,
 ) => {
   try {
     if (!req.user) {
-      return res.status(401).json({ message: "Unauthorized" });
+      throw new HttpError(401, "Unauthorized");
     }
 
-    return res.json(toUserResponse(req.user));
+    return res.status(200).json(toUserResponse(req.user, req));
   } catch (err) {
-    next(err);
+    if (err instanceof HttpError) {
+      res.status(err.status).json({ message: err.message });
+    } else {
+      res.status(500).json({ message: "Internal server error\n" + err });
+    }
   }
 };
 
@@ -170,19 +128,21 @@ export const deleteUser = async (
   res: Response,
   next: NextFunction,
 ) => {
-  // Soft delete by setting deleted_at to current timestamp
-  User.update({ deleted_at: new Date() }, { where: { id: req.params.id } })
-    .then(([affectedRows]) => {
-      if (affectedRows === 0) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      res.json({ message: "User deleted successfully" });
-    })
-    .catch((err) => {
-      return res
-        .status(500)
-        .json({ message: "Internal server error\n" + err.message });
-    });
+  try {
+    const user = await User.findByPk(req.params.id);
+    if (!user) {
+      throw new HttpError(404, "User not found");
+    }
+
+    await user.destroy();
+    return res.status(200).send();
+  } catch (err) {
+    if (err instanceof HttpError) {
+      res.status(err.status).json({ message: err.message });
+    } else {
+      res.status(500).json({ message: "Internal server error\n" + err });
+    }
+  }
 };
 
 export const upsertUser = async (
@@ -194,34 +154,24 @@ export const upsertUser = async (
   next: NextFunction,
 ) => {
   try {
-    const currentUser = req.user;
-
-    if (!currentUser) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
-
+    // TODO: Properly move authorization logic to middleware
+    //
+    // Authorization logic to check if the current user is admin or updating their own account
     const targetUser = await User.findByPk(req.params.id);
+    const isAdmin = req.user?.role === UserRoles.ADMIN;
     if (!targetUser) {
       return res.status(404).json({ message: "User not found" });
     }
-
-    const isAdmin = currentUser.role === UserRoles.ADMIN;
-    const isSelf = currentUser.id === targetUser.id;
-
-    if (!isAdmin && !isSelf) {
-      return res
-        .status(403)
-        .json({ message: "You can only update your own account" });
+    if (!isAdmin && req.user?.id !== targetUser.id) {
+      throw new HttpError(403, "You can only update your own account");
     }
 
     if (!isAdmin && req.body.role && req.body.role !== targetUser.role) {
-      return res
-        .status(403)
-        .json({ message: "You are not allowed to change role" });
+      throw new HttpError(403, "You are not allowed to change role");
     }
 
+    // Build the update object based on provided fields
     const updates: Partial<User> = {};
-
     if (
       typeof req.body.username === "string" &&
       req.body.username.trim() !== ""
@@ -231,26 +181,23 @@ export const upsertUser = async (
         where: { username: req.body.username },
       });
       if (existingUsername) {
-        return res.status(400).json({ message: "Username already exists" });
+        throw new HttpError(400, "Username already exists");
       }
       // Only update username if it's provided and not empty
       updates.username = req.body.username;
     }
-
     if (
       typeof req.body.firstname === "string" &&
       req.body.firstname.trim() !== ""
     ) {
       updates.firstname = req.body.firstname;
     }
-
     if (
       typeof req.body.lastname === "string" &&
       req.body.lastname.trim() !== ""
     ) {
       updates.lastname = req.body.lastname;
     }
-
     if (
       typeof req.body.identification === "string" &&
       req.body.identification.trim() !== ""
@@ -263,9 +210,7 @@ export const upsertUser = async (
         },
       });
       if (existingIdentification) {
-        return res
-          .status(400)
-          .json({ message: "Identification already exists" });
+        throw new HttpError(400, "Identification already exists");
       }
 
       // Only update identification if it's provided and not empty
@@ -295,15 +240,25 @@ export const upsertUser = async (
     }
 
     if (Object.keys(updates).length === 0 && !req.file) {
-      return res
-        .status(400)
-        .json({ message: "No valid fields provided to update" });
+      throw new HttpError(400, "No valid fields provided to update");
+    }
+    await targetUser.update(updates);
+
+    // Handle profile picture update if a new file is provided
+    if (req.file) {
+      const storage = getStorage();
+      const path = await storage.save({
+        buffer: req.file.buffer,
+        filename: "avatar." + req.file.originalname.split(".").pop(), // preserve original file extension
+        mimeType: req.file.mimetype,
+        folder: "public",
+        subfolder: `users/${targetUser.id}/pfp`,
+      });
+      targetUser.pfp_url = path;
+      await targetUser.save();
     }
 
-    await targetUser.update(updates);
-    await saveUserProfilePicture(targetUser.id, req.file);
-
-    return res.json(toUserResponse(targetUser));
+    return res.status(200).json(toUserResponse(targetUser, req));
   } catch (err) {
     next(err);
   }
@@ -325,29 +280,20 @@ export const createUser = async (
     tel,
   } = req.body;
   try {
-    if (
-      typeof firstname !== "string" ||
-      firstname.trim() === "" ||
-      typeof lastname !== "string" ||
-      lastname.trim() === ""
-    ) {
-      throw new Error("firstname and lastname are required");
-    }
-
+    const storage = getStorage();
+    const user_username = username.trim();
     const user_firstname = firstname.trim();
     const user_lastname = lastname.trim();
-    const user_identification = identification?.trim();
-    const user_personal_email = personal_email?.trim();
-    const user_tel = tel?.trim();
-
-    if (!user_identification || !user_personal_email || !user_tel) {
-      throw new Error("identification, personal_email, and tel are required");
-    }
+    const user_identification = identification.trim();
+    const user_personal_email = personal_email.trim();
+    const user_tel = tel.trim();
 
     // Checking if username already exists
-    const existingUser = await User.findOne({ where: { username } });
+    const existingUser = await User.findOne({
+      where: { username: user_username },
+    });
     if (existingUser) {
-      throw new Error("Username already exists");
+      throw new HttpError(400, "Username already exists");
     }
 
     //Checking if identification already exists
@@ -355,7 +301,15 @@ export const createUser = async (
       where: { identification: user_identification },
     });
     if (existingIdentification) {
-      throw new Error("Identification already exists");
+      throw new HttpError(400, "Identification already exists");
+    }
+
+    //Checking if the email already exists
+    const existingEmail = await User.findOne({
+      where: { personal_email: user_personal_email },
+    });
+    if (existingEmail) {
+      throw new HttpError(400, "Email already exists");
     }
 
     // Hash the password before storing it in the database
@@ -363,7 +317,7 @@ export const createUser = async (
 
     // Create the new user in the database
     const newUser = await User.create({
-      username: username,
+      username: user_username,
       password_hash: hashedPassword,
       role: role,
       firstname: user_firstname,
@@ -373,30 +327,25 @@ export const createUser = async (
       tel: user_tel,
     });
 
-    await saveUserProfilePicture(newUser.id, req.file);
-
-    // Return the created user (excluding the password hash)
-    res.status(201).json({
-      id: newUser.id,
-      username: newUser.username,
-      firstname: newUser.firstname,
-      lastname: newUser.lastname,
-      role: newUser.role,
-      identification: newUser.identification,
-      personal_email: newUser.personal_email,
-      tel: newUser.tel,
-      last_login_at: newUser.last_login_at,
-      created_at: newUser.created_at,
-      updated_at: newUser.updated_at,
-    });
-  } catch (err) {
-    if (
-      err instanceof Error &&
-      err.message.toLowerCase().includes("profile image")
-    ) {
-      return res.status(400).json({ message: err.message });
+    // Save the profile picture if provided
+    if (req.file) {
+      const path = await storage.save({
+        buffer: req.file.buffer,
+        filename: "avatar." + req.file.originalname.split(".").pop(), // preserve original file extension
+        mimeType: req.file.mimetype,
+        folder: "public",
+        subfolder: `users/${newUser.id}/pfp`,
+      });
+      newUser.pfp_url = path;
+      await newUser.save();
     }
 
-    res.status(500).json({ message: "Internal server error\n" + err });
+    return res.status(201).json(toUserResponse(newUser, req));
+  } catch (err) {
+    if (err instanceof HttpError) {
+      res.status(err.status).json({ message: err.message });
+    } else {
+      res.status(500).json({ message: "Internal server error\n" + err });
+    }
   }
 };

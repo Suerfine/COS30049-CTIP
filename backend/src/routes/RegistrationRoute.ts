@@ -2,13 +2,13 @@ import { Router } from "express";
 import * as RegistrationController from "../controllers/RegistrationController";
 import { auth } from "../middelware/Auth";
 import { uploadPrivateDocument } from "../middelware/PrivateDocumentUpload";
-
-const privateRegistrationDocumentUpload = uploadPrivateDocument({
-  subfolder: "registrations",
-  allowedMimeTypes: ["application/pdf"],
-}).single("document");
+import { uploadDocument } from "../config/multer";
+import { body } from "express-validator";
+import { validate } from "../middelware/Validate";
+import { RegistrationStatus } from "../enum/RegistrationStatus";
 
 const registrationRouter = Router();
+const documentUploader = uploadDocument();
 
 /**
  * @swagger
@@ -26,34 +26,24 @@ const registrationRouter = Router();
  *           schema:
  *             $ref: '#/components/schemas/CreateRegistrationRequest'
  *     responses:
- *       201:
+ *       200:
  *         description: Registration created successfully
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Registration'
- *       400:
- *         description: Invalid input data
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *       401:
- *         description: Unauthorized
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *       500:
- *         description: Internal server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
  */
 registrationRouter.post(
   "/",
-  privateRegistrationDocumentUpload,
+  documentUploader.single("document"),
+  [
+    body("firstname").isString().notEmpty(),
+    body("lastname").isString().notEmpty(),
+    body("identification").isString().notEmpty(),
+    body("personal_email").isEmail(),
+    body("tel").isString().notEmpty(),
+  ],
+  validate,
   RegistrationController.createRegistration,
 );
 
@@ -84,6 +74,7 @@ registrationRouter.post(
  */
 registrationRouter.get(
   "/:id/document",
+  auth,
   RegistrationController.getRegistrationDocument,
 );
 
@@ -263,7 +254,20 @@ registrationRouter.get(
 registrationRouter.put(
   "/:id",
   auth,
-  privateRegistrationDocumentUpload,
+  documentUploader.single("document"),
+  [
+    body("user_id").optional().isInt({ min: 1 }),
+    body("reviewed_by_user_id").optional().isInt({ min: 1 }),
+    body("status").optional().isIn(Object.values(RegistrationStatus)),
+    body("firstname").optional().isString().notEmpty(),
+    body("lastname").optional().isString().notEmpty(),
+    body("identification").optional().isString().notEmpty(),
+    body("personal_email").optional().isEmail(),
+    body("tel").optional().isString().notEmpty(),
+    body("admin_remark").optional().isString(),
+    body("reviewed_at").optional().isISO8601().toDate(),
+  ],
+  validate,
   RegistrationController.updateRegistration,
 );
 
@@ -383,7 +387,7 @@ registrationRouter.post(
  *     requestBody:
  *       required: true
  *       content:
- *         multipart/form-data:
+ *         application/x-www-form-urlencoded:
  *           schema:
  *             $ref: '#/components/schemas/RejectRegistrationRequest'
  *     responses:
@@ -421,6 +425,8 @@ registrationRouter.post(
 registrationRouter.post(
   "/:id/reject",
   auth,
+  [body("message").isString().notEmpty()],
+  validate,
   RegistrationController.rejectRegistration,
 );
 
