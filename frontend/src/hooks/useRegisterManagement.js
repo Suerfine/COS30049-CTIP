@@ -7,6 +7,7 @@ export const useRegisterManagement=()=>{
     const [loading, setLoading]=useState(false);
     const [currentPage, setCurrentPage]=useState(1);
     const [totalPages, setTotalPages]=useState(1);
+    const [isCreating, setIsCreating]=useState(false);
     const [totalUsers, setTotalUsers]=useState(0);
     const [selectedUser, setSelectedUser]=useState(null);
     const [searchQuery, setSearchQuery]=useState('');
@@ -38,6 +39,25 @@ export const useRegisterManagement=()=>{
         fetchUsers();
     },[currentPage,searchQuery, sortConfig, currentStatus]);
 
+    const handleCreateUser=async(formData)=>{
+        setIsCreating(true);
+        try{
+           const result=await RegisterService.approve(formData.id);
+           await fetchUsers();
+           setSelectedUsers(null);
+            
+           return{
+            success:true,
+            data:result
+           };
+        }catch(err){
+            console.error("Create Account Error:", err);
+            throw err;
+        }finally{
+            setIsCreating(false);
+        }
+    }
+
     const handleSearch=(query)=>{
         setSearchQuery(query);
         setCurrentPage(1);
@@ -65,6 +85,8 @@ export const useRegisterManagement=()=>{
         selectedUser,setSelectedUser,
         handleSearch, searchQuery,
         sortConfig, requestSort, resetSort,
-        currentStatus, setCurrentStatus
+        currentStatus, setCurrentStatus,
+        isCreating,setIsCreating,
+        handleCreateUser,
     }
 }

@@ -7,7 +7,8 @@ import { useRegisterManagement } from '../hooks/useRegisterManagement';
 import { formatDate } from '../utils/formatDate';
 
 const RegistrationManagement=()=>{
-    const {users, loading,currentPage, setCurrentPage, totalPages, totalUsers,selectedUser,setSelectedUser,handleSearch, searchQuery,sortConfig, requestSort,resetSort,currentStatus, setCurrentStatus}=useRegisterManagement();
+    const {users, loading,currentPage, setCurrentPage, totalPages, totalUsers,selectedUser,setSelectedUser,handleSearch, searchQuery,sortConfig, requestSort,resetSort,currentStatus, setCurrentStatus,isCreating,setIsCreating,
+        handleCreateUser,}=useRegisterManagement();
     const [isOpen, setIsOpen]=useState(false);    
 
     const handleNextPage=()=>{
