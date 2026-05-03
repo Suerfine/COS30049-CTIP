@@ -18,7 +18,10 @@ export const pageService={
     // POST: Create new page
     create: async(courseId, moduleId, pageData)=>{
         try{
-            const response=await apiClient.post(API_ENDPOINTS.COURSE.PAGES(courseId, moduleId),pageData);
+            const response=await apiClient.post(API_ENDPOINTS.COURSE.PAGES(courseId, moduleId),{
+                title:pageData.title,
+                order:pageData.order
+            });
             return response.data;
         } catch(err){
             console.error("Create pages Error:",err);

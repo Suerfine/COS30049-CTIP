@@ -26,12 +26,13 @@ export const useOutline=(course)=>{
             alert("Finish naming the current new section before adding another.");
             return alert; 
         }
+        const nextOrder=allModules.length+1;
         const maxId = allModules.reduce((max, m) => Math.max(max, m.moduleId), 0);
         const nextId = maxId + 1;
 
         setNewSectons(prev=>[
             ...prev,
-            {moduleId:nextId, title: '', pages: []}
+            {moduleId:nextId, title: '', pages: [], order:nextOrder, isTemp:true}
         ])
     };
 
@@ -39,23 +40,32 @@ export const useOutline=(course)=>{
         if(!newTitle.trim()){
             return;
         }
+        const pending=newSections.find(s=>s.id===tempId);
         try{
+            const payload={
+                title:newTitle,
+                order:pending.order
+            };
+            const createdModule=await moduleService.create(course.id, payload);
+            setModules(prev=>[...prev, createdModule]);
+            setNewSectons(prev=>prev.filter(s=>s.moduleId!==moduleId));
             const res=await moduleService.create(course.id,{moduleId,newTitle, pages: []});
-            if(res.ok){
-                const createdModule={moduleId,newTitle, pages: [{ pageId: `${moduleId}.0`, title: 'Introduction' }]};
-                await moduleService.create(course.id,moduleId,createdModule.pages[0]);
-                setModules(prev=>[...prev, createdModule]);
-                setNewSectons(prev=>prev.filter(s=>s.moduleId!==moduleId));
-            }
         }catch(err){
             console.error('Failed to update section or create intro page',err);
+            alert(err);
         }
     };
 
     const updateModuleTitle=async(moduleId,newTitle)=>{
-        setModules(prev=>prev.map(m=>m.moduleId === moduleId ? {...m,title:newTitle} : m));
-        setNewSectons(prev=>prev.map(s=>(s.moduleId===moduleId ? {...s, title:newTitle} :s)));
-        await moduleService.update(course.id,moduleId,newTitle);
+        try{
+            setModules(prev=>prev.map(m=>m.moduleId === moduleId ? {...m,title:newTitle} : m));
+            await moduleService.update(course.id, moduleId, newTitle);
+        }catch(err){
+            console.error('Update Module Title Error:',err);
+        }
+        
+        // setNewSectons(prev=>prev.map(s=>(s.moduleId===moduleId ? {...s, title:newTitle} :s)));
+
     };
 
     const deleteModule=async(moduleId)=>{
@@ -63,45 +73,59 @@ export const useOutline=(course)=>{
         if(!confirmed){
             return;
         }
-        const res=await moduleService.delete(course.id,moduleId);
-        if(res.ok){
-            setModules(prev => prev.filter(m => m.moduleId !== moduleId));
+        try{
+            await moduleService.delete(course.id, moduleId);
+            setModules(prev=>prev.filter(m=>m.id !== moduleId));
+        }catch(err){
+            alert("Delete failed:"+err);
         }
     };
 
     // Page Function
     const addPage=async(moduleId)=>{
-        const targetModule=modules.find(m=>m.moduleId===moduleId);
-        const newPageId = `${moduleId}.${targetModule.pages.length}`;
-        const newPage={pageId: newPageId, title: 'New Page'};
+        try{
+            const parentModule=modules.find(m=>m.moduleId===moduleId);
+            const nextPageOrder=(parentModule.pages?.length || 0)+1;
 
-        const res=await pageService.create(course.id,moduleId,newPage);
-        if(res.ok){
+            const payload={
+                title:'New Page',
+                order:nextPageOrder
+            };
+
+            const createdPage=await pageService.create(course.id, moduleId, newPage);
             setModules(prev => prev.map(m => 
                 m.moduleId === moduleId ? { ...m, pages: [...m.pages, newPage] } : m
             ));
+        } catch(err){
+            alert("Create Page failed:"+err);
         }
     };
 
     const updatePageTitle=async(moduleId, pageId, newTitle)=>{
-        setModules(prev=>prev.map(m=>{
-            if(m.moduleId===moduleId){
-                return {...m,pages:m.pages.map(p=>p.pageId===pageId?{...p,title:newTitle}:p)};
-            }
-            return m;
-        }));
-        await pageService.update(course.id,moduleId,pageId,newTitle);
+        try{
+            setModules(prev=>prev.map(m=>{
+                if(m.moduleId===moduleId){
+                    return {...m,pages:m.pages.map(p=>p.pageId===pageId?{...p,title:newTitle}:p)};
+                }
+                return m;
+            }));
+            await pageService.update(course.id,moduleId,pageId,newTitle);
+        }catch(err){
+            alert("Update Page failed:"+err);
+        }
     };
 
     const deletePage=async(moduleId, pageId)=>{
         const confirmed = window.confirm(`Are you sure you want to delete this page?`);
         if (!confirmed) return;
 
-        const res=await pageService.delete(course.id, moduleId,pageId);
-        if(res.ok){
+        try{
+            await pageService.delete(course.id, moduleId, pageId);
             setModules(prev => prev.map(m => 
                 m.moduleId === moduleId ? { ...m, pages: m.pages.filter(p => p.pageId !== pageId) } : m
             ));
+        }catch(err){
+            alert("Delete Page failed:"+err);
         }
     };
 
