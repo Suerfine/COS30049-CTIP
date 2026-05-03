@@ -235,7 +235,7 @@ const styles = StyleSheet.create({
         flexDirection:'row',
         userSelect:'none',
         alignItems:'center',
-        gap:5
+        gap:5,
     },
     title: {
         fontSize: 24,
@@ -252,7 +252,7 @@ const styles = StyleSheet.create({
     },
     container:{
         flex: 1,
-        marginHorizontal:20,
+        marginHorizontal:35
     },
     statsRow:{
         flexDirection:'row',
