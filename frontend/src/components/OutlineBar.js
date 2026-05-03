@@ -54,7 +54,7 @@ const OutlineBar=({course, onSelectPage, editable, isCollapsed})=>{
             {/* Modules */}
             <FlatList
                 data={allModules}
-                keyExtractor={module => module.moduleId.toString()}
+                keyExtractor={module => module.id.toString()}
                 renderItem={({ item: module }) => {
                     const isNewSection=(editable && module.title==="");
                     const isEditingExisting= (editingItem?.type==="module" && editingItem.id===module.moduleId);
