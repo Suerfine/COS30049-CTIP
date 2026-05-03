@@ -2,7 +2,7 @@ import { NextFunction, Request, Response } from "express";
 import fs from "fs";
 import path from "path";
 import { Registration } from "../models";
-import { DatabaseError, ValidationError } from "sequelize";
+import { DatabaseError, Op, ValidationError } from "sequelize";
 import { PaginateRequestParams, PaginateResponse } from "../types/common";
 import {
   CreateRegistrationRequest,
@@ -20,58 +20,38 @@ import {
 } from "../types/Registration";
 import { hashPassword } from "../utils/password";
 import { PRIVATE_UPLOAD_STORAGE_PATH } from "../middelware/PrivateDocumentUpload";
-import { toUserResponse } from "../types/User";
+import { UserResponse } from "../types/User";
+import { getStorage } from "../services/storage";
+import { th } from "@faker-js/faker";
 
-type RegistrationRequestWithFile = Request & {
-  user?: User;
-  file?: Express.Multer.File;
-};
+class HttpError extends Error {
+  status: number;
 
-function normalizeDocumentPath(documentPath: string): string {
-  return path.resolve(documentPath);
+  constructor(status: number, message: string) {
+    super(message);
+    this.status = status;
+  }
 }
 
-function isPrivateDocumentPath(documentPath: string): boolean {
-  const normalizedPath = normalizeDocumentPath(documentPath);
-  const privateRoot = path.resolve(PRIVATE_UPLOAD_STORAGE_PATH);
-  return (
-    normalizedPath === privateRoot ||
-    normalizedPath.startsWith(`${privateRoot}${path.sep}`)
-  );
-}
+function toUserResponse(user: User, req: Request<any>): UserResponse {
+  let full_url_pfp = user.pfp_url
+    ? `${req.protocol}:\\${req.get("host")}\\${user.pfp_url}`
+    : null;
 
-async function getAccessibleRegistrationDocument(
-  registrationId: string,
-  user?: User,
-): Promise<string | null> {
-  const registration = await Registration.findByPk(registrationId);
-  if (!registration || !registration.document_filepath) {
-    return null;
-  }
-
-  if (!user) {
-    return null;
-  }
-
-  const canAccess =
-    user.role === UserRoles.ADMIN ||
-    (registration.user_id !== null && registration.user_id === user.id);
-
-  if (!canAccess) {
-    return null;
-  }
-
-  const documentPath = normalizeDocumentPath(registration.document_filepath);
-  if (!isPrivateDocumentPath(documentPath)) {
-    return null;
-  }
-
-  try {
-    await fs.promises.access(documentPath, fs.constants.R_OK);
-    return documentPath;
-  } catch {
-    return null;
-  }
+  return {
+    id: user.id,
+    username: user.username,
+    firstname: user.firstname,
+    lastname: user.lastname,
+    role: user.role,
+    identification: user.identification,
+    personal_email: user.personal_email,
+    tel: user.tel,
+    pfp_url: full_url_pfp,
+    last_login_at: user.last_login_at,
+    created_at: user.created_at,
+    updated_at: user.updated_at,
+  };
 }
 
 function toRegistrationResponse(
@@ -87,7 +67,6 @@ function toRegistrationResponse(
     identification: registration.identification,
     personal_email: registration.personal_email,
     tel: registration.tel,
-    document_filepath: registration.document_filepath,
     admin_remark: registration.admin_remark,
     reviewed_at: registration.reviewed_at,
     created_at: registration.created_at,
@@ -96,45 +75,64 @@ function toRegistrationResponse(
 }
 
 export const createRegistration = async (
-  req: Request<{}, {}, CreateRegistrationRequest> & {
-    file?: Express.Multer.File;
-  },
+  req: Request<{}, {}, CreateRegistrationRequest>,
   res: Response<RegistrationResponse | { message: string }>,
   next: NextFunction,
 ) => {
   try {
-    const created = await Registration.create({
+    // Check if there's already a pending registration with the same firstname and lastname, identification or personal_email
+    const existingRegistration = await Registration.findOne({
+      where: {
+        status: RegistrationStatus.PENDING,
+        [Op.or]: [
+          { firstname: req.body.firstname, lastname: req.body.lastname },
+          { identification: req.body.identification },
+          { personal_email: req.body.personal_email },
+        ],
+      },
+    });
+    if (existingRegistration) {
+      throw new HttpError(
+        400,
+        "A pending registration with the same details already exists",
+      );
+    }
+
+    // Create the registration record
+    const registration = await Registration.create({
       user_id: null,
       reviewed_by_user_id: null,
-      status: req.body.status ?? RegistrationStatus.PENDING,
+      status: RegistrationStatus.PENDING,
       firstname: req.body.firstname,
       lastname: req.body.lastname,
       identification: req.body.identification,
       personal_email: req.body.personal_email,
       tel: req.body.tel,
-      document_filepath: req.file?.path ?? null,
-      admin_remark: req.body.admin_remark ?? null,
-      reviewed_at: req.body.reviewed_at ? new Date(req.body.reviewed_at) : null,
+      document_filepath: "",
+      admin_remark: null,
+      reviewed_at: null,
     });
 
-    return res.status(201).json(toRegistrationResponse(created));
+    // Move the file to the private storage if it exists and update the registration record with the new path
+    if (req.file) {
+      const storage = getStorage();
+      const path = await storage.save({
+        buffer: req.file.buffer,
+        filename: req.file.originalname,
+        mimeType: req.file.mimetype,
+        folder: "private",
+        subfolder: "registrations/" + registration.id + "/documents/",
+      });
+      await registration.update({ document_filepath: path });
+    }
+
+    return res.status(200).json(toRegistrationResponse(registration));
   } catch (err) {
-    if (err instanceof ValidationError) {
-      return res.status(400).json({ message: err.message });
+    if (err instanceof HttpError) {
+      res.status(err.status).json({ message: err.message });
+    } else {
+      res.status(500).json({ message: "Internal server error\n" + err });
     }
-
-    if (err instanceof DatabaseError) {
-      const dbMessage =
-        (err.parent as { message?: string } | undefined)?.message ??
-        err.message;
-      return res.status(400).json({ message: dbMessage });
-    }
-
-    if (err instanceof Error) {
-      return res.status(500).json({ message: err.message });
-    }
-
-    return res.status(500).json({ message: "Unknown error" });
   }
 };
 
@@ -183,11 +181,16 @@ export const getRegistrationById = async (
     const registration = await Registration.findByPk(req.params.id);
 
     if (!registration) {
-      return res.status(404).json({ message: "Registration not found" });
+      throw new HttpError(404, "Registration not found");
     }
 
     return res.json(toRegistrationResponse(registration));
   } catch (err) {
+    if (err instanceof HttpError) {
+      res.status(err.status).json({ message: err.message });
+    } else {
+      res.status(500).json({ message: "Internal server error\n" + err });
+    }
     next(err);
   }
 };
@@ -276,17 +279,26 @@ export const getRegistrationDocument = async (
   next: NextFunction,
 ) => {
   try {
-    const documentPath = await getAccessibleRegistrationDocument(
-      req.params.id,
-      req.user,
-    );
-
-    if (!documentPath) {
-      return res.status(404).json({ message: "Document not found" });
+    // Retrieve the registration model
+    const registration = await Registration.findByPk(req.params.id);
+    if (!registration) {
+      throw new HttpError(404, "Registration not found");
     }
 
-    return res.sendFile(documentPath);
+    // Check if document exists
+    const storage = getStorage();
+    if (!(await storage.exists(registration.document_filepath || ""))) {
+      throw new HttpError(404, "Document not found");
+    }
+
+    // Send the file to the client
+    return res.sendFile(storage.fullPath(registration.document_filepath || ""));
   } catch (err) {
+    if (err instanceof HttpError) {
+      res.status(err.status).json({ message: err.message });
+    } else {
+      res.status(500).json({ message: "Internal server error\n" + err });
+    }
     next(err);
   }
 };
@@ -302,11 +314,18 @@ export const deleteRegistration = async (
     });
 
     if (deletedCount === 0) {
-      return res.status(404).json({ message: "Registration not found" });
+      throw new HttpError(404, "Registration not found");
     }
 
-    return res.json({ message: "Registration deleted successfully" });
+    return res
+      .status(200)
+      .json({ message: "Registration deleted successfully" });
   } catch (err) {
+    if (err instanceof HttpError) {
+      res.status(err.status).json({ message: err.message });
+    } else {
+      res.status(500).json({ message: "Internal server error\n" + err });
+    }
     next(err);
   }
 };
@@ -319,20 +338,24 @@ export const approveRegistration = async (
   next: NextFunction,
 ) => {
   try {
+    // TODO: Move this authentication check to an authoritzation middleware in the future.
     // Check if admin
     if (!req.user || req.user.role !== UserRoles.ADMIN) {
-      return res.status(403).json({ message: "Admin access required" });
+      throw new HttpError(403, "Admin access required");
     }
 
     // Get registration
     const registration = await Registration.findByPk(req.params.id);
     if (!registration) {
-      return res.status(404).json({ message: "Registration not found" });
+      throw new HttpError(404, "Registration not found");
     }
 
     // Check if user_id already exists
     if (registration.user_id) {
-      return res.status(400).json({ message: "User already registered" });
+      throw new HttpError(
+        400,
+        "Registration already has an associated user. Cannot approve.",
+      );
     }
 
     // Create new ParkGuide with a default username and password
@@ -350,6 +373,8 @@ export const approveRegistration = async (
       password_hash: hashPassword(temporary_password),
     });
 
+    // TODO: Send email to the user with their account details and temporary password
+
     // Update registration with user_id and approved status
     await registration.update({
       user_id: user.id,
@@ -361,25 +386,15 @@ export const approveRegistration = async (
     // Return the created user and registration details (excluding password hash)
     return res.status(200).json({
       registration: toRegistrationResponse(registration),
-      user: toUserResponse(user),
+      user: toUserResponse(user, req),
     });
   } catch (err) {
-    if (err instanceof ValidationError) {
-      return res.status(400).json({ message: err.message });
+    if (err instanceof HttpError) {
+      res.status(err.status).json({ message: err.message });
+    } else {
+      res.status(500).json({ message: "Internal server error\n" + err });
     }
-
-    if (err instanceof DatabaseError) {
-      const dbMessage =
-        (err.parent as { message?: string } | undefined)?.message ??
-        err.message;
-      return res.status(400).json({ message: dbMessage });
-    }
-
-    if (err instanceof Error) {
-      return res.status(500).json({ message: err.message });
-    }
-
-    return res.status(500).json({ message: "Unknown error" });
+    next(err);
   }
 };
 
@@ -389,15 +404,16 @@ export const rejectRegistration = async (
   next: NextFunction,
 ) => {
   try {
+    // TODO: Move this authentication check to an authoritzation middleware in the future.
     // Check if admin
     if (!req.user || req.user.role !== UserRoles.ADMIN) {
-      return res.status(403).json({ message: "Admin access required" });
+      throw new HttpError(403, "Admin access required");
     }
 
     // Get registration
     const registration = await Registration.findByPk(req.params.id);
     if (!registration) {
-      return res.status(404).json({ message: "Registration not found" });
+      throw new HttpError(404, "Registration not found");
     }
 
     // Update registration with rejection status and message
@@ -410,21 +426,11 @@ export const rejectRegistration = async (
 
     return res.json(toRegistrationResponse(registration));
   } catch (err) {
-    if (err instanceof ValidationError) {
-      return res.status(400).json({ message: err.message });
+    if (err instanceof HttpError) {
+      res.status(err.status).json({ message: err.message });
+    } else {
+      res.status(500).json({ message: "Internal server error\n" + err });
     }
-
-    if (err instanceof DatabaseError) {
-      const dbMessage =
-        (err.parent as { message?: string } | undefined)?.message ??
-        err.message;
-      return res.status(400).json({ message: dbMessage });
-    }
-
-    if (err instanceof Error) {
-      return res.status(500).json({ message: err.message });
-    }
-
-    return res.status(500).json({ message: "Unknown error" });
+    next(err);
   }
 };

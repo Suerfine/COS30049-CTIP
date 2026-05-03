@@ -3,14 +3,18 @@ import * as CourseController from "../controllers/CourseController";
 import { auth } from "../middelware/Auth";
 import { uploadPrivateDocument } from "../middelware/PrivateDocumentUpload";
 import moduleRouter from "./ModuleRoute";
+import { uploadBadgeImg } from "../config/multer";
+import { validate } from "../middelware/Validate";
+import { body } from "express-validator/lib/middlewares/validation-chain-builders";
+import { CourseStatus } from "../enum/CourseStatus";
 
 const privateCourseBadgeUpload = uploadPrivateDocument({
   subfolder: "courses/badges",
   allowedMimeTypes: ["image/jpeg", "image/png", "image/webp", "image/gif"],
 }).single("badge");
+const uploadCourseBadge = uploadBadgeImg();
 
 const courseRouter = Router();
-
 courseRouter.use("/:course_Id/modules", moduleRouter);
 
 /**
@@ -51,7 +55,13 @@ courseRouter.use("/:course_Id/modules", moduleRouter);
 courseRouter.post(
   "/",
   auth,
-  privateCourseBadgeUpload,
+  uploadCourseBadge.single("badge"),
+  [
+    body("title").isString().notEmpty(),
+    body("description").optional().isString(),
+    body("status").optional().isIn(Object.values(CourseStatus)),
+  ],
+  validate,
   CourseController.createCourse,
 );
 
@@ -175,31 +185,6 @@ courseRouter.get("/", auth, CourseController.getAllCourses);
  *               $ref: '#/components/schemas/ErrorResponse'
  */
 courseRouter.get("/:id", auth, CourseController.getCourseById);
-
-/**
- * @swagger
- * /api/courses/{id}/badge:
- *   get:
- *     summary: Download course badge image
- *     description: Returns the private badge image file associated with a course.
- *     tags: [Courses]
- *     security:
- *       - OAuth2: ["all"]
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: Badge retrieved successfully
- *       401:
- *         description: Unauthorized
- *       404:
- *         description: Badge not found
- */
-courseRouter.get("/:id/badge", auth, CourseController.getCourseBadge);
 
 /**
  * @swagger

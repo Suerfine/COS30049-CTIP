@@ -19,6 +19,7 @@ class User extends Model<InferAttributes<User>, InferCreationAttributes<User>> {
   declare tel: string;
   declare role: UserRoles;
   declare password_hash: string;
+  declare pfp_url: CreationOptional<string | null>;
   declare last_login_at: CreationOptional<Date | null>;
   declare created_at: CreationOptional<Date>;
   declare updated_at: CreationOptional<Date>;
@@ -66,6 +67,10 @@ User.init(
     password_hash: {
       type: DataTypes.STRING,
       allowNull: false,
+    },
+    pfp_url: {
+      type: DataTypes.STRING(512),
+      allowNull: true,
     },
     last_login_at: {
       type: DataTypes.DATE,

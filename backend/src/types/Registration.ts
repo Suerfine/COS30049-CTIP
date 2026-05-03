@@ -11,7 +11,6 @@ export interface RegistrationResponse {
   identification: string;
   personal_email: string;
   tel: string;
-  document_filepath: string | null;
   admin_remark: string | null;
   reviewed_at: Date | null;
   created_at: Date;
@@ -19,16 +18,11 @@ export interface RegistrationResponse {
 }
 
 export interface CreateRegistrationRequest {
-  user_id?: number | null;
-  reviewed_by_user_id?: number | null;
-  status?: RegistrationStatus;
   firstname: string;
   lastname: string;
   identification: string;
   personal_email: string;
   tel: string;
-  admin_remark?: string | null;
-  reviewed_at?: string | Date | null;
 }
 
 export interface UpdateRegistrationRequest {

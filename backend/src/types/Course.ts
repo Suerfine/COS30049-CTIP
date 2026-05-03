@@ -25,7 +25,7 @@ export interface CourseResponse {
   expected_completion_weeks: number | null;
   must_complete_in_weeks: number | null;
   badge_expire_in_months: number;
-  badge_path_id: string | null;
+  badge_img_url: string | null;
   final_quiz_max_score: number | null;
   total_max_score: number | null;
   prerequisite_groups: PrerequisiteGroupResponse[];
