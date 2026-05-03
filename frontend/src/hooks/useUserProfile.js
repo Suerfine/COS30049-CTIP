@@ -102,7 +102,7 @@ export const useUserProfile=()=>{
 
     return{
         user,
-        form,
+        form, setForm,
         updateField,
         username,setUsername,
         password,setPassword,
