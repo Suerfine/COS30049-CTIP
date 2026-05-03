@@ -417,8 +417,18 @@ const options: swaggerJSDoc.Options = {
             badge: {
               type: "string",
               format: "binary",
-              description: "Optional course badge image file",
+              description: "Course badge image file",
               nullable: false,
+              MimeTypeArray: ["image/jpeg", "image/png", "image/gif"],
+              required: true,
+            },
+            cover: {
+              type: "string",
+              format: "binary",
+              description: "Course cover image file",
+              nullable: false,
+              MimeTypeArray: ["image/jpeg", "image/png", "image/gif"],
+              required: true,
             },
           },
         },
@@ -472,7 +482,12 @@ const options: swaggerJSDoc.Options = {
             badge: {
               type: "string",
               format: "binary",
-              description: "Optional course badge image file",
+              description: "Course badge image file",
+            },
+            cover: {
+              type: "string",
+              format: "binary",
+              description: "Course cover image file",
             },
           },
         },

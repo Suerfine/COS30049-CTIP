@@ -26,6 +26,8 @@ export type CourseFactoryAttributes = {
   expected_completion_weeks: number;
   must_complete_in_weeks: number;
   badge_expire_in_months: number;
+  cover_img_path: string;
+  badge_img_path: string;
   created_at?: Date;
   updated_at?: Date;
   deleted_at?: Date | null;
@@ -62,9 +64,12 @@ const buildUniqueCourseTitle = (): string => {
   return title;
 };
 
-export const buildCourse = (overrides: CourseFactoryInput = {}): CourseFactoryAttributes => {
+export const buildCourse = (
+  overrides: CourseFactoryInput = {},
+): CourseFactoryAttributes => {
   const expectedCompletionWeeks = faker.number.int({ min: 4, max: 16 });
-  const hardLimitWeeks = expectedCompletionWeeks + faker.number.int({ min: 2, max: 12 });
+  const hardLimitWeeks =
+    expectedCompletionWeeks + faker.number.int({ min: 2, max: 12 });
 
   const defaultCourse: CourseFactoryAttributes = {
     title: buildUniqueCourseTitle(),
@@ -72,6 +77,8 @@ export const buildCourse = (overrides: CourseFactoryInput = {}): CourseFactoryAt
     expected_completion_weeks: expectedCompletionWeeks,
     must_complete_in_weeks: hardLimitWeeks,
     badge_expire_in_months: faker.number.int({ min: 6, max: 36 }),
+    cover_img_path: "public/dev/course_cover_placeholder.jpg",
+    badge_img_path: "public/dev/course_badge_placeholder.png",
   };
 
   const resolvedCourse = {
@@ -91,7 +98,9 @@ export const buildCourses = (
   return Array.from({ length: count }, () => buildCourse(overrides));
 };
 
-export const buildCourseGraph = (options: BuildCourseOptions = {}): CourseFactoryResult => {
+export const buildCourseGraph = (
+  options: BuildCourseOptions = {},
+): CourseFactoryResult => {
   const {
     courseOverrides = {},
     moduleOverrides = {},

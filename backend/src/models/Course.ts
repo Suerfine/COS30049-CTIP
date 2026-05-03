@@ -33,7 +33,8 @@ class Course extends Model<
   declare expected_completion_weeks: CreationOptional<number | null>;
   declare must_complete_in_weeks: CreationOptional<number | null>;
   declare badge_expire_in_months: number;
-  declare badge_img_path: CreationOptional<string | null>;
+  declare cover_img_path: CreationOptional<string>;
+  declare badge_img_path: CreationOptional<string>;
   declare created_at: CreationOptional<Date>;
   declare updated_at: CreationOptional<Date>;
   declare deleted_at: CreationOptional<Date | null>;
@@ -80,6 +81,9 @@ Course.init(
       defaultValue: _DEFAULT_COURSE_BADGE_EXPIRE_IN_MONTHS,
     },
     badge_img_path: {
+      type: DataTypes.STRING(512),
+    },
+    cover_img_path: {
       type: DataTypes.STRING(512),
     },
     created_at: {
