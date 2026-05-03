@@ -112,6 +112,14 @@ courseRouter.post(
  *           default: false
  *           example: false
  *         description: When true, include soft-deleted courses in the result set.
+      - in: query
+        name: tags
+        required: false
+        schema:
+          type: array
+          items:
+            type: string
+        description: Filter courses by tags. Provide one or more tag strings.
  *     responses:
  *       200:
  *         description: Courses retrieved successfully
