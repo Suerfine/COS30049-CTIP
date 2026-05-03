@@ -84,6 +84,7 @@ registrationRouter.post(
  */
 registrationRouter.get(
   "/:id/document",
+  auth,
   RegistrationController.getRegistrationDocument,
 );
 

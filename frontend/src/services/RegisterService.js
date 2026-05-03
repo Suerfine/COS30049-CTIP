@@ -47,14 +47,17 @@ export const RegisterService={
             formData.append('identification', userData.ic);
             formData.append('personal_email', userData.email);
             formData.append('tel', userData.telephone);
-            formData.appe
 
             if(userData.file){
-                formData.append('file', {
-                    uri:userData.file.uri,
-                    name: userData.file.name,
-                    type: userData.file.type || 'application/pdf',
-                });
+                if (userData.file.file) {
+                    formData.append('document', userData.file.file, userData.file.name);
+                } else {
+                    formData.append('document', {
+                        uri:userData.file.uri,
+                        name: userData.file.name,
+                        type: userData.file.type || 'application/pdf',
+                    });
+                }
             }
 
             const response=await apiClient.post(API_ENDPOINTS.USER.SIGNUP, formData, {
@@ -75,6 +78,45 @@ export const RegisterService={
         }catch(err){
             const message = err.response?.data?.message || "Check console for server error";
             console.error("Approve Error Status:", err.response?.status);
+            throw new Error(message);
+        }
+    },
+
+    // POST: reject account
+    reject:async (id, message="Registration rejected by admin.")=>{
+        try{
+            const response=await apiClient.post(API_ENDPOINTS.ADMIN.REJECT(id), { message });
+            return response.data;
+        }catch(err){
+            const errorMessage = err.response?.data?.message || "Check console for server error";
+            console.error("Reject Error Status:", err.response?.status);
+            throw new Error(errorMessage);
+        }
+    },
+
+    // GET: open registration document
+    openDocument:async (id, previewWindow=null)=>{
+        try{
+            const response=await apiClient.get(API_ENDPOINTS.USER.REGISTRATION_DOCUMENT(id), {
+                responseType:'blob'
+            });
+            const blob = response.data instanceof Blob
+                ? response.data
+                : new Blob([response.data], { type:'application/pdf' });
+            const fileUrl=window.URL.createObjectURL(blob);
+
+            if (previewWindow && !previewWindow.closed) {
+                previewWindow.location.href = fileUrl;
+            } else {
+                window.open(fileUrl, '_blank');
+            }
+
+            setTimeout(()=>window.URL.revokeObjectURL(fileUrl), 60000);
+        }catch(err){
+            if (previewWindow && !previewWindow.closed) {
+                previewWindow.close();
+            }
+            const message = err.response?.data?.message || "Failed to open registration document";
             throw new Error(message);
         }
     }

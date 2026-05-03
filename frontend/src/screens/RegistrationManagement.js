@@ -1,14 +1,100 @@
 import { Pen, Trash2, Search, Plus, Circle, ChevronLeft, ChevronsLeft, ChevronRight, ChevronsRight, X, User2, IdCard, Mail, ShieldUser, Calendar, FileUser, EllipsisVertical, ChevronDown, ChevronUp, CirclePlus, CircleMinus,  MessageSquare, Phone, ArrowUpNarrowWide, ArrowDownWideNarrow, RotateCcw, FileText, ExternalLink} from 'lucide-react-native';
 import React, {useState} from 'react';
-import { Pressable, StyleSheet, FlatList, View,Text, Image, TextInput, ActivityIndicator} from 'react-native';
+import { Pressable, StyleSheet, FlatList, View,Text, Image, TextInput, ActivityIndicator, Alert} from 'react-native';
 
 // Import other components and hooks
 import { useRegisterManagement } from '../hooks/useRegisterManagement';
 import { formatDate } from '../utils/formatDate';
+import { RegisterService } from '../services/RegisterService';
 
 const RegistrationManagement=()=>{
-    const {users, loading,currentPage, setCurrentPage, totalPages, totalUsers,selectedUser,setSelectedUser,handleSearch, searchQuery,sortConfig, requestSort,resetSort,currentStatus, setCurrentStatus}=useRegisterManagement();
-    const [isOpen, setIsOpen]=useState(false);    
+    const {users, loading,currentPage, setCurrentPage, totalPages, totalUsers,selectedUser,setSelectedUser,handleSearch, searchQuery,sortConfig, requestSort,resetSort,currentStatus, setCurrentStatus, refresh}=useRegisterManagement();
+    const [isOpen, setIsOpen]=useState(false);
+    const [isCreating, setIsCreating]=useState(false);
+    const [isRejecting, setIsRejecting]=useState(false);
+
+    const notify=(title, message)=>{
+        if (typeof window !== 'undefined' && window.alert) {
+            window.alert(`${title}\n${message}`);
+            return;
+        }
+
+        Alert.alert(title, message);
+    };
+
+    const handleCreateUser=async(user)=>{
+        if (!user || isCreating) {
+            return;
+        }
+
+        setIsCreating(true);
+        try {
+            await RegisterService.approve(user.id);
+            notify('Registration approved', 'The account was created and the approval email was sent if SMTP is configured.');
+            setSelectedUser(null);
+            await refresh();
+        } catch (err) {
+            notify('Approval failed', err.message || 'Unable to approve this registration.');
+        } finally {
+            setIsCreating(false);
+        }
+    };
+
+    const handleRejectUser=async(user)=>{
+        if (!user || isRejecting) {
+            return;
+        }
+
+        const reason = typeof window !== 'undefined' && window.prompt
+            ? window.prompt('Reason for rejection:', user.admin_remark || 'Registration rejected by admin.')
+            : 'Registration rejected by admin.';
+
+        if (reason === null) {
+            return;
+        }
+
+        setIsRejecting(true);
+        try {
+            await RegisterService.reject(user.id, reason || 'Registration rejected by admin.');
+            notify('Registration rejected', 'The rejection email was sent if SMTP is configured.');
+            setSelectedUser(null);
+            await refresh();
+        } catch (err) {
+            notify('Rejection failed', err.message || 'Unable to reject this registration.');
+        } finally {
+            setIsRejecting(false);
+        }
+    };
+
+    const handleViewResume=async(user)=>{
+        if (!user?.document_filepath) {
+            notify('Resume unavailable', 'This registration does not have an uploaded resume.');
+            return;
+        }
+
+        const previewWindow = typeof window !== 'undefined'
+            ? window.open('', '_blank')
+            : null;
+
+        if (previewWindow) {
+            previewWindow.document.write('<p style="font-family:Arial,sans-serif;padding:24px;">Loading resume...</p>');
+        }
+
+        try {
+            await RegisterService.openDocument(user.id, previewWindow);
+        } catch (err) {
+            notify('Resume unavailable', err.message || 'Unable to open this resume.');
+        }
+    };
+
+    const getResumeDisplayName=(user)=>{
+        if (!user?.document_filepath) {
+            return 'No resume uploaded';
+        }
+
+        const storedName = user.document_filepath.split(/[\\/]/).pop() || 'Resume.pdf';
+        return storedName.replace(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}-/i, '');
+    };
 
     const handleNextPage=()=>{
         if(currentPage<totalPages){
@@ -204,14 +290,17 @@ const RegistrationManagement=()=>{
                     </View>
                     <View style={styles.panelContent}>
                         
-                        <Image source={{uri:selectedUser?.profileImage}} style={styles.largeAvatar}/>
-                        <View style={styles.pfpPlaceholder}>
-                            <Text style={styles.pfpInitials}>
-                                {selectedUser?.firstname
-                                    ? selectedUser.firstname[0].toUpperCase()
-                                    : "?"}
-                            </Text>
-                        </View>
+                        {selectedUser?.profileImage ? (
+                            <Image source={{uri:selectedUser.profileImage}} style={styles.largeAvatar}/>
+                        ) : (
+                            <View style={[styles.pfpPlaceholder, {alignSelf:'center'}]}>
+                                <Text style={styles.pfpInitials}>
+                                    {selectedUser?.firstname
+                                        ? selectedUser.firstname[0].toUpperCase()
+                                        : "?"}
+                                </Text>
+                            </View>
+                        )}
                         <Text style={styles.fullname}>{selectedUser.firstname + " " + selectedUser.lastname}</Text>
                         
                         <View style={styles.user}>
@@ -268,24 +357,57 @@ const RegistrationManagement=()=>{
                                     <FileUser size={18} color="#4f4f4f"/>
                                     <Text style={styles.panelLabel}>Resume:</Text>
                                 </View>
-                                <Pressable style={styles.pdfBadge} onPress={() => window.open(selectedUser.resumeUrl, '_blank')}><FileText size={14} color="#0a6340" />
-                                    <Text style={styles.pdfText}>View_Resume.pdf</Text>
-                                    <ExternalLink size={14} color="#666" />
+                                <Pressable
+                                    style={[
+                                        styles.pdfBadge,
+                                        !selectedUser.document_filepath && styles.pdfBadgeDisabled
+                                    ]}
+                                    onPress={() => handleViewResume(selectedUser)}
+                                >
+                                    <FileText size={14} color={selectedUser.document_filepath ? "#0a6340" : "#777"} />
+                                    <Text style={[
+                                        styles.pdfText,
+                                        !selectedUser.document_filepath && styles.pdfTextDisabled
+                                    ]}>
+                                        {getResumeDisplayName(selectedUser)}
+                                    </Text>
+                                    {selectedUser.document_filepath && <ExternalLink size={14} color="#666" />}
                                 </Pressable>
                             </View>
                         </View>
                         {selectedUser.status=='pending' &&(
-                        <Pressable 
-                           style={({ hovered }) => [styles.Btn,
-                                hovered && styles.btnHover, 
-                            ]} onPress={()=>handleCreateUser(selectedUser)}
-                        >
-                            {isCreating ? (
-                                <ActivityIndicator color="white" size="small" />
-                            ) : (
-                                <Text style={styles.btnText}>Approve</Text>
-                            )}
-                        </Pressable>
+                            <View style={styles.actionBar}>
+                                <Pressable
+                                    disabled={isRejecting || isCreating}
+                                    style={({ hovered }) => [
+                                        styles.rejectBtn,
+                                        hovered && styles.rejectBtnHover,
+                                        (isRejecting || isCreating) && styles.actionDisabled
+                                    ]}
+                                    onPress={()=>handleRejectUser(selectedUser)}
+                                >
+                                    {isRejecting ? (
+                                        <ActivityIndicator color="white" size="small" />
+                                    ) : (
+                                        <Text style={styles.btnText}>Reject</Text>
+                                    )}
+                                </Pressable>
+                                <Pressable
+                                    disabled={isCreating || isRejecting}
+                                    style={({ hovered }) => [
+                                        styles.Btn,
+                                        hovered && styles.btnHover,
+                                        (isCreating || isRejecting) && styles.actionDisabled
+                                    ]}
+                                    onPress={()=>handleCreateUser(selectedUser)}
+                                >
+                                    {isCreating ? (
+                                        <ActivityIndicator color="white" size="small" />
+                                    ) : (
+                                        <Text style={styles.btnText}>Approve</Text>
+                                    )}
+                                </Pressable>
+                            </View>
                         )}
                         
                     </View>
@@ -575,10 +697,27 @@ const styles = StyleSheet.create({
         borderRadius:10,
         paddingHorizontal:20,
         paddingVertical:8,
-        marginTop:15,
+    },
+    rejectBtn:{
+        width:120,
+        alignItems:'center',
+        backgroundColor:'#b42318',
+        borderRadius:10,
+        paddingHorizontal:20,
+        paddingVertical:8,
+    },
+    rejectBtnHover:{
+        backgroundColor:'#d92d20'
+    },
+    actionBar:{
         position:'absolute',
         bottom:15,
-        right:15
+        right:15,
+        flexDirection:'row',
+        gap:10
+    },
+    actionDisabled:{
+        opacity:0.6
     },
     headerRow:{
         flexDirection:'row',
@@ -614,6 +753,13 @@ const styles = StyleSheet.create({
         color:'#0a6340',
         fontSize:13,
         fontWeight:'500'
+    },
+    pdfBadgeDisabled:{
+        backgroundColor:'#f2f2f2',
+        borderColor:'#d6d6d6'
+    },
+    pdfTextDisabled:{
+        color:'#777'
     }
 });
 

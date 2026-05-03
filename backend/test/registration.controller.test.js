@@ -55,6 +55,7 @@ async function createUser(overrides = {}) {
     lastname: overrides.lastname ?? "User",
     identification: overrides.identification ?? `U-${unique}`,
     personal_email: overrides.personal_email ?? `user-${unique}@example.com`,
+    tel: overrides.tel ?? "0100000000",
     role: overrides.role ?? UserRoles.ADMIN,
     password_hash: overrides.password_hash ?? "hash",
     last_login_at: overrides.last_login_at ?? null,
@@ -110,11 +111,7 @@ test.after(async () => {
 });
 
 test("createRegistration persists a new registration", async () => {
-  const user = await createUser();
-  const reviewer = await createUser({ username: `reviewer-${user.id}` });
   const payload = buildRegistrationPayload({
-    user_id: user.id,
-    reviewed_by_user_id: reviewer.id,
     status: RegistrationStatus.APPROVED,
     admin_remark: "Checked by admin",
     reviewed_at: "2026-04-28T08:30:00.000Z",
@@ -132,8 +129,8 @@ test("createRegistration persists a new registration", async () => {
   assert.equal(state.body.firstname, payload.firstname);
   assert.equal(state.body.lastname, payload.lastname);
   assert.equal(state.body.status, RegistrationStatus.APPROVED);
-  assert.equal(state.body.user_id, user.id);
-  assert.equal(state.body.reviewed_by_user_id, reviewer.id);
+  assert.equal(state.body.user_id, null);
+  assert.equal(state.body.reviewed_by_user_id, null);
   assert.equal(state.body.admin_remark, payload.admin_remark);
   assert.ok(state.body.reviewed_at instanceof Date);
 
@@ -142,8 +139,8 @@ test("createRegistration persists a new registration", async () => {
   });
 
   assert.ok(createdRegistration);
-  assert.equal(createdRegistration.user_id, user.id);
-  assert.equal(createdRegistration.reviewed_by_user_id, reviewer.id);
+  assert.equal(createdRegistration.user_id, null);
+  assert.equal(createdRegistration.reviewed_by_user_id, null);
   assert.equal(createdRegistration.status, RegistrationStatus.APPROVED);
   assert.equal(createdRegistration.admin_remark, payload.admin_remark);
 });

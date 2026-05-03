@@ -21,6 +21,12 @@ import {
 import { hashPassword } from "../utils/password";
 import { PRIVATE_UPLOAD_STORAGE_PATH } from "../middelware/PrivateDocumentUpload";
 import { toUserResponse } from "../types/User";
+import {
+  generateRandomPassword,
+  generateSfcEmail,
+  sendRegistrationApprovedEmail,
+  sendRegistrationRejectedEmail,
+} from "../utils/mailer";
 
 type RegistrationRequestWithFile = Request & {
   user?: User;
@@ -285,6 +291,10 @@ export const getRegistrationDocument = async (
       return res.status(404).json({ message: "Document not found" });
     }
 
+    res.setHeader(
+      "Content-Disposition",
+      `inline; filename="${path.basename(documentPath)}"`,
+    );
     return res.sendFile(documentPath);
   } catch (err) {
     next(err);
@@ -335,16 +345,16 @@ export const approveRegistration = async (
       return res.status(400).json({ message: "User already registered" });
     }
 
-    // Create new ParkGuide with a default username and password
-    const temporary_password = "SFC@" + registration.identification.slice(-4);
-    const username =
-      `${registration.firstname}#${Math.floor(1000 + Math.random() * 9000)}`.toLowerCase();
+    // Create new ParkGuide with an SFC login email and random password.
+    const temporary_password = generateRandomPassword();
+    const sfcEmail = generateSfcEmail(registration.identification);
+    const username = sfcEmail.split("@")[0].slice(0, 30);
     const user = await User.create({
       username,
       firstname: registration.firstname,
       lastname: registration.lastname,
       identification: registration.identification,
-      personal_email: registration.personal_email,
+      personal_email: sfcEmail,
       tel: registration.tel,
       role: UserRoles.PARK_GUIDE,
       password_hash: hashPassword(temporary_password),
@@ -356,6 +366,14 @@ export const approveRegistration = async (
       status: RegistrationStatus.APPROVED,
       reviewed_by_user_id: req.user.id,
       reviewed_at: new Date(),
+    });
+
+    await sendRegistrationApprovedEmail({
+      to: registration.personal_email,
+      firstname: registration.firstname,
+      lastname: registration.lastname,
+      accountEmail: sfcEmail,
+      password: temporary_password,
     });
 
     // Return the created user and registration details (excluding password hash)
@@ -406,6 +424,13 @@ export const rejectRegistration = async (
       admin_remark: req.body.message,
       reviewed_by_user_id: req.user.id,
       reviewed_at: new Date(),
+    });
+
+    await sendRegistrationRejectedEmail({
+      to: registration.personal_email,
+      firstname: registration.firstname,
+      lastname: registration.lastname,
+      reason: req.body.message,
     });
 
     return res.json(toRegistrationResponse(registration));

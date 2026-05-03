@@ -103,7 +103,8 @@ export const useSignUp=()=>{
                 file:file ? {
                     uri: file.uri,
                     name:file.name,
-                    type:file.mimeType || 'application/pdf'
+                    type:file.mimeType || 'application/pdf',
+                    file:file.file
                 } : null
             };
 
