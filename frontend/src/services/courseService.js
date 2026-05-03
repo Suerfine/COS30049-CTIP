@@ -3,16 +3,22 @@ import { API_ENDPOINTS } from "../config/ApiEndpoints";
 
 export const courseService={
     // Get: fetch all course from backend api
-    getAll:async()=>{
+     getAll:async(params={})=>{
         try{
-            const response=await apiClient.get(API_ENDPOINTS.COURSE.LIST);
+            const response=await apiClient.get(API_ENDPOINTS.COURSE.LIST,{
+                params:{
+                    page: params.page || 1,
+                    size:params.size || 20,
+                    filter:params.filter || "",
+                }
+            });
             return response.data;
         }catch(err){
             console.error("Fetch Courses Error: ", err);
-            const errorMessage=error.response?.data?.message || 'Failed to fetch all courses.';
+            const errorMessage=err.response?.data?.message || 'Failed to fetch all courses.';
             return Promise.reject(errorMessage);
         }
-    },
+    }, 
 
     // Post: create new course
     create:async(formData)=>{

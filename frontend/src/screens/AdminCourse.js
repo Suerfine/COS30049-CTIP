@@ -1,5 +1,5 @@
-import React,{useState} from 'react';
-import { View, Text, StyleSheet, Pressable, TextInput,  ImageBackground, ScrollView,Modal} from 'react-native';
+import React,{useEffect, useState} from 'react';
+import { View, Text, StyleSheet, Pressable, TextInput,  ImageBackground, ScrollView,Modal, ActivityIndicator} from 'react-native';
 import {CopyPlus, Search, SlidersHorizontal} from 'lucide-react-native';
 
 // Import Components
@@ -9,10 +9,22 @@ import ModalLayout from '../components/ModalLayout.js';
 import { useCourses } from '../hooks/useCourses.js';
 
 const AdminCourse = ({navigation}) => {
-    const {courses, loading, addCourse, editCourse, deleteCourse}=useCourses();
+    const {courses, loadCourses, loading, addCourse, editCourse, deleteCourse}=useCourses();
     const [modalVisible, setModalVisible]=useState(false);
     const [isEditing, setIsEditing]=useState(false);
     const [selectedCourse, setSelectedCourse]=useState(null);
+    const [searchText, setSearchText]=useState('');
+
+    useEffect(()=>{
+        loadCourses();
+    },[loadCourses]);
+
+    const handleSearch=(text)=>{
+        setSearchText(text);
+        const filterString=text ? `title like "%${text}%" or description like "%${text}%"` : "";
+        
+        loadCourses({filter: filterString, page:1});
+    };
 
     const handleAdd=()=>{
         setIsEditing(false);
@@ -83,7 +95,7 @@ const AdminCourse = ({navigation}) => {
             <View style={styles.toolbar}>
                 <View style={styles.search}>
                     <Search size={18}/>
-                    <TextInput style={styles.input} placeholder='Search...' placeholderTextColor="#8f8f8f"/>
+                    <TextInput style={styles.input} value={searchText} onChangeText={handleSearch} placeholder='Search...' placeholderTextColor="#8f8f8f"/>
                 </View>
                 <Pressable style={({ hovered }) => [
                         styles.filter,
@@ -94,28 +106,35 @@ const AdminCourse = ({navigation}) => {
             </View>
 
             {/* Course Card */}
-            <View style={styles.cardContainer}>
-                {courses?.data?.map(course=>{
-                    const numModules=course.modules? course.modules.length :0;
-                    return(
-                    <CourseCard
-                        key={course.id}
-                        id={course.id}
-                        imagePath={{uri:course.image}}
-                        courseTitle={course.title}
-                        numModules={numModules || 16}
-                        duration={course.expected_completion_weeks}
-                        expiry={course.must_complete_in_weeks}
-                        userType="admin"
-                        onPress={() => navigation.navigate('AdminStack', {
-                            screen: 'Course Details',
-                            params: { id: course.id }
+            {loading ? (
+                <ActivityIndicator size="large" color="#18704d" />
+            ) : (
+                <>
+                    <View style={styles.cardContainer}>
+                        {courses?.data?.map(course=>{
+                            const numModules=course.modules? course.modules.length :0;
+                            return(
+                            <CourseCard
+                                key={course.id}
+                                id={course.id}
+                                imagePath={{uri:course.image}}
+                                courseTitle={course.title}
+                                numModules={numModules || 16}
+                                duration={course.expected_completion_weeks}
+                                expiry={course.must_complete_in_weeks}
+                                userType="admin"
+                                onPress={() => navigation.navigate('AdminStack', {
+                                    screen: 'Course Details',
+                                    params: { id: course.id }
+                                })}
+                                onEdit={()=>handleEdit(course)}
+                                onDelete={()=>handleDelete(course.id)}
+                            />)
                         })}
-                        onEdit={()=>handleEdit(course)}
-                        onDelete={()=>handleDelete(course.id)}
-                    />)
-                })}
-            </View>
+                    </View>
+                </>
+            )}
+            
         </ScrollView>
     );
 }

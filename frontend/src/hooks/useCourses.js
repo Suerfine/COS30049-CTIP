@@ -1,18 +1,26 @@
-import React,{useEffect, useState} from 'react';
+import React,{useCallback, useEffect, useState} from 'react';
 import { courseService } from '../services/courseService';
 
 export const useCourses=()=>{
     const [courses, setCourses]=useState([]);
     const [loading, setLoading]=useState(false);
 
-    const loadCourses=async()=>{
+    const loadCourses=useCallback(async(params={})=>{
+        setLoading(true);
         try{
-            const data=await courseService.getAll();
-            setCourses(data);
+            const response=await courseService.getAll(params);
+            setCourses(response);
+            setPagination({
+                currentPage: response.page,
+                totalPages:response.totalPages,
+                totalElements:response.totalElements
+            });
         }catch(err){
             console.error("Fetch failed", err);
+        }finally{
+            setLoading(false);
         }
-    };
+    },[]);
 
     useEffect(()=>{loadCourses();},[]);
 
@@ -58,5 +66,5 @@ export const useCourses=()=>{
         }
     };
 
-    return {courses, loading, addCourse, editCourse, deleteCourse};
+    return {courses,loadCourses, loading, addCourse, editCourse, deleteCourse};
 };

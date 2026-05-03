@@ -301,14 +301,19 @@ const AccountManagement=()=>{
                                 </View>
                             )}
                         </View>
-                        <Image source={{uri:selectedAcc?.profileImage}} style={styles.largeAvatar}/>
-                        <View style={styles.pfpPlaceholder}>
-                            <Text style={styles.pfpInitials}>
-                                {selectedAcc?.firstname
-                                    ? selectedAcc.firstname[0].toUpperCase()
-                                    : "?"}
-                            </Text>
-                        </View>
+                        {selectedAcc.profileImage ? (
+                            <Image source={{uri:selectedAcc?.profileImage}} style={styles.largeAvatar}/>
+                            
+                        ) : (
+                            <View style={styles.SideBarPlaceholder}>
+                                <Text style={styles.sideBarInitials}>
+                                    {selectedAcc?.firstname
+                                        ? selectedAcc.firstname[0].toUpperCase()
+                                        : "?"}
+                                </Text>
+                            </View>
+                        )}
+                        
                         {isEditing ? (
                             <View style={styles.nameEditRow}>
                                 <View style={{ flex: 1 }}>
@@ -502,17 +507,32 @@ const styles = StyleSheet.create({
         borderColor: 'white',
     },
     pfpPlaceholder:{
-        width: 90,
-        height: 90,
-        marginBottom: 10,
+        width: 37,
+        height: 37,
         borderRadius: 60,
-        backgroundColor: '#2f6618fe',
+        backgroundColor: '#2c5c189d',
         borderWidth: 3,
         borderColor: 'white',
         alignItems: 'center',
         justifyContent: 'center',
     },
+    SideBarPlaceholder:{
+        width: 90,
+        height: 90,
+        borderRadius: 60,
+        backgroundColor: '#2c5c189d',
+        borderWidth: 3,
+        borderColor: 'white',
+        alignItems: 'center',
+        justifyContent: 'center',
+        alignSelf:'center'
+    },
     pfpInitials:{
+        fontSize: 12,
+        fontWeight: '700',
+        color: 'white',
+    },
+    sideBarInitials:{
         fontSize: 32,
         fontWeight: '700',
         color: 'white',
