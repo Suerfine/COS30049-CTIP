@@ -15,5 +15,7 @@ export const API_ENDPOINTS={
         MODULE_DETAIL:(courseId, moduleId)=>`/courses/${courseId}/modules/${moduleId}`,
         PAGES:(courseId, moduleId)=>`/courses/${courseId}/modules/${moduleId}/pages`,
         PAGES_DETAIL:(courseId, moduleId, pageId)=>`/courses/${courseId}/modules/${moduleId}/pages/${pageId}`,
+        ELEMENTS: (courseId, moduleId, pageId)=> `/courses/${courseId}/modules/${moduleId}/pages/${pageId}/elements`,
+        ELEMENT_DETAIL:(courseId, moduleId, pageId, elementId)=>`/courses/${courseId}/modules/${moduleId}/pages/${pageId}/elements/${elementId}`,
     }
 };

@@ -12,7 +12,7 @@ import ConfirmEnroll from '../components/ConfirmEnroll';
 import CourseCard from '../components/CourseCard';
 
 const UserCourse = ({ navigation }) => {
-    const { courses, progressData, userType  } = useUserDashboard();
+    const { progressData, userType  } = useUserDashboard();
     const {selectedCourse, setSelectedCourse,
         modalVisible, setModalVisible,
         filterVisible, setFilterVisible,
@@ -22,7 +22,7 @@ const UserCourse = ({ navigation }) => {
         statusLabels,
         tabs,
         coursesWithStatus,
-        filteredCourses,
+        filteredCourses, courses,
         removeFilter
     }=useUserCourse();
 
@@ -79,20 +79,22 @@ const UserCourse = ({ navigation }) => {
                         ))}
                     </View>
                     <View style={styles.cardContainer}>
-                        {filteredCourses.length === 0?(
+                        {courses.length === 0?(
+                            
                             <View style={styles.emptyContainer}>
                                 <Text style={styles.emptyText}>No courses found</Text>
                             </View>
-                        ) : ( filteredCourses.map(course => (
+                        ) : ( courses.map(course => {
+                            const numModules = course.modules ? course.modules.length : 0;
+                            return(
                             <CourseCard
                                 key={course.id}
                                 id={course.id}
                                 imagePath={{ uri: course.image }}
-                                courseTitle={course.courseTitle}
-                                numModules={course.modules ? course.modules.length : 0}
-                                duration={course.duration}
-                                expiry={course.expiryDate}
-                                progress={course.progress}
+                                courseTitle={course.title}
+                                numModules={numModules || 16}
+                                duration={course.expected_completion_weeks}
+                                expiry={course.must_complete_in_weeks}
                                 userType={userType}
                                 onPress={() => navigation.navigate('ParkGuideStack', {
                                     screen: 'UserModule', 
@@ -102,8 +104,8 @@ const UserCourse = ({ navigation }) => {
                                     setSelectedCourse(course);
                                     setModalVisible(true);
                                 }}
-                            />
-                        ))
+                            />)
+                        })
                     )}
                     </View>
                 </View>
@@ -144,11 +146,11 @@ const UserCourse = ({ navigation }) => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        marginHorizontal: 30,
     },
     courseContainer: {
         marginTop: 20,
         marginBottom: 20,
+        marginHorizontal:60
     },
     title: {
         fontSize: 24,
@@ -180,13 +182,16 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         gap: 80,
         marginBottom: 20,
+        flexWrap:'wrap',
+        marginHorizontal:60,
     },
     filterContainer:{
         flexDirection:'row',
         marginBottom:10,
         justifyContent:'space-between',
         borderBottomColor:'#42424255',
-        borderBottomWidth:1
+        borderBottomWidth:1,
+        marginHorizontal:60,
     },
     filter:{
         flexDirection:'row',
@@ -213,7 +218,8 @@ const styles = StyleSheet.create({
         flexWrap:'wrap',
         gap:8,
         marginBottom:15,
-        marginTop:5
+        marginTop:5,
+        marginHorizontal:60
     },
     pill:{
         flexDirection:'row',

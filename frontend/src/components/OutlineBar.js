@@ -227,10 +227,10 @@ const OutlineBar=({course, onSelectPage, editable, isCollapsed})=>{
 
 const styles=StyleSheet.create({
     outlinebar:{
-        maxWidth:'240px',
+        width:240,
+        flexShrink:0,
         minHeight:'90vh',
         userSelect:'none',
-        flex:1,
         backgroundColor:'white',
         paddingVertical:15,
     },
@@ -295,7 +295,7 @@ const styles=StyleSheet.create({
     },
     section:{
         borderWidth: 1,
-        borderColor: '#8f8f8f',  // subtle gray border
+        borderColor: '#8f8f8f', 
         borderRadius: 6,
         backgroundColor: '#f9f9f9',
         paddingVertical:6,
