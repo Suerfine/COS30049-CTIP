@@ -3,7 +3,7 @@ import { moduleService } from '../services/moduleService';
 import { pageService } from '../services/pageService';
 
 export const useOutline=(course)=>{
-    const [modules, setModules]=useState(course.modules);
+    const [modules, setModules]=useState(course.modules || []);
     const [newSections, setNewSectons]=useState([]);
     const [expandedModule, setExpandedModule]=useState(null);
 

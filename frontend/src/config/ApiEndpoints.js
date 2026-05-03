@@ -11,5 +11,9 @@ export const API_ENDPOINTS={
     COURSE:{
         LIST:'/courses',
         DETAIL:(id)=>`/courses/${id}`,
+        MODULES:(courseId)=>`/courses/${courseId}/modules`,
+        MODULE_DETAIL:(courseId, moduleId)=>`/courses/${courseId}/modules/${moduleId}`,
+        PAGES:(courseId, moduleId)=>`/courses/${courseId}/modules/${moduleId}/pages`,
+        PAGES_DETAIL:(courseId, moduleId, pageId)=>`/courses/${courseId}/modules/${moduleId}/pages/${pageId}`,
     }
 };

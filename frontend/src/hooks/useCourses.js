@@ -4,6 +4,11 @@ import { courseService } from '../services/courseService';
 export const useCourses=()=>{
     const [courses, setCourses]=useState([]);
     const [loading, setLoading]=useState(false);
+    const [pagination, setPagination]=useState({
+        currentPage:1,
+        totalPages:0,
+        totalElements: 0
+    });
 
     const loadCourses=useCallback(async(params={})=>{
         setLoading(true);

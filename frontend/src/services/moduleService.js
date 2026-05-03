@@ -1,46 +1,53 @@
-const BASE_URL='http://localhost:4000/api/courses';
+import apiClient from "../config/apiConfig";
+import { API_ENDPOINTS } from "../config/ApiEndpoints";
 
 export const moduleService={
+    // GET: Fetch all modules
+    getAll: async(courseId)=>{
+        try{
+            const response=await apiClient.get(API_ENDPOINTS.COURSE.MODULES(courseId));
+            return response.data;
+        }catch(err){
+            console.error("Fetch Modules Error: ", err);
+            return Promise.reject(err.response?.data?.message || 'Failed to fetch the modules.');
+        }
+    },
     // POST: Create new module
     create: async(courseId, moduleData)=>{
         try{
-            const res=await fetch(`${BASE_URL}/${courseId}/modules`,{
-                method:'POST',
-                headers:{'Content-Type':'application/json'},
-                body: JSON.stringify(moduleData)
-            });
-            return res;
+            const response=await apiClient.post(
+                API_ENDPOINTS.COURSE.MODULES(courseId),
+                {
+                    title:moduleData.title,
+                    order:moduleData.order
+                }
+            );
+            return response.data;
         } catch(err){
-            console.error("Failed to create new module", err);
-            throw err;
+            console.error("Create Modules Error: ", err);
+            return Promise.reject(err.response?.data?.message || 'Failed to create the modules.');
         }
     },
 
     // PUT: update the existing module
     update: async(courseId, moduleId, newTitle)=>{
         try{
-            const res=await fetch(`${BASE_URL}/${courseId}/modules/${moduleId}`,{
-                method:'PUT',
-                headers:{'Content-Type':'application/json'},
-                body:JSON.stringify({title:newTitle}),
-            });
-            return res;
+            const response=await apiClient.put(API_ENDPOINTS.COURSE.DETAIL(courseId, moduleId),{title:newTitle});
+            return response.data;
         } catch(err){
-            console.error("Failed to update module",err);
-            throw err;
+            console.error("Update Modules Error: ", err);
+            return Promise.reject(err.response?.data?.message || 'Failed to update the modules.');
         }
     },
 
     // DELETE: delete the existing module
     delete: async(courseId, moduleId)=>{
         try{
-            const res=await fetch(`${BASE_URL}/${courseId}/modules/${moduleId}`,{
-                method:'DELETE',
-            });
-            return res;
+            const response=await apiClient.delete(API_ENDPOINTS.COURSE.DETAIL(courseId, moduleId));
+            return response.data;
         }catch(err){
-            console.error("Failed to delete module ",err);
-            throw err;
+            console.error("Delete Modules Error: ", err);
+            return Promise.reject(err.response?.data?.message || 'Failed to delete the modules.');
         }
     }
 }
