@@ -1,11 +1,9 @@
 import {useState, useEffect} from 'react';
 import { View, Text, TextInput, StyleSheet, Pressable, ScrollView, Image, ImageBackground, Dimensions, Modal } from 'react-native';
 import { SquarePen } from 'lucide-react-native';
-import * as ImagePicker from 'expo-image-picker';
 import { Eye, EyeOff } from 'lucide-react-native';
 
 // Import other hooks and components
-import ChangePfpContent from '../components/ChangePfpContent';
 import ChangePasswordContent from '../components/ChangePasswordContent';
 import ModalLayout from '../components/ModalLayout';
 import { ModalStyle } from '../components/ModalStyle';
@@ -18,7 +16,6 @@ const Security = ({ navigation }) => {
         password,setPassword,
         editingUsername, setEditingUsername,
         editingPassword, setEditingPassword,
-        pfpModalVisible, setPfpModalVisible,
         passwordModalVisible, setPasswordModalVisible,
         showCurrentPassword, setShowCurrentPassword,
         showNewPassword, setShowNewPassword,
