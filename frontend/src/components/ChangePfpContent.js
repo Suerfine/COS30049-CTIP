@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, Pressable, Image, StyleSheet } from 'react-native';
 import { X } from 'lucide-react-native';
 import { ModalStyle as styles } from './ModalStyle';
+import * as ImagePicker from "expo-image-picker";
 
 const ChangePfpContent = ({ image, onPickImage, onClose }) => {
     return (
@@ -26,7 +27,7 @@ const ChangePfpContent = ({ image, onPickImage, onClose }) => {
                     <View style={styles.uploadPlaceholder}>
                         <Image
                             source={require('../../assets/upload_placeholder.png')}
-                            style={styles.placeholder}
+                            style={[styles.placeholder, { width: 60, height: 60 }]}
                         />
                         <Text style={styles.muted}>No image selected</Text>
                     </View>

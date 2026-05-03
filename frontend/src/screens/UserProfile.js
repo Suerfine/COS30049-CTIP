@@ -12,7 +12,6 @@ import {
   Modal,
 } from "react-native";
 import { SquarePen } from "lucide-react-native";
-import * as ImagePicker from "expo-image-picker";
 import { Eye, EyeOff, FileUp } from "lucide-react-native";
 
 // Import other hooks and components
@@ -27,7 +26,7 @@ import { useSignUp } from "../hooks/useSignUp";
 const UserProfile = ({ navigation }) => {
     const {
         user,
-        form,
+        form, setForm,
         updateField,
         username, setUsername,
         password, setPassword,
@@ -39,11 +38,11 @@ const UserProfile = ({ navigation }) => {
         showCurrentPassword, setShowCurrentPassword,
         showNewPassword, setShowNewPassword,
         currentPassword, setCurrentPassword,
-        pickImage, isEditing,
-        setIsEditing,
+        isEditing, setIsEditing,
         handleSave,
     } = useUserProfile();
     const [originalData, setOriginalData] = useState(null);
+    const [profileImage, setProfileImage] = useState(null);
     const { handleUpload, file, setFile, error, setError } = useSignUp();
     return (
         <View style={styles.container}>
@@ -94,10 +93,13 @@ const UserProfile = ({ navigation }) => {
                 onClose={() => setPfpModalVisible(false)}
             >
                 <ChangePfpContent
-                image={newImagePath || user?.profileImage}
-                onPickImage={pickImage}
-                onClose={() => setPfpModalVisible(false)}
-                />
+                  currentImage={profileImage}
+                  onSave={(uri) => {
+                      setProfileImage(uri);
+                      setPfpModalVisible(false);
+                  }}
+                  onClose={() => setPfpModalVisible(false)}
+              />
             </ModalLayout>
             </View>
 
