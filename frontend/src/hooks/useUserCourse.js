@@ -1,14 +1,15 @@
 import { useState, useEffect, useMemo} from 'react';
 import { useUserDashboard } from './useUserDashboard';
 import { useTranslation } from 'react-i18next';
+import { courseService } from '../services/courseService';
 
 export const useUserCourse=()=>{
     const {t, i18n}=useTranslation();
-    const { courses, progressData  } = useUserDashboard();
+    const { progressData  } = useUserDashboard();
     const [selectedCourse, setSelectedCourse] = useState(null);
     const [modalVisible, setModalVisible] = useState(false);
     const [filterVisible, setFilterVisible] = useState(false);
-
+    const [courses,setCourses]=useState(null);
     const [allcourseFilter, setAllCourseFilter]=useState('all');
 
     const [filters, setFilters] = useState({
@@ -81,6 +82,23 @@ export const useUserCourse=()=>{
         });
     };
 
+    const loadCourses=useCallback(async(params={})=>{
+        setLoading(true);
+        try{
+            const response=await courseService.getAll(params);
+            setCourses(response);
+            setPagination({
+                currentPage: response.page,
+                totalPages:response.totalPages,
+                totalElements:response.totalElements
+            });
+        }catch(err){
+            console.error("Fetch failed", err);
+        }finally{
+            setLoading(false);
+        }
+    },[]);
+
     return {
         selectedCourse, setSelectedCourse,
         modalVisible, setModalVisible,
@@ -92,6 +110,6 @@ export const useUserCourse=()=>{
         tabs,
         coursesWithStatus,
         filteredCourses,
-        removeFilter,
+        removeFilter, courses
     };
 };

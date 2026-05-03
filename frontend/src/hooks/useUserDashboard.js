@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo} from 'react';
+import { useState, useEffect, useMemo, useCallback} from 'react';
 import { userDashboardService } from '../services/userDashboardService';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from 'react-i18next';
@@ -22,6 +22,7 @@ export const useUserDashboard = () => {
     const [isExpanded, setIsExpanded]=useState(false);
 
     const weekLabels=[t('Fri'), t('Sat'),t('Sun'), t('Mon'), t('Tue'), t('Wed'), t('Thu')];
+
     const todoTab=[
         {id: 'all', label:t('status.all')},
         {id: 'completed', label:t('status.completed')},
@@ -41,7 +42,6 @@ export const useUserDashboard = () => {
         { id: '4', name: 'Survival' },
         { id: '5', name: 'History' },
     ];
-
 
     const fetchDashboardData = async () => {
         if(!currentUser){
@@ -140,7 +140,6 @@ export const useUserDashboard = () => {
         });
     };
     
-
     // COURSES LOGIC
     // get in progress courses
     const inProgressCourses = courses.filter(course => {

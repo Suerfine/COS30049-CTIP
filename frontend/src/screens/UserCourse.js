@@ -12,7 +12,7 @@ import ConfirmEnroll from '../components/ConfirmEnroll';
 import CourseCard from '../components/CourseCard';
 
 const UserCourse = ({ navigation }) => {
-    const { courses, progressData, userType  } = useUserDashboard();
+    const { progressData, userType  } = useUserDashboard();
     const {selectedCourse, setSelectedCourse,
         modalVisible, setModalVisible,
         filterVisible, setFilterVisible,
@@ -22,7 +22,7 @@ const UserCourse = ({ navigation }) => {
         statusLabels,
         tabs,
         coursesWithStatus,
-        filteredCourses,
+        filteredCourses, courses,
         removeFilter
     }=useUserCourse();
 
@@ -79,11 +79,11 @@ const UserCourse = ({ navigation }) => {
                         ))}
                     </View>
                     <View style={styles.cardContainer}>
-                        {filteredCourses.length === 0?(
+                        {courses.length === 0?(
                             <View style={styles.emptyContainer}>
                                 <Text style={styles.emptyText}>No courses found</Text>
                             </View>
-                        ) : ( filteredCourses.map(course => (
+                        ) : ( courses.map(course => (
                             <CourseCard
                                 key={course.id}
                                 id={course.id}
