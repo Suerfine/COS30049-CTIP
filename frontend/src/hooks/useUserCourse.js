@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo} from 'react';
+import { useState, useEffect, useMemo, useCallback} from 'react';
 import { useUserDashboard } from './useUserDashboard';
 import { useTranslation } from 'react-i18next';
 import { courseService } from '../services/courseService';
@@ -9,8 +9,9 @@ export const useUserCourse=()=>{
     const [selectedCourse, setSelectedCourse] = useState(null);
     const [modalVisible, setModalVisible] = useState(false);
     const [filterVisible, setFilterVisible] = useState(false);
-    const [courses,setCourses]=useState(null);
+    const [courses,setCourses]=useState([]);
     const [allcourseFilter, setAllCourseFilter]=useState('all');
+    const [loading, setLoading]=useState(false);
 
     const [filters, setFilters] = useState({
         status: 'all',
@@ -86,18 +87,17 @@ export const useUserCourse=()=>{
         setLoading(true);
         try{
             const response=await courseService.getAll(params);
-            setCourses(response);
-            setPagination({
-                currentPage: response.page,
-                totalPages:response.totalPages,
-                totalElements:response.totalElements
-            });
+            setCourses(Array.isArray(response) ? response : response.data || []);
         }catch(err){
             console.error("Fetch failed", err);
         }finally{
             setLoading(false);
         }
     },[]);
+
+    useEffect(() => {
+        loadCourses();
+    }, [loadCourses]);
 
     return {
         selectedCourse, setSelectedCourse,
