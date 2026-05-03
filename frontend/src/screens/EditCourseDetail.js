@@ -1,26 +1,31 @@
 import React,{useEffect,useState} from 'react';
-import { View, Text, StyleSheet, ScrollView, ImageBackground, Pressable} from 'react-native';
+import { View, Text, StyleSheet, ScrollView, ImageBackground, Pressable, ActivityIndicator} from 'react-native';
 import {useRoute} from '@react-navigation/native';
 import { Menu } from 'lucide-react-native';
 
 // Import Components
 import OutlineBar from '../components/OutlineBar.js';
+import { useCourseDetails } from '../hooks/useCourseDetails.js';
 
 const EditCourseDetail = () => {
     const route=useRoute();
     const {id}=route.params;
-    const [course,setCourse]=useState(null);
+    const {course, loading, error}=useCourseDetails(id);
     const [selectedPage, setSelectedPage]=useState(null);
     const [isCollapsed, setIsCollapsed]=useState(false);
 
-    useEffect(()=>{
-        fetch(`http://localhost:5000/api/courses/${id}`)
-        .then(res=>res.json())
-        .then(data=>setCourse(data))
-        .catch(err=>console.error('Error when fetching the course: ',err));
-    }, [id]);
+    if(loading)return(
+        <View style={styles.center}>
+            <ActivityIndicator size='large' color="#0a6340"/>
+            <Text>Syncing with Server...</Text>
+        </View>
+    );
     
-    if (!course) return <Text>Course not found</Text>;
+    if (error || !course) return (
+        <View style={styles.center}>
+            <Text style={{ color: 'red' }}>{error || "Course not found"}</Text>
+        </View>
+    );
 
     return (
         <View style={styles.rowContainer}>
@@ -37,8 +42,8 @@ const EditCourseDetail = () => {
                             <Menu color="white" size={25}/>
                         </Pressable>
                         <View>
-                            <Text style={styles.description}>Start Your Learning Journey!</Text>
-                            <Text style={styles.title}> Course Details</Text>
+                            <Text style={styles.description}>Course Details</Text>
+                            <Text style={styles.title}>{course.title}</Text>
                         </View>
                     </View>
                 </ImageBackground>

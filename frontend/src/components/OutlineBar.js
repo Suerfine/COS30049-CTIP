@@ -22,6 +22,8 @@ const OutlineBar=({course, onSelectPage, editable, isCollapsed})=>{
     const [hoveredItem, setHoveredItem]=useState(null);
     const [editingItem, setEditingItem]=useState(null);
 
+    
+
     if(!course){
         return;
     }
@@ -53,13 +55,16 @@ const OutlineBar=({course, onSelectPage, editable, isCollapsed})=>{
             </Pressable>
             {/* Modules */}
             <FlatList
-                data={allModules}
-                keyExtractor={module => module.id.toString()}
-                renderItem={({ item: module }) => {
+                data={[...allModules].sort((a, b) => (a.order || 0) - (b.order || 0))}
+                keyExtractor={module => module.id}
+                renderItem={({ item: module, index:moduleIndex}) => {
+                    const mid=module.id;
+                    const displayModuleNum=moduleIndex+1;
+                    const sortedPages=[...(module.pages||[])].sort((a,b)=>(a.order || 0)-(b.order || 0));
                     const isNewSection=(editable && module.title==="");
-                    const isEditingExisting= (editingItem?.type==="module" && editingItem.id===module.moduleId);
+                    const isEditingExisting= (editingItem?.type==="module" && editingItem.id===mid);
                     const isEditing=isNewSection || isEditingExisting;
-                    const isSelected=(selectedItem?.type==="module" && selectedItem?.module?.moduleId===module.moduleId) || (selectedItem?.type ==="page" && selectedItem?.module?.moduleId===module.moduleId);
+                    const isSelected=(selectedItem?.type==="module" && selectedItem?.module?.id===mid) || (selectedItem?.type ==="page" && selectedItem?.module?.id===mid);
                     return (
                     <View style={[isSelected ? styles.selectedModule : null]}>
 
@@ -69,15 +74,15 @@ const OutlineBar=({course, onSelectPage, editable, isCollapsed})=>{
                                     return;
                                 }
                                 handleSelect({type:'module', module}); 
-                                toggleModule(module.moduleId);
+                                toggleModule(mid);
                                 if(editable && module.title !== ""){
-                                    setEditingItem({type:'module', id:module.moduleId});
+                                    setEditingItem({type:'module', id:mid});
                                 };
                                 }}
-                                onMouseEnter={()=>setHoveredItem({type:'module', id:module.moduleId})}
+                                onMouseEnter={()=>setHoveredItem({type:'module', id:mid})}
                                 onMouseLeave={()=>setHoveredItem(null)}
                               >
-                            <Text style={styles.moduleTitle}>Module {module.moduleId}:{" "} 
+                            <Text style={styles.moduleTitle}>Module {displayModuleNum}:{" "} 
                                 {/* Add New Section (blank title) */}
                                 {isEditing ? (
                                     <TextInput
@@ -88,25 +93,25 @@ const OutlineBar=({course, onSelectPage, editable, isCollapsed})=>{
                                     onBlur={(e) => {
                                         const val=e.nativeEvent.text;
                                         if (isNewSection) {
-                                            saveModule(module.moduleId,val);
+                                            saveModule(mid,val);
                                         } else {
-                                            updateModuleTitle(module.moduleId,val);
+                                            updateModuleTitle(mid,val);
                                             setEditingItem(null);
                                         }
                                     }}
                                     />
                                 ) : (
                                     // Show Module Title or Editing Input
-                                    editingItem?.type === 'module' && editingItem.id === module.moduleId ? (
+                                    editingItem?.type === 'module' && editingItem.id === mid ? (
                                     <TextInput
                                         style={styles.section}
                                         defaultValue={module.title}
                                         onBlur={(e) => {
                                             const val=e.nativeEvent.text;
                                             if (isNewSection) {
-                                                saveModule(module.moduleId,val);
+                                                saveModule(mid,val);
                                             } else {
-                                                updateModuleTitle(module.moduleId,val);
+                                                updateModuleTitle(mid,val);
                                                 setEditingItem(null);
                                             }
                                     }}
@@ -118,85 +123,94 @@ const OutlineBar=({course, onSelectPage, editable, isCollapsed})=>{
                                 )}  
 
                             </Text>
-                            {expandedModule === module.moduleId ? <ChevronDown size={15}/> : <ChevronRight size={15}/>}
-                            {/* Delete Course Icon */}
-                            {editable && !isEditing && (hoveredItem?.id === module.moduleId || isSelected) && (
-                                <Pressable onPress={()=>deleteModule(module.moduleId)}>
-                                    <Trash2 size={16}/>
-                                </Pressable>
-                            )}
-                        </Pressable>
-                        
+                            {expandedModule === mid ? <ChevronDown size={15}/> : <ChevronRight size={15}/>}
+                                {editable && !isEditing && (hoveredItem?.id === mid || isSelected) && (
+                                    <Pressable onPress={()=>deleteModule(mid)}>
+                                        <Trash2 size={16}/>
+                                    </Pressable>
+                                )}
+                            </Pressable>
+                            
                         {/* Show Expanded Pages */}
-                        {expandedModule === module.moduleId && (
-                            <View onMouseEnter={() => setHoveredItem({ type: 'page', moduleId: module.moduleId})}
-                                onMouseLeave={() => setHoveredItem(null)}>
-                                
-                                {module.pages.map(page => 
-                                    page.title==='' ? (
-                                        <View style={styles.PageSection}>
-                                            <Text>{page.pageId}:</Text>
+                        {expandedModule === mid && (
+                            <View 
+                                onMouseEnter={() => setHoveredItem({ type: 'page', moduleId: mid })}
+                                onMouseLeave={() => setHoveredItem(null)}
+                            >
+                                {module.pages?.map((page, pageIndex) => {
+                                    const displayPageNum = `${displayModuleNum}.${pageIndex}`;
+                                    const isEditingPage = editingItem?.type === 'page' && editingItem.pageId === page.id;
+                                    
+                                    const isHoveringPage = hoveredItem?.type === 'page' && hoveredItem.pageId === page.id;
+
+                                    return page.title === '' ? (
+                                        <View key={page.id} style={styles.PageSection}>
+                                            <Text>{displayPageNum}:</Text>
                                             <TextInput
-                                                key={page.pageId}
                                                 style={styles.section}
                                                 placeholder="Enter page title..."
                                                 placeholderTextColor="#8f8f8f"
                                                 defaultValue={page.title}
+                                                autoFocus
                                                 onBlur={(e) => {
-                                                                updatePageTitle(module.moduleId, page.pageId, e.nativeEvent.text);
-                                                                setEditingItem(null);
-                                                            }}
+                                                    updatePageTitle(mid, page.id, e.nativeEvent.text);
+                                                    setEditingItem(null);
+                                                }}
                                             />
                                         </View>
-                                    ):(
+                                    ) : (
                                         <Pressable
-                                        key={page.pageId} style={[styles.pageItem, selectedItem?.type==='page' && selectedItem?.page.pageId === page.pageId && styles.selectedPage]}
-                                        onPress={() => {
-                                            handleSelect({ type: 'page', module, page });
-                                            if (editable) {
-                                                setEditingItem({ type: 'page', moduleId: module.moduleId, pageId: page.pageId });
-                                            }
-                                        }}
-                                        onMouseEnter={()=> setHoveredItem({type:'page', moduleId: module.moduleId, pageId: page.pageId})}
-                                        
+                                            key={page.id} 
+                                            style={[
+                                                styles.pageItem, 
+                                                selectedItem?.type === 'page' && selectedItem?.page?.id === page.id && styles.selectedPage
+                                            ]}
+                                            onPress={() => {
+                                                handleSelect({ type: 'page', module, page });
+                                                if (editable) {
+                                                    setEditingItem({ type: 'page', moduleId: mid, pageId: page.id });
+                                                }
+                                            }}
+                                            onMouseEnter={() => setHoveredItem({ type: 'page', moduleId: mid, pageId: page.id })}
+                                            onMouseLeave={() => setHoveredItem(null)}
                                         >
-                                            <Text>{typeof page.pageId === 'number' ? page.pageId.toFixed(1) : page.pageId}: {" "} 
-                                                {editable && editingItem?.type === 'page' && editingItem.pageId === page.pageId ? (
-                                                <TextInput
-                                                    style={styles.section}
-                                                    defaultValue={page.title}
-                                                    autoFocus
-                                                    onBlur={(e) => {
-                                                                updatePageTitle(module.moduleId, page.pageId, e.nativeEvent.text);
+                                            <View style={styles.pageBlock}>
+                                                <Text style={{ flex: 1 }}>
+                                                    {displayPageNum}: {" "} 
+                                                    {isEditingPage ? (
+                                                        <TextInput
+                                                            style={styles.section}
+                                                            defaultValue={page.title}
+                                                            autoFocus
+                                                            onBlur={(e) => {
+                                                                updatePageTitle(mid, page.id, e.nativeEvent.text);
                                                                 setEditingItem(null);
                                                             }}
-                                                />
-                                            ) : (
-                                                <View style={styles.pageBlock}>
-                                                    <Text>{page.title} </Text>
-                                                    {/* Trash icon for page */}
-                                                    {editable && hoveredItem?.type==='page' && hoveredItem?.pageId===page.pageId && Number(page.pageId) % 1 !== 0 && (
-                                                        <Pressable onPress={()=>deletePage(module.moduleId, page.pageId)}>
-                                                            <Trash2 size={16}/>
-                                                        </Pressable>
+                                                        />
+                                                    ) : (
+                                                        <Text>{page.title}</Text>
                                                     )}
-                                                </View>
+                                                </Text>
                                                 
-                                            )}
-                                            </Text>
+                                                {/* Trash Icon Logic */}
+                                                {editable && isHoveringPage && !isEditingPage && (
+                                                    <Pressable onPress={() => deletePage(mid, page.id)}>
+                                                        <Trash2 size={16} color="#ef4444" />
+                                                    </Pressable>
+                                                )}
+                                            </View>
                                         </Pressable>
-                                    )
-                                )}
-                                {/* Show + Add New Page when hovering */}
-                                {editable && hoveredItem?.type === 'page' && hoveredItem.moduleId === module.moduleId && (
+                                    );
+                                })}
+
+                                {editable && hoveredItem?.type === 'page' && hoveredItem.id === mid && (
                                     <Pressable
-                                    onPress={() => addPage(module.moduleId)}
-                                    style={styles.pageItem}
+                                        onPress={() => addPage(mid)}
+                                        style={styles.pageItem}
                                     >
                                         <Text style={styles.addPage}>+ Add New Page</Text>
                                     </Pressable>
                                 )}
-
                             </View>
                         )}
                     </View>)

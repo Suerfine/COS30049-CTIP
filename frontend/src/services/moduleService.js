@@ -19,7 +19,8 @@ export const moduleService={
                 API_ENDPOINTS.COURSE.MODULES(courseId),
                 {
                     title:moduleData.title,
-                    order:moduleData.order
+                    order:moduleData.order,
+                    complete_by_week:moduleData.complete_by_week
                 }
             );
             return response.data;
@@ -32,7 +33,7 @@ export const moduleService={
     // PUT: update the existing module
     update: async(courseId, moduleId, newTitle)=>{
         try{
-            const response=await apiClient.put(API_ENDPOINTS.COURSE.DETAIL(courseId, moduleId),{title:newTitle});
+            const response=await apiClient.put(API_ENDPOINTS.COURSE.MODULE_DETAIL(courseId, moduleId),{title:newTitle});
             return response.data;
         } catch(err){
             console.error("Update Modules Error: ", err);
@@ -43,7 +44,7 @@ export const moduleService={
     // DELETE: delete the existing module
     delete: async(courseId, moduleId)=>{
         try{
-            const response=await apiClient.delete(API_ENDPOINTS.COURSE.DETAIL(courseId, moduleId));
+            const response=await apiClient.delete(API_ENDPOINTS.COURSE.MODULE_DETAIL(courseId, moduleId));
             return response.data;
         }catch(err){
             console.error("Delete Modules Error: ", err);

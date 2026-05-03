@@ -20,7 +20,8 @@ export const pageService={
         try{
             const response=await apiClient.post(API_ENDPOINTS.COURSE.PAGES(courseId, moduleId),{
                 title:pageData.title,
-                order:pageData.order
+                order:pageData.order,
+                passing_score:pageData.passing_score
             });
             return response.data;
         } catch(err){
