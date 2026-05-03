@@ -293,7 +293,7 @@ export const createCourse = async (
 };
 
 export const getAllCourses = async (
-  req: Request<PaginateRequestParams>,
+  req: Request<PaginateRequestParams & { tags?: string | string[] }>,
   res: Response<PaginateResponse<CourseResponse>>,
   next: NextFunction,
 ) => {
