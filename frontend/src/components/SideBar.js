@@ -41,7 +41,9 @@ const SideBar = () => {
                 <Image source={require('../../assets/sfc_logo.png')} style={styles.logo} accessibilityLabel='Logo of SFC'/>
                 {menuItems.map((item) => {
                     const IconComponent=item.icon;
-                    const isActive= displayRoute===item.route;
+                    const isExactMatch= displayRoute===item.route;
+                    const isCourseDetailActive=item.name==='Courses' && displayRoute==='Course Details';
+                    const isActive=isExactMatch || isCourseDetailActive;
                     
                     return(
                         <View key={item.name}>
