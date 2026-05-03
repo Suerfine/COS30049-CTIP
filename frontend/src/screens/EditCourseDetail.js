@@ -7,6 +7,8 @@ import { Award, Calendar, Clock, Menu } from 'lucide-react-native';
 import OutlineBar from '../components/OutlineBar.js';
 import { useCourseDetails } from '../hooks/useCourseDetails.js';
 import SlidingTabs from '../components/SlidingTabs.js';
+import { useElements } from '../hooks/useElements.js';
+import PageRenderer from '../components/pageRenderer.js';
 
 const EditCourseDetail = () => {
     const route=useRoute();
@@ -17,6 +19,12 @@ const EditCourseDetail = () => {
     const [isCollapsed, setIsCollapsed]=useState(false);
     const [activeTab,setActiveTab]=useState('Overview');
     const [forumType, setForumType]=useState('Public');
+
+    const { elements, loading: elementsLoading } = useElements(
+        id,
+        selectedPage?.page?.module_id || selectedPage?.module?.id,
+        selectedPage?.page?.id
+    );
 
     const tabs=[
         {id: 'Overview', label:'Overview'},
@@ -145,9 +153,21 @@ const EditCourseDetail = () => {
                         </View>
                     </ImageBackground>
                     {/* Content */}
-                    <View>
+                    <View style={styles.contentWrapper}>
                         {selectedPage?.type === 'page' ? (
-                            <Text>Editing: {selectedPage.page.title}</Text>
+                            <View style={styles.editorContainer}>
+                                <Text style={styles.editorLabel}>Lesson Editor</Text>
+                                <Text style={styles.pageTitle}>{selectedPage.page.title}</Text>
+                                
+                                {elementsLoading ? (
+                                    <View style={styles.elementLoader}>
+                                        <ActivityIndicator color="#0a6340" />
+                                        <Text style={styles.loaderText}>Loading Elements...</Text>
+                                    </View>
+                                ) : (
+                                    <PageRenderer elements={elements} />
+                                )}
+                            </View>
                         ) : (
                             // Course Overview
                             <View>
@@ -346,11 +366,13 @@ const styles = StyleSheet.create({
         color: '#0a6340',
         textTransform: 'uppercase',
         marginBottom: 4,
+        textAlign:'center'
     },
     badgeDescription: {
         fontSize: 14,
         color: '#444',
         lineHeight: 20,
+        textAlign:'center'
     },
     badgePreviewContainer: {
         alignItems: 'center',
@@ -383,7 +405,35 @@ const styles = StyleSheet.create({
         width:'800px',
         height:'400px',
         marginBottom:20
-    }
+    },
+    contentWrapper:{
+        marginTop:25
+    },
+    editorContainer: { 
+        flex: 1, 
+        paddingBottom: 50 
+    },
+    editorLabel: { 
+        color: '#0a6340', 
+        fontWeight: 'bold', 
+        fontSize: 12, 
+        textTransform: 'uppercase', 
+        marginBottom: 5 
+    },
+    pageTitle: { 
+        fontSize: 28, 
+        fontWeight: 'bold', 
+        color: '#1a1a1a', 
+        marginBottom: 20 
+    },
+    elementLoader: { 
+        marginTop: 50, 
+        alignItems: 'center' 
+    },
+    loaderText: { 
+        marginTop: 10, 
+        color: '#666' 
+    },
 });
 
 export default EditCourseDetail;
