@@ -243,7 +243,7 @@ const OutlineBar=({course, onSelectPage, editable, isCollapsed})=>{
                                     );
                                 })}
 
-                                {editable && hoveredItem?.type === 'page' && hoveredItem.id === mid && (
+                                {editable && expandedModule === mid && (
                                     <Pressable
                                         onPress={() => addPage(mid)}
                                         style={styles.pageItem}
