@@ -36,6 +36,7 @@ export const courseService = {
     create: async (formData) => {
         try {
             const data = new FormData();
+
             data.append('title', formData.courseTitle);
             data.append('description', formData.description);
             data.append('status', "unreleased");
@@ -43,33 +44,51 @@ export const courseService = {
             data.append('must_complete_in_weeks', formData.expiryWeeks);
             data.append('badge_expire_in_months', formData.badgeExpiry);
 
+            const getMimeType = (ext) => {
+                if (ext === 'jpg') return 'image/jpeg';
+                if (ext === 'jpeg') return 'image/jpeg';
+                if (ext === 'png') return 'image/png';
+                return `image/${ext}`;
+            };
+
             if (formData.image) {
                 const uriParts = formData.image.split('.');
-                const fileType = uriParts[uriParts.length - 1];
-                data.append("image", {
+                const fileType = uriParts[uriParts.length - 1].toLowerCase();
+
+                data.append("cover", {
                     uri: formData.image,
                     name: `course_cover.${fileType}`,
-                    type: `image/${fileType}`,
+                    type: getMimeType(fileType),
                 });
             }
 
             if (formData.badgeImage) {
                 const badgeParts = formData.badgeImage.split('.');
-                const badgeType = badgeParts[badgeParts.length - 1];
-                data.append('file', {
+                const badgeType = badgeParts[badgeParts.length - 1].toLowerCase();
+
+                data.append("badge", {
                     uri: formData.badgeImage,
                     name: `badge.${badgeType}`,
-                    type: `image/${badgeType}`,
+                    type: getMimeType(badgeType),
                 });
             }
-            const response = await apiClient.post(API_ENDPOINTS.COURSE.LIST, data, {
-                headers: {
-                    Accept: 'application/json',
-                    }
-            });
+
+            const response = await apiClient.post(
+                API_ENDPOINTS.COURSE.LIST,
+                data,
+                {
+                    headers: {
+                        Accept: 'application/json'
+                    },
+                }
+            );
+
             return response.data;
+
         } catch (error) {
-            return Promise.reject(error.response?.data?.message || 'Failed to create a new course.');
+            return Promise.reject(
+                error.response?.data?.message || 'Failed to create a new course.'
+            );
         }
     },
 

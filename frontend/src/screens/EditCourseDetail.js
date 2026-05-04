@@ -1,7 +1,7 @@
 import React,{useEffect,useState} from 'react';
 import { View, Text, StyleSheet, ScrollView, ImageBackground, Pressable, ActivityIndicator, Image} from 'react-native';
 import {useRoute} from '@react-navigation/native';
-import { Award, Calendar, Clock, Menu } from 'lucide-react-native';
+import { Award, Calendar, Clock, Menu, MessageSquare, User } from 'lucide-react-native';
 
 // Import Components
 import OutlineBar from '../components/OutlineBar.js';
@@ -9,6 +9,7 @@ import { useCourseDetails } from '../hooks/useCourseDetails.js';
 import SlidingTabs from '../components/SlidingTabs.js';
 import { useElements } from '../hooks/useElements.js';
 import PageRenderer from '../components/pageRenderer.js';
+import { useDiscussions } from '../hooks/useDiscussion.js';
 
 const EditCourseDetail = () => {
     const route=useRoute();
@@ -31,6 +32,8 @@ const EditCourseDetail = () => {
         {id: 'Forum', label:'Forum'}
     ];
 
+    const{discussions, loading: discussionsLoading}=useDiscussions(id, forumType);
+
     if(loading)return(
         <View style={styles.center}>
             <ActivityIndicator size='large' color="#0a6340"/>
@@ -43,6 +46,31 @@ const EditCourseDetail = () => {
             <Text style={{ color: 'red' }}>{error || "Course not found"}</Text>
         </View>
     );
+
+    const renderForumList = () => {
+        if (discussionsLoading) return <ActivityIndicator color="#0a6340" style={{marginTop: 20}} />;
+        
+        if (discussions.length === 0) {
+            return (
+                <View style={styles.emptyForum}>
+                    <Text style={styles.emptyText}>No {forumType.toLowerCase()} discussions yet.</Text>
+                </View>
+            );
+        }
+        return discussions.map((item) => (
+            <View key={item.id} style={styles.messageContainer}>
+                <Text>{item.content}</Text>
+                
+                {item.attachment_type === 'image' && (
+                    <Image source={{ uri: item.attachment_url }} style={styles.attachmentImage} />
+                )}
+                
+                {item.attachment_type === 'video' && (
+                    <VideoComponent url={item.attachment_url} />
+                )}
+            </View>
+        ));
+    };
 
     const renderOverviewContent = () => {
         switch (activeTab) {
@@ -91,38 +119,28 @@ const EditCourseDetail = () => {
                     </View>
                 );
             case 'Forum':
+                case 'Forum':
                 return (
                     <View style={styles.tabSection}>
-                        <Text style={styles.sectionTitle}>Discussion Forum</Text>
+                        <Text style={styles.sectionTitle}>Course Forum</Text>
                         
-                        {/* Pill Navigation */}
                         <View style={styles.pillContainer}>
                             <Pressable 
                                 style={[styles.pill, forumType === 'Public' && styles.activePill]}
                                 onPress={() => setForumType('Public')}
                             >
-                                <Text style={[styles.pillText, forumType === 'Public' && styles.activePillText]}>
-                                    Public
-                                </Text>
+                                <Text style={[styles.pillText, forumType === 'Public' && styles.activePillText]}>Public</Text>
                             </Pressable>
-
                             <Pressable 
                                 style={[styles.pill, forumType === 'Private' && styles.activePill]}
                                 onPress={() => setForumType('Private')}
                             >
-                                <Text style={[styles.pillText, forumType === 'Private' && styles.activePillText]}>
-                                    Private
-                                </Text>
+                                <Text style={[styles.pillText, forumType === 'Private' && styles.activePillText]}>Private</Text>
                             </Pressable>
                         </View>
 
-                        {/* Forum Content */}
-                        <View style={styles.forumContent}>
-                            {forumType === 'Public' ? (
-                                <Text style={styles.bodyText}>Showing public community discussions...</Text>
-                            ) : (
-                                <Text style={styles.bodyText}>Showing private instructor-led discussions...</Text>
-                            )}
+                        <View style={styles.forumListContainer}>
+                            {renderForumList()}
                         </View>
                     </View>
                 );
@@ -193,7 +211,7 @@ const EditCourseDetail = () => {
                                 </View>
                                 
                                 <Image 
-                                    source={course.badge_img_url ? { uri: course.badge_img_url } : require('../../assets/first_aid.png')} style={styles.course_cover}
+                                    source={course.cover_img_url ? { uri: course.cover_img_url } : require('../../assets/first_aid.png')} style={styles.course_cover}
                                 />
 
                                 {/* Sliding Tab */}

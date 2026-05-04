@@ -19,7 +19,7 @@ export const useElements=(courseId, moduleId, pageId)=>{
             setElements(data.sort((a,b)=>a.order-b.order));
         }catch(err){
             setError(err.message || 'Failed to load content.');
-            console.err("useElements Error: ", err);
+            console.error("useElements Error: ", err);
         }finally{
             setLoading(false);
         }

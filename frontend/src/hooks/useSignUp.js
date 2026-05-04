@@ -102,8 +102,8 @@ export const useSignUp=()=>{
                 telephone,
                 file:file ? {
                     uri: file.uri,
-                    name:file.name,
-                    type:file.mimeType || 'application/pdf'
+                    name:file.name || 'resume.pdf',
+                    type:file.type || file.mimeType || 'application/pdf'
                 } : null
             };
 

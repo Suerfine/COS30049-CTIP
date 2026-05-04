@@ -11,10 +11,7 @@ const BASE_URL=()=>{
 }
 
 const apiClient=axios.create({
-    baseURL: BASE_URL(),
-    headers:{
-        'Content-Type':'application/json',
-    },
+    baseURL: BASE_URL()
 });
 
 apiClient.interceptors.request.use(async (config)=>{
