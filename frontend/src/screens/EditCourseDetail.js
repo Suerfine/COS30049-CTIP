@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, ImageBackground, Pressable, Activit
 import {useRoute} from '@react-navigation/native';
 import { Award, Calendar, Clock, Menu, MessageSquare, User,Edit,X,Save, Heading1, Heading2, List, Bold, Italic, Type, AlignLeft, AlignCenter, AlignRight,ListOrdered, CopyPlus, Image as ImageIcon, Video as VideoIcon, HelpCircle as QuizIcon } from 'lucide-react-native';
 import Markdown from 'react-native-markdown-display';
-import { useAuth } from '../context/AuthContext.js';
+
 
 // Import Components
 import OutlineBar from '../components/OutlineBar.js';
@@ -13,6 +13,7 @@ import { useElements } from '../hooks/useElements.js';
 import PageRenderer from '../components/pageRenderer.js';
 import { useDiscussions } from '../hooks/useDiscussion.js';
 import { markdownStyles } from '../components/markdownStyle.js';
+import { useAuth } from '../context/AuthContext.js';
 
 const EditCourseDetail = () => {
     const route=useRoute();

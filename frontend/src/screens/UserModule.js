@@ -2,6 +2,7 @@ import React,{useEffect,useState} from 'react';
 import { View, Text, StyleSheet, ScrollView, ImageBackground, Pressable, ActivityIndicator, Image} from 'react-native';
 import {useRoute} from '@react-navigation/native';
 import { Award, Calendar, Clock, Menu, ChevronLeft } from 'lucide-react-native';
+import Markdown from 'react-native-markdown-display';
 
 // Import Components
 import OutlineBar from '../components/OutlineBar.js';
@@ -10,6 +11,7 @@ import SlidingTabs from '../components/SlidingTabs.js';
 import { useElements } from '../hooks/useElements.js';
 import PageRenderer from '../components/pageRenderer.js';
 import { useAuth } from '../context/AuthContext.js';
+import { markdownStyles } from '../components/markdownStyle.js';
 
 const UserModule = ({navigation}) => {
     const route=useRoute();
@@ -57,20 +59,12 @@ const UserModule = ({navigation}) => {
                 return (
                     <View style={styles.tabSection}>
                         {/* Description */}
-                        <View>
-                            <Text style={styles.sectionTitle}>Course Description</Text>
-                            <Text style={styles.bodyText}>{course.description || "No description provided."}</Text>
+                        <View style={styles.markdownContainer}>
+                            <Markdown style={markdownStyles}>
+                                {course?.description || "_No content provided yet. Click edit to start._"}
+                            </Markdown>
                         </View>
                         
-                        {/* Learning */}
-                        <View>
-                            <Text style={styles.sectionTitle}>What you'll learn</Text>
-                            <View style={styles.learningCard}>
-                                <Text style={styles.learningItem}>• Professional fundamentals of {course.title}</Text>
-                                <Text style={styles.learningItem}>• Industry-standard techniques and tools</Text>
-                                <Text style={styles.learningItem}>• Practical application of core principles</Text>
-                            </View>
-                        </View>
 
                         {/* Badge Achievement Section */}
                         <View>
@@ -315,19 +309,6 @@ const styles = StyleSheet.create({
     bodyText: {
         color: '#4A4A4A',
         lineHeight: 24,
-    },
-    learningCard: {
-        backgroundColor: '#f9f9f9',
-        padding: 15,
-        borderRadius: 12,
-        borderLeftWidth: 4,
-        borderLeftColor: '#0a6340',
-        marginTop: 10,
-    },
-    learningItem: {
-        fontSize: 14,
-        color: '#333',
-        marginBottom: 5,
     },
     pillContainer: {
         flexDirection: 'row',
