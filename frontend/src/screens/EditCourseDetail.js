@@ -40,7 +40,7 @@ const EditCourseDetail = () => {
         }
     }, [course]);
 
-    const { elements, loading: elementsLoading, createNewElement,updateExistingElement } = useElements(
+    const { elements, loading: elementsLoading, createNewElement,updateExistingElement, deleteElement } = useElements(
         id,
         selectedPage?.page?.module_id || selectedPage?.module?.id,
         selectedPage?.page?.id
@@ -191,6 +191,13 @@ const EditCourseDetail = () => {
         setAddElementVisible(true);
     };
 
+    const handleDelete = async (elementId) => {
+        const success = await deleteElement(elementId);
+        if (!success) {
+            alert("Could not delete element. Please try again.");
+        }
+    };
+
     const renderOverviewContent = () => {
         switch (activeTab) {
             case 'Overview':
@@ -311,6 +318,7 @@ const EditCourseDetail = () => {
                                         role={currentUser.role}
                                         courseId={id} 
                                         onEditElement={handleOpenEdit}
+                                        onDeleteElement={handleDelete}
                                     />
                                 )}
                             </View>

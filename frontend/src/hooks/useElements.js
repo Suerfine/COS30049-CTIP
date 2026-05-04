@@ -47,9 +47,21 @@ export const useElements=(courseId, moduleId, pageId)=>{
         }
     };
 
+    const deleteElement = async (elementId) => {
+        try {
+            await ElementService.delete(courseId, moduleId, pageId, elementId);
+            // Remove the element from local state immediately
+            setElements(prev => prev.filter(el => el.id !== elementId));
+            return true;
+        } catch (err) {
+            console.error(err);
+            return false;
+        }
+    };
+
     useEffect(()=>{
         loadElements();
     },[loadElements]);
 
-    return {elements, loading, error, refresh: loadElements, createNewElement, updateExistingElement};
+    return {elements, loading, error, refresh: loadElements, createNewElement, updateExistingElement, deleteElement};
 }

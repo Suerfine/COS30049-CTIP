@@ -1,6 +1,6 @@
 import { useState,useEffect } from 'react';
 import { View, Text, Image, StyleSheet, TouchableOpacity, Linking, Platform } from 'react-native';
-import { FileText, Play, Download, HelpCircle, Edit3, editCircle } from 'lucide-react-native';
+import { FileText, Play, Download, HelpCircle, Edit3, editCircle, Trash2 } from 'lucide-react-native';
 import Markdown from 'react-native-markdown-display';
 import * as Progress from 'react-native-progress';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -10,9 +10,24 @@ import WebView from 'react-native-webview';
 import { markdownStyles } from './markdownStyle';
 import { UserRoles } from '../enum/UserRoles';
 
-const PageRenderer = ({ elements, role, courseId, onEditElement }) => {
+const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement }) => {
     const isAdmin = role === UserRoles.ADMIN;
     const [videoProgress, setVideoProgress]=useState({});
+
+    const confirmDelete = (el) => {
+        console.log("onDeleteElement prop type:", typeof onDeleteElement);
+
+        const message = "Are you sure you want to delete this section? This action cannot be undone.";
+    
+        if (window.confirm(message)) {
+            if (typeof onDeleteElement === 'function') {
+                onDeleteElement(el.id);
+            } else {
+                console.error("CRITICAL: onDeleteElement is still undefined. Check Parent Render.");
+                alert("Technical Error: Delete function not linked.");
+            }
+        }
+    };
 
     useEffect(() => {
         if (!isAdmin) {
@@ -120,6 +135,9 @@ const PageRenderer = ({ elements, role, courseId, onEditElement }) => {
                             onPress={() => onEditElement(el)}
                         >
                             <Edit3 color="#0a6340" size={16} />
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.deleteCircle} onPress={() => confirmDelete(el)}>
+                            <Trash2 color="#dc2626" size={16} />
                         </TouchableOpacity>
                     </View>
                 )}
@@ -424,6 +442,20 @@ const styles = StyleSheet.create({
         borderColor: '#E5E7EB',
         ...Platform.select({
             web: { boxShadow: '0px 2px 4px rgba(0,0,0,0.1)' },
+            default: { elevation: 3 }
+        })
+    },
+    deleteCircle: {
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        backgroundColor: '#fff',
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#fee2e2', 
+        ...Platform.select({
+            web: { boxShadow: '0px 2px 4px rgba(220, 38, 38, 0.1)' },
             default: { elevation: 3 }
         })
     },
