@@ -16,9 +16,13 @@ export const useCourseDetails=(id)=>{
             setError(null);
             const courseData=await courseService.getById(id);
             const modulesData=await moduleService.getAll(id);
+            if (!courseData.description) {
+                courseData.description = "# Course Description\n\n# What you'll learn\n* ";
+            }
             setCourse({
                 ...courseData, modules:modulesData
             });
+            
         }catch(err){
             console.error("Course Fetch Error: ", err);
             setError(err.message || "Failed to load course details.");
@@ -26,6 +30,17 @@ export const useCourseDetails=(id)=>{
             setLoading(false);
         }
     },[id]);
+
+    // Update only for description
+    const updateDescription = async (newDescription) => {
+        try {
+            await courseService.update(id, { description: newDescription });
+            setCourse(prev => ({ ...prev, description: newDescription }));
+            return { success: true };
+        } catch (err) {
+            return { success: false, error: err };
+        }
+    };
 
     useEffect(()=>{
         fetchCourse();
@@ -35,6 +50,7 @@ export const useCourseDetails=(id)=>{
         course, 
         loading,
         error,
-        refresh:fetchCourse
+        refresh:fetchCourse,
+        updateDescription
     };
 }

@@ -1,7 +1,8 @@
 import React,{useEffect,useState} from 'react';
-import { View, Text, StyleSheet, ScrollView, ImageBackground, Pressable, ActivityIndicator, Image} from 'react-native';
+import { View, Text, StyleSheet, ScrollView, ImageBackground, Pressable, ActivityIndicator, Image, Modal, TextInput} from 'react-native';
 import {useRoute} from '@react-navigation/native';
-import { Award, Calendar, Clock, Menu, MessageSquare, User } from 'lucide-react-native';
+import { Award, Calendar, Clock, Menu, MessageSquare, User,Edit,X,Save, Heading1, Heading2, List, Bold, Italic, Type, AlignLeft, AlignCenter, AlignRight,ListOrdered } from 'lucide-react-native';
+import Markdown from 'react-native-markdown-display';
 
 // Import Components
 import OutlineBar from '../components/OutlineBar.js';
@@ -10,16 +11,27 @@ import SlidingTabs from '../components/SlidingTabs.js';
 import { useElements } from '../hooks/useElements.js';
 import PageRenderer from '../components/pageRenderer.js';
 import { useDiscussions } from '../hooks/useDiscussion.js';
+import { markdownStyles } from '../components/markdownStyle.js';
 
 const EditCourseDetail = () => {
     const route=useRoute();
     const {id}=route.params;
-    const {course, loading, error}=useCourseDetails(id);
+    const {course, loading, error, updateDescription}=useCourseDetails(id);
 
     const [selectedPage, setSelectedPage]=useState({type:'overview'});
     const [isCollapsed, setIsCollapsed]=useState(false);
     const [activeTab,setActiveTab]=useState('Overview');
     const [forumType, setForumType]=useState('Public');
+    const [activeStyles, setActiveStyles] = useState([]);
+
+    const [isEditModalVisible, setEditModalVisible]=useState(false);
+    const [editableText, setEditableText] = useState("");
+
+    useEffect(() => {
+        if (course?.description) {
+            setEditableText(course.description);
+        }
+    }, [course]);
 
     const { elements, loading: elementsLoading } = useElements(
         id,
@@ -46,6 +58,34 @@ const EditCourseDetail = () => {
             <Text style={{ color: 'red' }}>{error || "Course not found"}</Text>
         </View>
     );
+
+    const handleSaveDescription = async () => {
+        const result = await updateDescription(editableText);
+        if (result.success) {
+            setEditModalVisible(false);
+        } else {
+            Alert.alert("Error", result.error);
+        }
+    };
+
+    const insertMarkdown = (syntax) => {
+        let newText = editableText;
+        const selection = "\n";
+        
+        const formats = {
+            'h1': `# `,
+            'h2': `## `,
+            'bold': `**text**`,
+            'italic': `_text_`,
+            'bullet': `* `,
+            'number': `1. `,
+            'left': `<div align="left">\n`,
+            'center': `<div align="center">\n`,
+            'right': `<div align="right">\n`
+        };
+
+        setEditableText(prev => prev + (formats[syntax] || ""));
+    };
 
     const renderForumList = () => {
         if (discussionsLoading) return <ActivityIndicator color="#0a6340" style={{marginTop: 20}} />;
@@ -77,20 +117,11 @@ const EditCourseDetail = () => {
             case 'Overview':
                 return (
                     <View style={styles.tabSection}>
-                        {/* Description */}
-                        <View>
-                            <Text style={styles.sectionTitle}>Course Description</Text>
-                            <Text style={styles.bodyText}>{course.description || "No description provided."}</Text>
-                        </View>
-                        
-                        {/* Learning */}
-                        <View>
-                            <Text style={styles.sectionTitle}>What you'll learn</Text>
-                            <View style={styles.learningCard}>
-                                <Text style={styles.learningItem}>• Professional fundamentals of {course.title}</Text>
-                                <Text style={styles.learningItem}>• Industry-standard techniques and tools</Text>
-                                <Text style={styles.learningItem}>• Practical application of core principles</Text>
-                            </View>
+                        {/* Render the dynamic content */}
+                        <View style={styles.markdownContainer}>
+                            <Markdown style={markdownStyles}>
+                                {course?.description || "_No content provided yet. Click edit to start._"}
+                            </Markdown>
                         </View>
 
                         {/* Badge Achievement Section */}
@@ -213,9 +244,17 @@ const EditCourseDetail = () => {
                                 <Image 
                                     source={course.cover_img_url ? { uri: course.cover_img_url } : require('../../assets/first_aid.png')} style={styles.course_cover}
                                 />
-
+                                <View style={styles.tabSection}>
                                 {/* Sliding Tab */}
-                                <SlidingTabs tabs={tabs} activeTab={activeTab} onTabChange={(tab) => setActiveTab(tab)} />
+                                    <SlidingTabs tabs={tabs} activeTab={activeTab} onTabChange={(tab) => setActiveTab(tab)} />
+                                    {activeTab==='Overview' && (
+                                        <Pressable style={styles.editButton} onPress={() => setEditModalVisible(true)}>
+                                            <Edit size={16} color="#0a6340" />
+                                            <Text style={styles.editButtonText}>Edit Section</Text>
+                                        </Pressable>
+                                    )}
+                                    
+                                </View>
 
                                 {/* Tab Content */}
                                 <View style={styles.dynamicContent}>
@@ -226,6 +265,54 @@ const EditCourseDetail = () => {
                     </View>
                 </View>
             </ScrollView>
+            {/* Markdown Editor Modal */}
+            <Modal visible={isEditModalVisible} animationType="slide" transparent={false}>
+                <View style={styles.modalContent}>
+                    <View style={styles.modalHeader}>
+                        <Text style={styles.modalTitle}>Edit Overview</Text>
+                        <Pressable onPress={() => setEditModalVisible(false)}>
+                            <X color="#666" size={22} />
+                        </Pressable>
+                    </View>
+
+                    <View style={styles.toolbar}>
+                        <View style={styles.toolGroup}>
+                            <Pressable style={styles.toolBtn} onPress={() => insertMarkdown('h1')}><Heading1 size={20} color="#444" /></Pressable>
+                            <Pressable style={styles.toolBtn} onPress={() => insertMarkdown('h2')}><Heading2 size={20} color="#444" /></Pressable>
+                        </View>
+                        <View style={styles.divider} />
+                        <View style={styles.toolGroup}>
+                            <Pressable style={styles.toolBtn} onPress={() => insertMarkdown('bold')}><Bold size={20} color="#444" /></Pressable>
+                            <Pressable style={styles.toolBtn} onPress={() => insertMarkdown('italic')}><Italic size={20} color="#444" /></Pressable>
+                        </View>
+                        <View style={styles.divider} />
+                        <View style={styles.toolGroup}>
+                            <Pressable style={styles.toolBtn} onPress={() => insertMarkdown('left')}><AlignLeft size={20} color="#444" /></Pressable>
+                            <Pressable style={styles.toolBtn} onPress={() => insertMarkdown('center')}><AlignCenter size={20} color="#444" /></Pressable>
+                            <Pressable style={styles.toolBtn} onPress={() => insertMarkdown('right')}><AlignRight size={20} color="#444" /></Pressable>
+                        </View>
+                        <View style={styles.divider} />
+                        <View style={styles.toolGroup}>
+                            <Pressable style={styles.toolBtn} onPress={() => insertMarkdown('bullet')}><List size={20} color="#444" /></Pressable>
+                            <Pressable style={styles.toolBtn} onPress={() => insertMarkdown('number')}><ListOrdered size={20} color="#444" /></Pressable>
+                        </View>
+                    </View>
+
+                    <TextInput
+                        style={styles.editorInput}
+                        multiline
+                        value={editableText}
+                        onChangeText={setEditableText}
+                        placeholder="Type your description here using Markdown..."
+                        textAlignVertical="top"
+                    />
+
+                    <Pressable style={styles.saveBtn} onPress={handleSaveDescription}>
+                        <Save color="white" size={20} />
+                        <Text style={styles.saveBtnText}>Save Overview</Text>
+                    </Pressable>
+                </View>
+            </Modal>
         </View>
 
     );
@@ -318,19 +405,6 @@ const styles = StyleSheet.create({
     bodyText: {
         color: '#4A4A4A',
         lineHeight: 24,
-    },
-    learningCard: {
-        backgroundColor: '#f9f9f9',
-        padding: 15,
-        borderRadius: 12,
-        borderLeftWidth: 4,
-        borderLeftColor: '#0a6340',
-        marginTop: 10,
-    },
-    learningItem: {
-        fontSize: 14,
-        color: '#333',
-        marginBottom: 5,
     },
     pillContainer: {
         flexDirection: 'row',
@@ -463,7 +537,113 @@ const styles = StyleSheet.create({
         height: 200, 
         borderRadius: 8,
         marginTop: 10,
-    }
+    },
+    editButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        backgroundColor: '#ffffff',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 8,
+        alignSelf:'flex-end'
+    },
+    editButtonText: {
+        color: '#0a6340',
+        fontWeight: '600',
+        fontSize: 13,
+    },
+    modalContent: {
+        flex: 1,
+        backgroundColor: 'white',
+        padding: 20,
+        paddingTop: 40,
+    },
+    modalHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 20,
+    },
+    modalTitle: {
+        fontSize: 22,
+        fontWeight: 'bold',
+        color: '#333',
+    },
+    toolbar: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#f8f9fa',
+        padding: 8,
+        borderRadius: 10,
+        borderWidth: 1,
+        borderColor: '#e9ecef',
+        marginBottom: 10,
+        gap: 5,
+    },
+    toolGroup: {
+        flexDirection: 'row',
+        gap: 2,
+    },
+    toolBtnActive: {
+        backgroundColor: '#dee2e6',
+    },
+    toolBtn: {
+        paddingVertical: 6,
+        paddingHorizontal: 12,
+        backgroundColor: '#f0f0f0',
+        borderRadius: 6,
+    },
+    toolBtnText: {
+        fontSize: 14,
+        color: '#444',
+    },
+    editorInput: {
+        flex: 1,
+        backgroundColor: '#f9f9f9',
+        borderRadius: 12,
+        padding: 15,
+        fontSize: 16,
+        lineHeight: 24,
+        color: '#333',
+    },
+    saveBtn: {
+        flexDirection: 'row',
+        backgroundColor: '#0a6340',
+        padding: 12,
+        borderRadius: 6,
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 10,
+        marginTop: 20,
+        maxWidth:200,
+        alignSelf:'flex-end'
+    },
+    saveBtnText: {
+        color: 'white',
+        fontWeight: 'bold',
+        fontSize: 14,
+    },
+    divider: {
+        width: 1,
+        height: 24,
+        backgroundColor: '#dee2e6',
+        marginHorizontal: 8,
+    },
+    editorInput: {
+        flex: 1,
+        backgroundColor: '#fff',
+        borderRadius: 12,
+        padding: 20,
+        fontSize: 16,
+        lineHeight: 24,
+        color: '#333',
+        borderWidth: 1,
+        borderColor: '#eee',
+    },
+    
 });
 
 export default EditCourseDetail;
+
+// Add hover effect for edit button
