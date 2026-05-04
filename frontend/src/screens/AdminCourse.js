@@ -21,7 +21,7 @@ import FilterSidebar from '../components/FilterSidebar';
 import { useAuth } from "../context/AuthContext.js";
 
 const AdminCourse = ({ navigation }) => {
-  const { courses, loadCourses, loading, addCourse, editCourse, deleteCourse,filterVisible, setFilterVisible,tempFilters, setTempFilters,filters, setFilters,statusLabels, removeFilter} =
+  const { courses, loadCourses, loading, addCourse, editCourse, deleteCourse,filterVisible, setFilterVisible,tempFilters, setTempFilters,filters, setFilters,statusLabels, removeFilter,allCourseList} =
     useCourses();
   const [modalVisible, setModalVisible] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -112,6 +112,7 @@ const AdminCourse = ({ navigation }) => {
           onCancel={() => setModalVisible(false)}
           isLoading={loading}
           initialData={selectedCourse}
+          allCourseList={allCourseList}
         />
       </ModalLayout>
 

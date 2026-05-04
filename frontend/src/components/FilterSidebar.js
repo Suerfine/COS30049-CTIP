@@ -59,7 +59,7 @@ const FilterSidebar = ({ visible, tempFilters, setTempFilters, onApply, onReset,
 
                 {/* filter by status */}
                 {role===UserRoles.ADMIN ? (
-                    ""
+                    null
                 ) : (
                     <>
                     <Text style={styles.section}>{t('progress')}</Text>

@@ -44,6 +44,16 @@ export const courseService = {
             data.append('must_complete_in_weeks', formData.expiryWeeks);
             data.append('badge_expire_in_months', formData.badgeExpiry);
 
+            const prerequisiteGroups = [
+                {
+                    prerequisites: formData.prerequisites.map(p => ({
+                        course_id: p.id
+                    }))
+                }
+            ];
+
+            data.append('prerequisite_groups', JSON.stringify(prerequisiteGroups));
+
             const getMimeType = (ext) => {
                 if (ext === 'jpg') return 'image/jpeg';
                 if (ext === 'jpeg') return 'image/jpeg';
@@ -75,12 +85,7 @@ export const courseService = {
 
             const response = await apiClient.post(
                 API_ENDPOINTS.COURSE.LIST,
-                data,
-                {
-                    headers: {
-                        Accept: 'application/json'
-                    },
-                }
+                data
             );
 
             return response.data;
@@ -95,20 +100,34 @@ export const courseService = {
     // Put: update existing course
     update: async (id, courseData) => {
         try {
-            const payload = {
-                title: courseData.courseTitle,
-                description: courseData.description,
-                status: courseData.status,
-                expected_completion_weeks: parseInt(courseData.duration, 10),
-                must_complete_in_weeks: parseInt(courseData.expiryWeeks, 10),
-                badge: courseData.badgeImage,
-                badge_expire_in_months: parseInt(courseData.badgeExpiry, 10),
-            };
-            const response = await apiClient.put(API_ENDPOINTS.COURSE.DETAIL(id), payload);
+            const data = new FormData();
+            data.append('title', courseData.courseTitle);
+            data.append('description', courseData.description || "");
+            data.append('status', courseData.status);
+            data.append('expected_completion_weeks', parseInt(courseData.duration, 10));
+            data.append('must_complete_in_weeks', parseInt(courseData.expiryWeeks, 10));
+            data.append('badge_expire_in_months', parseInt(courseData.badgeExpiry, 10));
+
+            const prerequisiteGroups = [
+                {
+                    prerequisites: courseData.prerequisites.map(p => ({
+                        course_id: p.id
+                    }))
+                }
+            ];
+            data.append('prerequisite_groups', JSON.stringify(prerequisiteGroups));
+
+            if (courseData.image?.startsWith('file')) {
+                data.append("cover", { uri: courseData.image, name: 'cover.jpg', type: 'image/jpeg' });
+            }
+            if (courseData.badgeImage?.startsWith('file')) {
+                data.append("badge", { uri: courseData.badgeImage, name: 'badge.png', type: 'image/png' });
+            }
+
+            const response = await apiClient.put(API_ENDPOINTS.COURSE.DETAIL(id), data);
             return response.data;
         } catch (error) {
-            const message = error.response?.data?.message || 'Failed to update course.';
-            return Promise.reject(message);
+            return Promise.reject(error.response?.data?.message || 'Failed to update course.');
         }
     },
 
