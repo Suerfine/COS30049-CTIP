@@ -44,6 +44,7 @@ export const useUserProfile=()=>{
 
     const [loading, setLoading]=useState(false);
 
+    // PROFILE
     // save updated info
     const handleSave = async () => {
         setLoading(true);
@@ -83,6 +84,47 @@ export const useUserProfile=()=>{
 
         if (!result.canceled) {
             setNewImagePath(result.assets[0].uri);
+        }
+    };
+
+    // SECURITY
+    const handleSaveUsername = async () => {
+        if (!username.trim()) {
+            Alert.alert("Error", "Username cannot be empty.");
+            return;
+        }
+        setLoading(true);
+        try {
+            const result = await userProfileService.update(user.id, { username });
+            if (result.success) {
+                Alert.alert("Success", "Username updated successfully.");
+                setEditingUsername(false);
+            } else {
+                Alert.alert("Error", result.serverError);
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleSavePassword = async (currentPw, newPw) => {
+        if (!newPw || newPw.length < 6) {
+            Alert.alert("Error", "Password must be at least 6 characters.");
+            return;
+        }
+        setLoading(true);
+        try {
+            const result = await userProfileService.update(user.id, { password: newPw });
+            if (result.success) {
+                Alert.alert("Success", "Password updated successfully.");
+                setPasswordModalVisible(false);
+                setPassword('');
+                setCurrentPassword('');
+            } else {
+                Alert.alert("Error", result.serverError);
+            }
+        } finally {
+            setLoading(false);
         }
     };
 
