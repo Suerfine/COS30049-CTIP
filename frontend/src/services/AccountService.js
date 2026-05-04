@@ -11,14 +11,14 @@ export const AccountService={
             const params = { page, size };
             let filters=[];
             if (q) {
-                filters.push = `
+                filters.push (`
                     firstname like "%${q}%"
                     or lastname like "%${q}%"
                     or identification like "%${q}%"
                     or personal_email like "%${q}%"
                     or tel like "%${q}%"
                     or username like "%${q}%"
-                    `;
+                    `);
             }
 
             if (role && role !== 'All') {

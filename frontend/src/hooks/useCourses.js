@@ -65,11 +65,30 @@ export const useCourses=()=>{
     const editCourse = async (id, formData) => {
         setLoading(true);
         try {
-            await courseService.update(id, formData);
+            // 1. Get existing course (VERY IMPORTANT)
+            const existingCourse = await courseService.getById(id);
+
+            // 2. Merge old + new
+            const payload = {
+                courseTitle: formData.courseTitle ?? existingCourse.title,
+                description: formData.description ?? existingCourse.description,
+                status: formData.status ?? existingCourse.status,
+                duration: formData.duration ?? existingCourse.expected_completion_weeks,
+                expiryWeeks: formData.expiryWeeks ?? existingCourse.must_complete_in_weeks,
+                badgeExpiry: formData.badgeExpiry ?? existingCourse.badge_expire_in_months,
+                prerequisite_groups: formData.prerequisite_groups ?? existingCourse.prerequisite_groups ?? []
+            };
+
+            console.log("MERGED PAYLOAD:", payload);
+
+            // 3. Send full payload
+            await courseService.update(id, payload);
+
             await loadCourses();
             return true;
+
         } catch (error) {
-            console.error("Update failed: ", error);
+            console.error("Update failed:", error);
             return false;
         } finally {
             setLoading(false);

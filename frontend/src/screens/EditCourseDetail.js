@@ -71,7 +71,7 @@ const EditCourseDetail = () => {
         if (result.success) {
             setEditModalVisible(false);
         } else {
-            Alert.alert("Error", result.error);
+            window.alert("Error", result.error);
         }
     };
 

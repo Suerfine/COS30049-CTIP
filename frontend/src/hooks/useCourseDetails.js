@@ -33,11 +33,30 @@ export const useCourseDetails=(id)=>{
 
     // Update only for description
     const updateDescription = async (newDescription) => {
-        try {
-            await courseService.update(id, { description: newDescription });
-            setCourse(prev => ({ ...prev, description: newDescription }));
+    try {
+            const payload = {
+                courseTitle: course.title,
+                description: newDescription,
+                status: course.status || "unreleased",
+                duration: course.expected_completion_weeks,
+                expiryWeeks: course.must_complete_in_weeks,
+                badgeExpiry: course.badge_expire_in_months,
+                prerequisite_groups: course.prerequisite_groups || []
+            };
+
+            console.log("FULL PAYLOAD:", payload);
+
+            await courseService.update(id, payload);
+
+            setCourse(prev => ({
+                ...prev,
+                description: newDescription
+            }));
+
             return { success: true };
+
         } catch (err) {
+            console.error("UPDATE ERROR:", err);
             return { success: false, error: err };
         }
     };

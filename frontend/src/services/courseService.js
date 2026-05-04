@@ -107,7 +107,7 @@ export const courseService = {
             must_complete_in_weeks: parseInt(courseData.expiryWeeks, 10),
             badge_expire_in_months: parseInt(courseData.badgeExpiry, 10),
             
-            prerequisite_groups: courseData.prerequisite_groups.map(group => ({
+            prerequisite_groups: (courseData.prerequisite_groups || []).map(group => ({
                 id: group.id || undefined, 
                 prerequisites: group.prerequisites.map(p => ({
                     id: p.id || undefined, 
@@ -141,4 +141,6 @@ export const courseService = {
             return Promise.reject(error.response?.data?.message || "Failed to delete a course.");
         }
     }
+
+    
 };
