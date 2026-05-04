@@ -9,6 +9,9 @@ import { formatDate } from '../utils/formatDate.js';
 import CourseCard from '../components/CourseCard.js';
 import { useUserDashboard } from '../hooks/useUserDashboard';
 import SlidingTabs from '../components/SlidingTabs.js';
+import AddTodo from '../components/AddTodo.js';
+import ModalLayout from '../components/ModalLayout.js';
+import TaskDetail from '../components/TaskDetail.js';
 
 const UserDashboard = ({ navigation }) => {
     const {
@@ -28,6 +31,9 @@ const UserDashboard = ({ navigation }) => {
         toggleTodo, hasPendingTodoOnDate,formatLocalDate,
         weekLabels,todoTab, courseTab, categories
     } = useUserDashboard();
+    const [showModal, setShowModal] = useState(false);
+    const [selectedTask, setSelectedTask] = useState(null);
+    const openEdit = (todo) => { setSelectedTask(todo); };
 
     return(
         <ScrollView style={{ flex: 1 }}>
@@ -262,6 +268,22 @@ const UserDashboard = ({ navigation }) => {
                     </View>
                 </View>
             </View>
+
+            {/* call add todo component */}
+            <AddTodo visible={showModal} setIsModalVisible={setShowModal}/>
+
+            {/* task detail modal */}
+            {selectedTask && (
+                <ModalLayout
+                    visible={true}
+                    onClose={() => setSelectedTask(null)}
+                >
+                    <TaskDetail
+                        task={selectedTask}
+                        onClose={() => setSelectedTask(null)}
+                    />
+                </ModalLayout>
+            )}
         </ScrollView>
     );
 }
