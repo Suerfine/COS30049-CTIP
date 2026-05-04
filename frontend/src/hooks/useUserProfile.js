@@ -103,38 +103,57 @@ export const useUserProfile=()=>{
         }
     };
 
+    // const handleSavePassword = async (currentPw, newPw) => {
+    //     if (!currentPw || !newPw) return;
+
+    //     if (!isValidPassword(newPw)) {
+    //         window.alert("Password must include letters, numbers and symbols (min 6 chars).");
+    //         return;
+    //     }
+
+    //     if (currentPw === newPw) {
+    //         window.alert("New password must be different.");
+    //         return;
+    //     }
+
+    //     setLoading(true);
+    //     try {
+    //         const result = await userProfileService.changePassword(user.id, currentPw, newPw);
+
+    //         if (result.success) {
+    //             window.alert("Password updated successfully.");
+    //             setPasswordModalVisible(false);
+    //             setPassword('');
+    //             setCurrentPassword('');
+    //         } else {
+    //             window.alert("Error", result.serverError);
+    //         }
+    //     } finally {
+    //         setLoading(false);
+    //     }
+    // };
+
     const handleSavePassword = async (currentPw, newPw) => {
-        if (!currentPw || !newPw) return;
+    if (!currentPw || !newPw) return;
 
-        if (!isValidPassword(newPw)) {
-            window.alert("Error", "Password must include letters, numbers and symbols (min 6 chars).");
-            return;
+    setLoading(true);
+    try {
+        const result = await userProfileService.changePassword(user.id, currentPw, newPw);
+
+        if (result.success) {
+            window.alert('Password updated successfully.');
+            setPasswordModalVisible(false);
+            setPassword('');
+            setCurrentPassword('');
+            return { success: true };
+        } else {
+            // Return error so ChangePasswordContent shows it inline
+            return { error: result.serverError };
         }
-
-        if (currentPw === newPw) {
-            window.alert("Error", "New password must be different.");
-            return;
-        }
-
-        setLoading(true);
-        try {
-            const result = await userProfileService.update(user.id, {
-                currentPassword: currentPw,
-                password: newPw
-            });
-
-            if (result.success) {
-                window.alert("Success", "Password updated successfully.");
-                setPasswordModalVisible(false);
-                setPassword('');
-                setCurrentPassword('');
-            } else {
-                window.alert("Error", result.serverError);
-            }
-        } finally {
-            setLoading(false);
-        }
-    };
+    } finally {
+        setLoading(false);
+    }
+};
 
     // Populate fields
     useEffect(() => {

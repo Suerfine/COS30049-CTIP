@@ -26,4 +26,24 @@ export const userProfileService = {
       };
     }
   },
+
+  // change password
+  changePassword: async (userId, oldPassword, newPassword) => {
+      try {
+          const res = await apiClient.put(`/users/${userId}/change-password`, {
+              old_password: oldPassword,
+              new_password: newPassword,
+          });
+          return { success: true, data: res.data };
+      } catch (err) {
+          // Add this to see exactly what the server says
+          console.log('Change password error:', err.response?.status, err.response?.data);
+          return {
+              success: false,
+              serverError: err.response?.status === 400
+                  ? err.response?.data?.message || 'Current password is incorrect.'
+                  : err.response?.data?.message || 'Failed to change password.',
+          };
+      }
+  },
 };
