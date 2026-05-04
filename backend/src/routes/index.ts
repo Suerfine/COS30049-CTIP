@@ -2,6 +2,9 @@ import { Router } from "express";
 import userRouter from "./UserRoute";
 import registrationRouter from "./RegistrationRoute";
 import courseRouter from "./CourseRoute";
+import moduleRouter from "./ModuleRoute";
+import pageRouter from "./PageRoute";
+import messageRouter from "./MessageRoute";
 import * as AuthController from "../controllers/AuthController";
 const router = Router();
 
@@ -70,5 +73,8 @@ router.use("/registrations", registrationRouter);
 =        COURSE ROUTES         =
 ===============================*/
 router.use("/courses", courseRouter);
+router.use("/", moduleRouter);
+router.use("/", pageRouter);
+router.use("/", messageRouter);
 
 export default router;
