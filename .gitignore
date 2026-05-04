@@ -5,3 +5,7 @@
 
 # Frontend and backend node modules
 node_modules/
+
+#AI anomaly files
+bin/
+runs/
