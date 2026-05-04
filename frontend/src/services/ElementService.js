@@ -17,8 +17,13 @@ export const ElementService={
 
     // POST: create a new element
     create: async(courseId, moduleId, pageId, payload)=>{
-        const url=API_ENDPOINTS.COURSE.ELEMENTS(courseId, moduleId, pageId);
-        const response=await apiClient.post(url, payload);
-        return response.data;
+        try {
+            const url = API_ENDPOINTS.COURSE.ELEMENTS(courseId, moduleId, pageId);
+            const response = await apiClient.post(url, payload);
+            return response.data;
+        } catch (error) {
+            console.error("Create Element Error:", error);
+            throw error.response?.data?.message || "Failed to create element";
+        }
     }
 }

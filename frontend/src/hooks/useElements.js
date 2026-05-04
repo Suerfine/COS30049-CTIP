@@ -25,9 +25,20 @@ export const useElements=(courseId, moduleId, pageId)=>{
         }
     },[courseId, moduleId, pageId]);
 
+    const createNewElement = async (payload) => {
+        try {
+            const newElement = await ElementService.create(courseId, moduleId, pageId, payload);
+            setElements(prev => [...prev, newElement]);
+            return true;
+        } catch (err) {
+            console.error("Create Element Error:", err);
+            return false;
+        }
+    };
+
     useEffect(()=>{
         loadElements();
     },[loadElements]);
 
-    return {elements, loading, error, refresh: loadElements};
+    return {elements, loading, error, refresh: loadElements, createNewElement};
 }

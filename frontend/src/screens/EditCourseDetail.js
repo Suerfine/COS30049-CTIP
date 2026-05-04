@@ -1,7 +1,7 @@
 import React,{useEffect,useState} from 'react';
-import { View, Text, StyleSheet, ScrollView, ImageBackground, Pressable, ActivityIndicator, Image, Modal, TextInput} from 'react-native';
+import { View, Text, StyleSheet, ScrollView, ImageBackground, Pressable, ActivityIndicator, Image, Modal, TextInput, TouchableOpacity} from 'react-native';
 import {useRoute} from '@react-navigation/native';
-import { Award, Calendar, Clock, Menu, MessageSquare, User,Edit,X,Save, Heading1, Heading2, List, Bold, Italic, Type, AlignLeft, AlignCenter, AlignRight,ListOrdered } from 'lucide-react-native';
+import { Award, Calendar, Clock, Menu, MessageSquare, User,Edit,X,Save, Heading1, Heading2, List, Bold, Italic, Type, AlignLeft, AlignCenter, AlignRight,ListOrdered, CopyPlus, Image as ImageIcon, Video as VideoIcon, HelpCircle as QuizIcon } from 'lucide-react-native';
 import Markdown from 'react-native-markdown-display';
 
 // Import Components
@@ -26,6 +26,10 @@ const EditCourseDetail = () => {
 
     const [isEditModalVisible, setEditModalVisible]=useState(false);
     const [editableText, setEditableText] = useState("");
+    const [isAddElementVisible, setAddElementVisible] = useState(false);
+    const [currentElementType, setCurrentElementType] = useState(null);
+    const [newElementData, setNewElementData] = useState({ text: "", url: "", transcript: "", question: "", options: ["", "", "", ""], answer: "", score:1 });
+
 
     useEffect(() => {
         if (course?.description) {
@@ -33,7 +37,7 @@ const EditCourseDetail = () => {
         }
     }, [course]);
 
-    const { elements, loading: elementsLoading } = useElements(
+    const { elements, loading: elementsLoading, createNewElement } = useElements(
         id,
         selectedPage?.page?.module_id || selectedPage?.module?.id,
         selectedPage?.page?.id
@@ -68,23 +72,73 @@ const EditCourseDetail = () => {
         }
     };
 
-    const insertMarkdown = (syntax) => {
-        let newText = editableText;
-        const selection = "\n";
-        
+    const TypeAction = ({ icon, label, onPress }) => (
+        <TouchableOpacity style={styles.typeActionBtn} onPress={onPress}>
+            <View style={styles.typeActionIcon}>{icon}</View>
+            <Text style={styles.typeActionLabel}>{label}</Text>
+        </TouchableOpacity>
+    );
+
+    const insertMarkdown = (syntax, setter) => {
         const formats = {
             'h1': `# `,
             'h2': `## `,
             'bold': `**text**`,
             'italic': `_text_`,
             'bullet': `* `,
-            'number': `1. `,
             'left': `<div align="left">\n`,
             'center': `<div align="center">\n`,
             'right': `<div align="right">\n`
         };
+        
+        const markup = formats[syntax] || "";
+        setter(prev => (prev + markup));
+    };
 
-        setEditableText(prev => prev + (formats[syntax] || ""));
+    const insertInNewElement = (syntax) => {
+        insertMarkdown(syntax, (markup) => {
+            setNewElementData(prev => ({
+                ...prev,
+                text: typeof markup === 'function' ? markup(prev.text) : prev.text + markup
+            }));
+        });
+        };
+
+    const handleCreateElement = async () => {
+        const payload = {
+            page_id: selectedPage.page.id,
+            type: currentElementType,
+            order: elements.length + 1,
+            score: parseInt(newElementData.score) || 1,
+            content: {}
+        };
+
+        if (currentElementType === 'text') {
+            payload.content = { text: newElementData.text };
+        } else if (currentElementType === 'image') {
+            payload.content = { 
+                url: newElementData.url, 
+                caption: newElementData.transcript 
+            };
+        } else if (currentElementType === 'video') {
+            payload.content = { 
+                url: newElementData.url, 
+                transcript: newElementData.transcript 
+            };
+        } else if (currentElementType === 'quiz_objective') {
+            payload.content = { 
+                question: newElementData.question, 
+                options: newElementData.options, 
+                answer: newElementData.answer 
+            };
+        }
+
+        const success = await createNewElement(payload); 
+        if (success) {
+            setAddElementVisible(false);
+            setCurrentElementType(null);
+            setNewElementData({ text: "", url: "", transcript: "", question: "", options: ["", "", "", ""], answer: "", score:'1' });
+        }
     };
 
     const renderForumList = () => {
@@ -191,15 +245,28 @@ const EditCourseDetail = () => {
                         source={require('../../assets/forest.png')}
                         style={styles.backgroundImage}
                     >
-                        <View style={styles.courseContainer}>
-                            <Pressable onPress={()=>setIsCollapsed(!isCollapsed)}>
-                                <Menu color="white" size={25}/>
-                            </Pressable>
-                            <View>
-                                <Text style={styles.description}>Start your learning journey</Text>
-                                <Text style={styles.title}>Course Details</Text>
+                        <View style={styles.headerContainer}>
+                            <View style={styles.courseContainer}>
+                                <Pressable onPress={()=>setIsCollapsed(!isCollapsed)}>
+                                    <Menu color="white" size={25}/>
+                                </Pressable>
+                                <View>
+                                    <Text style={styles.description}>Start your learning journey</Text>
+                                    <Text style={styles.title}>Course Details</Text>
+                                </View>
                             </View>
+                            {selectedPage?.type==='page' && (
+                                <Pressable
+                                    onPress={() => setAddElementVisible(true)}
+                                    style={({ hovered }) => [styles.btn, hovered && styles.btnHover]}
+                                >
+                                    <CopyPlus />
+                                    <Text style={styles.btnText}>Add Section</Text>
+                                </Pressable>
+                            )}
+                            
                         </View>
+                        
                     </ImageBackground>
                     {/* Content */}
                     <View style={styles.contentWrapper}>
@@ -277,24 +344,23 @@ const EditCourseDetail = () => {
 
                     <View style={styles.toolbar}>
                         <View style={styles.toolGroup}>
-                            <Pressable style={styles.toolBtn} onPress={() => insertMarkdown('h1')}><Heading1 size={20} color="#444" /></Pressable>
-                            <Pressable style={styles.toolBtn} onPress={() => insertMarkdown('h2')}><Heading2 size={20} color="#444" /></Pressable>
+                            <Pressable style={styles.toolBtn} onPress={() => insertMarkdown('h1',setEditableText)}><Heading1 size={20} color="#444" /></Pressable>
+                            <Pressable style={styles.toolBtn} onPress={() => insertMarkdown('h2',setEditableText)}><Heading2 size={20} color="#444" /></Pressable>
                         </View>
                         <View style={styles.divider} />
                         <View style={styles.toolGroup}>
-                            <Pressable style={styles.toolBtn} onPress={() => insertMarkdown('bold')}><Bold size={20} color="#444" /></Pressable>
-                            <Pressable style={styles.toolBtn} onPress={() => insertMarkdown('italic')}><Italic size={20} color="#444" /></Pressable>
+                            <Pressable style={styles.toolBtn} onPress={() => insertMarkdown('bold',setEditableText)}><Bold size={20} color="#444" /></Pressable>
+                            <Pressable style={styles.toolBtn} onPress={() => insertMarkdown('italic',setEditableText)}><Italic size={20} color="#444" /></Pressable>
                         </View>
                         <View style={styles.divider} />
                         <View style={styles.toolGroup}>
-                            <Pressable style={styles.toolBtn} onPress={() => insertMarkdown('left')}><AlignLeft size={20} color="#444" /></Pressable>
-                            <Pressable style={styles.toolBtn} onPress={() => insertMarkdown('center')}><AlignCenter size={20} color="#444" /></Pressable>
-                            <Pressable style={styles.toolBtn} onPress={() => insertMarkdown('right')}><AlignRight size={20} color="#444" /></Pressable>
+                            <Pressable style={styles.toolBtn} onPress={() => insertMarkdown('left',setEditableText)}><AlignLeft size={20} color="#444" /></Pressable>
+                            <Pressable style={styles.toolBtn} onPress={() => insertMarkdown('center',setEditableText)}><AlignCenter size={20} color="#444" /></Pressable>
+                            <Pressable style={styles.toolBtn} onPress={() => insertMarkdown('right',setEditableText)}><AlignRight size={20} color="#444" /></Pressable>
                         </View>
                         <View style={styles.divider} />
                         <View style={styles.toolGroup}>
-                            <Pressable style={styles.toolBtn} onPress={() => insertMarkdown('bullet')}><List size={20} color="#444" /></Pressable>
-                            <Pressable style={styles.toolBtn} onPress={() => insertMarkdown('number')}><ListOrdered size={20} color="#444" /></Pressable>
+                            <Pressable style={styles.toolBtn} onPress={() => insertMarkdown('bullet',setEditableText)}><List size={20} color="#444" /></Pressable>
                         </View>
                     </View>
 
@@ -311,6 +377,106 @@ const EditCourseDetail = () => {
                         <Save color="white" size={20} />
                         <Text style={styles.saveBtnText}>Save Overview</Text>
                     </Pressable>
+                </View>
+            </Modal>
+            <Modal visible={isAddElementVisible} animationType="fade" transparent={true}>
+                <View style={styles.modalOverlay}>
+                    <View style={[styles.selectionCard, currentElementType === 'text' && { height: '80%', maxWidth: 800 }]}>
+                        <View style={styles.modalHeader}>
+                            <Text style={styles.modalTitle}>New {currentElementType || "Section"}</Text>
+                            <Pressable onPress={() => {setAddElementVisible(false); setCurrentElementType(null);}}>
+                                <X color="#666" size={24} />
+                            </Pressable>
+                        </View>
+
+                        {!currentElementType ? (
+                            <View style={styles.typeGrid}>
+                                <TypeAction icon={<Type color="#0a6340"/>} label="Text" onPress={() => setCurrentElementType('text')} />
+                                <TypeAction icon={<ImageIcon color="#0a6340"/>} label="Image" onPress={() => setCurrentElementType('image')} />
+                                <TypeAction icon={<VideoIcon color="#0a6340"/>} label="Video" onPress={() => setCurrentElementType('video')} />
+                                <TypeAction icon={<QuizIcon color="#0a6340"/>} label="Quiz" onPress={() => setCurrentElementType('quiz_objective')} />
+                            </View>
+                        ) : (
+                            <ScrollView>
+                                {currentElementType === 'text' && (
+                                    <View style={{ flex: 1 }}>
+                                        {/* Toolbar */}
+                                        <View style={styles.toolbar}>
+                                            <View style={styles.toolGroup}>
+                                                <Pressable style={styles.toolBtn} onPress={() => insertInNewElement('h1')}><Heading1 size={20} color="#444" /></Pressable>
+                                                <Pressable style={styles.toolBtn} onPress={() => insertInNewElement('h2')}><Heading2 size={20} color="#444" /></Pressable>
+                                            </View>
+                                            <View style={styles.divider} />
+                                            <View style={styles.toolGroup}>
+                                                <Pressable style={styles.toolBtn} onPress={() => insertInNewElement('bold')}><Bold size={20} color="#444" /></Pressable>
+                                                <Pressable style={styles.toolBtn} onPress={() => insertInNewElement('italic')}><Italic size={20} color="#444" /></Pressable>
+                                            </View>
+                                            <View style={styles.divider} />
+                                            <View style={styles.toolGroup}>
+                                                <Pressable style={styles.toolBtn} onPress={() => insertInNewElement('left')}><AlignLeft size={20} color="#444" /></Pressable>
+                                                <Pressable style={styles.toolBtn} onPress={() => insertInNewElement('center')}><AlignCenter size={20} color="#444" /></Pressable>
+                                                <Pressable style={styles.toolBtn} onPress={() => insertInNewElement('right')}><AlignRight size={20} color="#444" /></Pressable>
+                                            </View>
+                                            <View style={styles.divider} />
+                                            <View style={styles.toolGroup}>
+                                                <Pressable style={styles.toolBtn} onPress={() => insertInNewElement('bullet')}><List size={20} color="#444" /></Pressable>
+                                            </View>
+                                        </View>
+
+                                        <TextInput 
+                                            style={[styles.editorInput, { minHeight: 300 }]} 
+                                            multiline 
+                                            value={newElementData.text} 
+                                            onChangeText={(v) => setNewElementData({...newElementData, text: v})} 
+                                            placeholder="Write your content here..." 
+                                            textAlignVertical="top"
+                                        />
+                                        <View style={styles.scoreSection}>
+                                            <Text style={styles.inputLabel}>Mark / Weightage</Text>
+                                            <View style={styles.scoreInputWrapper}>
+                                                <TextInput
+                                                    style={styles.scoreInput}
+                                                    keyboardType="numeric"
+                                                    value={newElementData.score}
+                                                    onChangeText={(v) => setNewElementData({...newElementData, score: v})}
+                                                    placeholder="1"
+                                                />
+                                                <Text style={styles.scoreHint}>Default is 1. Used for course completion logic.</Text>
+                                            </View>
+                                        </View>
+                                    </View>
+                                )}
+
+                                {(currentElementType === 'image' || currentElementType === 'video') && (
+                                    <View style={{ marginTop: 10 }}>
+                                        <Text style={styles.inputLabel}>Source URL</Text>
+                                        <TextInput style={styles.inputField} value={newElementData.url} onChangeText={(v) => setNewElementData({...newElementData, url: v})} placeholder="https://..." />
+                                        <Text style={styles.inputLabel}>{currentElementType === 'image' ? 'Caption' : 'Transcript'}</Text>
+                                        <TextInput style={styles.inputField} multiline value={newElementData.transcript} onChangeText={(v) => setNewElementData({...newElementData, transcript: v})} placeholder="Enter description..." />
+                                    </View>
+                                )}
+
+                                {currentElementType === 'quiz_objective' && (
+                                    <View style={{ marginTop: 10 }}>
+                                        <TextInput style={styles.inputField} value={newElementData.question} onChangeText={(v) => setNewElementData({...newElementData, question: v})} placeholder="The Question" />
+                                        {newElementData.options.map((opt, i) => (
+                                            <TextInput key={i} style={styles.inputField} value={opt} onChangeText={(v) => {
+                                                const newOpts = [...newElementData.options];
+                                                newOpts[i] = v;
+                                                setNewElementData({...newElementData, options: newOpts});
+                                            }} placeholder={`Option ${i+1}`} />
+                                        ))}
+                                        <TextInput style={[styles.inputField, { borderColor: '#0a6340' }]} value={newElementData.answer} onChangeText={(v) => setNewElementData({...newElementData, answer: v})} placeholder="Correct Answer (Exact match)" />
+                                    </View>
+                                )}
+
+                                <Pressable style={[styles.saveBtn]} onPress={handleCreateElement}>
+                                    <Save color="white" size={18} />
+                                    <Text style={styles.saveBtnText}>Save Section</Text>
+                                </Pressable>
+                            </ScrollView>
+                        )}
+                    </View>
                 </View>
             </Modal>
         </View>
@@ -337,7 +503,6 @@ const styles = StyleSheet.create({
         flexDirection:'row',
         userSelect:'none',
         alignItems:'center',
-        
     },
     title: {
         fontSize: 24,
@@ -641,7 +806,107 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: '#eee',
     },
-    
+    headerContainer:{
+        flexDirection:'row',
+        justifyContent:'space-between',
+        alignItems:'center',
+    },
+    btn: {
+        flexDirection: "row",
+        gap: 8,
+        alignItems: "center",
+        alignSelf: "center",
+        backgroundColor: "#4a8947",
+        borderRadius: 50,
+        color: "white",
+        paddingHorizontal: 23,
+        paddingVertical: 13,
+        marginRight:20
+    },
+    btnHover: {
+        backgroundColor: "#2f6618fe",
+    },
+    btnText: {
+        color: "white",
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'center',
+        alignItems: 'center'
+    },
+    selectionCard: {
+        backgroundColor: 'white',
+        width: '90%',
+        maxWidth: 500,
+        borderRadius: 20,
+        padding: 25,
+        maxHeight: '80%'
+    },
+    inputField: {
+        backgroundColor: '#f5f5f5',
+        borderRadius: 8,
+        padding: 12,
+        marginBottom: 15,
+        borderWidth: 1,
+        borderColor: '#eee'
+    },
+    typeGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 15,
+        marginTop: 20,
+        justifyContent: 'center',
+    },
+    typeActionBtn: {
+        width: '45%', 
+        backgroundColor: '#f8f9fa',
+        borderRadius: 12,
+        padding: 16,
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#eee',
+    },
+    typeActionIcon: {
+        marginBottom: 8,
+        padding: 10,
+        backgroundColor: '#fff',
+        borderRadius: 50,
+    },
+    typeActionLabel: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#333',
+    },
+    scoreSection: {
+        marginTop: 20,
+        paddingTop: 15,
+        borderTopWidth: 1,
+        borderTopColor: '#eee',
+    },
+    scoreInputWrapper: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+        marginTop: 5,
+    },
+    scoreInput: {
+        backgroundColor: '#f5f5f5',
+        borderRadius: 8,
+        padding: 10,
+        width: 80,
+        borderWidth: 1,
+        borderColor: '#ddd',
+        textAlign: 'center',
+        fontWeight: 'bold',
+        color: '#0a6340',
+    },
+    scoreHint: {
+        fontSize: 12,
+        color: '#888',
+        fontStyle: 'italic',
+        flex: 1,
+    },
 });
 
 export default EditCourseDetail;

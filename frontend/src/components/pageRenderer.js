@@ -2,7 +2,6 @@ import { useState,useEffect } from 'react';
 import { View, Text, Image, StyleSheet, TouchableOpacity, Linking, Platform } from 'react-native';
 import { FileText, Play, Download, HelpCircle } from 'lucide-react-native';
 import Markdown from 'react-native-markdown-display';
-import Video from 'react-native-video';
 import * as Progress from 'react-native-progress';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import WebView from 'react-native-webview';
