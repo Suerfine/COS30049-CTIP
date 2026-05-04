@@ -7,18 +7,20 @@ export const enrollmentService = {
      */
     getAll: async () => {
         try {
-            // Using apiClient for centralized headers/base URL
             const [enrollRes, userRes] = await Promise.all([
                 apiClient.get(API_ENDPOINTS.ENROLLMENT.LIST),
                 apiClient.get(API_ENDPOINTS.USER.ACCOUNT)
             ]);
 
-            // apiClient usually handles .json() and .ok checks internally
-            const enrollments = enrollRes.data; 
-            const users = userRes.data;
+            const enrollments = enrollRes.data?.data || []; 
+            const users = userRes.data || [];
+            if (!Array.isArray(enrollments)) {
+                console.error("Enrollments is still not an array:", enrollments);
+                return [];
+            }
 
             return enrollments.map(enroll => {
-                const user = users.find(u => u.id === enroll.user_id);
+                const user = Array.isArray(users) ? users.find(u => u.id === enroll.user_id) : null;
                 return {
                     ...enroll,
                     fullName: user ? `${user.firstname} ${user.lastname}` : `User #${enroll.user_id}`
@@ -29,7 +31,6 @@ export const enrollmentService = {
             return [];
         }
     },
-
     /**
      * GET: My personal enrollments (Current User View)
      */
