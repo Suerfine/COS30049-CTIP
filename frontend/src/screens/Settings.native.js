@@ -15,7 +15,7 @@ const Settings=({navigation})=>{
     const {t, i18n}=useTranslation();
 
     const {
-        firstName, lastName, user,editingUsername, setEditingUsername,
+        form, user,editingUsername, setEditingUsername,
         editingPassword, setEditingPassword,username,setUsername,
         password,setPassword,passwordModalVisible, setPasswordModalVisible,currentPassword, setCurrentPassword,showCurrentPassword, setShowCurrentPassword,
         showNewPassword, setShowNewPassword,account
@@ -67,7 +67,7 @@ const Settings=({navigation})=>{
                     )}
                     <View style={styles.textContainer}>
                         <Text style={styles.name}>
-                            {firstName+" "+lastName}
+                            {form.firstname+" "+form.lastname}
                         </Text>
                         <Text style={styles.subText}>{t('view profile')}</Text>
                     </View>
