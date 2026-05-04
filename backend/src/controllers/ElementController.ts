@@ -618,33 +618,108 @@ export const getElementFile = async (
   }
 };
 
-// Todo
-// export const getCourseWorkshopsSummary = async (
-//   req: Request<{ course_Id: string }>,
-//   res: Response,
-//   next: NextFunction
-// ) => {
-//   try {
-//     const courseId = parseId(req.params.course_Id);
+export const getCourseWorkshopsSummary = async (
+  req: Request<{ course_Id: string }>,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    // Check if course_Id is valid
+    const courseId = parseId(req.params.course_Id);
+    if (courseId === null) {
+      throw new HttpError(400, "Invalid course_Id");
+    }
 
-//     if (courseId === null) {
-//       throw new HttpError(400, "Invalid course_Id");
-//     }
+    // Look for elements with type WORKSHOP in the course
+    const workshops = await Element.findAll({
+      where: {
+        type: ElementTypes.WORKSHOP,
+      },
+      include: [
+        {
+          model: Page,
+          as: "page",
+          required: true,
+          include: [
+            {
+              model: Module,
+              as: "module",
+              required: true,
+              where: { course_id: courseId },
+              attributes: [], // We don't need any fields from Module
+            },
+          ],
+          attributes: [], // We don't need any fields from Page
+        },
+      ],
+    });
 
-//     // Find all workshops across the entire course
-//     const workshops = await Element.findAll({
-//       where: {
-//         course_id: courseId, // Ensure this column exists in your DB
-//         type: ElementTypes.WORKSHOP,
-//       },
-//       order: [["created_at", "ASC"]],
-//     });
+    return res.json(workshops.map(toElementResponse));
+  } catch (err) {
+    if (err instanceof HttpError) {
+      return res.status(err.status).json({ message: err.message });
+    }
+    next(err);
+  }
+};
 
-//     return res.json(workshops.map(toElementResponse));
-//   } catch (err) {
-//     if (err instanceof HttpError) {
-//       return res.status(err.status).json({ message: err.message });
-//     }
-//     next(err);
-//   }
-// };
+export const joinWorkshop = async (
+  req: Request<{ course_Id: string; element_id: string }>,
+  res: Response<
+    { message: string; element: ElementResponse } | { message: string }
+  >,
+  next: NextFunction,
+) => {
+  try {
+    // Check if course_Id is valid
+    const courseId = parseId(req.params.course_Id);
+    if (courseId === null) {
+      throw new HttpError(400, "Invalid course_Id");
+    }
+
+    // Check if element_id is valid
+    const elementId = parseId(req.params.element_id);
+    if (elementId === null) {
+      throw new HttpError(400, "Invalid element_id");
+    }
+    const element = await Element.findOne({
+      where: {
+        id: elementId,
+        type: ElementTypes.WORKSHOP,
+      },
+      include: [
+        {
+          model: Page,
+          as: "page",
+          required: true,
+          include: [
+            {
+              model: Module,
+              as: "module",
+              required: true,
+              where: { course_id: courseId },
+              attributes: [], // We don't need any fields from Module
+            },
+          ],
+          attributes: [], // We don't need any fields from Page
+        },
+      ],
+    });
+    if (!element) {
+      throw new HttpError(404, "Workshop not found in the specified course");
+    }
+
+    // TODO: Implement the logic to add the user to the workshop's participant list.
+
+    return res.json({
+      message: "Joined workshop successfully",
+      element: toElementResponse(element),
+    });
+  } catch (err) {
+    if (err instanceof HttpError) {
+      return res.status(err.status).json({ message: err.message });
+    } else {
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  }
+};
