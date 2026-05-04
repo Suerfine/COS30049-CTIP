@@ -1,46 +1,48 @@
 import { Router } from "express";
-import * as CourseController from "../controllers/CourseController";
-import discussionRouter from "./DiscussionRoute";
+import * as MessageController from "../controllers/MessageController";
 import { auth } from "../middelware/Auth";
-import { uploadPrivateDocument } from "../middelware/PrivateDocumentUpload";
-import { uploadBadgeImg } from "../config/multer";
 import { validate } from "../middelware/Validate";
-import { body } from "express-validator/lib/middlewares/validation-chain-builders";
-import { CourseStatus } from "../enum/CourseStatus";
+import { body } from "express-validator";
 
-const privateCourseBadgeUpload = uploadPrivateDocument({
-  subfolder: "courses/badges",
-  allowedMimeTypes: ["image/jpeg", "image/png", "image/webp", "image/gif"],
-}).single("badge");
-const uploadCourseBadge = uploadBadgeImg();
-
-const courseRouter = Router();
-courseRouter.use("/:course_id/discussion", discussionRouter);
+const messageRouter = Router({ mergeParams: true });
 
 /**
  * @swagger
- * /api/courses:
+ * /api/discussion/{discussion_id}/messages:
  *   post:
- *     summary: Create a new course
- *     description: Creates a course with optional badge image, status, release timestamp, and prerequisite groups.
- *     tags: [Courses]
+ *     summary: Create a new message
+ *     description: Creates a new message in a discussion thread.
+ *     tags: [Messages]
  *     security:
  *       - OAuth2: ["all"]
+ *     parameters:
+ *       - in: path
+ *         name: discussion_id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The ID of the discussion.
  *     requestBody:
  *       required: true
  *       content:
- *         multipart/form-data:
+ *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/CreateCourseRequest'
+ *             type: object
+ *             required:
+ *               - content
+ *             properties:
+ *               content:
+ *                 type: string
+ *                 example: "This is my message response"
  *     responses:
  *       201:
- *         description: Course created successfully
+ *         description: Message created successfully
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Course'
+ *               $ref: '#/components/schemas/Message'
  *       400:
- *         description: Invalid request data
+ *         description: Invalid request data or IDs
  *         content:
  *           application/json:
  *             schema:
@@ -52,32 +54,30 @@ courseRouter.use("/:course_id/discussion", discussionRouter);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-courseRouter.post(
-  "/",
+messageRouter.post(
+  "/discussion/:discussion_id/messages",
   auth,
-  uploadCourseBadge.fields([
-    { name: "badge", maxCount: 1 },
-    { name: "cover", maxCount: 1 },
-  ]),
-  [
-    body("title").isString().notEmpty(),
-    body("description").optional().isString(),
-    body("status").optional().isIn(Object.values(CourseStatus)),
-  ],
+  [body("content").isString().notEmpty()],
   validate,
-  CourseController.createCourse,
+  MessageController.createMessage,
 );
 
 /**
  * @swagger
- * /api/courses:
+ * /api/discussion/{discussion_id}/messages:
  *   get:
- *     summary: Get all courses
- *     description: Returns a paginated list of courses with optional filtering, sorting, and soft-deleted records.
- *     tags: [Courses]
+ *     summary: Get all messages in a discussion
+ *     description: Returns a paginated list of messages for a specific discussion with optional filtering and sorting.
+ *     tags: [Messages]
  *     security:
  *       - OAuth2: ["all"]
  *     parameters:
+ *       - in: path
+ *         name: discussion_id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The ID of the discussion.
  *       - in: query
  *         name: page
  *         required: false
@@ -113,11 +113,10 @@ courseRouter.post(
  *         schema:
  *           type: boolean
  *           default: false
- *           example: false
- *         description: When true, include soft-deleted courses in the result set.
+ *         description: When true, include soft-deleted messages in the result set.
  *     responses:
  *       200:
- *         description: Courses retrieved successfully
+ *         description: Messages retrieved successfully
  *         content:
  *           application/json:
  *             schema:
@@ -126,7 +125,7 @@ courseRouter.post(
  *                 data:
  *                   type: array
  *                   items:
- *                     $ref: '#/components/schemas/Course'
+ *                     $ref: '#/components/schemas/Message'
  *                 page:
  *                   type: integer
  *                   example: 1
@@ -144,81 +143,8 @@ courseRouter.post(
  *                   additionalProperties:
  *                     type: string
  *                     nullable: true
- *       401:
- *         description: Unauthorized
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- */
-courseRouter.get("/", auth, CourseController.getAllCourses);
-
-/**
- * @swagger
- * /api/courses/{id}:
- *   get:
- *     summary: Get course by ID
- *     tags: [Courses]
- *     security:
- *       - OAuth2: ["all"]
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: Course retrieved successfully
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Course'
- *       401:
- *         description: Unauthorized
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *       404:
- *         description: Course not found
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- */
-courseRouter.get("/:id", auth, CourseController.getCourseById);
-
-/**
- * @swagger
- * /api/courses/{id}:
- *   put:
- *     summary: Update course
- *     description: Updates an existing course with one or more fields, including status, release timestamp, prerequisites, and optional badge image.
- *     tags: [Courses]
- *     security:
- *       - OAuth2: ["all"]
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *     requestBody:
- *       required: true
- *       content:
- *         multipart/form-data:
- *           schema:
- *             $ref: '#/components/schemas/UpdateCourseRequest'
- *     responses:
- *       200:
- *         description: Course updated successfully
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Course'
  *       400:
- *         description: Invalid update payload
+ *         description: Invalid course or discussion ID
  *         content:
  *           application/json:
  *             schema:
@@ -229,38 +155,140 @@ courseRouter.get("/:id", auth, CourseController.getCourseById);
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
- *       404:
- *         description: Course not found
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
  */
-courseRouter.put(
-  "/:id",
+messageRouter.get(
+  "/discussion/:discussion_id/messages",
   auth,
-  privateCourseBadgeUpload,
-  CourseController.upsertCourse,
+  MessageController.getAllMessages,
 );
 
 /**
  * @swagger
- * /api/courses/{id}:
- *   delete:
- *     summary: Delete course
- *     description: Soft deletes a course record.
- *     tags: [Courses]
+ * /api/message/{message_id}:
+ *   get:
+ *     summary: Get message by ID
+ *     description: Retrieves a specific message from a discussion.
+ *     tags: [Messages]
  *     security:
  *       - OAuth2: ["all"]
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: message_id
  *         required: true
  *         schema:
  *           type: string
+ *         description: The ID of the message to retrieve.
  *     responses:
  *       200:
- *         description: Course deleted successfully
+ *         description: Message retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Message'
+ *       400:
+ *         description: Invalid course, discussion, or message ID
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       404:
+ *         description: Message not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+messageRouter.get(
+  "/message/:message_id",
+  auth,
+  MessageController.getMessageById,
+);
+
+/**
+ * @swagger
+ * /api/message/{message_id}:
+ *   put:
+ *     summary: Update message
+ *     description: Updates an existing message in a discussion.
+ *     tags: [Messages]
+ *     security:
+ *       - OAuth2: ["all"]
+ *     parameters:
+ *       - in: path
+ *         name: message_id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The ID of the message to update.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               content:
+ *                 type: string
+ *                 example: "Updated message content"
+ *     responses:
+ *       200:
+ *         description: Message updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Message'
+ *       400:
+ *         description: Invalid course, discussion, or message ID
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       404:
+ *         description: Message not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+messageRouter.put(
+  "/message/:message_id",
+  auth,
+  [body("content").optional().isString().notEmpty()],
+  validate,
+  MessageController.updateMessage,
+);
+
+/**
+ * @swagger
+ * /api/message/{message_id}:
+ *   delete:
+ *     summary: Delete message
+ *     description: Soft deletes a message from a discussion.
+ *     tags: [Messages]
+ *     security:
+ *       - OAuth2: ["all"]
+ *     parameters:
+ *       - in: path
+ *         name: message_id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The ID of the message to delete.
+ *     responses:
+ *       200:
+ *         description: Message deleted successfully
  *         content:
  *           application/json:
  *             schema:
@@ -268,7 +296,13 @@ courseRouter.put(
  *               properties:
  *                 message:
  *                   type: string
- *                   example: Course deleted successfully
+ *                   example: "Message deleted successfully"
+ *       400:
+ *         description: Invalid course, discussion, or message ID
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       401:
  *         description: Unauthorized
  *         content:
@@ -276,12 +310,16 @@ courseRouter.put(
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *       404:
- *         description: Course not found
+ *         description: Message not found
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-courseRouter.delete("/:id", auth, CourseController.deleteCourse);
+messageRouter.delete(
+  "/message/:message_id",
+  auth,
+  MessageController.deleteMessage,
+);
 
-export default courseRouter;
+export default messageRouter;
