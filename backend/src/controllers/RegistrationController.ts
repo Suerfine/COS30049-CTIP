@@ -357,7 +357,7 @@ export const approveRegistration = async (
       personal_email: sfcEmail,
       tel: registration.tel,
       role: UserRoles.PARK_GUIDE,
-      password_hash: hashPassword(temporary_password),
+      password_hash: await hashPassword(temporary_password),
     });
 
     // Update registration with user_id and approved status

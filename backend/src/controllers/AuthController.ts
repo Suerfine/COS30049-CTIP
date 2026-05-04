@@ -1,13 +1,27 @@
 import { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import User from "../models/User";
-import { verifyPassword } from "../utils/password";
+import { Op } from "sequelize";
+import { hashPassword, isBcryptHash, verifyPassword } from "../utils/password";
 import { DatabaseError } from "sequelize/lib/errors/index";
 
 type TokenRequestBody = {
   username?: string;
   password?: string;
 };
+
+const SFC_EMAIL_DOMAIN = "sfc.gov.my";
+
+function parseSfcLoginEmail(value: string): string | null {
+  const email = value.trim().toLowerCase();
+  const [localPart, domain] = email.split("@");
+
+  if (!localPart || !domain || domain !== SFC_EMAIL_DOMAIN) {
+    return null;
+  }
+
+  return localPart;
+}
 
 export const token = async (
   req: Request,
@@ -16,16 +30,22 @@ export const token = async (
 ): Promise<void> => {
   try {
     const { username, password } = req.body as TokenRequestBody;
-    const normalizedEmail =
+    const normalizedUsername =
       typeof username === "string" ? username.trim().toLowerCase() : "";
+    const identificationFromEmail = parseSfcLoginEmail(normalizedUsername);
 
-    if (!normalizedEmail || !password) {
+    if (!identificationFromEmail || !password) {
       res.status(401).json({ message: "Incorrect username or password" });
       return;
     }
 
     const user = await User.findOne({
-      where: { personal_email: normalizedEmail },
+      where: {
+        [Op.or]: [
+          { identification: identificationFromEmail },
+          { personal_email: normalizedUsername },
+        ],
+      },
     });
 
     if (!user) {
@@ -33,11 +53,15 @@ export const token = async (
       return;
     }
 
-    const isValidPassword = verifyPassword(password, user.password_hash);
+    const isValidPassword = await verifyPassword(password, user.password_hash);
 
     if (!isValidPassword) {
       res.status(401).json({ message: "Incorrect username or password" });
       return;
+    }
+
+    if (!isBcryptHash(user.password_hash)) {
+      user.password_hash = await hashPassword(password);
     }
 
     const jwtSecret = process.env.JWT_SECRET;
@@ -52,6 +76,7 @@ export const token = async (
       expiresIn: "1h",
     });
 
+    user.last_login_at = new Date();
     user.updated_at = new Date();
     await user.save();
 

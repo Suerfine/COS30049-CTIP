@@ -17,7 +17,7 @@ router.use("/users", userRouter);
  *     tags:
  *       - Auth
  *     summary: Issue JWT access token
- *     description: Authenticate with username and password to receive a JWT access token for OAuth2 authentication. The username is matched against the personal_email column.
+ *     description: Authenticate with username and password to receive a JWT access token for OAuth2 authentication. The username must be the SFC account email format {identification}@sfc.gov.my.
  *     security: []
  *     requestBody:
  *       required: true
@@ -32,7 +32,7 @@ router.use("/users", userRouter);
  *               username:
  *                 type: string
  *                 format: email
- *                 description: Your personal email address.
+ *                 description: Your SFC account email address (example: 050812130827@sfc.gov.my).
  *               password:
  *                 type: string
  *     responses:
