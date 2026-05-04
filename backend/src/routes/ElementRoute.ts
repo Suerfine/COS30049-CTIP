@@ -591,4 +591,92 @@ elementRouter.delete("/:element_id", auth, ElementController.deleteElement);
  */
 elementRouter.get("/:element_id/file", auth, ElementController.getElementFile);
 
+
+// /**
+//  * @swagger
+//  * /api/courses/{course_Id}/modules/{module_id}/pages/{page_id}/elements/{element_id}/register:
+//  *   patch:
+//  *     summary: Register for a workshop session
+//  *     description: Decrements the available slots and adds the user registration (user_id and timestamp) into the element's content JSON.
+//  *     tags: [Elements]
+//  *     security:
+//  *       - OAuth2: ["all"]
+//  *     parameters:
+//  *       - in: path
+//  *         name: course_Id
+//  *         required: true
+//  *         schema:
+//  *           type: string
+//  *       - in: path
+//  *         name: module_id
+//  *         required: true
+//  *         schema:
+//  *           type: string
+//  *       - in: path
+//  *         name: page_id
+//  *         required: true
+//  *         schema:
+//  *           type: string
+//  *       - in: path
+//  *         name: element_id
+//  *         required: true
+//  *         schema:
+//  *           type: string
+//  *     requestBody:
+//  *       required: true
+//  *       content:
+//  *         application/json:
+//  *           schema:
+//  *             type: object
+//  *             required: ["sessionId", "userId"]
+//  *             properties:
+//  *               sessionId:
+//  *                 type: string
+//  *                 description: The unique ID of the session the user is picking.
+//  *               userId:
+//  *                 type: integer
+//  *                 description: The ID of the Park Guide registering.
+//  *     responses:
+//  *       200:
+//  *         description: Successfully registered for the workshop
+//  *       400:
+//  *         description: No slots available or already registered
+//  */
+// elementRouter.patch(
+//   "/:element_id/register",
+//   auth,
+//   ElementController.registerForWorkshop
+// );
+
+// /**
+//  * @swagger
+//  * /api/courses/{course_Id}/workshops:
+//  *   get:
+//  *     summary: Get a summary of all workshops for a course
+//  *     description: Returns all elements of type 'workshop' belonging to the specified course, regardless of module.
+//  *     tags: [Elements]
+//  *     security:
+//  *       - OAuth2: ["all"]
+//  *     parameters:
+//  *       - in: path
+//  *         name: course_Id
+//  *         required: true
+//  *         schema:
+//  *           type: string
+//  *     responses:
+//  *       200:
+//  *         description: Course workshop summary retrieved successfully
+//  *         content:
+//  *           application/json:
+//  *             schema:
+//  *               type: array
+//  *               items:
+//  *                 $ref: '#/components/schemas/Element'
+//  */
+// elementRouter.get(
+//   "/course-summary", // Renamed to avoid conflict with module-level routes
+//   auth,
+//   ElementController.getCourseWorkshopsSummary
+// );
+
 export default elementRouter;
