@@ -7,6 +7,9 @@ import pageRouter from "./PageRoute";
 import messageRouter from "./MessageRoute";
 import enrollmentRouter from "./EnrollmentRoute";
 import * as AuthController from "../controllers/AuthController";
+import elementRouter from "./ElementRoute";
+import * as ElementController from "../controllers/ElementController";
+import { auth } from "../middelware/Auth";
 const router = Router();
 
 /*=============================
@@ -83,5 +86,81 @@ router.use("/", moduleRouter);
 router.use("/", pageRouter);
 router.use("/", messageRouter);
 router.use("/", enrollmentRouter);
+
+/*===============================
+=        ENROLLMENT ROUTES        =
+===============================*/
+// TODO: Temporarily adding some of elements routes here to deal with some architecture issues.
+router.use("/", elementRouter);
+
+/**
+ * @swagger
+ * /api/courses/{course_Id}/elements/workshops:
+ *   get:
+ *     summary: Get all workshops in a course
+ *     tags: [Elements]
+ *     security:
+ *       - OAuth2: ["all"]
+ *     parameters:
+ *       - in: path
+ *         name: course_Id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID of the course
+ *     responses:
+ *       200:
+ *         description: Successfully retrieved course workshops
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Element'
+ */
+router.get(
+  "/courses/:course_Id/elements/workshops",
+  auth,
+  ElementController.getCourseWorkshopsSummary,
+);
+
+/**
+ * @swagger
+ * /api/courses/{course_Id}/elements/{element_id}/workshops/join:
+ *   post:
+ *     summary: Join a workshop in a course
+ *     tags: [Elements]
+ *     security:
+ *       - OAuth2: ["all"]
+ *     parameters:
+ *       - in: path
+ *         name: course_Id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID of the course
+ *       - in: path
+ *         name: element_id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID of the element (must be a workshop)
+ *     responses:
+ *       200:
+ *         description: Successfully joined the workshop
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Joined workshop successfully
+ */
+router.post(
+  "/courses/:course_Id/elements/:element_id/workshops/join",
+  auth,
+  ElementController.joinWorkshop,
+);
 
 export default router;
