@@ -1,5 +1,6 @@
 import React,{useCallback, useEffect, useState} from 'react';
 import { courseService } from '../services/courseService';
+import { useTranslation } from 'react-i18next';
 
 export const useCourses=()=>{
     const [courses, setCourses]=useState([]);
@@ -9,6 +10,19 @@ export const useCourses=()=>{
         totalPages:0,
         totalElements: 0
     });
+    const {t, i18n}=useTranslation();
+    const [filterVisible, setFilterVisible] = useState(false);
+    const [filters, setFilters] = useState({
+        status: 'all',
+        category:'all',
+    });
+    const [tempFilters, setTempFilters] = useState(filters);
+
+    const statusLabels = {
+        inProgress: t('status.in progress'),
+        completed: t('status.completed'),
+        notEnrolled: t('not enrolled'),
+    };
 
     const loadCourses=useCallback(async(params={})=>{
         setLoading(true);
@@ -71,5 +85,20 @@ export const useCourses=()=>{
         }
     };
 
-    return {courses,loadCourses, loading, addCourse, editCourse, deleteCourse};
+    const removeFilter=(key, value)=>{
+        setFilters(prev=>{
+            if (key==='status'){
+                return {...prev, status:'all'};
+            }
+            if(key==='category'){
+                const newCats=prev.category.filter(c=>c !== value);
+                return {
+                    ...prev, category:newCats.length>0 ? newCats :'all'
+                };
+            }
+            return prev;
+        });
+    };
+
+    return {courses,loadCourses, loading, addCourse, editCourse, deleteCourse,filterVisible, setFilterVisible,tempFilters, setTempFilters,filters, setFilters, statusLabels, removeFilter};
 };

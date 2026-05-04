@@ -264,7 +264,7 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
                                             <Text style={styles.question}>{content.question}</Text>
                                             {content.options.map((option, idx) => {
                                                 const isSelected = quiz.selected === option;
-                                                const showSuccess = quiz.submitted && option === content.answer;
+                                                const showSuccess = (quiz.submitted || isAdmin) && option === content.answer;
                                                 const showDanger = quiz.submitted && isSelected && !quiz.isCorrect;
                                                 return (
                                                     <TouchableOpacity 

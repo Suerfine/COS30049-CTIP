@@ -5,6 +5,7 @@ import courseRouter from "./CourseRoute";
 import moduleRouter from "./ModuleRoute";
 import pageRouter from "./PageRoute";
 import messageRouter from "./MessageRoute";
+import enrollmentRouter from "./EnrollmentRoute";
 import * as AuthController from "../controllers/AuthController";
 const router = Router();
 
@@ -70,11 +71,17 @@ router.post("/token", AuthController.token);
 router.use("/registrations", registrationRouter);
 
 /*===============================
+=     ENROLLMENT ROUTES        =
+===============================*/
+router.use("/enrollments", enrollmentRouter);
+
+/*===============================
 =        COURSE ROUTES         =
 ===============================*/
 router.use("/courses", courseRouter);
 router.use("/", moduleRouter);
 router.use("/", pageRouter);
 router.use("/", messageRouter);
+router.use("/", enrollmentRouter);
 
 export default router;

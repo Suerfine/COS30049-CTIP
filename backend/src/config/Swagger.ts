@@ -56,6 +56,10 @@ const options: swaggerJSDoc.Options = {
         name: "Messages",
         description: "Messages within discussion threads",
       },
+      {
+        name: "Enrollments",
+        description: "Course enrollment management endpoints",
+      },
     ],
     components: {
       securitySchemes: {
@@ -959,6 +963,83 @@ const options: swaggerJSDoc.Options = {
           type: "object",
           properties: {
             message: { type: "string", example: "User not found" },
+          },
+        },
+        Enrollment: {
+          type: "object",
+          properties: {
+            id: { type: "integer", example: 1 },
+            user_id: { type: "integer", example: 2 },
+            course_id: { type: "integer", example: 3 },
+            status: { type: "string", example: "IN_PROGRESS" },
+            enrolled_at: {
+              type: "string",
+              format: "date-time",
+              example: "2026-05-04T08:00:00.000Z",
+            },
+            completed_at: {
+              type: "string",
+              format: "date-time",
+              nullable: true,
+              example: null,
+            },
+            reviewed_by_user_id: {
+              type: "integer",
+              nullable: true,
+              example: null,
+            },
+            reviewed_at: {
+              type: "string",
+              format: "date-time",
+              nullable: true,
+              example: null,
+            },
+            reviewed_comment: {
+              type: "string",
+              nullable: true,
+              example: null,
+            },
+            badge_expire_at: {
+              type: "string",
+              format: "date-time",
+              nullable: true,
+              example: null,
+            },
+            created_at: {
+              type: "string",
+              format: "date-time",
+              example: "2026-05-04T08:00:00.000Z",
+            },
+            updated_at: {
+              type: "string",
+              format: "date-time",
+              example: "2026-05-04T08:00:00.000Z",
+            },
+          },
+        },
+        PaginatedEnrollmentResponse: {
+          type: "object",
+          properties: {
+            data: {
+              type: "array",
+              items: { $ref: "#/components/schemas/Enrollment" },
+            },
+            page: { type: "integer", example: 1 },
+            size: { type: "integer", example: 20 },
+            totalElements: { type: "integer", example: 5 },
+            totalPages: { type: "integer", example: 1 },
+            _links: {
+              type: "object",
+              additionalProperties: {
+                type: "object",
+                properties: {
+                  href: {
+                    type: "string",
+                    example: "http://localhost:5000/api/enrollments?page=1&size=20",
+                  },
+                },
+              },
+            },
           },
         },
       },

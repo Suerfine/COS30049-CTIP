@@ -4,4 +4,5 @@ export enum ElementTypes {
     VIDEO = "video",
     FILE = "file",
     QUIZ_OBJECTIVE = "quiz_objective",
+    WORKSHOP="workshop",
 }
