@@ -1,6 +1,6 @@
 import { useState,useEffect } from 'react';
 import { View, Text, Image, StyleSheet, TouchableOpacity, Linking, Platform } from 'react-native';
-import { FileText, Play, Download, HelpCircle, Edit3, editCircle, Trash2 } from 'lucide-react-native';
+import { FileText, Play, Download, HelpCircle, Edit3, editCircle, Trash2,ChevronUp, ChevronDown } from 'lucide-react-native';
 import Markdown from 'react-native-markdown-display';
 import * as Progress from 'react-native-progress';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -10,7 +10,7 @@ import WebView from 'react-native-webview';
 import { markdownStyles } from './markdownStyle';
 import { UserRoles } from '../enum/UserRoles';
 
-const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement }) => {
+const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement, onMoveElement }) => {
     const isAdmin = role === UserRoles.ADMIN;
     const [videoProgress, setVideoProgress]=useState({});
 
@@ -119,14 +119,29 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
     }
 
     
-    const renderElement = (el) => {
+    const renderElement = (el, index) => {
         const { type, content, score, id } = el;
 
         return (
             <View key={id} style={styles.masterWrapper}>
-                {/* ADMIN CONTROLS SECTION */}
                 {isAdmin && (
                     <View style={styles.adminHeader}>
+                        <View style={styles.orderGroup}>
+                            <TouchableOpacity 
+                                onPress={() => onMoveElement(id, 'up')}
+                                disabled={index === 0}
+                                style={[styles.orderBtn, index === 0 && { opacity: 0.2 }]}
+                            >
+                                <ChevronUp color="#666" size={18} />
+                            </TouchableOpacity>
+                            <TouchableOpacity 
+                                onPress={() => onMoveElement(id, 'down')}
+                                disabled={index === elements.length - 1}
+                                style={[styles.orderBtn, index === elements.length - 1 && { opacity: 0.2 }]}
+                            >
+                                <ChevronDown color="#666" size={18} />
+                            </TouchableOpacity>
+                        </View>
                         <View style={styles.scoreBadge}>
                             <Text style={styles.scoreText}>{score || 0} Points</Text>
                         </View>
@@ -458,6 +473,22 @@ const styles = StyleSheet.create({
             web: { boxShadow: '0px 2px 4px rgba(220, 38, 38, 0.1)' },
             default: { elevation: 3 }
         })
+    },
+    orderGroup: {
+        flexDirection: 'row',
+        backgroundColor: '#f8f9fa',
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: '#eee',
+        marginRight: 'auto',
+        overflow: 'hidden'
+    },
+    orderBtn: {
+        padding: 6,
+        borderRightWidth: 1,
+        borderRightColor: '#eee',
+        alignItems: 'center',
+        justifyContent: 'center'
     },
 });
 

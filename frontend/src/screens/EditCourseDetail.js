@@ -40,7 +40,7 @@ const EditCourseDetail = () => {
         }
     }, [course]);
 
-    const { elements, loading: elementsLoading, createNewElement,updateExistingElement, deleteElement } = useElements(
+    const { elements, loading: elementsLoading, createNewElement,updateExistingElement, deleteElement, moveElement } = useElements(
         id,
         selectedPage?.page?.module_id || selectedPage?.module?.id,
         selectedPage?.page?.id
@@ -319,6 +319,7 @@ const EditCourseDetail = () => {
                                         courseId={id} 
                                         onEditElement={handleOpenEdit}
                                         onDeleteElement={handleDelete}
+                                        onMoveElement={moveElement}
                                     />
                                 )}
                             </View>

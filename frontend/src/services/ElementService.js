@@ -49,5 +49,17 @@ export const ElementService={
             console.error("Delete Element Error:", error);
             throw error.response?.data?.message || "Failed to delete element";
         }
-    }
+    },
+
+    // PUT: Update the order of the element
+    updateOrder: async (courseId, moduleId, pageId, elementId, newOrder) => {
+        try {
+            const url = API_ENDPOINTS.COURSE.ELEMENT_DETAIL(courseId, moduleId, pageId, elementId);
+            const response = await apiClient.put(url, { order: newOrder });
+            return response.data;
+        } catch (error) {
+            console.error("Update Order Error:", error);
+            throw error.response?.data?.message || "Failed to update order";
+        }
+    },
 }
