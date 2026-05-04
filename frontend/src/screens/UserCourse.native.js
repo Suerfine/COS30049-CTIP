@@ -14,7 +14,7 @@ import { useTranslation } from 'react-i18next';
 
 const UserCourse=({navigation})=>{
     const {t, i18n}=useTranslation();
-    const { courses, progressData, userType  } = useUserDashboard();
+    const { progressData, userType  } = useUserDashboard();
     const {selectedCourse, setSelectedCourse,
         modalVisible, setModalVisible,
         filterVisible, setFilterVisible,
@@ -24,7 +24,7 @@ const UserCourse=({navigation})=>{
         statusLabels,
         tabs,
         coursesWithStatus,
-        filteredCourses,
+        filteredCourses, courses,
         removeFilter
     }=useUserCourse();
 
@@ -87,26 +87,28 @@ const UserCourse=({navigation})=>{
                         <View style={styles.emptyContainer}>
                             <Text style={styles.emptyText}>{t('no courses found')}</Text>
                         </View>
-                    ) : ( filteredCourses.map(course => (
+                    ) : ( filteredCourses.map(course => {
+                        const numModules = course.modules ? course.modules.length : 0;
+                        return(
                         <CourseCard
                             key={course.id}
                             id={course.id}
                             imagePath={{ uri: course.image }}
-                            courseTitle={course.courseTitle}
-                            numModules={course.modules ? course.modules.length : 0}
-                            duration={course.duration}
-                            expiry={course.expiryDate}
-                            progress={course.progress}
+                            courseTitle={course.title}
+                            numModules={numModules || 16}
+                            duration={course.expected_completion_weeks}
+                            expiry={course.must_complete_in_weeks}
                             userType={userType}
-                            onPress={() =>
-                                navigation.navigate('User Module', { id: course.id })
-                            }
+                            onPress={() => navigation.navigate('ParkGuideStack', {
+                                screen: 'UserModule', 
+                                params: { id: course.id }
+                            })}
                             onEnroll={() => {
                                 setSelectedCourse(course);
                                 setModalVisible(true);
                             }}
-                        />
-                    ))
+                        />)
+                })
                 )}
                 </View>
             </ScrollView>
