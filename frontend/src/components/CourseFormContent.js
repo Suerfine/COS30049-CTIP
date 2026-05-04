@@ -2,6 +2,8 @@ import {useState} from 'react';
 import { View, Text, TextInput, StyleSheet, Pressable, Image, ActivityIndicator} from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import {X, Plus, ChevronDown, Award, ParenthesesIcon} from 'lucide-react-native';
+
+// Import other hook and components
 import { ModalStyle as styles } from './ModalStyle';
 
 const CourseFormContent=({onSubmit, onCancel, isLoading, initialData})=>{
@@ -10,7 +12,7 @@ const CourseFormContent=({onSubmit, onCancel, isLoading, initialData})=>{
         duration: initialData?.expected_completion_weeks || '',
         expiryWeeks:initialData?.must_complete_in_weeks,
         badgeExpiry:initialData?.badge_expire_in_months,
-        image:initialData?.image_url || null,
+        image:initialData?.cover_img_url || null,
         badgeImage: initialData?.badge_img_url || null,
         description:initialData?.description || '',
         status: initialData?.status,
@@ -20,6 +22,8 @@ const CourseFormContent=({onSubmit, onCancel, isLoading, initialData})=>{
             { id: 2, title: 'Basic Electronics' }
         ],
     });
+
+    console.log(initialData?.badge_img_url);
 
     const handleNumericInput = (key, text) => {
         const cleaned = text.replace(/[^0-9]/g, '');
@@ -43,7 +47,7 @@ const CourseFormContent=({onSubmit, onCancel, isLoading, initialData})=>{
 
         if(!result.canceled){
             if(type==='badge'){
-                setForm(prev=>({...prev, badge:result.assets[0].uri}));
+                setForm(prev=>({...prev, badgeImage:result.assets[0].uri}));
             }else{
                 setForm(prev=>({...prev, image:result.assets[0].uri}));
             }
@@ -205,8 +209,8 @@ const CourseFormContent=({onSubmit, onCancel, isLoading, initialData})=>{
                     {/* Badge Image */}
                     <Text style={[styles.label, { marginTop: 25 }]}>Completion Badge (1:1)</Text>
                     <Pressable style={localStyles.badgePicker} onPress={() => pickImage('badge')}>
-                        {form.badge ? (
-                            <Image source={{ uri: form.badge }} style={localStyles.badgePreview} />
+                        {form.badgeImage ? (
+                            <Image source={{ uri: form.badgeImage }} style={localStyles.badgePreview} />
                         ) : (
                             <View style={localStyles.uploadPlaceholder}>
                                 <Award size={32} color="#ccc" />

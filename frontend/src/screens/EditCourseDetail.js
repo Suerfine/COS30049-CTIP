@@ -1,7 +1,7 @@
 import React,{useEffect,useState} from 'react';
 import { View, Text, StyleSheet, ScrollView, ImageBackground, Pressable, ActivityIndicator, Image} from 'react-native';
 import {useRoute} from '@react-navigation/native';
-import { Award, Calendar, Clock, Menu } from 'lucide-react-native';
+import { Award, Calendar, Clock, Menu, MessageSquare, User } from 'lucide-react-native';
 
 // Import Components
 import OutlineBar from '../components/OutlineBar.js';
@@ -9,6 +9,7 @@ import { useCourseDetails } from '../hooks/useCourseDetails.js';
 import SlidingTabs from '../components/SlidingTabs.js';
 import { useElements } from '../hooks/useElements.js';
 import PageRenderer from '../components/pageRenderer.js';
+import { useDiscussions } from '../hooks/useDiscussion.js';
 
 const EditCourseDetail = () => {
     const route=useRoute();
@@ -30,6 +31,8 @@ const EditCourseDetail = () => {
         {id: 'Overview', label:'Overview'},
         {id: 'Forum', label:'Forum'}
     ];
+
+    const{discussions, loading: discussionsLoading}=useDiscussions(id, forumType);
 
     if(loading)return(
         <View style={styles.center}>
@@ -193,7 +196,7 @@ const EditCourseDetail = () => {
                                 </View>
                                 
                                 <Image 
-                                    source={course.badge_img_url ? { uri: course.badge_img_url } : require('../../assets/first_aid.png')} style={styles.course_cover}
+                                    source={course.cover_img_url ? { uri: course.cover_img_url } : require('../../assets/first_aid.png')} style={styles.course_cover}
                                 />
 
                                 {/* Sliding Tab */}
