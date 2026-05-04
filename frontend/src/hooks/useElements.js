@@ -36,9 +36,20 @@ export const useElements=(courseId, moduleId, pageId)=>{
         }
     };
 
+    const updateExistingElement = async (elementId, payload) => {
+        try {
+            const updated = await ElementService.update(courseId, moduleId, pageId, elementId, payload);
+            setElements(prev => prev.map(el => el.id === elementId ? updated : el));
+            return true;
+        } catch (err) {
+            console.error(err);
+            return false;
+        }
+    };
+
     useEffect(()=>{
         loadElements();
     },[loadElements]);
 
-    return {elements, loading, error, refresh: loadElements, createNewElement};
+    return {elements, loading, error, refresh: loadElements, createNewElement, updateExistingElement};
 }

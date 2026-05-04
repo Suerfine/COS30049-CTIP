@@ -25,5 +25,17 @@ export const ElementService={
             console.error("Create Element Error:", error);
             throw error.response?.data?.message || "Failed to create element";
         }
+    },
+
+    // PUT: update the element
+    update: async (courseId, moduleId, pageId, elementId, payload) => {
+        try {
+            const url = `${API_ENDPOINTS.COURSE.ELEMENT_DETAIL(courseId, moduleId, pageId, elementId)}`;
+            const response = await apiClient.put(url, payload);
+            return response.data;
+        } catch (error) {
+            console.error("Update Element Error:", error);
+            throw error.response?.data?.message || "Failed to update element";
+        }
     }
 }

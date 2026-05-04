@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, ImageBackground, Pressable, Activit
 import {useRoute} from '@react-navigation/native';
 import { Award, Calendar, Clock, Menu, MessageSquare, User,Edit,X,Save, Heading1, Heading2, List, Bold, Italic, Type, AlignLeft, AlignCenter, AlignRight,ListOrdered, CopyPlus, Image as ImageIcon, Video as VideoIcon, HelpCircle as QuizIcon } from 'lucide-react-native';
 import Markdown from 'react-native-markdown-display';
+import { useAuth } from '../context/AuthContext.js';
 
 // Import Components
 import OutlineBar from '../components/OutlineBar.js';
@@ -17,12 +18,14 @@ const EditCourseDetail = () => {
     const route=useRoute();
     const {id}=route.params;
     const {course, loading, error, updateDescription}=useCourseDetails(id);
+    const {currentUser}=useAuth();
 
     const [selectedPage, setSelectedPage]=useState({type:'overview'});
     const [isCollapsed, setIsCollapsed]=useState(false);
     const [activeTab,setActiveTab]=useState('Overview');
     const [forumType, setForumType]=useState('Public');
     const [activeStyles, setActiveStyles] = useState([]);
+    const [editingElementId, setEditingElementId] = useState(null);
 
     const [isEditModalVisible, setEditModalVisible]=useState(false);
     const [editableText, setEditableText] = useState("");
@@ -37,12 +40,11 @@ const EditCourseDetail = () => {
         }
     }, [course]);
 
-    const { elements, loading: elementsLoading, createNewElement } = useElements(
+    const { elements, loading: elementsLoading, createNewElement,updateExistingElement } = useElements(
         id,
         selectedPage?.page?.module_id || selectedPage?.module?.id,
         selectedPage?.page?.id
     );
-
     const tabs=[
         {id: 'Overview', label:'Overview'},
         {id: 'Forum', label:'Forum'}
@@ -104,11 +106,11 @@ const EditCourseDetail = () => {
         });
         };
 
-    const handleCreateElement = async () => {
+    const handleSaveElement = async () => {
         const payload = {
             page_id: selectedPage.page.id,
             type: currentElementType,
-            order: elements.length + 1,
+            order: editingElementId ? undefined : elements.length + 1,
             score: parseInt(newElementData.score) || 1,
             content: {}
         };
@@ -133,14 +135,20 @@ const EditCourseDetail = () => {
             };
         }
 
-        const success = await createNewElement(payload); 
+        let success;
+        if (editingElementId) {
+            success = await updateExistingElement(editingElementId, payload);
+        } else {
+            success = await createNewElement(payload);
+        }
+
         if (success) {
             setAddElementVisible(false);
+            setEditingElementId(null);
+            setNewElementData({ text: "", url: "", transcript: "", question: "", options: ["", "", "", ""], answer: "", score: '1' });
             setCurrentElementType(null);
-            setNewElementData({ text: "", url: "", transcript: "", question: "", options: ["", "", "", ""], answer: "", score:'1' });
         }
     };
-
     const renderForumList = () => {
         if (discussionsLoading) return <ActivityIndicator color="#0a6340" style={{marginTop: 20}} />;
         
@@ -164,6 +172,23 @@ const EditCourseDetail = () => {
                 )}
             </View>
         ));
+    };
+
+    const handleOpenEdit = (el) => {
+        setEditingElementId(el.id);
+        setCurrentElementType(el.type);
+        
+        setNewElementData({
+            text: el.content.text || "",
+            url: el.content.url || "",
+            transcript: el.content.transcript || el.content.caption || "",
+            question: el.content.question || "",
+            options: el.content.options || ["", "", "", ""],
+            answer: el.content.answer || "",
+            score: String(el.score || "1")
+        });
+        
+        setAddElementVisible(true);
     };
 
     const renderOverviewContent = () => {
@@ -281,7 +306,12 @@ const EditCourseDetail = () => {
                                         <Text style={styles.loaderText}>Loading Elements...</Text>
                                     </View>
                                 ) : (
-                                    <PageRenderer elements={elements} />
+                                    <PageRenderer 
+                                        elements={elements}
+                                        role={currentUser.role}
+                                        courseId={id} 
+                                        onEditElement={handleOpenEdit}
+                                    />
                                 )}
                             </View>
                         ) : (
@@ -383,7 +413,9 @@ const EditCourseDetail = () => {
                 <View style={styles.modalOverlay}>
                     <View style={[styles.selectionCard, currentElementType === 'text' && { height: '80%', maxWidth: 800 }]}>
                         <View style={styles.modalHeader}>
-                            <Text style={styles.modalTitle}>New {currentElementType || "Section"}</Text>
+                           <Text style={styles.modalTitle}>
+                                {editingElementId ? `Edit` : `New ${currentElementType || "Section"}`}
+                            </Text>
                             <Pressable onPress={() => {setAddElementVisible(false); setCurrentElementType(null);}}>
                                 <X color="#666" size={24} />
                             </Pressable>
@@ -441,7 +473,7 @@ const EditCourseDetail = () => {
                                                     onChangeText={(v) => setNewElementData({...newElementData, score: v})}
                                                     placeholder="1"
                                                 />
-                                                <Text style={styles.scoreHint}>Default is 1. Used for course completion logic.</Text>
+                                                <Text style={styles.scoreHint}>Default is 1.</Text>
                                             </View>
                                         </View>
                                     </View>
@@ -457,20 +489,54 @@ const EditCourseDetail = () => {
                                 )}
 
                                 {currentElementType === 'quiz_objective' && (
-                                    <View style={{ marginTop: 10 }}>
-                                        <TextInput style={styles.inputField} value={newElementData.question} onChangeText={(v) => setNewElementData({...newElementData, question: v})} placeholder="The Question" />
+                                    <View style={styles.quizEditorContainer}>
+                                        <Text style={styles.inputLabel}>Question Text</Text>
+                                        <TextInput 
+                                            style={styles.inputField} 
+                                            value={newElementData.question} 
+                                            onChangeText={(v) => setNewElementData({...newElementData, question: v})} 
+                                            placeholder="e.g., What is the primary protocol for park safety?" 
+                                        />
+
+                                        <Text style={styles.inputLabel}>Options (Select the radio button for the correct answer)</Text>
                                         {newElementData.options.map((opt, i) => (
-                                            <TextInput key={i} style={styles.inputField} value={opt} onChangeText={(v) => {
-                                                const newOpts = [...newElementData.options];
-                                                newOpts[i] = v;
-                                                setNewElementData({...newElementData, options: newOpts});
-                                            }} placeholder={`Option ${i+1}`} />
+                                            <View key={i} style={styles.optionInputRow}>
+                                                <TouchableOpacity 
+                                                    style={[styles.miniRadio, newElementData.answer === opt && opt !== "" && styles.miniRadioActive]}
+                                                    onPress={() => setNewElementData({...newElementData, answer: opt})}
+                                                >
+                                                    {newElementData.answer === opt && opt !== "" && <View style={styles.miniRadioInner} />}
+                                                </TouchableOpacity>
+                                                <TextInput 
+                                                    style={[styles.inputField, { flex: 1, marginBottom: 0 }]} 
+                                                    value={opt} 
+                                                    onChangeText={(v) => {
+                                                        const newOpts = [...newElementData.options];
+                                                        newOpts[i] = v;
+                                                        setNewElementData({...newElementData, options: newOpts});
+                                                    }} 
+                                                    placeholder={`Option ${i+1}`} 
+                                                />
+                                            </View>
                                         ))}
-                                        <TextInput style={[styles.inputField, { borderColor: '#0a6340' }]} value={newElementData.answer} onChangeText={(v) => setNewElementData({...newElementData, answer: v})} placeholder="Correct Answer (Exact match)" />
+
+                                        <View style={styles.scoreSection}>
+                                            <Text style={styles.inputLabel}>Mark / Weightage</Text>
+                                            <View style={styles.scoreInputWrapper}>
+                                                <TextInput
+                                                    style={styles.scoreInput}
+                                                    keyboardType="numeric"
+                                                    value={newElementData.score}
+                                                    onChangeText={(v) => setNewElementData({...newElementData, score: v})}
+                                                    placeholder="1"
+                                                />
+                                                <Text style={styles.scoreHint}>Default is 1.</Text>
+                                            </View>
+                                        </View>
                                     </View>
                                 )}
 
-                                <Pressable style={[styles.saveBtn]} onPress={handleCreateElement}>
+                                <Pressable style={[styles.saveBtn]} onPress={handleSaveElement}>
                                     <Save color="white" size={18} />
                                     <Text style={styles.saveBtnText}>Save Section</Text>
                                 </Pressable>
@@ -907,6 +973,42 @@ const styles = StyleSheet.create({
         fontStyle: 'italic',
         flex: 1,
     },
+    quizEditorContainer: {
+        marginTop: 10,
+        gap: 10
+    },
+    optionInputRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+        marginBottom: 10
+    },
+    miniRadio: {
+        width: 20,
+        height: 20,
+        borderRadius: 10,
+        borderWidth: 2,
+        borderColor: '#ccc',
+        justifyContent: 'center',
+        alignItems: 'center'
+    },
+    miniRadioActive: {
+        borderColor: '#0a6340'
+    },
+    miniRadioInner: {
+        width: 10,
+        height: 10,
+        borderRadius: 5,
+        backgroundColor: '#0a6340'
+    },
+    doneButton: {
+        padding: 10,
+    },
+    doneButtonText: {
+        color: '#666',
+        fontWeight: 'bold',
+        textDecorationLine: 'underline'
+    }
 });
 
 export default EditCourseDetail;

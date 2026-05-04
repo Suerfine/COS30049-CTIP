@@ -1,6 +1,6 @@
 import { useState,useEffect } from 'react';
 import { View, Text, Image, StyleSheet, TouchableOpacity, Linking, Platform } from 'react-native';
-import { FileText, Play, Download, HelpCircle } from 'lucide-react-native';
+import { FileText, Play, Download, HelpCircle, Edit3, editCircle } from 'lucide-react-native';
 import Markdown from 'react-native-markdown-display';
 import * as Progress from 'react-native-progress';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -10,7 +10,7 @@ import WebView from 'react-native-webview';
 import { markdownStyles } from './markdownStyle';
 import { UserRoles } from '../enum/UserRoles';
 
-const PageRenderer = ({ elements, role, courseId }) => {
+const PageRenderer = ({ elements, role, courseId, onEditElement }) => {
     const isAdmin = role === UserRoles.ADMIN;
     const [videoProgress, setVideoProgress]=useState({});
 
@@ -103,118 +103,87 @@ const PageRenderer = ({ elements, role, courseId }) => {
         );
     }
 
+    
     const renderElement = (el) => {
-        const { type, content } = el;
-        const currentPercent = videoProgress[el.id] || 0;
+        const { type, content, score, id } = el;
 
-        switch (type) {
-            case 'text':
-                return (
-                    <View key={el.id} style={styles.elementWrapper}>
-                        <Markdown style={markdownStyles}>
-                            {content.text}
-                        </Markdown>
-                    </View>
-                );
-
-            case 'image':
-                return (
-                    <View key={el.id} style={styles.elementWrapper}>
-                        <Image 
-                            source={{ uri: content.url }} 
-                            style={styles.imageBox} 
-                            resizeMode="cover" 
-                        />
-                        {content.caption && <Text style={styles.caption}>{content.caption}</Text>}
-                    </View>
-                );
-
-            case 'video':
-                const isYoutube = content.url.includes("youtube") || content.url.includes("youtu.be");
-
-                return (
-                    <View key={el.id} style={styles.videoContainer}>
-                        {isYoutube ? (
-                            <VideoPlayer url={content.url} />
-                        ) : (
-                            <Video
-                                source={{ uri: content.url }}
-                                style={styles.videoPlayer}
-                                controls
-                                resizeMode="contain"
-                                onProgress={(data) => handleVideoProgress(el.id, data)}
-                            />
-                        )}
-
-                        <View style={styles.videoCardBottom}>
-                            <View style={styles.videoLabelRow}>
-                                <Play
-                                    color={isAdmin ? "#999" : "#0a6340"}
-                                    size={16}
-                                    fill={isAdmin ? "#999" : "#0a6340"}
-                                />
-                                <Text style={[
-                                    styles.videoLabel,
-                                    { color: isAdmin ? "#999" : "#111827" }
-                                ]}>
-                                    Technical Training Module
-                                </Text>
-                            </View>
-
-                            <Text style={styles.transcript} numberOfLines={3}>
-                                {content.transcript || "No transcript provided."}
-                            </Text>
+        return (
+            <View key={id} style={styles.masterWrapper}>
+                {/* ADMIN CONTROLS SECTION */}
+                {isAdmin && (
+                    <View style={styles.adminHeader}>
+                        <View style={styles.scoreBadge}>
+                            <Text style={styles.scoreText}>{score || 0} Points</Text>
                         </View>
+                        <TouchableOpacity 
+                            style={styles.editCircle}
+                            onPress={() => onEditElement(el)}
+                        >
+                            <Edit3 color="#0a6340" size={16} />
+                        </TouchableOpacity>
                     </View>
-                    
-                );
+                )}
 
-            case 'file':
-                return (
-                    <TouchableOpacity 
-                        key={el.id} 
-                        style={styles.fileCard}
-                        onPress={() => content.file_url && Linking.openURL(content.file_url)}
-                    >
-                        <View style={styles.fileIconBox}>
-                            <FileText color="#0a6340" size={22} />
-                        </View>
-                        <View style={styles.fileDetails}>
-                            <Text style={styles.fileName}>{content.file_name}</Text>
-                            <Text style={styles.fileDesc}>{content.description}</Text>
-                        </View>
-                        <Download color="#999" size={18} />
-                    </TouchableOpacity>
-                );
-
-            case 'quiz_objective':
-                return (
-                    <View key={el.id} style={styles.quizCard}>
-                        <View style={styles.quizHeader}>
-                            <HelpCircle color="#0a6340" size={18} />
-                            <Text style={styles.quizTitle}>KNOWLEDGE CHECK</Text>
-                        </View>
-                        <Text style={styles.question}>{content.question}</Text>
-                        {content.options.map((option, index) => (
-                            <TouchableOpacity key={index} style={styles.optionBtn}>
-                                <View style={[
-                                    styles.radioOutline, 
-                                    option === content.answer && styles.correctRadio
-                                ]}>
-                                    {option === content.answer && <View style={styles.radioInner} />}
-                                </View>
-                                <Text style={styles.optionText}>{option}</Text>
-                            </TouchableOpacity>
-                        ))}
-                    </View>
-                );
-
-            default:
-                return null;
-        }
+                <View style={styles.elementWrapper}>
+                    {(() => {
+                        switch (type) {
+                            case 'text':
+                                return <Markdown style={markdownStyles}>{content.text}</Markdown>;
+                            case 'image':
+                                return (
+                                    <View>
+                                        <Image source={{ uri: content.url }} style={styles.imageBox} resizeMode="cover" />
+                                        {content.caption && <Text style={styles.caption}>{content.caption}</Text>}
+                                    </View>
+                                );
+                            case 'video':
+                                const isYoutube = content.url?.includes("youtube") || content.url?.includes("youtu.be");
+                                return (
+                                    <View style={styles.videoContainer}>
+                                        {isYoutube ? <VideoPlayer url={content.url} /> : (
+                                            <Video source={{ uri: content.url }} style={styles.videoPlayer} controls />
+                                        )}
+                                        <View style={styles.videoCardBottom}>
+                                            <View style={styles.videoLabelRow}>
+                                                <Play color="#0a6340" size={16} fill="#0a6340" />
+                                                <Text style={styles.videoLabel}>Technical Training Module</Text>
+                                            </View>
+                                            <Text style={styles.transcript}>{content.transcript || "No transcript."}</Text>
+                                        </View>
+                                    </View>
+                                );
+                            case 'quiz_objective':
+                                return (
+                                    <View style={styles.quizCard}>
+                                        <View style={styles.quizHeader}>
+                                            <HelpCircle color="#0a6340" size={13}/>
+                                            <Text style={styles.quizTitle}>Knowledge Check</Text>
+                                        </View>
+                                        <Text style={styles.question}>{content.question}</Text>
+                                        {content.options.map((option, index) => (
+                                            <View key={index} style={styles.optionBtn}>
+                                                <View style={[styles.radioOutline, option === content.answer && styles.correctRadio]}>
+                                                    {option === content.answer && <View style={styles.radioInner} />}
+                                                </View>
+                                                <Text style={styles.optionText}>{option}</Text>
+                                            </View>
+                                        ))}
+                                    </View>
+                                );
+                            default:
+                                return null;
+                        }
+                    })()}
+                </View>
+            </View>
+        );
     };
 
-    return <View style={styles.container}>{elements.map(renderElement)}</View>;
+    return (
+        <View style={styles.container}>
+            {elements.map((el) => renderElement(el))}
+        </View>
+    );
 };
 
 const styles = StyleSheet.create({
@@ -420,7 +389,44 @@ const styles = StyleSheet.create({
         color: '#6B7280',
         fontSize: 13
     },
-
+    masterWrapper: {
+        marginBottom: 10,
+        position: 'relative',
+    },
+    adminHeader: {
+        flexDirection: 'row',
+        justifyContent: 'flex-end',
+        alignItems: 'center',
+        gap: 10,
+        marginBottom: 8,
+    },
+    scoreBadge: {
+        backgroundColor: '#f0fdf4',
+        paddingHorizontal: 8,
+        paddingVertical: 2,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#dcfce7',
+    },
+    scoreText: {
+        fontSize: 13,
+        fontWeight: 'bold',
+        color: '#0a6340',
+    },
+    editCircle: {
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        backgroundColor: '#fff',
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
+        ...Platform.select({
+            web: { boxShadow: '0px 2px 4px rgba(0,0,0,0.1)' },
+            default: { elevation: 3 }
+        })
+    },
 });
 
 export default PageRenderer;
