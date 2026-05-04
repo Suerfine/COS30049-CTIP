@@ -90,7 +90,7 @@ const UserCourse = ({ navigation }) => {
                             <CourseCard
                                 key={course.id}
                                 id={course.id}
-                                imagePath={{ uri: course.image }}
+                                coverImgUrl={course.cover_img_url}
                                 courseTitle={course.title}
                                 numModules={numModules || 16}
                                 duration={course.expected_completion_weeks}

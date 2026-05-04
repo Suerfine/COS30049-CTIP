@@ -2,6 +2,7 @@ import React,{useEffect,useState} from 'react';
 import { View, Text, StyleSheet, ScrollView, ImageBackground, Pressable, ActivityIndicator, Image} from 'react-native';
 import {useRoute} from '@react-navigation/native';
 import { Award, Calendar, Clock, Menu, ChevronLeft } from 'lucide-react-native';
+import Markdown from 'react-native-markdown-display';
 
 // Import Components
 import OutlineBar from '../components/OutlineBar.js';
@@ -9,10 +10,13 @@ import { useCourseDetails } from '../hooks/useCourseDetails.js';
 import SlidingTabs from '../components/SlidingTabs.js';
 import { useElements } from '../hooks/useElements.js';
 import PageRenderer from '../components/pageRenderer.js';
+import { useAuth } from '../context/AuthContext.js';
+import { markdownStyles } from '../components/markdownStyle.js';
 
 const UserModule = ({navigation}) => {
     const route=useRoute();
     const {id}=route.params;
+    const {currentUser}=useAuth();
     const {course, loading, error}=useCourseDetails(id);
 
     const [selectedPage, setSelectedPage]=useState({type:'overview'});
@@ -44,26 +48,23 @@ const UserModule = ({navigation}) => {
         </View>
     );
 
+    const saveProgress = async (elementId, score) => {
+        // API Call to update the user's marks for this specific element
+        console.log(`Saving ${score} points for element ${elementId}`);
+    };
+
     const renderOverviewContent = () => {
         switch (activeTab) {
             case 'Overview':
                 return (
                     <View style={styles.tabSection}>
                         {/* Description */}
-                        <View>
-                            <Text style={styles.sectionTitle}>Course Description</Text>
-                            <Text style={styles.bodyText}>{course.description || "No description provided."}</Text>
+                        <View style={styles.markdownContainer}>
+                            <Markdown style={markdownStyles}>
+                                {course?.description || "_No content provided yet. Click edit to start._"}
+                            </Markdown>
                         </View>
                         
-                        {/* Learning */}
-                        <View>
-                            <Text style={styles.sectionTitle}>What you'll learn</Text>
-                            <View style={styles.learningCard}>
-                                <Text style={styles.learningItem}>• Professional fundamentals of {course.title}</Text>
-                                <Text style={styles.learningItem}>• Industry-standard techniques and tools</Text>
-                                <Text style={styles.learningItem}>• Practical application of core principles</Text>
-                            </View>
-                        </View>
 
                         {/* Badge Achievement Section */}
                         <View>
@@ -159,7 +160,7 @@ const UserModule = ({navigation}) => {
                     <View style={styles.contentWrapper}>
                         {selectedPage?.type === 'page' ? (
                             <View style={styles.editorContainer}>
-                                <Text style={styles.editorLabel}>Lesson Editor</Text>
+                                <Text style={styles.editorLabel}>Lesson Learning</Text>
                                 <Text style={styles.pageTitle}>{selectedPage.page.title}</Text>
                                 
                                 {elementsLoading ? (
@@ -168,7 +169,12 @@ const UserModule = ({navigation}) => {
                                         <Text style={styles.loaderText}>Loading Elements...</Text>
                                     </View>
                                 ) : (
-                                    <PageRenderer elements={elements} />
+                                    <PageRenderer 
+                                        elements={elements}
+                                        role={currentUser.role}
+                                        courseId={id}
+                                        onProgressUpdate={saveProgress}
+                                    />
                                 )}
                             </View>
                         ) : (
@@ -196,7 +202,7 @@ const UserModule = ({navigation}) => {
                                 </View>
                                 
                                 <Image 
-                                    source={course.badge_img_url ? { uri: course.badge_img_url } : require('../../assets/first_aid.png')} style={styles.course_cover}
+                                    source={course.cover_img_url ? { uri: course.cover_img_url } : require('../../assets/first_aid.png')} style={styles.course_cover}
                                 />
 
                                 {/* Sliding Tab */}
@@ -303,19 +309,6 @@ const styles = StyleSheet.create({
     bodyText: {
         color: '#4A4A4A',
         lineHeight: 24,
-    },
-    learningCard: {
-        backgroundColor: '#f9f9f9',
-        padding: 15,
-        borderRadius: 12,
-        borderLeftWidth: 4,
-        borderLeftColor: '#0a6340',
-        marginTop: 10,
-    },
-    learningItem: {
-        fontSize: 14,
-        color: '#333',
-        marginBottom: 5,
     },
     pillContainer: {
         flexDirection: 'row',

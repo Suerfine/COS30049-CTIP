@@ -1,7 +1,9 @@
 import React,{useEffect,useState} from 'react';
-import { View, Text, StyleSheet, ScrollView, ImageBackground, Pressable, ActivityIndicator, Image} from 'react-native';
+import { View, Text, StyleSheet, ScrollView, ImageBackground, Pressable, ActivityIndicator, Image, Modal, TextInput, TouchableOpacity} from 'react-native';
 import {useRoute} from '@react-navigation/native';
-import { Award, Calendar, Clock, Menu, MessageSquare, User } from 'lucide-react-native';
+import { Award, Calendar, Clock, Menu, MessageSquare, User,Edit,X,Save, Heading1, Heading2, List, Bold, Italic, Type, AlignLeft, AlignCenter, AlignRight,ListOrdered, CopyPlus, Image as ImageIcon, Video as VideoIcon, HelpCircle as QuizIcon } from 'lucide-react-native';
+import Markdown from 'react-native-markdown-display';
+
 
 // Import Components
 import OutlineBar from '../components/OutlineBar.js';
@@ -10,23 +12,40 @@ import SlidingTabs from '../components/SlidingTabs.js';
 import { useElements } from '../hooks/useElements.js';
 import PageRenderer from '../components/pageRenderer.js';
 import { useDiscussions } from '../hooks/useDiscussion.js';
+import { markdownStyles } from '../components/markdownStyle.js';
+import { useAuth } from '../context/AuthContext.js';
 
 const EditCourseDetail = () => {
     const route=useRoute();
     const {id}=route.params;
-    const {course, loading, error}=useCourseDetails(id);
+    const {course, loading, error, updateDescription}=useCourseDetails(id);
+    const {currentUser}=useAuth();
 
     const [selectedPage, setSelectedPage]=useState({type:'overview'});
     const [isCollapsed, setIsCollapsed]=useState(false);
     const [activeTab,setActiveTab]=useState('Overview');
     const [forumType, setForumType]=useState('Public');
+    const [activeStyles, setActiveStyles] = useState([]);
+    const [editingElementId, setEditingElementId] = useState(null);
 
-    const { elements, loading: elementsLoading } = useElements(
+    const [isEditModalVisible, setEditModalVisible]=useState(false);
+    const [editableText, setEditableText] = useState("");
+    const [isAddElementVisible, setAddElementVisible] = useState(false);
+    const [currentElementType, setCurrentElementType] = useState(null);
+    const [newElementData, setNewElementData] = useState({ text: "", url: "", transcript: "", question: "", options: ["", "", "", ""], answer: "", score:1 });
+
+
+    useEffect(() => {
+        if (course?.description) {
+            setEditableText(course.description);
+        }
+    }, [course]);
+
+    const { elements, loading: elementsLoading, createNewElement,updateExistingElement, deleteElement, moveElement } = useElements(
         id,
         selectedPage?.page?.module_id || selectedPage?.module?.id,
         selectedPage?.page?.id
     );
-
     const tabs=[
         {id: 'Overview', label:'Overview'},
         {id: 'Forum', label:'Forum'}
@@ -47,6 +66,90 @@ const EditCourseDetail = () => {
         </View>
     );
 
+    const handleSaveDescription = async () => {
+        const result = await updateDescription(editableText);
+        if (result.success) {
+            setEditModalVisible(false);
+        } else {
+            Alert.alert("Error", result.error);
+        }
+    };
+
+    const TypeAction = ({ icon, label, onPress }) => (
+        <TouchableOpacity style={styles.typeActionBtn} onPress={onPress}>
+            <View style={styles.typeActionIcon}>{icon}</View>
+            <Text style={styles.typeActionLabel}>{label}</Text>
+        </TouchableOpacity>
+    );
+
+    const insertMarkdown = (syntax, setter) => {
+        const formats = {
+            'h1': `# `,
+            'h2': `## `,
+            'bold': `**text**`,
+            'italic': `_text_`,
+            'bullet': `* `,
+            'left': `<div align="left">\n`,
+            'center': `<div align="center">\n`,
+            'right': `<div align="right">\n`
+        };
+        
+        const markup = formats[syntax] || "";
+        setter(prev => (prev + markup));
+    };
+
+    const insertInNewElement = (syntax) => {
+        insertMarkdown(syntax, (markup) => {
+            setNewElementData(prev => ({
+                ...prev,
+                text: typeof markup === 'function' ? markup(prev.text) : prev.text + markup
+            }));
+        });
+        };
+
+    const handleSaveElement = async () => {
+        const payload = {
+            page_id: selectedPage.page.id,
+            type: currentElementType,
+            order: editingElementId ? undefined : elements.length + 1,
+            score: parseInt(newElementData.score) || 1,
+            content: {}
+        };
+
+        if (currentElementType === 'text') {
+            payload.content = { text: newElementData.text };
+        } else if (currentElementType === 'image') {
+            payload.content = { 
+                url: newElementData.url, 
+                caption: newElementData.transcript 
+            };
+        } else if (currentElementType === 'video') {
+            payload.content = { 
+                url: newElementData.url, 
+                transcript: newElementData.transcript 
+            };
+        } else if (currentElementType === 'quiz_objective') {
+            payload.content = { 
+                question: newElementData.question, 
+                options: newElementData.options, 
+                answer: newElementData.answer 
+            };
+        }
+
+        let success;
+        if (editingElementId) {
+            success = await updateExistingElement(editingElementId, payload);
+        } else {
+            success = await createNewElement(payload);
+        }
+
+        if (success) {
+            setAddElementVisible(false);
+            setEditingElementId(null);
+            setNewElementData({ text: "", url: "", transcript: "", question: "", options: ["", "", "", ""], answer: "", score: '1' });
+            setCurrentElementType(null);
+        }
+    };
     const renderForumList = () => {
         if (discussionsLoading) return <ActivityIndicator color="#0a6340" style={{marginTop: 20}} />;
         
@@ -72,25 +175,40 @@ const EditCourseDetail = () => {
         ));
     };
 
+    const handleOpenEdit = (el) => {
+        setEditingElementId(el.id);
+        setCurrentElementType(el.type);
+        
+        setNewElementData({
+            text: el.content.text || "",
+            url: el.content.url || "",
+            transcript: el.content.transcript || el.content.caption || "",
+            question: el.content.question || "",
+            options: el.content.options || ["", "", "", ""],
+            answer: el.content.answer || "",
+            score: String(el.score || "1")
+        });
+        
+        setAddElementVisible(true);
+    };
+
+    const handleDelete = async (elementId) => {
+        const success = await deleteElement(elementId);
+        if (!success) {
+            alert("Could not delete element. Please try again.");
+        }
+    };
+
     const renderOverviewContent = () => {
         switch (activeTab) {
             case 'Overview':
                 return (
                     <View style={styles.tabSection}>
-                        {/* Description */}
-                        <View>
-                            <Text style={styles.sectionTitle}>Course Description</Text>
-                            <Text style={styles.bodyText}>{course.description || "No description provided."}</Text>
-                        </View>
-                        
-                        {/* Learning */}
-                        <View>
-                            <Text style={styles.sectionTitle}>What you'll learn</Text>
-                            <View style={styles.learningCard}>
-                                <Text style={styles.learningItem}>• Professional fundamentals of {course.title}</Text>
-                                <Text style={styles.learningItem}>• Industry-standard techniques and tools</Text>
-                                <Text style={styles.learningItem}>• Practical application of core principles</Text>
-                            </View>
+                        {/* Render the dynamic content */}
+                        <View style={styles.markdownContainer}>
+                            <Markdown style={markdownStyles}>
+                                {course?.description || "_No content provided yet. Click edit to start._"}
+                            </Markdown>
                         </View>
 
                         {/* Badge Achievement Section */}
@@ -160,15 +278,28 @@ const EditCourseDetail = () => {
                         source={require('../../assets/forest.png')}
                         style={styles.backgroundImage}
                     >
-                        <View style={styles.courseContainer}>
-                            <Pressable onPress={()=>setIsCollapsed(!isCollapsed)}>
-                                <Menu color="white" size={25}/>
-                            </Pressable>
-                            <View>
-                                <Text style={styles.description}>Start your learning journey</Text>
-                                <Text style={styles.title}>Course Details</Text>
+                        <View style={styles.headerContainer}>
+                            <View style={styles.courseContainer}>
+                                <Pressable onPress={()=>setIsCollapsed(!isCollapsed)}>
+                                    <Menu color="white" size={25}/>
+                                </Pressable>
+                                <View>
+                                    <Text style={styles.description}>Start your learning journey</Text>
+                                    <Text style={styles.title}>Course Details</Text>
+                                </View>
                             </View>
+                            {selectedPage?.type==='page' && (
+                                <Pressable
+                                    onPress={() => setAddElementVisible(true)}
+                                    style={({ hovered }) => [styles.btn, hovered && styles.btnHover]}
+                                >
+                                    <CopyPlus />
+                                    <Text style={styles.btnText}>Add Section</Text>
+                                </Pressable>
+                            )}
+                            
                         </View>
+                        
                     </ImageBackground>
                     {/* Content */}
                     <View style={styles.contentWrapper}>
@@ -183,7 +314,14 @@ const EditCourseDetail = () => {
                                         <Text style={styles.loaderText}>Loading Elements...</Text>
                                     </View>
                                 ) : (
-                                    <PageRenderer elements={elements} />
+                                    <PageRenderer 
+                                        elements={elements}
+                                        role={currentUser.role}
+                                        courseId={id} 
+                                        onEditElement={handleOpenEdit}
+                                        onDeleteElement={handleDelete}
+                                        onMoveElement={moveElement}
+                                    />
                                 )}
                             </View>
                         ) : (
@@ -213,9 +351,17 @@ const EditCourseDetail = () => {
                                 <Image 
                                     source={course.cover_img_url ? { uri: course.cover_img_url } : require('../../assets/first_aid.png')} style={styles.course_cover}
                                 />
-
+                                <View style={styles.tabSection}>
                                 {/* Sliding Tab */}
-                                <SlidingTabs tabs={tabs} activeTab={activeTab} onTabChange={(tab) => setActiveTab(tab)} />
+                                    <SlidingTabs tabs={tabs} activeTab={activeTab} onTabChange={(tab) => setActiveTab(tab)} />
+                                    {activeTab==='Overview' && (
+                                        <Pressable style={styles.editButton} onPress={() => setEditModalVisible(true)}>
+                                            <Edit size={16} color="#0a6340" />
+                                            <Text style={styles.editButtonText}>Edit Section</Text>
+                                        </Pressable>
+                                    )}
+                                    
+                                </View>
 
                                 {/* Tab Content */}
                                 <View style={styles.dynamicContent}>
@@ -226,6 +372,189 @@ const EditCourseDetail = () => {
                     </View>
                 </View>
             </ScrollView>
+            {/* Markdown Editor Modal */}
+            <Modal visible={isEditModalVisible} animationType="slide" transparent={false}>
+                <View style={styles.modalContent}>
+                    <View style={styles.modalHeader}>
+                        <Text style={styles.modalTitle}>Edit Overview</Text>
+                        <Pressable onPress={() => setEditModalVisible(false)}>
+                            <X color="#666" size={22} />
+                        </Pressable>
+                    </View>
+
+                    <View style={styles.toolbar}>
+                        <View style={styles.toolGroup}>
+                            <Pressable style={styles.toolBtn} onPress={() => insertMarkdown('h1',setEditableText)}><Heading1 size={20} color="#444" /></Pressable>
+                            <Pressable style={styles.toolBtn} onPress={() => insertMarkdown('h2',setEditableText)}><Heading2 size={20} color="#444" /></Pressable>
+                        </View>
+                        <View style={styles.divider} />
+                        <View style={styles.toolGroup}>
+                            <Pressable style={styles.toolBtn} onPress={() => insertMarkdown('bold',setEditableText)}><Bold size={20} color="#444" /></Pressable>
+                            <Pressable style={styles.toolBtn} onPress={() => insertMarkdown('italic',setEditableText)}><Italic size={20} color="#444" /></Pressable>
+                        </View>
+                        <View style={styles.divider} />
+                        <View style={styles.toolGroup}>
+                            <Pressable style={styles.toolBtn} onPress={() => insertMarkdown('left',setEditableText)}><AlignLeft size={20} color="#444" /></Pressable>
+                            <Pressable style={styles.toolBtn} onPress={() => insertMarkdown('center',setEditableText)}><AlignCenter size={20} color="#444" /></Pressable>
+                            <Pressable style={styles.toolBtn} onPress={() => insertMarkdown('right',setEditableText)}><AlignRight size={20} color="#444" /></Pressable>
+                        </View>
+                        <View style={styles.divider} />
+                        <View style={styles.toolGroup}>
+                            <Pressable style={styles.toolBtn} onPress={() => insertMarkdown('bullet',setEditableText)}><List size={20} color="#444" /></Pressable>
+                        </View>
+                    </View>
+
+                    <TextInput
+                        style={styles.editorInput}
+                        multiline
+                        value={editableText}
+                        onChangeText={setEditableText}
+                        placeholder="Type your description here using Markdown..."
+                        textAlignVertical="top"
+                    />
+
+                    <Pressable style={styles.saveBtn} onPress={handleSaveDescription}>
+                        <Save color="white" size={20} />
+                        <Text style={styles.saveBtnText}>Save Overview</Text>
+                    </Pressable>
+                </View>
+            </Modal>
+            <Modal visible={isAddElementVisible} animationType="fade" transparent={true}>
+                <View style={styles.modalOverlay}>
+                    <View style={[styles.selectionCard, currentElementType === 'text' && { height: '80%', maxWidth: 800 }]}>
+                        <View style={styles.modalHeader}>
+                           <Text style={styles.modalTitle}>
+                                {editingElementId ? `Edit` : `New ${currentElementType || "Section"}`}
+                            </Text>
+                            <Pressable onPress={() => {setAddElementVisible(false); setCurrentElementType(null);}}>
+                                <X color="#666" size={24} />
+                            </Pressable>
+                        </View>
+
+                        {!currentElementType ? (
+                            <View style={styles.typeGrid}>
+                                <TypeAction icon={<Type color="#0a6340"/>} label="Text" onPress={() => setCurrentElementType('text')} />
+                                <TypeAction icon={<ImageIcon color="#0a6340"/>} label="Image" onPress={() => setCurrentElementType('image')} />
+                                <TypeAction icon={<VideoIcon color="#0a6340"/>} label="Video" onPress={() => setCurrentElementType('video')} />
+                                <TypeAction icon={<QuizIcon color="#0a6340"/>} label="Quiz" onPress={() => setCurrentElementType('quiz_objective')} />
+                            </View>
+                        ) : (
+                            <ScrollView>
+                                {currentElementType === 'text' && (
+                                    <View style={{ flex: 1 }}>
+                                        {/* Toolbar */}
+                                        <View style={styles.toolbar}>
+                                            <View style={styles.toolGroup}>
+                                                <Pressable style={styles.toolBtn} onPress={() => insertInNewElement('h1')}><Heading1 size={20} color="#444" /></Pressable>
+                                                <Pressable style={styles.toolBtn} onPress={() => insertInNewElement('h2')}><Heading2 size={20} color="#444" /></Pressable>
+                                            </View>
+                                            <View style={styles.divider} />
+                                            <View style={styles.toolGroup}>
+                                                <Pressable style={styles.toolBtn} onPress={() => insertInNewElement('bold')}><Bold size={20} color="#444" /></Pressable>
+                                                <Pressable style={styles.toolBtn} onPress={() => insertInNewElement('italic')}><Italic size={20} color="#444" /></Pressable>
+                                            </View>
+                                            <View style={styles.divider} />
+                                            <View style={styles.toolGroup}>
+                                                <Pressable style={styles.toolBtn} onPress={() => insertInNewElement('left')}><AlignLeft size={20} color="#444" /></Pressable>
+                                                <Pressable style={styles.toolBtn} onPress={() => insertInNewElement('center')}><AlignCenter size={20} color="#444" /></Pressable>
+                                                <Pressable style={styles.toolBtn} onPress={() => insertInNewElement('right')}><AlignRight size={20} color="#444" /></Pressable>
+                                            </View>
+                                            <View style={styles.divider} />
+                                            <View style={styles.toolGroup}>
+                                                <Pressable style={styles.toolBtn} onPress={() => insertInNewElement('bullet')}><List size={20} color="#444" /></Pressable>
+                                            </View>
+                                        </View>
+
+                                        <TextInput 
+                                            style={[styles.editorInput, { minHeight: 300 }]} 
+                                            multiline 
+                                            value={newElementData.text} 
+                                            onChangeText={(v) => setNewElementData({...newElementData, text: v})} 
+                                            placeholder="Write your content here..." 
+                                            textAlignVertical="top"
+                                        />
+                                        <View style={styles.scoreSection}>
+                                            <Text style={styles.inputLabel}>Mark / Weightage</Text>
+                                            <View style={styles.scoreInputWrapper}>
+                                                <TextInput
+                                                    style={styles.scoreInput}
+                                                    keyboardType="numeric"
+                                                    value={newElementData.score}
+                                                    onChangeText={(v) => setNewElementData({...newElementData, score: v})}
+                                                    placeholder="1"
+                                                />
+                                                <Text style={styles.scoreHint}>Default is 1.</Text>
+                                            </View>
+                                        </View>
+                                    </View>
+                                )}
+
+                                {(currentElementType === 'image' || currentElementType === 'video') && (
+                                    <View style={{ marginTop: 10 }}>
+                                        <Text style={styles.inputLabel}>Source URL</Text>
+                                        <TextInput style={styles.inputField} value={newElementData.url} onChangeText={(v) => setNewElementData({...newElementData, url: v})} placeholder="https://..." />
+                                        <Text style={styles.inputLabel}>{currentElementType === 'image' ? 'Caption' : 'Transcript'}</Text>
+                                        <TextInput style={styles.inputField} multiline value={newElementData.transcript} onChangeText={(v) => setNewElementData({...newElementData, transcript: v})} placeholder="Enter description..." />
+                                    </View>
+                                )}
+
+                                {currentElementType === 'quiz_objective' && (
+                                    <View style={styles.quizEditorContainer}>
+                                        <Text style={styles.inputLabel}>Question Text</Text>
+                                        <TextInput 
+                                            style={styles.inputField} 
+                                            value={newElementData.question} 
+                                            onChangeText={(v) => setNewElementData({...newElementData, question: v})} 
+                                            placeholder="e.g., What is the primary protocol for park safety?" 
+                                        />
+
+                                        <Text style={styles.inputLabel}>Options (Select the radio button for the correct answer)</Text>
+                                        {newElementData.options.map((opt, i) => (
+                                            <View key={i} style={styles.optionInputRow}>
+                                                <TouchableOpacity 
+                                                    style={[styles.miniRadio, newElementData.answer === opt && opt !== "" && styles.miniRadioActive]}
+                                                    onPress={() => setNewElementData({...newElementData, answer: opt})}
+                                                >
+                                                    {newElementData.answer === opt && opt !== "" && <View style={styles.miniRadioInner} />}
+                                                </TouchableOpacity>
+                                                <TextInput 
+                                                    style={[styles.inputField, { flex: 1, marginBottom: 0 }]} 
+                                                    value={opt} 
+                                                    onChangeText={(v) => {
+                                                        const newOpts = [...newElementData.options];
+                                                        newOpts[i] = v;
+                                                        setNewElementData({...newElementData, options: newOpts});
+                                                    }} 
+                                                    placeholder={`Option ${i+1}`} 
+                                                />
+                                            </View>
+                                        ))}
+
+                                        <View style={styles.scoreSection}>
+                                            <Text style={styles.inputLabel}>Mark / Weightage</Text>
+                                            <View style={styles.scoreInputWrapper}>
+                                                <TextInput
+                                                    style={styles.scoreInput}
+                                                    keyboardType="numeric"
+                                                    value={newElementData.score}
+                                                    onChangeText={(v) => setNewElementData({...newElementData, score: v})}
+                                                    placeholder="1"
+                                                />
+                                                <Text style={styles.scoreHint}>Default is 1.</Text>
+                                            </View>
+                                        </View>
+                                    </View>
+                                )}
+
+                                <Pressable style={[styles.saveBtn]} onPress={handleSaveElement}>
+                                    <Save color="white" size={18} />
+                                    <Text style={styles.saveBtnText}>Save Section</Text>
+                                </Pressable>
+                            </ScrollView>
+                        )}
+                    </View>
+                </View>
+            </Modal>
         </View>
 
     );
@@ -250,7 +579,6 @@ const styles = StyleSheet.create({
         flexDirection:'row',
         userSelect:'none',
         alignItems:'center',
-        
     },
     title: {
         fontSize: 24,
@@ -318,19 +646,6 @@ const styles = StyleSheet.create({
     bodyText: {
         color: '#4A4A4A',
         lineHeight: 24,
-    },
-    learningCard: {
-        backgroundColor: '#f9f9f9',
-        padding: 15,
-        borderRadius: 12,
-        borderLeftWidth: 4,
-        borderLeftColor: '#0a6340',
-        marginTop: 10,
-    },
-    learningItem: {
-        fontSize: 14,
-        color: '#333',
-        marginBottom: 5,
     },
     pillContainer: {
         flexDirection: 'row',
@@ -463,7 +778,249 @@ const styles = StyleSheet.create({
         height: 200, 
         borderRadius: 8,
         marginTop: 10,
+    },
+    editButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        backgroundColor: '#ffffff',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 8,
+        alignSelf:'flex-end'
+    },
+    editButtonText: {
+        color: '#0a6340',
+        fontWeight: '600',
+        fontSize: 13,
+    },
+    modalContent: {
+        flex: 1,
+        backgroundColor: 'white',
+        padding: 20,
+        paddingTop: 40,
+    },
+    modalHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 20,
+    },
+    modalTitle: {
+        fontSize: 22,
+        fontWeight: 'bold',
+        color: '#333',
+    },
+    toolbar: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#f8f9fa',
+        padding: 8,
+        borderRadius: 10,
+        borderWidth: 1,
+        borderColor: '#e9ecef',
+        marginBottom: 10,
+        gap: 5,
+    },
+    toolGroup: {
+        flexDirection: 'row',
+        gap: 2,
+    },
+    toolBtnActive: {
+        backgroundColor: '#dee2e6',
+    },
+    toolBtn: {
+        paddingVertical: 6,
+        paddingHorizontal: 12,
+        backgroundColor: '#f0f0f0',
+        borderRadius: 6,
+    },
+    toolBtnText: {
+        fontSize: 14,
+        color: '#444',
+    },
+    editorInput: {
+        flex: 1,
+        backgroundColor: '#f9f9f9',
+        borderRadius: 12,
+        padding: 15,
+        fontSize: 16,
+        lineHeight: 24,
+        color: '#333',
+    },
+    saveBtn: {
+        flexDirection: 'row',
+        backgroundColor: '#0a6340',
+        padding: 12,
+        borderRadius: 6,
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 10,
+        marginTop: 20,
+        maxWidth:200,
+        alignSelf:'flex-end'
+    },
+    saveBtnText: {
+        color: 'white',
+        fontWeight: 'bold',
+        fontSize: 14,
+    },
+    divider: {
+        width: 1,
+        height: 24,
+        backgroundColor: '#dee2e6',
+        marginHorizontal: 8,
+    },
+    editorInput: {
+        flex: 1,
+        backgroundColor: '#fff',
+        borderRadius: 12,
+        padding: 20,
+        fontSize: 16,
+        lineHeight: 24,
+        color: '#333',
+        borderWidth: 1,
+        borderColor: '#eee',
+    },
+    headerContainer:{
+        flexDirection:'row',
+        justifyContent:'space-between',
+        alignItems:'center',
+    },
+    btn: {
+        flexDirection: "row",
+        gap: 8,
+        alignItems: "center",
+        alignSelf: "center",
+        backgroundColor: "#4a8947",
+        borderRadius: 50,
+        color: "white",
+        paddingHorizontal: 23,
+        paddingVertical: 13,
+        marginRight:20
+    },
+    btnHover: {
+        backgroundColor: "#2f6618fe",
+    },
+    btnText: {
+        color: "white",
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'center',
+        alignItems: 'center'
+    },
+    selectionCard: {
+        backgroundColor: 'white',
+        width: '90%',
+        maxWidth: 500,
+        borderRadius: 20,
+        padding: 25,
+        maxHeight: '80%'
+    },
+    inputField: {
+        backgroundColor: '#f5f5f5',
+        borderRadius: 8,
+        padding: 12,
+        marginBottom: 15,
+        borderWidth: 1,
+        borderColor: '#eee'
+    },
+    typeGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 15,
+        marginTop: 20,
+        justifyContent: 'center',
+    },
+    typeActionBtn: {
+        width: '45%', 
+        backgroundColor: '#f8f9fa',
+        borderRadius: 12,
+        padding: 16,
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#eee',
+    },
+    typeActionIcon: {
+        marginBottom: 8,
+        padding: 10,
+        backgroundColor: '#fff',
+        borderRadius: 50,
+    },
+    typeActionLabel: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#333',
+    },
+    scoreSection: {
+        marginTop: 20,
+        paddingTop: 15,
+        borderTopWidth: 1,
+        borderTopColor: '#eee',
+    },
+    scoreInputWrapper: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+        marginTop: 5,
+    },
+    scoreInput: {
+        backgroundColor: '#f5f5f5',
+        borderRadius: 8,
+        padding: 10,
+        width: 80,
+        borderWidth: 1,
+        borderColor: '#ddd',
+        textAlign: 'center',
+        fontWeight: 'bold',
+        color: '#0a6340',
+    },
+    scoreHint: {
+        fontSize: 12,
+        color: '#888',
+        fontStyle: 'italic',
+        flex: 1,
+    },
+    quizEditorContainer: {
+        marginTop: 10,
+        gap: 10
+    },
+    optionInputRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+        marginBottom: 10
+    },
+    miniRadio: {
+        width: 20,
+        height: 20,
+        borderRadius: 10,
+        borderWidth: 2,
+        borderColor: '#ccc',
+        justifyContent: 'center',
+        alignItems: 'center'
+    },
+    miniRadioActive: {
+        borderColor: '#0a6340'
+    },
+    miniRadioInner: {
+        width: 10,
+        height: 10,
+        borderRadius: 5,
+        backgroundColor: '#0a6340'
+    },
+    doneButton: {
+        padding: 10,
+    },
+    doneButtonText: {
+        color: '#666',
+        fontWeight: 'bold',
+        textDecorationLine: 'underline'
     }
 });
 
 export default EditCourseDetail;
+
+// Add hover effect for edit button

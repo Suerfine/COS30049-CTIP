@@ -1,4 +1,4 @@
-import React,{use, useState} from 'react';
+import React,{use, useState, useEffect} from 'react';
 import {View, Text, StyleSheet, Pressable, FlatList,TextInput} from 'react-native';
 import {Plus, ChevronRight, ChevronDown,Search, Trash2} from 'lucide-react-native';
 import { useOutline } from '../hooks/useOutline';
@@ -21,7 +21,7 @@ const OutlineBar=({course, onSelectPage, editable, isCollapsed})=>{
     const [selectedItem, setSelectedItem]=useState({type:'overview'});
     const [hoveredItem, setHoveredItem]=useState(null);
     const [editingItem, setEditingItem]=useState(null);
-
+    const [localSearch, setLocalSearch] = useState("");
     
 
     if(!course){
@@ -33,13 +33,48 @@ const OutlineBar=({course, onSelectPage, editable, isCollapsed})=>{
         onSelectPage(item);
     }
 
+    const getHighlightedText = (text, query) => {
+        if (!query || !text) return <Text>{text}</Text>;
+        const parts = text.split(new RegExp(`(${query})`, 'gi'));
+        
+        return (
+            <Text>
+                {parts.map((part, i) => 
+                    part.toLowerCase() === query.toLowerCase() ? (
+                        <Text key={i} style={styles.highlight}>{part}</Text>
+                    ) : (
+                        <Text key={i}>{part}</Text>
+                    )
+                )}
+            </Text>
+        );
+    };
+
+    useEffect(() => {
+        if (localSearch.length > 0) {
+            allModules.forEach(module => {
+                const hasMatch = module.pages?.some(p => 
+                    p.title.toLowerCase().includes(localSearch.toLowerCase())
+                );
+                if (hasMatch && expandedModule !== module.id) {
+                    toggleModule(module.id);
+                }
+            });
+        }
+    }, [localSearch]);
 
     return(
         <View style={[styles.outlinebar, isCollapsed ? styles.collapsed : null]}>
             {!isCollapsed && (
                 <View style={styles.search}>
                     <Search size={18}/>
-                    <TextInput style={styles.input} placeholder='Search...' placeholderTextColor="#8f8f8f"/>
+                    <TextInput 
+                        style={styles.input} 
+                        placeholder='Search...' 
+                        placeholderTextColor="#8f8f8f"
+                        value={localSearch}
+                        onChangeText={setLocalSearch}
+                    />
                 </View>
             )}
             
@@ -79,7 +114,7 @@ const OutlineBar=({course, onSelectPage, editable, isCollapsed})=>{
                                 }
                                 handleSelect({type:'module', module}); 
                                 toggleModule(mid);
-                                if(editable && module.title !== ""){
+                                if(editable && expandedModule!==(mid) && module.title !== ""){
                                     setEditingItem({type:'module', id:mid});
                                 };
                                 }}
@@ -121,7 +156,8 @@ const OutlineBar=({course, onSelectPage, editable, isCollapsed})=>{
                                     }}
                                     />
                                     ) : (
-                                    <Text>{module.title}
+                                    <Text>
+                                        {getHighlightedText(module.title, localSearch)}
                                     </Text>
                                     )
                                 )}  
@@ -192,7 +228,7 @@ const OutlineBar=({course, onSelectPage, editable, isCollapsed})=>{
                                                             }}
                                                         />
                                                     ) : (
-                                                        <Text>{page.title}</Text>
+                                                        <Text>{getHighlightedText(page.title, localSearch)}</Text>
                                                     )}
                                                 </Text>
                                                 
@@ -255,6 +291,7 @@ const styles=StyleSheet.create({
     },
     moduleTitle:{
         width:'175px',
+        fontWeight:'600'
     },
     search:{
         flexDirection:'row',
@@ -313,7 +350,12 @@ const styles=StyleSheet.create({
         flexDirection:'row',
         justifyContent:"space-between",
         width:'160px'
-    }
+    },
+    highlight: {
+        backgroundColor: '#ffd07d', 
+        fontWeight: '700',
+        color: '#000',
+    },
 });
 
 export default OutlineBar;
