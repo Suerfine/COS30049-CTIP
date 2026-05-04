@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 export const useCourses=()=>{
     const [courses, setCourses]=useState([]);
     const [loading, setLoading]=useState(false);
+    const [allCourseList, setAllCourseList] = useState([]);
     const [pagination, setPagination]=useState({
         currentPage:1,
         totalPages:0,
@@ -24,50 +25,54 @@ export const useCourses=()=>{
         notEnrolled: t('not enrolled'),
     };
 
-    const loadCourses=useCallback(async(params={})=>{
+    const loadCourses = useCallback(async (params = {}) => {
         setLoading(true);
-        try{
-            const response=await courseService.getAll(params);
-            setCourses(response);
+        try {
+            const response = await courseService.getAll(params);
+            setCourses(response); 
             setPagination({
-                currentPage: response.page,
-                totalPages:response.totalPages,
-                totalElements:response.totalElements
+                currentPage: response.page || 1,
+                totalPages: response.totalPages || 0,
+                totalElements: response.totalElements || 0
             });
-        }catch(err){
+            if (allCourseList.length === 0) {
+                const fullList = await courseService.getAll({ size: 100 });
+                setAllCourseList(fullList.data || []);
+            }
+        } catch (err) {
             console.error("Fetch failed", err);
-        }finally{
+        } finally {
             setLoading(false);
         }
-    },[]);
+    }, [allCourseList.length]);
 
-    useEffect(()=>{loadCourses();},[]);
+    useEffect(() => { loadCourses(); }, [loadCourses]);
 
-    const addCourse=async(FormData)=>{
+    const addCourse = async (formData) => {
         setLoading(true);
-        try{
-            const res=await courseService.create(FormData);
+        try {
+            await courseService.create(formData);
             await loadCourses();
-            setLoading(false);
             return true;
-        } catch(error){
+        } catch (error) {
             console.error("Create failed: ", error);
-            setLoading(false);
             return false;
+        } finally {
+            setLoading(false);
         }
     };
 
-    const editCourse=async(id, formData)=>{
+    const editCourse = async (id, formData) => {
         setLoading(true);
-        try{
-            const res=await courseService.update(id, formData);
+        try {
+            await courseService.update(id, formData);
             await loadCourses();
-            setLoading(false);
             return true;
-        } catch(error){
+        } catch (error) {
             console.error("Update failed: ", error);
-            setLoading(false);
             return false;
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -100,5 +105,5 @@ export const useCourses=()=>{
         });
     };
 
-    return {courses,loadCourses, loading, addCourse, editCourse, deleteCourse,filterVisible, setFilterVisible,tempFilters, setTempFilters,filters, setFilters, statusLabels, removeFilter};
+    return {courses,loadCourses, loading, addCourse, editCourse, deleteCourse,filterVisible, setFilterVisible,tempFilters, setTempFilters,filters, setFilters, statusLabels, removeFilter, allCourseList};
 };

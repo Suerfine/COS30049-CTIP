@@ -37,13 +37,17 @@ export interface CreateUserRequest {
 
 export interface UpdateUserRequest {
   username?: string;
-  password?: string;
   role?: UserRoles;
   firstname?: string;
   lastname?: string;
   identification?: string;
   personal_email?: string;
   tel?: string;
+}
+
+export interface ChangePasswordRequest {
+  old_password: string;
+  new_password: string;
 }
 
 export function toUserResponse(user: User): UserResponse {

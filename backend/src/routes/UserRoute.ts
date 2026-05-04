@@ -235,7 +235,6 @@ userRouter.put(
   pfpUploader.single("pfp"),
   [
     body("username").isString().optional().notEmpty(),
-    body("password").isString().optional().isLength({ min: 6 }),
     body("role").isIn(Object.values(UserRoles)).optional(),
     body("firstname").isString().optional().notEmpty(),
     body("lastname").isString().optional().notEmpty(),
@@ -244,6 +243,58 @@ userRouter.put(
     body("tel").isString().optional().notEmpty(),
   ],
   UserController.upsertUser,
+);
+
+/**
+ * @swagger
+ * /api/users/{id}/change-password:
+ *   put:
+ *     summary: Change user password
+ *     description: Changes the password for the authenticated user's account. The current password must be provided.
+ *     tags: [Users]
+ *     security:
+ *       - OAuth2: ["all"]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/ChangePasswordRequest'
+ *     responses:
+ *       200:
+ *         description: Password changed successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Password changed successfully
+ *       400:
+ *         description: Invalid request or old password mismatch
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ *       404:
+ *         description: User not found
+ */
+userRouter.put(
+  "/:id/change-password",
+  auth,
+  [
+    body("old_password").isString().notEmpty(),
+    body("new_password").isString().isLength({ min: 6 }),
+  ],
+  validate,
+  UserController.changePassword,
 );
 
 /**

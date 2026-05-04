@@ -151,7 +151,6 @@ const options: swaggerJSDoc.Options = {
             username: { type: "string", example: "john.doe" },
             firstname: { type: "string", example: "John" },
             lastname: { type: "string", example: "Doe" },
-            password: { type: "string", example: "securepassword123" },
             role: {
               type: "string",
               enum: Object.values(UserRoles),
@@ -169,6 +168,14 @@ const options: swaggerJSDoc.Options = {
               format: "binary",
               description: "Optional profile image file",
             },
+          },
+        },
+        ChangePasswordRequest: {
+          type: "object",
+          required: ["old_password", "new_password"],
+          properties: {
+            old_password: { type: "string", example: "currentPassword123" },
+            new_password: { type: "string", example: "newPassword123" },
           },
         },
         Registration: {
@@ -1035,7 +1042,8 @@ const options: swaggerJSDoc.Options = {
                 properties: {
                   href: {
                     type: "string",
-                    example: "http://localhost:5000/api/enrollments?page=1&size=20",
+                    example:
+                      "http://localhost:5000/api/enrollments?page=1&size=20",
                   },
                 },
               },

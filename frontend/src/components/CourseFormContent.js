@@ -1,12 +1,20 @@
 import {useState} from 'react';
-import { View, Text, TextInput, StyleSheet, Pressable, Image, ActivityIndicator} from 'react-native';
+import { View, Text, TextInput, StyleSheet, Pressable, Image, ActivityIndicator, ScrollView} from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import {X, Plus, ChevronDown, Award, ParenthesesIcon} from 'lucide-react-native';
 
 // Import other hook and components
 import { ModalStyle as styles } from './ModalStyle';
 
-const CourseFormContent=({onSubmit, onCancel, isLoading, initialData})=>{
+const CourseFormContent=({onSubmit, onCancel, isLoading, initialData,allCourseList = []})=>{
+    const getInitialPrereqs = () => {
+        if (!initialData?.prerequisite_groups?.[0]?.prerequisites) return [];
+        return initialData.prerequisite_groups[0].prerequisites.map(p => ({
+            id: p.course_id,
+            title: p.course_title || `Course #${p.course_id}` 
+        }));
+    };
+
     const [form, setForm]=useState({
         courseTitle: initialData?.title || '',
         duration: initialData?.expected_completion_weeks || '',
@@ -16,17 +24,24 @@ const CourseFormContent=({onSubmit, onCancel, isLoading, initialData})=>{
         badgeImage: initialData?.badge_img_url || null,
         status: initialData?.status,
         tags:['IoT', 'Medical','Hardware'],
-        prerequisites: [
-            { id: 1, title: 'Introduction to AI' },
-            { id: 2, title: 'Basic Electronics' }
-        ],
+        prerequisites: getInitialPrereqs(),
     });
 
-    console.log(initialData?.badge_img_url);
-
+    const [showPrereqDropdown, setShowPrereqDropdown] = useState(false);
+    
     const handleNumericInput = (key, text) => {
         const cleaned = text.replace(/[^0-9]/g, '');
         setForm(prev => ({ ...prev, [key]: cleaned }));
+    };
+
+    const addPrerequisite = (course) => {
+        if (!form.prerequisites.find(p => p.id === course.id)) {
+            setForm(prev => ({
+                ...prev,
+                prerequisites: [...prev.prerequisites, { id: course.id, title: course.title }]
+            }));
+        }
+        setShowPrereqDropdown(false);
     };
 
     const pickImage=async(type)=>{
@@ -51,6 +66,18 @@ const CourseFormContent=({onSubmit, onCancel, isLoading, initialData})=>{
                 setForm(prev=>({...prev, image:result.assets[0].uri}));
             }
         }
+    };
+
+    const preparePayload = (statusOverride) => {
+        return {
+            ...form,
+            status: statusOverride || form.status,
+            prerequisite_groups: [
+                {
+                    prerequisites: form.prerequisites.map(p => ({ course_id: p.id }))
+                }
+            ]
+        };
     };
 
     const handleSubmit=()=>{
@@ -95,6 +122,7 @@ const CourseFormContent=({onSubmit, onCancel, isLoading, initialData})=>{
                     <X color="#333"/>
                 </Pressable>
             </View>
+            <ScrollView>
             <View style={styles.row}>
                 <View style={styles.content}>
                     {/* Course Title */}
@@ -157,16 +185,15 @@ const CourseFormContent=({onSubmit, onCancel, isLoading, initialData})=>{
                             </Pressable>
                         </View>
                     </View>
-
-                    {/* Dummy Prerequisites */}
+                    
+                    {/* Pre-requisite */}
                     <View style={localStyles.inputGroup}>
                         <Text style={styles.label}>Pre-requisites:</Text>
                         <View style={localStyles.multiSelectContainer}>
-                            {initialData && form.prerequisites.map((course) => (
+                            {form.prerequisites.map((course) => (
                                 <View key={course.id} style={localStyles.prereqPill}>
                                     <Text style={localStyles.prereqText}>{course.title}</Text>
                                     <Pressable onPress={() => {
-                                        // Logic to remove a pre-requisite
                                         setForm({
                                             ...form,
                                             prerequisites: form.prerequisites.filter(p => p.id !== course.id)
@@ -176,13 +203,36 @@ const CourseFormContent=({onSubmit, onCancel, isLoading, initialData})=>{
                                     </Pressable>
                                 </View>
                             ))}
-                            
-                            {/* Add button to trigger a picker/modal later */}
-                            <Pressable style={localStyles.addPrereqBtn}>
+
+                            <Pressable 
+                                style={localStyles.addPrereqBtn} 
+                                onPress={() => setShowPrereqDropdown(!showPrereqDropdown)}
+                            >
                                 <Plus size={16} color="#217837" />
                                 <Text style={localStyles.addPrereqText}>Add Course</Text>
                             </Pressable>
                         </View>
+                        
+                        {/* Pre-requisite dropdown */}
+                        {showPrereqDropdown && (
+                            <View style={localStyles.overlay}>
+                                <View style={localStyles.dropdown}>
+                                <ScrollView style={{ maxHeight: 150 }}>
+                                    {allCourseList
+                                        .filter(c => c.id !== initialData?.id)
+                                        .map(course => (
+                                        <Pressable 
+                                            key={course.id} 
+                                            style={localStyles.dropdownItem}
+                                            onPress={() => addPrerequisite(course)}
+                                        >
+                                            <Text>{course.title}</Text>
+                                        </Pressable>
+                                    ))}
+                                </ScrollView>
+                            </View>
+                            </View>
+                        )}
                     </View>
                 </View>
                 <View style={styles.upload}>
@@ -212,6 +262,7 @@ const CourseFormContent=({onSubmit, onCancel, isLoading, initialData})=>{
                     </Pressable>
                 </View>
             </View>
+            </ScrollView>
             <View style={styles.row}>
                 <Pressable 
                     style={styles.Btn} 
@@ -313,6 +364,7 @@ const localStyles=StyleSheet.create({
         padding: 10,
         backgroundColor: '#fdfdfd',
         minHeight: 45,
+        maxWidth:450
     },
     prereqPill: {
         flexDirection: 'row',
@@ -357,10 +409,36 @@ const localStyles=StyleSheet.create({
         width: '100%', 
         height: '100%', 
         resizeMode: 'cover'
-     }
+     },
+     overlay: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0,0,0,0.2)',
+        zIndex: 9999,
+    },
+
+    dropdown: {
+        width: 500,
+        maxHeight: 300,
+        backgroundColor: 'white',
+        borderRadius: 10,
+        padding: 10,
+        position:'relative',
+        bottom:118,
+    },
+    dropdownItem: {
+        padding: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: '#eee'
+    },
 })
 ;
 
 export default CourseFormContent;
 
-// Havent do the validation message, tag, pre-requisite
+// Havent do the validation message, tag
