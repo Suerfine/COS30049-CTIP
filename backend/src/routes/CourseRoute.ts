@@ -3,6 +3,7 @@ import * as CourseController from "../controllers/CourseController";
 import { auth } from "../middelware/Auth";
 import { uploadPrivateDocument } from "../middelware/PrivateDocumentUpload";
 import moduleRouter from "./ModuleRoute";
+import discussionRouter from "./DiscussionRoute";
 import { uploadBadgeImg } from "../config/multer";
 import { validate } from "../middelware/Validate";
 import { body } from "express-validator/lib/middlewares/validation-chain-builders";
@@ -16,6 +17,7 @@ const uploadCourseBadge = uploadBadgeImg();
 
 const courseRouter = Router();
 courseRouter.use("/:course_Id/modules", moduleRouter);
+courseRouter.use("/:id/discussion", discussionRouter);
 
 /**
  * @swagger
