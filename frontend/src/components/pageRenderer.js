@@ -1,8 +1,101 @@
-import React from 'react';
-import { View, Text, Image, StyleSheet, TouchableOpacity, Linking } from 'react-native';
+import { useState,useEffect } from 'react';
+import { View, Text, Image, StyleSheet, TouchableOpacity, Linking, Platform } from 'react-native';
 import { FileText, Play, Download, HelpCircle } from 'lucide-react-native';
+import Markdown from 'react-native-markdown-display';
+import Video from 'react-native-video';
+import * as Progress from 'react-native-progress';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import WebView from 'react-native-webview';
 
-const PageRenderer = ({ elements }) => {
+// Import other hooks and component
+import { markdownStyles } from './markdownStyle';
+import { UserRoles } from '../enum/UserRoles';
+
+const PageRenderer = ({ elements, role, courseId }) => {
+    const isAdmin = role === UserRoles.ADMIN;
+    const [videoProgress, setVideoProgress]=useState({});
+
+    useEffect(() => {
+        if (!isAdmin) {
+            const loadLocalProgress = async () => {
+                try {
+                    const saved = await AsyncStorage.getItem(`@video_progress_${courseId}`);
+                    if (saved !== null) {
+                        setVideoProgress(JSON.parse(saved));
+                    }
+                } catch (e) {
+                    console.error("Failed to load progress from device storage", e);
+                }
+            };
+            loadLocalProgress();
+        }
+    }, [courseId, isAdmin]);
+    
+    const handleVideoProgress = async (id, data) => {
+        if (isAdmin) return;
+
+        const percent = data.currentTime / data.playableDuration;
+        const lastSavedPercent = videoProgress[id] || 0;
+
+        if (percent > lastSavedPercent + 0.02 || percent >= 0.95) {
+            const updatedProgress = { ...videoProgress, [id]: percent };
+            setVideoProgress(updatedProgress);
+            
+            try {
+                await AsyncStorage.setItem(
+                    `@video_progress_${courseId}`, 
+                    JSON.stringify(updatedProgress)
+                );
+            } catch (e) {
+                console.error("Storage error", e);
+            }
+        }
+    };
+
+    const VideoPlayer = ({ url }) => {
+        const getEmbedUrl = (originalUrl) => {
+            let videoId = '';
+            if (originalUrl.includes('v=')) {
+                videoId = originalUrl.split('v=')[1].split('&')[0];
+            } else if (originalUrl.includes('youtu.be/')) {
+                videoId = originalUrl.split('youtu.be/')[1];
+            } else if (originalUrl.includes('embed/')) {
+                videoId = originalUrl.split('embed/')[1];
+            }
+
+            return `https://www.youtube-nocookie.com/embed/${videoId}`;
+        };
+
+        const embedUrl = getEmbedUrl(url);
+
+        if (Platform.OS === 'web') {
+            return (
+                <View style={{ height: 450 }}>
+                    <iframe
+                        src={embedUrl}
+                        width="100%"
+                        height="100%"
+                        frameBorder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                    />
+                </View>
+            );
+        }
+
+        return (
+            <View style={{ height: 220 }}>
+                <WebView 
+                    source={{ uri: embedUrl }} 
+                    allowsFullscreenVideo 
+                    domStorageEnabled={true}
+                    javaScriptEnabled={true}
+                    originWhitelist={['*']}
+                />
+            </View>
+        );
+    };
+
     if (!elements || elements.length === 0) {
         return (
             <View style={styles.emptyState}>
@@ -13,12 +106,15 @@ const PageRenderer = ({ elements }) => {
 
     const renderElement = (el) => {
         const { type, content } = el;
+        const currentPercent = videoProgress[el.id] || 0;
 
         switch (type) {
             case 'text':
                 return (
                     <View key={el.id} style={styles.elementWrapper}>
-                        <Text style={styles.textContent}>{content.text}</Text>
+                        <Markdown style={markdownStyles}>
+                            {content.text}
+                        </Markdown>
                     </View>
                 );
 
@@ -35,22 +131,43 @@ const PageRenderer = ({ elements }) => {
                 );
 
             case 'video':
+                const isYoutube = content.url.includes("youtube") || content.url.includes("youtu.be");
+
                 return (
-                    <TouchableOpacity 
-                        key={el.id} 
-                        style={styles.videoCard}
-                        onPress={() => content.url && Linking.openURL(content.url)}
-                    >
-                        <View style={styles.videoIconBox}>
-                            <Play color="#fff" size={24} fill="#fff" />
-                        </View>
-                        <View style={styles.videoInfo}>
-                            <Text style={styles.videoLabel}>Video Lesson</Text>
-                            <Text style={styles.transcript} numberOfLines={2}>
-                                {content.transcript || "No transcript available."}
+                    <View key={el.id} style={styles.videoContainer}>
+                        {isYoutube ? (
+                            <VideoPlayer url={content.url} />
+                        ) : (
+                            <Video
+                                source={{ uri: content.url }}
+                                style={styles.videoPlayer}
+                                controls
+                                resizeMode="contain"
+                                onProgress={(data) => handleVideoProgress(el.id, data)}
+                            />
+                        )}
+
+                        <View style={styles.videoCardBottom}>
+                            <View style={styles.videoLabelRow}>
+                                <Play
+                                    color={isAdmin ? "#999" : "#0a6340"}
+                                    size={16}
+                                    fill={isAdmin ? "#999" : "#0a6340"}
+                                />
+                                <Text style={[
+                                    styles.videoLabel,
+                                    { color: isAdmin ? "#999" : "#111827" }
+                                ]}>
+                                    Technical Training Module
+                                </Text>
+                            </View>
+
+                            <Text style={styles.transcript} numberOfLines={3}>
+                                {content.transcript || "No transcript provided."}
                             </Text>
                         </View>
-                    </TouchableOpacity>
+                    </View>
+                    
                 );
 
             case 'file':
@@ -137,32 +254,62 @@ const styles = StyleSheet.create({
         textAlign: 'center' 
     },
 
-    videoCard: { 
+    videoContainer: {
+        backgroundColor: '#fff',
+        borderRadius: 16,
+        marginBottom: 30,
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
+        overflow: 'hidden',
+    },
+    videoPlayer: { 
+        width: '100%', 
+        height: 220, 
+        backgroundColor: '#000' 
+    },
+    progressSection: {
+        paddingHorizontal: 15,
+        paddingVertical: 12,
+        backgroundColor: '#F9FAFB',
+        borderBottomWidth: 1,
+        borderBottomColor: '#F3F4F6',
+    },
+    progressHeader: { 
         flexDirection: 'row', 
-        backgroundColor: '#1f2937', 
-        borderRadius: 12, 
-        marginBottom: 25, 
-        overflow: 'hidden' 
+        justifyContent: 'space-between', 
+        marginBottom: 8 
     },
-    videoIconBox: { 
-        width: 70, 
+    progressText: { 
+        fontSize: 12, 
+        fontWeight: '700', 
+        color: '#374151' 
+    },
+    completeBadge: { 
         backgroundColor: '#0a6340', 
-        justifyContent: 'center', 
-        alignItems: 'center' 
+        paddingHorizontal: 6, 
+        borderRadius: 4 
     },
-    videoInfo: { 
-        flex: 1, 
+    completeBadgeText: { 
+        color: '#fff', 
+        fontSize: 10, 
+        fontWeight: '900' 
+    },
+    videoCardBottom: { 
         padding: 15 
     },
+    videoLabelRow: { 
+        flexDirection: 'row', 
+        alignItems: 'center', 
+        marginBottom: 6 
+    },
     videoLabel: { 
-        color: '#fff', 
         fontWeight: 'bold', 
         fontSize: 14, 
-        marginBottom: 4 
+        marginLeft: 8 
     },
     transcript: { 
-        color: '#9ca3af', 
-        fontSize: 12 
+        color: '#6B7280', 
+        fontSize: 13 
     },
 
     fileCard: { 
@@ -253,7 +400,28 @@ const styles = StyleSheet.create({
     optionText: { 
         fontSize: 14, 
         color: '#374151' 
-    }
+    },
+     videoCardBottom: {
+        padding: 15
+    },
+
+    videoLabelRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 6
+    },
+
+    videoLabel: {
+        fontWeight: 'bold',
+        fontSize: 14,
+        marginLeft: 8
+    },
+
+    transcript: {
+        color: '#6B7280',
+        fontSize: 13
+    },
+
 });
 
 export default PageRenderer;

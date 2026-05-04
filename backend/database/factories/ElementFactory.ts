@@ -85,10 +85,27 @@ const buildContentByType = (type: ElementTypes): Record<string, unknown> => {
         transcript: "This awareness video covers turtle nesting site protection and the importance of restricting human access during hatching season."
       },
       {
-        url: "https://www.youtube.com/watch?v=rOALjGOUtoY&pp=ygUccm9sZXMgb2YgYmVlcyBhbmQgb2xsaW5hdG9ycw%3D%3D&pbjreload=102",
+        url: "https://www.youtube.com/watch?v=rOALjGOUtoY",
         transcript: "A conservation lecture on the role of bees and pollinators in sustaining rainforest ecosystems."
+      },
+      {
+        url: "https://www.youtube.com/watch?v=3A3ZzY9rjJw",
+        transcript: "A documentary on rainforest canopy studies, focusing on dipterocarp tree growth and long-term monitoring."
+      },
+      {
+        url: "https://www.youtube.com/watch?v=2X9fN3G8d0w",
+        transcript: "Educational content on mangrove reforestation projects in Sarawak, highlighting coastal resilience and biodiversity protection."
+      },
+      {
+        url: "https://www.youtube.com/watch?v=7kVhZ9dQwYc",
+        transcript: "Awareness video covering turtle nesting site protection and the importance of restricting human access during hatching season."
+      },
+      {
+        url: "https://www.youtube.com/watch?v=9mZkY8fQwXc",
+        transcript: "Conservation lecture on the role of bees and pollinators in sustaining rainforest ecosystems."
       }
     ];
+
 
     return faker.helpers.arrayElement(videos);
   }

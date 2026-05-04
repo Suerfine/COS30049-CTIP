@@ -49,6 +49,7 @@ const moduleTopics = [
   "Real-Time Ecosystem Alert Systems"
 ];
 
+
 let moduleTitleCache: Set<string> = new Set<string>();
 
 const resolveCount = (base: number, variance: number = 0): number => {
@@ -151,7 +152,7 @@ export const buildModuleGraph = (options: BuildModuleOptions = {}): ModuleFactor
           order: 2,
           type: ElementTypes.VIDEO,
           content: {
-            url: "https://www.youtube.com/embed/dQw4w9WgXcQ",
+            url: "https://www.youtube.com/embed/wYHDhdyxtco?si=16HIURVE1zs76A7W",
             transcript: "Introduction to SFC safety and conservation standards."
           }
         }),

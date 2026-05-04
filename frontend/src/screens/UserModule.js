@@ -159,7 +159,7 @@ const UserModule = ({navigation}) => {
                     <View style={styles.contentWrapper}>
                         {selectedPage?.type === 'page' ? (
                             <View style={styles.editorContainer}>
-                                <Text style={styles.editorLabel}>Lesson Editor</Text>
+                                <Text style={styles.editorLabel}>Lesson Learning</Text>
                                 <Text style={styles.pageTitle}>{selectedPage.page.title}</Text>
                                 
                                 {elementsLoading ? (

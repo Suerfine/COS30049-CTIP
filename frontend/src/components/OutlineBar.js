@@ -79,7 +79,7 @@ const OutlineBar=({course, onSelectPage, editable, isCollapsed})=>{
                                 }
                                 handleSelect({type:'module', module}); 
                                 toggleModule(mid);
-                                if(editable && module.title !== ""){
+                                if(editable && expandedModule!==(mid) && module.title !== ""){
                                     setEditingItem({type:'module', id:mid});
                                 };
                                 }}
@@ -255,6 +255,7 @@ const styles=StyleSheet.create({
     },
     moduleTitle:{
         width:'175px',
+        fontWeight:'600'
     },
     search:{
         flexDirection:'row',
