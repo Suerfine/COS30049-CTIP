@@ -4,6 +4,7 @@ import { promises as fs } from "fs";
 import sharp from "sharp";
 import { User } from "../models";
 import {
+  ChangePasswordRequest,
   CreateUserRequest,
   GetAllUserRequest,
   UpdateUserRequest,
@@ -12,7 +13,7 @@ import {
 import { formatPaginateResponse, paginateModel } from "../utils/paginate";
 import { PaginateRequestParams, PaginateResponse } from "../types/common";
 import { UserRoles } from "../enum/UserRoles";
-import { hashPassword } from "../utils/password";
+import { hashPassword, verifyPassword } from "../utils/password";
 import { getStorage } from "../services/storage";
 
 class HttpError extends Error {
@@ -228,13 +229,6 @@ export const upsertUser = async (
       updates.tel = req.body.tel;
     }
 
-    if (
-      typeof req.body.password === "string" &&
-      req.body.password.trim() !== ""
-    ) {
-      updates.password_hash = await hashPassword(req.body.password);
-    }
-
     if (isAdmin && req.body.role) {
       updates.role = req.body.role;
     }
@@ -259,6 +253,56 @@ export const upsertUser = async (
     }
 
     return res.status(200).json(toUserResponse(targetUser, req));
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const changePassword = async (
+  req: Request<{ id: string }, unknown, ChangePasswordRequest> & {
+    user?: User;
+  },
+  res: Response<{ message: string }>,
+  next: NextFunction,
+) => {
+  try {
+    //Check if the user exists
+    const targetUser = await User.findByPk(req.params.id);
+    if (!targetUser) {
+      throw new HttpError(404, "User not found");
+    }
+    if (!req.user) {
+      throw new HttpError(401, "Unauthorized");
+    }
+    if (req.user.id !== targetUser.id) {
+      throw new HttpError(403, "You can only change your own password");
+    }
+
+    // Check if their old password is correct
+    const oldPasswordMatches = verifyPassword(
+      req.body.old_password,
+      targetUser.password_hash,
+    );
+    if (!oldPasswordMatches) {
+      throw new HttpError(400, "Old password is incorrect");
+    }
+
+    //Check if the new password is different from the current password
+    const newPasswordMatchesCurrent = verifyPassword(
+      req.body.new_password,
+      targetUser.password_hash,
+    );
+    if (newPasswordMatchesCurrent) {
+      throw new HttpError(
+        400,
+        "New password must be different from current password",
+      );
+    }
+
+    // Hash the new password and update the user's password in the database
+    targetUser.password_hash = await hashPassword(req.body.new_password);
+    await targetUser.save();
+    return res.status(200).json({ message: "Password changed successfully" });
   } catch (err) {
     next(err);
   }
