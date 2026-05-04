@@ -62,7 +62,6 @@ export const useUserDashboard = () => {
             setTodos(todos);
 
             setUser(fullProfile);
-            console.log(JSON.stringify(fullProfile, null, 2));
 
         } catch (err) {
             console.error("Dashboard fetch error:", err);

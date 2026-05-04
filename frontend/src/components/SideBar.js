@@ -4,9 +4,11 @@ import {LayoutDashboard, Book, ClipboardList, Flag, CreditCard,Bell, LogOut, Use
 import { CommonActions } from '@react-navigation/native';
 import { useNavigationState, useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
+import { useUserDashboard } from '../hooks/useUserDashboard';
 
 const SideBar = () => {
     const {logout} =useAuth();
+    const { user } = useUserDashboard();
     const navigation=useNavigation();
     const currentRoute = useNavigationState((state) => {
         if (!state) return null;
@@ -76,8 +78,20 @@ const SideBar = () => {
             </View>
             <View style={styles.admin}>
                 <View style={styles.adminInfo}>
-                    <Image source={require('../../assets/profile.png')} style={styles.profile} accessibilityLabel='Default Admin Profile'/>
-                        <Text>Admin</Text>
+                    {/* Profile  */}
+                    {user?.pfp_url ? (
+                        <Image source={{ uri: user.pfp_url }} style={styles.profilePic}/>
+                        ) : (
+                            <View style={styles.pfpPlaceholder}>
+                                <Text style={styles.pfpInitials}>
+                                    {user?.firstname ? user?.firstname[0].toUpperCase() : '?'}
+                                </Text>
+                            </View>
+                        )}
+                        <View>
+                            <Text>{user?.firstname}</Text>
+                            <Text style={styles.role}>{user?.role === 'admin' && 'Admin'}</Text>
+                        </View>
                 </View>
                 <Pressable
                     style={({ hovered }) => [
@@ -165,7 +179,26 @@ const styles = StyleSheet.create({
     },
     logoutHover:{
         color:'#efab21'
-    }
+    },
+    role:{
+        fontSize:12,
+        color:"#6a6a6a"
+    },
+    pfpPlaceholder:{
+        width: 40,
+        height: 40,
+        borderRadius: 60,
+        backgroundColor: '#2f6618fe',
+        borderWidth: 1,
+        borderColor: '#ccc',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    pfpInitials:{
+        fontSize: 14,
+        fontWeight: '700',
+        color: 'white',
+    },
 });
 
 export default SideBar;

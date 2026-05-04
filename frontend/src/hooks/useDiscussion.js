@@ -5,23 +5,31 @@ export const useDiscussions = (courseId, forumType) => {
     const [discussions, setDiscussions] = useState([]);
     const [loading, setLoading] = useState(false);
 
-    const loadDiscussions = useCallback(async () => {
+    const fetchDiscussions = useCallback(async () => {
         if (!courseId) return;
         setLoading(true);
         try {
-            const data = await discussionService.getDiscussions(courseId);
-            const isPublicRequest = forumType === 'Public';
-            setDiscussions(data.filter(d => d.is_public === isPublicRequest));
+            const response = await discussionService.getDiscussions(courseId);
+            
+            const allData = Array.isArray(response) ? response : [response];
+            
+            const filtered = allData.filter(d => {
+                const isPublic = Boolean(d.is_public); 
+                return forumType === 'Public' ? isPublic : !isPublic;
+            });
+            
+            setDiscussions(filtered);
         } catch (err) {
-            console.error("Failed to load discussions", err);
+            console.error("Discussion Hook Error:", err);
+            setDiscussions([]); 
         } finally {
             setLoading(false);
         }
     }, [courseId, forumType]);
 
     useEffect(() => {
-        loadDiscussions();
-    }, [loadDiscussions]);
+        fetchDiscussions();
+    }, [fetchDiscussions]);
 
-    return { discussions, loading, refresh: loadDiscussions };
+    return { discussions, loading, refreshDiscussions: fetchDiscussions };
 };

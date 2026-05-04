@@ -47,19 +47,16 @@ export const RegisterService={
             formData.append('identification', userData.ic);
             formData.append('personal_email', userData.email);
             formData.append('tel', userData.telephone);
-            formData.appe
 
             if(userData.file){
-                formData.append('file', {
-                    uri:userData.file.uri,
-                    name: userData.file.name,
+                formData.append('document', {
+                    uri: userData.file.uri,
+                    name: userData.file.name || 'resume.pdf',
                     type: userData.file.type || 'application/pdf',
                 });
             }
 
-            const response=await apiClient.post(API_ENDPOINTS.USER.SIGNUP, formData, {
-                headers:{'Content-Type': 'multipart/form-data'}
-            });
+            const response=await apiClient.post(API_ENDPOINTS.USER.SIGNUP, formData);
             return response.data;
         }catch(error){
             const message = error.response?.data?.message || 'Registration failed.';

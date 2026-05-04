@@ -47,6 +47,31 @@ const EditCourseDetail = () => {
         </View>
     );
 
+    const renderForumList = () => {
+        if (discussionsLoading) return <ActivityIndicator color="#0a6340" style={{marginTop: 20}} />;
+        
+        if (discussions.length === 0) {
+            return (
+                <View style={styles.emptyForum}>
+                    <Text style={styles.emptyText}>No {forumType.toLowerCase()} discussions yet.</Text>
+                </View>
+            );
+        }
+        return discussions.map((item) => (
+            <View key={item.id} style={styles.messageContainer}>
+                <Text>{item.content}</Text>
+                
+                {item.attachment_type === 'image' && (
+                    <Image source={{ uri: item.attachment_url }} style={styles.attachmentImage} />
+                )}
+                
+                {item.attachment_type === 'video' && (
+                    <VideoComponent url={item.attachment_url} />
+                )}
+            </View>
+        ));
+    };
+
     const renderOverviewContent = () => {
         switch (activeTab) {
             case 'Overview':
@@ -94,38 +119,28 @@ const EditCourseDetail = () => {
                     </View>
                 );
             case 'Forum':
+                case 'Forum':
                 return (
                     <View style={styles.tabSection}>
-                        <Text style={styles.sectionTitle}>Discussion Forum</Text>
+                        <Text style={styles.sectionTitle}>Course Forum</Text>
                         
-                        {/* Pill Navigation */}
                         <View style={styles.pillContainer}>
                             <Pressable 
                                 style={[styles.pill, forumType === 'Public' && styles.activePill]}
                                 onPress={() => setForumType('Public')}
                             >
-                                <Text style={[styles.pillText, forumType === 'Public' && styles.activePillText]}>
-                                    Public
-                                </Text>
+                                <Text style={[styles.pillText, forumType === 'Public' && styles.activePillText]}>Public</Text>
                             </Pressable>
-
                             <Pressable 
                                 style={[styles.pill, forumType === 'Private' && styles.activePill]}
                                 onPress={() => setForumType('Private')}
                             >
-                                <Text style={[styles.pillText, forumType === 'Private' && styles.activePillText]}>
-                                    Private
-                                </Text>
+                                <Text style={[styles.pillText, forumType === 'Private' && styles.activePillText]}>Private</Text>
                             </Pressable>
                         </View>
 
-                        {/* Forum Content */}
-                        <View style={styles.forumContent}>
-                            {forumType === 'Public' ? (
-                                <Text style={styles.bodyText}>Showing public community discussions...</Text>
-                            ) : (
-                                <Text style={styles.bodyText}>Showing private instructor-led discussions...</Text>
-                            )}
+                        <View style={styles.forumListContainer}>
+                            {renderForumList()}
                         </View>
                     </View>
                 );
