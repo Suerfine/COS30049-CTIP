@@ -82,8 +82,6 @@ const CourseFormContent=({onSubmit, onCancel, isLoading, initialData,allCourseLi
 
     const handleSubmit = () => {
         const payload = preparePayload();
-
-        console.log(payload);
         
         const finalPayload = {
             ...payload,
@@ -91,6 +89,7 @@ const CourseFormContent=({onSubmit, onCancel, isLoading, initialData,allCourseLi
             expiryWeeks: parseInt(form.expiryWeeks, 10) || 0,
             badgeExpiry: parseInt(form.badgeExpiry, 10) || 0,
         };
+        console.log("Debug",finalPayload);
         
         onSubmit(finalPayload);
     };
