@@ -1,9 +1,118 @@
-const BASE_URL='http://localhost:4000/api/enrollments';
+import { API_ENDPOINTS } from "../config/ApiEndpoints";
+import apiClient from "../config/apiConfig";
 
-export const enrollmentService={
-    // GET: fetch all enrollments
-    getAll: async()=>{
-        const res=await fetch(BASE_URL);
-        return await res.json();
-    },  
-}
+export const enrollmentService = {
+    /**
+     * GET: Fetch all enrollments enriched with User names (Admin View)
+     */
+    getAll: async (page = 1, size = 10, searchQuery = '', sortConfig, status = 'All') => {
+        try {
+            const params = { page, size };
+            let filters = [];
+
+            if (status && status !== 'All') {
+                filters.push(`status eq "${status}"`);
+            }
+
+            if (filters.length > 0) {
+                params.filter = filters.join(' and ');
+            }
+
+            if (sortConfig?.key) {
+                params.orderBy = `${sortConfig.key} ${sortConfig.direction}`;
+            }
+
+            const [enrollRes, userRes, courseRes] = await Promise.all([
+                apiClient.get(API_ENDPOINTS.ENROLLMENT.LIST, { params }),
+                apiClient.get(API_ENDPOINTS.USER.ACCOUNT, { params: { size: 100 } }), 
+                apiClient.get(API_ENDPOINTS.COURSE.LIST, { params: { size: 100 } })
+            ]);
+
+            const enrollmentData = enrollRes.data;
+            const rawEnrollments = enrollmentData?.data || [];
+            const usersArray = userRes.data?.data || userRes.data || [];
+            const coursesArray = courseRes.data?.data || courseRes.data || [];
+
+            let enrichedData = rawEnrollments.map(enroll => {
+                const user = usersArray.find(u => Number(u.id) === Number(enroll.user_id));
+                const course = coursesArray.find(c => Number(c.id) === Number(enroll.course_id));
+
+                let expiryDate = "N/A";
+                if (enroll.enrolled_at && course?.must_complete_in_weeks) {
+                    const enrolledDate = new Date(enroll.enrolled_at);
+                    const durationInMs = Number(course.must_complete_in_weeks) * 7 * 24 * 60 * 60 * 1000;
+                    const calculatedDate = new Date(enrolledDate.getTime() + durationInMs);
+                    expiryDate = `${String(calculatedDate.getDate()).padStart(2, '0')}/${String(calculatedDate.getMonth() + 1).padStart(2, '0')}/${calculatedDate.getFullYear()}`;
+                }
+
+                return {
+                    ...enroll,
+                    fullName: user ? `${user.firstname} ${user.lastname}` : `User #${enroll.user_id}`,
+                    courseName: course ? course.title : `Course #${enroll.course_id}`,
+                    expiry_date: expiryDate 
+                };
+            });
+
+            if (searchQuery.trim()) {
+                const q = searchQuery.toLowerCase();
+                enrichedData = enrichedData.filter(item => 
+                    item.fullName.toLowerCase().includes(q) || 
+                    item.courseName.toLowerCase().includes(q)
+                );
+            }
+
+            return {
+                ...enrollmentData,
+                data: enrichedData
+            };
+        } catch (error) {
+            console.error("Enrollment Service Error:", error);
+            throw new Error('Failed to fetch enrollment records');
+        }
+    },
+    /**
+     * GET: My personal enrollments (Current User View)
+     */
+    getMyEnrollments: async () => {
+        try {
+            const res = await apiClient.get(API_ENDPOINTS.ENROLLMENT.MY_ENROLLMENTS);
+            return res.data;
+        } catch (error) {
+            console.error("My Enrollments Error:", error);
+            return [];
+        }
+    },
+
+    /**
+     * GET: Filter enrollments based on user id locally
+     */
+    getByUserId: async (userId) => {
+        const allEnrollments = await enrollmentService.getAll();
+        return allEnrollments.filter(enroll => enroll.user_id === userId);
+    },
+
+    /**
+     * POST: Create new Enrollment
+     */
+    enroll: async (courseId, userId) => {
+        const res = await apiClient.post(API_ENDPOINTS.ENROLLMENT.ENROLL(courseId), {
+            user_id: userId 
+        });
+        return res.data;
+    },
+
+    /**
+     * PATCH: Update enrollment status (Approval Logic)
+     */
+    updateStatus: async (enrollmentId, status) => {
+        try {
+            const res = await apiClient.patch(
+                API_ENDPOINTS.ENROLLMENT.UPDATE_STATUS(enrollmentId, status)
+            );
+            return res.data;
+        } catch (error) {
+            console.error("Update Status Error:", error);
+            throw error;
+        }
+    }
+};

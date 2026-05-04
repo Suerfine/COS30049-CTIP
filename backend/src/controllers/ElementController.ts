@@ -617,3 +617,34 @@ export const getElementFile = async (
     next(err);
   }
 };
+
+// Todo
+// export const getCourseWorkshopsSummary = async (
+//   req: Request<{ course_Id: string }>,
+//   res: Response,
+//   next: NextFunction
+// ) => {
+//   try {
+//     const courseId = parseId(req.params.course_Id);
+
+//     if (courseId === null) {
+//       throw new HttpError(400, "Invalid course_Id");
+//     }
+
+//     // Find all workshops across the entire course
+//     const workshops = await Element.findAll({
+//       where: {
+//         course_id: courseId, // Ensure this column exists in your DB
+//         type: ElementTypes.WORKSHOP,
+//       },
+//       order: [["created_at", "ASC"]],
+//     });
+
+//     return res.json(workshops.map(toElementResponse));
+//   } catch (err) {
+//     if (err instanceof HttpError) {
+//       return res.status(err.status).json({ message: err.message });
+//     }
+//     next(err);
+//   }
+// };

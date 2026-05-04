@@ -26,7 +26,6 @@ const RegistrationManagement=()=>{
     const itemsPerPage = 10; 
     const indexOfFirstItem = (currentPage - 1) * itemsPerPage;
     const indexOfLastItem = indexOfFirstItem + users.length;
-    const estimatedTotal = totalPages * itemsPerPage;
     const pageNumbers = [];
     for (let i = 1; i <= totalPages; i++) {
         pageNumbers.push(i);

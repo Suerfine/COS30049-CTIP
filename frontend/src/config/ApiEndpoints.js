@@ -22,4 +22,10 @@ export const API_ENDPOINTS={
         LIST:(courseId)=>`/courses/${courseId}/discussion`,
         MESSAGES:(discussionId)=>`/discussion/${discussionId}/messages`,
     },
+    ENROLLMENT: {
+        LIST: '/enrollments',
+        ENROLL: (courseId) => `/enrollments/${courseId}/enroll`,
+        UPDATE_STATUS: (id, status) => `/enrollments/${id}/status/${status}`,
+        MY_ENROLLMENTS:`/enrollments/my-enrollments`,
+    },
 };
