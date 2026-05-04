@@ -5,42 +5,69 @@ export const enrollmentService = {
     /**
      * GET: Fetch all enrollments enriched with User names (Admin View)
      */
-    getAll: async () => {
+    getAll: async (page = 1, size = 10, searchQuery = '', sortConfig, status = 'All') => {
         try {
+            const params = { page, size };
+            let filters = [];
+
+            if (status && status !== 'All') {
+                filters.push(`status eq "${status}"`);
+            }
+
+            if (filters.length > 0) {
+                params.filter = filters.join(' and ');
+            }
+
+            if (sortConfig?.key) {
+                params.orderBy = `${sortConfig.key} ${sortConfig.direction}`;
+            }
+
             const [enrollRes, userRes, courseRes] = await Promise.all([
-                apiClient.get(API_ENDPOINTS.ENROLLMENT.LIST),
-                apiClient.get(API_ENDPOINTS.USER.ACCOUNT),
-                apiClient.get(API_ENDPOINTS.COURSE.LIST)
+                apiClient.get(API_ENDPOINTS.ENROLLMENT.LIST, { params }),
+                apiClient.get(API_ENDPOINTS.USER.ACCOUNT, { params: { size: 100 } }), 
+                apiClient.get(API_ENDPOINTS.COURSE.LIST, { params: { size: 100 } })
             ]);
 
-            const enrollments = enrollRes.data?.data || enrollRes.data || []; 
+            const enrollmentData = enrollRes.data;
+            const rawEnrollments = enrollmentData?.data || [];
             const usersArray = userRes.data?.data || userRes.data || [];
             const coursesArray = courseRes.data?.data || courseRes.data || [];
 
-            if (!Array.isArray(enrollments)) {
-                console.error("Enrollments is not an array:", enrollments);
-                return [];
-            }
+            let enrichedData = rawEnrollments.map(enroll => {
+                const user = usersArray.find(u => Number(u.id) === Number(enroll.user_id));
+                const course = coursesArray.find(c => Number(c.id) === Number(enroll.course_id));
 
-            return enrollments.map(enroll => {
-                const user = Array.isArray(usersArray) 
-                    ? usersArray.find(u => Number(u.id) === Number(enroll.user_id)) 
-                    : null;
-
-                const course = Array.isArray(coursesArray)
-                    ? coursesArray.find(c => Number(c.id) === Number(enroll.course_id))
-                    : null;
+                let expiryDate = "N/A";
+                if (enroll.enrolled_at && course?.must_complete_in_weeks) {
+                    const enrolledDate = new Date(enroll.enrolled_at);
+                    const durationInMs = Number(course.must_complete_in_weeks) * 7 * 24 * 60 * 60 * 1000;
+                    const calculatedDate = new Date(enrolledDate.getTime() + durationInMs);
+                    expiryDate = `${String(calculatedDate.getDate()).padStart(2, '0')}/${String(calculatedDate.getMonth() + 1).padStart(2, '0')}/${calculatedDate.getFullYear()}`;
+                }
 
                 return {
                     ...enroll,
                     fullName: user ? `${user.firstname} ${user.lastname}` : `User #${enroll.user_id}`,
                     courseName: course ? course.title : `Course #${enroll.course_id}`,
-                    courseCode: course ? course.course_code : 'N/A'
+                    expiry_date: expiryDate 
                 };
             });
+
+            if (searchQuery.trim()) {
+                const q = searchQuery.toLowerCase();
+                enrichedData = enrichedData.filter(item => 
+                    item.fullName.toLowerCase().includes(q) || 
+                    item.courseName.toLowerCase().includes(q)
+                );
+            }
+
+            return {
+                ...enrollmentData,
+                data: enrichedData
+            };
         } catch (error) {
             console.error("Enrollment Service Error:", error);
-            return [];
+            throw new Error('Failed to fetch enrollment records');
         }
     },
     /**

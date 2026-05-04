@@ -7,26 +7,37 @@ import SlidingTabs from '../components/SlidingTabs';
 import { formatDate } from '../utils/formatDate';
 
 const EnrollmentManagement = () => {
-    const {enrollments, submissions, loading, updateStatus}=useEnrollmentManagement();
+    const {enrollments, submissions, loading, updateStatus,currentPage,
+        setCurrentPage,
+        totalPages,
+        totalElements,
+        searchQuery,
+        setSearchQuery,
+        currentStatus,
+        setCurrentStatus,
+        sortConfig,
+        setSortConfig,
+        requestSort,resetSort
+    }=useEnrollmentManagement();
     const [activeTab, setActiveTab]=useState('enrollment');
     const enrollFields=['fullName', 'courseName', 'status'];
-    const [searchTerm, setSearchTerm]=useState('');
-    const [currentPage, setCurrentPage]=useState(1);
-    const itemsPerPage=10;
-    const [currentStatus, setCurrentStatus]=useState('All');
     const [isOpen, setIsOpen]=useState(false);
 
     const STATUS_OPTIONS={
-        enrollment:['All', 'Completed', 'In Progress', 'Expired'],
+        enrollment:['All', 'in_progress','in_review', 'completed', 'failed', 'dropped', 'expired'],
         submission:['All', 'Approved', 'Pending', 'Rejected']
     };
 
     const displayData=activeTab === 'enrollment' ? enrollments : submissions;
 
-    const indexOfLastItem=currentPage*itemsPerPage;
-    const indexOfFirstItem=indexOfLastItem-itemsPerPage;
-    const currentData=displayData.slice(indexOfFirstItem, indexOfLastItem);
-    const totalPages=Math.ceil(displayData.length/itemsPerPage);
+    const itemsPerPage = 10; 
+    const indexOfFirstItem = (currentPage - 1) * itemsPerPage;
+    const indexOfLastItem = indexOfFirstItem + displayData.length;
+    const currentData=displayData;
+    const pageNumbers = [];
+    for (let i = 1; i <= totalPages; i++) {
+        pageNumbers.push(i);
+    }
     const tabs=[
         {id: 'enrollment', label:'Enrollment'},
         {id: 'submission', label:'Submission'},
@@ -34,14 +45,23 @@ const EnrollmentManagement = () => {
 
     const renderEnrollmentHeader=()=>(
         <View style={[styles.tableHeader, styles.row]}>
-            <Text style={[styles.headerText,{flex: 2}]}>Full Name</Text>
+            <Text style={[styles.headerText,{flex: 3}]}>Full Name</Text>
             <Text style={[styles.headerText, { flex:2}]}>Course Code</Text>
-            <Text style={[styles.headerText, { flex:3 }]}>Course Name</Text>
-            <Text style={[styles.headerText, { flex:2}]}>Enrolled On</Text>
+            <Text style={[styles.headerText, { flex:4 }]}>Course Name</Text>
+            <Pressable onPress={()=>requestSort('enrolled_at')} style={[styles.headerRow, {flex:2}]}>
+                <Text style={styles.headerText}>Enrolled On</Text>
+                {sortConfig.key==='enrolled_at' &&
+                sortConfig.direction==='asc' ? <ArrowUpNarrowWide size={14} color="white"/> : <ArrowDownWideNarrow size={14} color="white"/>}
+            </Pressable>
+            
             <Text style={[styles.headerText, { flex:2}]}>Status</Text>
-            <Text style={[styles.headerText, { flex:2}]}>Completed On</Text>
-            <Text style={[styles.headerText, { flex:2}]}>Expiry On</Text>  
-            <Text style={[styles.headerText, { flex:1, textAlign:'center'}]}>Action</Text>       
+            <Pressable onPress={()=>requestSort('completed_at')} style={[styles.headerRow, {flex:2}]}>
+                <Text style={styles.headerText}>Completed On</Text>
+                {sortConfig.key==='completed_at' &&
+                sortConfig.direction==='asc' ? <ArrowUpNarrowWide size={14} color="white"/> : <ArrowDownWideNarrow size={14} color="white"/>}
+            </Pressable>
+            
+            <Text style={[styles.headerText, { flex:2}]}>Expiry On</Text>    
         </View>
     );
 
@@ -64,7 +84,7 @@ const EnrollmentManagement = () => {
     const renderEnrollmentItem=({item})=>(
         <View style={[styles.row, styles.tableRow, {backgroundColor:'#f9f9f9'}]}>
             {/* Full Name and profile image */}
-            <View style={[{flex:2}, styles.userInfo, styles.row]}>
+            <View style={[{flex:3}, styles.userInfo, styles.row]}>
                 {item.profileImage ? (
                 <Image source={{ uri: item.profileImage }} style={styles.avatar} accessibilityLabel={`Profile Image of ${item.fullName}`}/>
                 ) : (
@@ -77,9 +97,9 @@ const EnrollmentManagement = () => {
                 <Text>{item.fullName}</Text>
             </View>
             {/* Course Code */}
-            <Text style={{flex:1, textAlign:'center'}}>{item.course_id}</Text>
+            <Text style={{flex:1}}>{item.course_id}</Text>
             {/* Course Name */}
-            <Text style={{flex:3}}>{item.courseName}</Text>
+            <Text style={{flex:4}}>{item.courseName}</Text>
             {/* Enrolled On */}
             <Text style={{flex:2}}>{formatDate(item.enrolled_at)}</Text>
             {/* Status */}
@@ -99,11 +119,9 @@ const EnrollmentManagement = () => {
                 </Text>
             </View>
             {/* Completed On */}
-            <Text style={{flex:2}}>{item.completed_at ? formatDate(item.completed_at) : "N/A"}</Text>
+            <Text style={{flex:2, textAlign:'center'}}>{item.completed_at ? formatDate(item.completed_at) : "N/A"}</Text>
             {/* Expiry On */}
             <Text style={{flex:2}}>{item.expiry_date}</Text>
-            {/* Action */}
-            <Text style={{flex:1,textAlign:'center'}}><Trash2 size={16}/></Text>
         </View>
     );
 
@@ -154,7 +172,7 @@ const EnrollmentManagement = () => {
         return (
             <View style={[styles.paginationContainer, styles.row]}> 
                 <Text style={styles.pageInfo}>
-                    Showing {enrollments.length>0 ? indexOfFirstItem+1 : 0} to {Math.min(indexOfLastItem, enrollments.length)} of {enrollments.length} records
+                    Showing {displayData.length>0 ? indexOfFirstItem+1 : 0} to {indexOfLastItem} of {totalElements} users
                 </Text>
                 <View style={styles.row}>
                     <Pressable disabled={currentPage==1} onPress={()=>setCurrentPage(1)} style={[styles.pageBtn, currentPage==1 && styles.btnDisabled]}>
@@ -186,7 +204,7 @@ const EnrollmentManagement = () => {
             
             <View style={[styles.toolbar, styles.row]}>
                 <View style={styles.row}>
-                    <Pressable onPress={()=>setSortConfig({key:null, asc:true})} style={({ hovered }) => [
+                    <Pressable onPress={resetSort} style={({ hovered }) => [
                         styles.iconBtn,
                         hovered && styles.iconBtnHover,
                     ]}>
@@ -194,7 +212,7 @@ const EnrollmentManagement = () => {
                     </Pressable>
                     <View style={[styles.search,styles.row]}>
                         <Search size={18}/>
-                        <TextInput style={styles.input} placeholder='Search...' placeholderTextColor="#8f8f8f" value={searchTerm} onChangeText={(text)=>{setSearchTerm(text); setCurrentPage(1);}}/>
+                        <TextInput style={styles.input} placeholder='Search...' placeholderTextColor="#8f8f8f" value={searchQuery} onChangeText={(text)=>{setSearchQuery(text); setCurrentPage(1);}}/>
                     </View>
                     {/* Status Dropdown */}
                     <View style={styles.dropdownWrapper}>
@@ -209,7 +227,12 @@ const EnrollmentManagement = () => {
                         {/* Dropdown Menu */}
                         {isOpen && (
                             <View style={styles.dropdownMenu}>
-                                {STATUS_OPTIONS[activeTab].map((status) => (
+                                {STATUS_OPTIONS[activeTab].map((status) => {
+                                    const formatted = status
+                                        .split("_")
+                                        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                                        .join(" ");
+                                return(
                                     <Pressable
                                         key={status}
                                         style={({hovered})=>[
@@ -225,17 +248,17 @@ const EnrollmentManagement = () => {
                                         <Text style={[
                                             currentStatus === status && styles.menuItemTextActive 
                                         ]}>
-                                            {status}
+                                            {formatted}
                                         </Text>
                                     </Pressable>
-                                ))}
+                                )})}
                             </View>
                         )}
                     </View>
                 </View>
             </View>
             <View style={styles.tableContainer}>
-                <FlatList style={styles.table} 
+                <FlatList style={styles.table}
                     data={currentData}
                     ListHeaderComponent={activeTab==='enrollment' ? renderEnrollmentHeader : renderSubmissionsHeader}
                     renderItem={activeTab==='enrollment' ? renderEnrollmentItem : renderSubmissionsItem}
@@ -258,6 +281,9 @@ const styles = StyleSheet.create({
         justifyContent:'space-between',
         marginVertical:20,
         zIndex:500
+    },
+    table:{
+        flexShrink:1,
     },
     title:{
         fontSize:25,
@@ -295,12 +321,6 @@ const styles = StyleSheet.create({
     iconBtnHover:{
         backgroundColor:"#217837",
         color:'white',
-    },
-    toolbar:{
-        justifyContent:'space-between',
-        marginTop:15,
-        marginBottom:15,
-        zIndex:500
     },
     menuItem:{
         padding:14,
@@ -437,20 +457,24 @@ const styles = StyleSheet.create({
         borderColor: 'white',
     },
     pfpPlaceholder:{
-        width: 35,
-        height: 35,
-        marginBottom: 10,
+        width: 37,
+        height: 37,
         borderRadius: 60,
-        backgroundColor: '#2f6618fe',
+        backgroundColor: '#2c5c189d',
         borderWidth: 3,
         borderColor: 'white',
         alignItems: 'center',
         justifyContent: 'center',
     },
     pfpInitials:{
-        fontSize: 15,
+        fontSize: 12,
         fontWeight: '700',
         color: 'white',
     },
+    tableContainer:{
+        flex:1
+    },
 });
 export default EnrollmentManagement;
+
+// No need action, delete means dropped, and delete is fully delete and approved 
