@@ -1,8 +1,11 @@
 import { Router } from "express";
 import * as ModuleController from "../controllers/ModuleController";
 import { auth } from "../middelware/Auth";
+import pageRouter from "./PageRoute";
 
 const moduleRouter = Router({ mergeParams: true });
+
+moduleRouter.use("/:module_id/pages", pageRouter);
 
 /**
  * @swagger
@@ -47,11 +50,7 @@ const moduleRouter = Router({ mergeParams: true });
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-moduleRouter.get(
-  "/courses/:course_Id/modules",
-  auth,
-  ModuleController.getAllModules,
-);
+moduleRouter.get("/", auth, ModuleController.getAllModules);
 
 /**
  * @swagger
@@ -100,15 +99,11 @@ moduleRouter.get(
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-moduleRouter.post(
-  "/courses/:course_Id/modules",
-  auth,
-  ModuleController.createModule,
-);
+moduleRouter.post("/", auth, ModuleController.createModule);
 
 /**
  * @swagger
- * /api/module/{module_id}:
+ * /api/courses/{course_Id}/modules/{module_id}:
  *   get:
  *     summary: Get module by ID
  *     description: Retrieves a specific module by its ID within the specified course.
@@ -152,11 +147,11 @@ moduleRouter.post(
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-moduleRouter.get("/module/:module_id", auth, ModuleController.getModuleById);
+moduleRouter.get("/:module_id", auth, ModuleController.getModuleById);
 
 /**
  * @swagger
- * /api/module/{module_id}:
+ * /api/courses/{course_Id}/modules/{module_id}:
  *   put:
  *     summary: Update module
  *     description: Updates one or more fields of a module in the specified course.
@@ -206,11 +201,11 @@ moduleRouter.get("/module/:module_id", auth, ModuleController.getModuleById);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-moduleRouter.put("/module/:module_id", auth, ModuleController.upsertModule);
+moduleRouter.put("/:module_id", auth, ModuleController.upsertModule);
 
 /**
  * @swagger
- * /api/module/{module_id}:
+ * /api/courses/{course_Id}/modules/{module_id}:
  *   delete:
  *     summary: Delete module
  *     description: Soft deletes a module in the specified course.
@@ -258,6 +253,6 @@ moduleRouter.put("/module/:module_id", auth, ModuleController.upsertModule);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-moduleRouter.delete("/module/:module_id", auth, ModuleController.deleteModule);
+moduleRouter.delete("/:module_id", auth, ModuleController.deleteModule);
 
 export default moduleRouter;

@@ -55,11 +55,7 @@ pageRouter.use("/:page_id/elements", elementRouter);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-pageRouter.get(
-  "/courses/:course_Id/modules/:module_id/pages",
-  auth,
-  PageController.getAllPages,
-);
+pageRouter.get("/", auth, PageController.getAllPages);
 
 /**
  * @swagger
@@ -113,15 +109,11 @@ pageRouter.get(
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-pageRouter.post(
-  "/courses/:course_Id/modules/:module_id/pages",
-  auth,
-  PageController.createPage,
-);
+pageRouter.post("/", auth, PageController.createPage);
 
 /**
  * @swagger
- * /api/page/{page_id}:
+ * /api/courses/{course_Id}/modules/{module_id}/pages/{page_id}:
  *   get:
  *     summary: Get page by ID
  *     description: Retrieves a specific page by its ID within the specified module.
@@ -170,11 +162,11 @@ pageRouter.post(
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-pageRouter.get("/page/:page_id", auth, PageController.getPageById);
+pageRouter.get("/:page_id", auth, PageController.getPageById);
 
 /**
  * @swagger
- * /api/page/{page_id}:
+ * /api/courses/{course_Id}/modules/{module_id}/pages/{page_id}:
  *   put:
  *     summary: Update page
  *     description: Updates one or more fields of a page in the specified module.
@@ -229,11 +221,11 @@ pageRouter.get("/page/:page_id", auth, PageController.getPageById);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-pageRouter.put("/page/:page_id", auth, PageController.upsertPage);
+pageRouter.put("/:page_id", auth, PageController.upsertPage);
 
 /**
  * @swagger
- * /api/page/{page_id}:
+ * /api/courses/{course_Id}/modules/{module_id}/pages/{page_id}:
  *   delete:
  *     summary: Delete page
  *     description: Soft deletes a page in the specified module.
@@ -286,6 +278,6 @@ pageRouter.put("/page/:page_id", auth, PageController.upsertPage);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-pageRouter.delete("/page/:page_id", auth, PageController.deletePage);
+pageRouter.delete("/:page_id", auth, PageController.deletePage);
 
 export default pageRouter;

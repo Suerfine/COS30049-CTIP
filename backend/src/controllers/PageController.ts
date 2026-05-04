@@ -93,17 +93,24 @@ export const getAllPages = async (
 };
 
 export const getPageById = async (
-  req: Request<{ page_id: string }>,
+  req: Request<{ course_Id: string; module_id: string; page_id: string }>,
   res: Response<PageResponse | { message: string }>,
   next: NextFunction,
 ) => {
   try {
+    const { moduleId } = await validateCourseAndModule(
+      req.params.course_Id,
+      req.params.module_id,
+    );
+
     // Validated and retrieve the page based on id
     const pageId = parseId(req.params.page_id);
     if (pageId === null) {
       throw new HttpError(400, "Invalid page_id");
     }
-    const page = await Page.findByPk(pageId);
+    const page = await Page.findOne({
+      where: { id: pageId, module_id: moduleId },
+    });
 
     if (!page) {
       throw new HttpError(404, "Page not found");
@@ -181,18 +188,28 @@ export const createPage = async (
 };
 
 export const upsertPage = async (
-  req: Request<{ page_id: string }, {}, UpdatePageRequest>,
+  req: Request<
+    { course_Id: string; module_id: string; page_id: string },
+    {},
+    UpdatePageRequest
+  >,
   res: Response<PageResponse | { message: string }>,
   next: NextFunction,
 ) => {
   try {
+    const { moduleId } = await validateCourseAndModule(
+      req.params.course_Id,
+      req.params.module_id,
+    );
     const pageId = parseId(req.params.page_id);
 
     //Retrieve the page based on id and module_id to ensure it exists and belongs to the correct module
     if (pageId === null) {
       throw new HttpError(400, "Invalid page_id");
     }
-    const page = await Page.findByPk(pageId);
+    const page = await Page.findOne({
+      where: { id: pageId, module_id: moduleId },
+    });
     if (!page) {
       throw new HttpError(404, "Page not found");
     }
@@ -257,11 +274,16 @@ export const upsertPage = async (
 };
 
 export const deletePage = async (
-  req: Request<{ page_id: string }>,
+  req: Request<{ course_Id: string; module_id: string; page_id: string }>,
   res: Response<{ message: string }>,
   next: NextFunction,
 ) => {
   try {
+    const { moduleId } = await validateCourseAndModule(
+      req.params.course_Id,
+      req.params.module_id,
+    );
+
     // Validated and retrieve the page based on id
     const pageId = parseId(req.params.page_id);
     if (pageId === null) {
@@ -270,7 +292,7 @@ export const deletePage = async (
 
     // Soft delete the page by setting deleted_at timestamp
     const deletedCount = await Page.destroy({
-      where: { id: pageId },
+      where: { id: pageId, module_id: moduleId },
     });
     if (deletedCount === 0) {
       throw new HttpError(404, "Page not found");
