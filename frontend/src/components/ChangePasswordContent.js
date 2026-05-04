@@ -30,7 +30,7 @@ const ChangePasswordContent = ({
         });
     };
 
-    const handleConfirm = () => {
+    const handleConfirm = async () => {
         let tempErrors = {};
 
         if (!currentPassword.trim()) {
@@ -48,9 +48,12 @@ const ChangePasswordContent = ({
         }
 
         setErrors(tempErrors);
+        if (Object.keys(tempErrors).length > 0) return;
 
-        if (Object.keys(tempErrors).length === 0) {
-            onSave?.(currentPassword, password);
+        // call onSave and wait for server-side error (e.g. wrong current password)
+        const result = await onSave?.(currentPassword, password);
+        if (result?.error) {
+            setErrors({ currentPassword: result.error });
         }
     };
 

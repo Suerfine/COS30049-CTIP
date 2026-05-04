@@ -143,7 +143,7 @@ const Security = ({ navigation }) => {
                                 showNewPassword={showNewPassword}
                                 setShowNewPassword={setShowNewPassword}
                                 onClose={() => setPasswordModalVisible(false)}
-                                onSave={() => handleSavePassword(currentPassword, password)}
+                                onSave={(currentPw, newPw) => handleSavePassword(currentPw, newPw)}
                             />
                         </ModalLayout>
                     </View>
