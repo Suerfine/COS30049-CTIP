@@ -80,39 +80,39 @@ const CourseFormContent=({onSubmit, onCancel, isLoading, initialData,allCourseLi
         };
     };
 
-    const handleSubmit=()=>{
-        const finalPayload={
-            title: form.courseTitle,
-            duration:parseInt(form.duration, 10) || 0,
-            expiryWeeks:parseInt(form.expiryWeeks, 10) || 0,
-            badgeExpiry:parseInt(form.badgeExpiry,10) || 0,
-            image:form.image,
-            badgeImage: form.badgeImage,
-            status:form.status,
-        };
-        onSubmit(finalPayload);
-    };
+    const handleSubmit = () => {
+        const payload = preparePayload();
 
-    const handlePublish=()=>{
-        const finalPayload={
-            ...form,
-            status:'released',
-            duration:parseInt(form.duration, 10) || 0,
-            expiryWeeks: parseInt(form.expiryWeeks,10) || 0,
-        };
-        onSubmit(finalPayload);
-    };
-
-    const handleUnpublish=()=>{
-        const finalPayload={
-            ...form,
-            status:'unreleased',
+        console.log(payload);
+        
+        const finalPayload = {
+            ...payload,
             duration: parseInt(form.duration, 10) || 0,
             expiryWeeks: parseInt(form.expiryWeeks, 10) || 0,
             badgeExpiry: parseInt(form.badgeExpiry, 10) || 0,
         };
+        
         onSubmit(finalPayload);
-    }
+    };
+
+    const handlePublish = () => {
+        const payload = preparePayload('released');
+        onSubmit({
+            ...payload,
+            duration: parseInt(form.duration, 10) || 0,
+            expiryWeeks: parseInt(form.expiryWeeks, 10) || 0,
+        });
+    };
+
+    const handleUnpublish = () => {
+        const payload = preparePayload('unreleased');
+        onSubmit({
+            ...payload,
+            duration: parseInt(form.duration, 10) || 0,
+            expiryWeeks: parseInt(form.expiryWeeks, 10) || 0,
+            badgeExpiry: parseInt(form.badgeExpiry, 10) || 0,
+        });
+    };
 
     return(
         <View style={styles.container}>
@@ -266,7 +266,7 @@ const CourseFormContent=({onSubmit, onCancel, isLoading, initialData,allCourseLi
             <View style={styles.row}>
                 <Pressable 
                     style={styles.Btn} 
-                    onPress={() => onSubmit(form)}
+                    onPress={handleSubmit}
                     disabled={isLoading}
                 >
                     {isLoading ? <ActivityIndicator color="white" /> : <Text>{initialData ? 'Update' : 'Add'}</Text>}
