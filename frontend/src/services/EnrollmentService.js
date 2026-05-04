@@ -7,23 +7,35 @@ export const enrollmentService = {
      */
     getAll: async () => {
         try {
-            const [enrollRes, userRes] = await Promise.all([
+            const [enrollRes, userRes, courseRes] = await Promise.all([
                 apiClient.get(API_ENDPOINTS.ENROLLMENT.LIST),
-                apiClient.get(API_ENDPOINTS.USER.ACCOUNT)
+                apiClient.get(API_ENDPOINTS.USER.ACCOUNT),
+                apiClient.get(API_ENDPOINTS.COURSE.LIST)
             ]);
 
-            const enrollments = enrollRes.data?.data || []; 
-            const users = userRes.data || [];
+            const enrollments = enrollRes.data?.data || enrollRes.data || []; 
+            const usersArray = userRes.data?.data || userRes.data || [];
+            const coursesArray = courseRes.data?.data || courseRes.data || [];
+
             if (!Array.isArray(enrollments)) {
-                console.error("Enrollments is still not an array:", enrollments);
+                console.error("Enrollments is not an array:", enrollments);
                 return [];
             }
 
             return enrollments.map(enroll => {
-                const user = Array.isArray(users) ? users.find(u => u.id === enroll.user_id) : null;
+                const user = Array.isArray(usersArray) 
+                    ? usersArray.find(u => Number(u.id) === Number(enroll.user_id)) 
+                    : null;
+
+                const course = Array.isArray(coursesArray)
+                    ? coursesArray.find(c => Number(c.id) === Number(enroll.course_id))
+                    : null;
+
                 return {
                     ...enroll,
-                    fullName: user ? `${user.firstname} ${user.lastname}` : `User #${enroll.user_id}`
+                    fullName: user ? `${user.firstname} ${user.lastname}` : `User #${enroll.user_id}`,
+                    courseName: course ? course.title : `Course #${enroll.course_id}`,
+                    courseCode: course ? course.course_code : 'N/A'
                 };
             });
         } catch (error) {
