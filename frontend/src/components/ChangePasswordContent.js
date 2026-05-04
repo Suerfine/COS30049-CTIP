@@ -1,7 +1,10 @@
-import { View, Text, TextInput, Pressable } from 'react-native';
+import {useState} from 'react';
+import { View, Text, TextInput, Pressable, StyleSheet, Alert} from 'react-native';
 import { X, Eye, EyeOff } from 'lucide-react-native';
 import { ModalStyle as styles } from './ModalStyle';
 import { useTranslation } from 'react-i18next';
+import { useNavigation } from '@react-navigation/native';
+import { isValidPassword } from '../utils/Validation';
 
 const ChangePasswordContent = ({
     currentPassword,
@@ -12,9 +15,51 @@ const ChangePasswordContent = ({
     setShowCurrentPassword,
     showNewPassword,
     setShowNewPassword,
-    onClose
+    onClose,
+    onSave,
 }) => {
     const {t, i18n}=useTranslation();
+    const navigation = useNavigation();
+    const [errors, setErrors] = useState({});
+
+    const clearError = (field) => {
+        setErrors(prev => {
+            const updated = { ...prev };
+            delete updated[field];
+            return updated;
+        });
+    };
+
+    const handleConfirm = () => {
+        let tempErrors = {};
+
+        if (!currentPassword.trim()) {
+            tempErrors.currentPassword = t('please enter your current password.');
+        }
+
+        if (!password.trim()) {
+            tempErrors.password = t('please enter a new password.');
+        } else if (!isValidPassword(password)) {
+            tempErrors.password = t('password must be at least 6 characters and contain letters, numbers and symbols.');
+        }
+
+        if (currentPassword && password && currentPassword === password) {
+            tempErrors.password = t('new password must be different from current password.');
+        }
+
+        setErrors(tempErrors);
+
+        if (Object.keys(tempErrors).length === 0) {
+            onSave?.(currentPassword, password);
+        }
+    };
+
+    const handleForgotPassword = () => {
+        onClose();
+        navigation.navigate('ForgotPassword');
+    };
+
+
     return (
         <View style={styles.container}>
 
@@ -32,9 +77,17 @@ const ChangePasswordContent = ({
                 <TextInput
                     style={styles.input}
                     value={currentPassword}
-                    onChangeText={setCurrentPassword}
+                    onChangeText={(text) => {
+                        setCurrentPassword(text);
+                        clearError("currentPassword");
+                    }}
                     secureTextEntry={!showCurrentPassword}
+                    placeholder={t('enter current password')}
+                    placeholderTextColor={'grey'}
                 />
+                {errors.currentPassword && (
+                    <Text style={localStyles.errorText}>{errors.currentPassword}</Text>
+                )}
                 <Pressable onPress={() => setShowCurrentPassword(prev => !prev)}>
                     {showCurrentPassword ? <Eye/> : <EyeOff/>}
                 </Pressable>
@@ -46,20 +99,50 @@ const ChangePasswordContent = ({
                 <TextInput
                     style={styles.input}
                     value={password}
-                    onChangeText={setPassword}
+                    onChangeText={(text) => {
+                        setPassword(text);
+                        clearError("password");
+                    }}
                     secureTextEntry={!showNewPassword}
+                    placeholder={t('min 6 chars, letters and numbers')}
+                    placeholderTextColor={'grey'}
                 />
                 <Pressable onPress={() => setShowNewPassword(prev => !prev)}>
                     {showNewPassword ? <Eye/> : <EyeOff/>}
                 </Pressable>
             </View>
+            {errors.password && (
+                <Text style={localStyles.errorText}>{errors.password}</Text>
+            )}
+
+            {/* FORGOT PASSWORD LINK */}
+            <Pressable onPress={handleForgotPassword} style={localStyles.forgotRow}>
+                <Text style={localStyles.forgotText}>{t('forgot password?')}</Text>
+            </Pressable>
 
             {/* ACTION BUTTON */}
-            <Pressable style={styles.Btn}>
+            <Pressable style={styles.Btn} onPress={handleConfirm}>
                 <Text>{t("confirm")}</Text>
             </Pressable>
         </View>
     );
 };
+
+const localStyles = StyleSheet.create({
+    forgotRow: {
+        marginTop: 10,
+        alignItems: 'flex-start'
+    },
+    forgotText: {
+        color: '#2f6618fe',
+        fontWeight: 'bold'
+    },
+    errorText: {
+        color: 'red',
+        fontSize: 12,
+        marginTop: 5
+    }
+});
+
 
 export default ChangePasswordContent;
