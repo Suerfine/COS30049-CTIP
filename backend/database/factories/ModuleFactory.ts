@@ -9,6 +9,46 @@ import {
 import { ElementFactoryInput, buildElements, buildElement } from "./ElementFactory";
 import { ElementTypes } from "../../src/enum/ElementTypes";
 
+const moduleTopics = [
+  "Wildlife Conservation Fundamentals",
+  "Forest Ecosystem Management Strategies",
+  "Biodiversity Monitoring and Assessment",
+  "Environmental Protection Protocols",
+  "Sustainable Forestry Practices",
+  "Habitat Restoration and Recovery",
+  "Climate Change Impact Studies",
+  "Endangered Species Protection Programs",
+  "Ecosystem Balance and Interactions",
+  "Protected Area Management Systems",
+  "Wetland Conservation and Restoration",
+  "Marine Ecosystem Conservation",
+  "Coral Reef Protection Strategies",
+  "Invasive Species Control Methods",
+  "Carbon Sequestration in Forests",
+
+  "Wildlife Tracking and GPS Monitoring",
+  "Animal Behavior Observation Techniques",
+  "Camera Trap Survey Methodology",
+  "Population Census and Data Collection",
+  "Human-Wildlife Conflict Management",
+  "Wildlife Health and Disease Control",
+  "Species Migration Pattern Analysis",
+  "Field Research Safety Protocols",
+  "Biodiversity Data Analysis Systems",
+  "Conservation Field Reporting Standards",
+
+  "Environmental Sensor Networks and IoT Monitoring",
+  "Remote Sensing for Ecosystem Mapping",
+  "Drone-Based Wildlife Surveillance",
+  "Geographic Information Systems (GIS) in Conservation",
+  "AI Applications in Biodiversity Prediction",
+  "Smart Forest Monitoring Systems",
+  "Climate Data Analytics and Modeling",
+  "Environmental Risk Assessment Systems",
+  "Digital Conservation Dashboards",
+  "Real-Time Ecosystem Alert Systems"
+];
+
 let moduleTitleCache: Set<string> = new Set<string>();
 
 const resolveCount = (base: number, variance: number = 0): number => {
@@ -49,21 +89,10 @@ export type ModuleFactoryResult = {
   pages: PageFactoryResult[];
 };
 
-const buildUniqueModuleTitle = (): string => {
-  let title = faker.lorem.words({ min: 2, max: 4 });
-
-  while (moduleTitleCache.has(title)) {
-    title = faker.lorem.words({ min: 2, max: 4 });
-  }
-
-  moduleTitleCache.add(title);
-  return title;
-};
-
 export const buildModule = (overrides: ModuleFactoryInput = {}): ModuleFactoryAttributes => {
   const defaultModule: ModuleFactoryAttributes = {
     order: faker.number.int({ min: 1, max: 12 }),
-    title: buildUniqueModuleTitle(),
+    title: faker.helpers.arrayElement(moduleTopics),
     description: faker.lorem.sentences(2),
     complete_by_week: 1,
   };
