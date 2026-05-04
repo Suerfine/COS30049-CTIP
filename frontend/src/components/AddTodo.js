@@ -124,7 +124,7 @@ const styles = StyleSheet.create({
         fontWeight: "bold",
     },
     saveBtn: {
-        backgroundColor: "#efab21",
+        backgroundColor: "#2f6618fe",
         padding: 8,
         borderRadius: 12,
     },
@@ -137,7 +137,7 @@ const styles = StyleSheet.create({
     label: {
         fontSize: 12,
         fontWeight: "bold",
-        color: "#efab21",
+        color: "#2f6618fe",
         letterSpacing: 1,
         marginBottom: 8,
     },
