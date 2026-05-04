@@ -14,7 +14,6 @@ const CourseFormContent=({onSubmit, onCancel, isLoading, initialData})=>{
         badgeExpiry:initialData?.badge_expire_in_months,
         image:initialData?.cover_img_url || null,
         badgeImage: initialData?.badge_img_url || null,
-        description:initialData?.description || '',
         status: initialData?.status,
         tags:['IoT', 'Medical','Hardware'],
         prerequisites: [
@@ -57,7 +56,6 @@ const CourseFormContent=({onSubmit, onCancel, isLoading, initialData})=>{
     const handleSubmit=()=>{
         const finalPayload={
             title: form.courseTitle,
-            description:form.description,
             duration:parseInt(form.duration, 10) || 0,
             expiryWeeks:parseInt(form.expiryWeeks, 10) || 0,
             badgeExpiry:parseInt(form.badgeExpiry,10) || 0,
@@ -185,12 +183,6 @@ const CourseFormContent=({onSubmit, onCancel, isLoading, initialData})=>{
                                 <Text style={localStyles.addPrereqText}>Add Course</Text>
                             </Pressable>
                         </View>
-                    </View>
-                    
-                    {/* Description */}
-                    <View>
-                        <Text style={styles.label}>Description:</Text>
-                        <TextInput style={[styles.input, localStyles.desc]} value={form.description} placeholder='Enter description...' placeholderTextColor="#8f8f8f" multiline={true} onChangeText={(text)=> setForm({...form, description: text})}/>
                     </View>
                 </View>
                 <View style={styles.upload}>
