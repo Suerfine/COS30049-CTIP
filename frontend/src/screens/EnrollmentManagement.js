@@ -1,12 +1,13 @@
 import React, {useState} from 'react';
 import { View, Text, StyleSheet, Pressable, TextInput, ImageBackground, ScrollView, FlatList, Image} from 'react-native';
 import { useEnrollmentManagement } from '../hooks/useEnrollmentManagement';
-import { RotateCcw, Search, ChevronDown, ChevronUp,ArrowUpNarrowWide, ArrowDownWideNarrow, Circle, Trash2} from 'lucide-react-native';
+import { RotateCcw, Search, ChevronDown, ChevronUp,ArrowUpNarrowWide, ArrowDownWideNarrow, Circle, Trash2, ChevronLeft, ChevronsLeft, ChevronRight, ChevronsRight} from 'lucide-react-native';
 import {Animated} from 'react-native';
 import SlidingTabs from '../components/SlidingTabs';
+import { formatDate } from '../utils/formatDate';
 
 const EnrollmentManagement = () => {
-    const {enrollments, submissions, loading}=useEnrollmentManagement();
+    const {enrollments, submissions, loading, updateStatus}=useEnrollmentManagement();
     const [activeTab, setActiveTab]=useState('enrollment');
     const enrollFields=['fullName', 'courseName', 'status'];
     const [searchTerm, setSearchTerm]=useState('');
@@ -47,7 +48,7 @@ const EnrollmentManagement = () => {
     const renderSubmissionsHeader=()=>(
         <View style={[styles.tableHeader, styles.row]}>
             <Text style={[styles.headerText,{flex: 2}]}>Full Name</Text>
-            <Text style={[styles.headerText, { flex:2}]}>Course Code</Text>
+            <Text style={[styles.headerText, { flex:1}]}>Course Code</Text>
             <Text style={[styles.headerText, { flex:3 }]}>Course Name</Text>
             <Text style={[styles.headerText, { flex:2}]}>Final Quiz</Text>
             <Text style={[styles.headerText, { flex:2}]}>Total Score</Text>
@@ -69,31 +70,36 @@ const EnrollmentManagement = () => {
                 ) : (
                     <View style={styles.pfpPlaceholder}>
                         <Text style={styles.pfpInitials}>
-                            {item.firstname ? item.firstname[0].toUpperCase() : '?'}
+                            {item.fullName ? item.fullName[0].toUpperCase() : '?'}
                         </Text>
                     </View>
                 )}
                 <Text>{item.fullName}</Text>
             </View>
             {/* Course Code */}
-            <Text style={{flex:2}}>{item.courseId}</Text>
+            <Text style={{flex:1, textAlign:'center'}}>{item.course_id}</Text>
             {/* Course Name */}
             <Text style={{flex:3}}>{item.courseName}</Text>
             {/* Enrolled On */}
-            <Text style={{flex:2}}>{item.Enrolled_on}</Text>
+            <Text style={{flex:2}}>{formatDate(item.enrolled_at)}</Text>
             {/* Status */}
             <View style={[styles.row,styles.badge,{flex:2}]}>
-               {item.status === "Completed" ? (
+               {item.status === "completed" ? (
                 <Circle size={10} stroke="green" fill="green" />
-                ) : item.status === "In Progress" ? (
+                ) : item.status === "in_progress" ? (
                 <Circle size={10} stroke="orange" fill="orange" />
                 ) : (
                 <Circle size={10} stroke="red" fill="red" />
                 )}
-                <Text>{item.status.charAt(0).toUpperCase() + item.status.slice(1)}</Text>
+                <Text>
+                    {item.status
+                        .replace(/_/g, " ") 
+                        .toLowerCase() 
+                        .replace(/^\w/, c => c.toUpperCase())} 
+                </Text>
             </View>
             {/* Completed On */}
-            <Text style={{flex:2}}>{item.completed_on || "N/A"}</Text>
+            <Text style={{flex:2}}>{item.completed_at ? formatDate(item.completed_at) : "N/A"}</Text>
             {/* Expiry On */}
             <Text style={{flex:2}}>{item.expiry_date}</Text>
             {/* Action */}
@@ -245,8 +251,8 @@ const EnrollmentManagement = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        padding: 20,
-        backgroundColor: '#f2f2f2'
+        paddingVertical:20,
+        paddingHorizontal:40
     },
     toolbar:{
         justifyContent:'space-between',

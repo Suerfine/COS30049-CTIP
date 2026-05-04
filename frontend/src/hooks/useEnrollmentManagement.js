@@ -23,9 +23,20 @@ export const useEnrollmentManagement=()=>{
         }
     },[]);
 
+    const handleUpdateStatus = async (enrollmentId, newStatus) => {
+        try {
+            await enrollmentService.updateStatus(enrollmentId, newStatus);
+            await fetchData();
+            return { success: true };
+        } catch (err) {
+            console.error("Status Update Error:", err);
+            return { success: false, error: err.message };
+        }
+    };
+
     useEffect(()=>{
         fetchData();
     },[fetchData]);
     
-    return {enrollments, submissions, loading, refresh: fetchData};
+    return {enrollments, submissions, loading, refresh: fetchData, updateStatus: handleUpdateStatus};
 };
