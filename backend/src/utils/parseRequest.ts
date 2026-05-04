@@ -23,6 +23,32 @@ export function parseNumberField(value: unknown): number | null {
   return null;
 }
 
+export function parseJsonAny(value: unknown): unknown | null {
+  // Accept plain objects and arrays
+  if (typeof value === "object" && value !== null) {
+    return value as unknown;
+  }
+
+  // If it's a string, try to parse it as JSON
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (trimmed === "") {
+      return {};
+    }
+
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (typeof parsed === "object" && parsed !== null) {
+        return parsed;
+      }
+    } catch {
+      return null;
+    }
+  }
+
+  return null;
+}
+
 export function parseOptionalText(value: unknown): string | null | undefined {
   if (value === undefined) {
     return undefined;
