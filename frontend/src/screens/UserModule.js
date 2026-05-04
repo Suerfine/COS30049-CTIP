@@ -9,10 +9,12 @@ import { useCourseDetails } from '../hooks/useCourseDetails.js';
 import SlidingTabs from '../components/SlidingTabs.js';
 import { useElements } from '../hooks/useElements.js';
 import PageRenderer from '../components/pageRenderer.js';
+import { useAuth } from '../context/AuthContext.js';
 
 const UserModule = ({navigation}) => {
     const route=useRoute();
     const {id}=route.params;
+    const {currentUser}=useAuth();
     const {course, loading, error}=useCourseDetails(id);
 
     const [selectedPage, setSelectedPage]=useState({type:'overview'});
@@ -43,6 +45,11 @@ const UserModule = ({navigation}) => {
             <Text style={{ color: 'red' }}>{error || "Course not found"}</Text>
         </View>
     );
+
+    const saveProgress = async (elementId, score) => {
+        // API Call to update the user's marks for this specific element
+        console.log(`Saving ${score} points for element ${elementId}`);
+    };
 
     const renderOverviewContent = () => {
         switch (activeTab) {
@@ -168,7 +175,12 @@ const UserModule = ({navigation}) => {
                                         <Text style={styles.loaderText}>Loading Elements...</Text>
                                     </View>
                                 ) : (
-                                    <PageRenderer elements={elements} />
+                                    <PageRenderer 
+                                        elements={elements}
+                                        role={currentUser.role}
+                                        courseId={id}
+                                        onProgressUpdate={saveProgress}
+                                    />
                                 )}
                             </View>
                         ) : (
@@ -196,7 +208,7 @@ const UserModule = ({navigation}) => {
                                 </View>
                                 
                                 <Image 
-                                    source={course.badge_img_url ? { uri: course.badge_img_url } : require('../../assets/first_aid.png')} style={styles.course_cover}
+                                    source={course.cover_img_url ? { uri: course.cover_img_url } : require('../../assets/first_aid.png')} style={styles.course_cover}
                                 />
 
                                 {/* Sliding Tab */}

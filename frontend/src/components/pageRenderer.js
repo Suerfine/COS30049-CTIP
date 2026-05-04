@@ -1,6 +1,6 @@
-import { useState,useEffect } from 'react';
+import { useState,useEffect, useRef } from 'react';
 import { View, Text, Image, StyleSheet, TouchableOpacity, Linking, Platform } from 'react-native';
-import { FileText, Play, Download, HelpCircle, Edit3, editCircle, Trash2,ChevronUp, ChevronDown } from 'lucide-react-native';
+import { FileText, Play, Download, HelpCircle, Edit3, editCircle, Trash2,ChevronUp, ChevronDown, CheckCircle2, RotateCcw, AlertCircle} from 'lucide-react-native';
 import Markdown from 'react-native-markdown-display';
 import * as Progress from 'react-native-progress';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -10,9 +10,70 @@ import WebView from 'react-native-webview';
 import { markdownStyles } from './markdownStyle';
 import { UserRoles } from '../enum/UserRoles';
 
-const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement, onMoveElement }) => {
+const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement, onMoveElement, onProgressUpdate}) => {
     const isAdmin = role === UserRoles.ADMIN;
     const [videoProgress, setVideoProgress]=useState({});
+    const [quizStates, setQuizStates]=useState({});
+    const [viewedElements, setViewedElements] = useState({});
+
+    const IntersectionWrapper = ({ children, id, score, type }) => {
+        const elementRef = useRef(null);
+
+        useEffect(() => {
+            if (isAdmin || type === 'quiz_objective' || viewedElements[id]) return;
+
+            const observer = new IntersectionObserver(
+                ([entry]) => {
+                    if (entry.isIntersecting && entry.intersectionRatio >= 0.7) {
+                        setTimeout(() => {
+                            markAsComplete(id, score);
+                        }, 5000);
+                        observer.disconnect();
+                    }
+                },
+                { threshold: [0.7] }
+            );
+
+            if (elementRef.current) {
+                observer.observe(elementRef.current);
+            }
+
+            return () => observer.disconnect();
+        }, [id]);
+
+        return (
+            <View ref={elementRef} style={{ width: '100%' }}>
+                {children}
+            </View>
+        );
+    };
+
+    const markAsComplete = (id, score) => {
+        if (isAdmin || viewedElements[id]) return;
+        setViewedElements(prev => ({ ...prev, [id]: true }));
+        if (onProgressUpdate) {
+            onProgressUpdate(id, score);
+        }
+    };
+
+    const handleQuizSubmit = (el, selectedOption) => {
+        const isCorrect = selectedOption === el.content.answer;
+        setQuizStates(prev => ({
+            ...prev,
+            [el.id]: { selected: selectedOption, isCorrect, submitted: true }
+        }));
+
+        if (isCorrect && onProgressUpdate) {
+            onProgressUpdate(el.id, el.score);
+        }
+    };
+
+    const resetQuiz = (id) => {
+        setQuizStates(prev => ({
+            ...prev,
+            [id]: { selected: null, isCorrect: null, submitted: false }
+        }));
+    };
 
     const confirmDelete = (el) => {
         console.log("onDeleteElement prop type:", typeof onDeleteElement);
@@ -121,94 +182,136 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
     
     const renderElement = (el, index) => {
         const { type, content, score, id } = el;
+        const quiz = quizStates[id] || { selected: null, isCorrect: null, submitted: false };
+        const isViewed = viewedElements[id] || false;
 
         return (
-            <View key={id} style={styles.masterWrapper}>
-                {isAdmin && (
-                    <View style={styles.adminHeader}>
-                        <View style={styles.orderGroup}>
-                            <TouchableOpacity 
-                                onPress={() => onMoveElement(id, 'up')}
-                                disabled={index === 0}
-                                style={[styles.orderBtn, index === 0 && { opacity: 0.2 }]}
-                            >
-                                <ChevronUp color="#666" size={18} />
-                            </TouchableOpacity>
-                            <TouchableOpacity 
-                                onPress={() => onMoveElement(id, 'down')}
-                                disabled={index === elements.length - 1}
-                                style={[styles.orderBtn, index === elements.length - 1 && { opacity: 0.2 }]}
-                            >
-                                <ChevronDown color="#666" size={18} />
-                            </TouchableOpacity>
-                        </View>
-                        <View style={styles.scoreBadge}>
-                            <Text style={styles.scoreText}>{score || 0} Points</Text>
-                        </View>
-                        <TouchableOpacity 
-                            style={styles.editCircle}
-                            onPress={() => onEditElement(el)}
-                        >
-                            <Edit3 color="#0a6340" size={16} />
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.deleteCircle} onPress={() => confirmDelete(el)}>
-                            <Trash2 color="#dc2626" size={16} />
-                        </TouchableOpacity>
+            <IntersectionWrapper key={id} id={id} score={score} type={type}>
+                <View style={styles.masterWrapper}>
+                    <View style={styles.userScoreHeader}>
+                        <Text style={styles.userScoreText}>
+                            {isAdmin ? "" : (isViewed || quiz.isCorrect ? `${score}/${score} pts` : `0/${score} pts`)}
+                        </Text>
+                        {!isAdmin && (isViewed || quiz.isCorrect) && <CheckCircle2 size={14} color="#0a6340" />}
                     </View>
-                )}
 
-                <View style={styles.elementWrapper}>
-                    {(() => {
-                        switch (type) {
-                            case 'text':
-                                return <Markdown style={markdownStyles}>{content.text}</Markdown>;
-                            case 'image':
-                                return (
-                                    <View>
-                                        <Image source={{ uri: content.url }} style={styles.imageBox} resizeMode="cover" />
-                                        {content.caption && <Text style={styles.caption}>{content.caption}</Text>}
-                                    </View>
-                                );
-                            case 'video':
-                                const isYoutube = content.url?.includes("youtube") || content.url?.includes("youtu.be");
-                                return (
-                                    <View style={styles.videoContainer}>
-                                        {isYoutube ? <VideoPlayer url={content.url} /> : (
-                                            <Video source={{ uri: content.url }} style={styles.videoPlayer} controls />
-                                        )}
-                                        <View style={styles.videoCardBottom}>
-                                            <View style={styles.videoLabelRow}>
-                                                <Play color="#0a6340" size={16} fill="#0a6340" />
-                                                <Text style={styles.videoLabel}>Technical Training Module</Text>
-                                            </View>
-                                            <Text style={styles.transcript}>{content.transcript || "No transcript."}</Text>
+                    {isAdmin && (
+                        <View style={styles.adminHeader}>
+                            {/* ... Admin Buttons remain exactly the same ... */}
+                            <View style={styles.orderGroup}>
+                                <TouchableOpacity 
+                                    onPress={() => onMoveElement(id, 'up')}
+                                    disabled={index === 0}
+                                    style={[styles.orderBtn, index === 0 && { opacity: 0.2 }]}
+                                >
+                                    <ChevronUp color="#666" size={18} />
+                                </TouchableOpacity>
+                                <TouchableOpacity 
+                                    onPress={() => onMoveElement(id, 'down')}
+                                    disabled={index === elements.length - 1}
+                                    style={[styles.orderBtn, index === elements.length - 1 && { opacity: 0.2 }]}
+                                >
+                                    <ChevronDown color="#666" size={18} />
+                                </TouchableOpacity>
+                            </View>
+                            <View style={styles.scoreBadge}>
+                                <Text style={styles.scoreText}>{score || 0} Points</Text>
+                            </View>
+                            <TouchableOpacity style={styles.editCircle} onPress={() => onEditElement(el)}>
+                                <Edit3 color="#0a6340" size={16} />
+                            </TouchableOpacity>
+                            <TouchableOpacity style={styles.deleteCircle} onPress={() => confirmDelete(el)}>
+                                <Trash2 color="#dc2626" size={16} />
+                            </TouchableOpacity>
+                        </View>
+                    )}
+
+                    <View style={styles.elementWrapper}>
+                        {(() => {
+                            switch (type) {
+                                case 'text':
+                                    return <Markdown style={markdownStyles}>{content.text}</Markdown>;
+                                case 'image':
+                                    return (
+                                        <View>
+                                            <Image source={{ uri: content.url }} style={styles.imageBox} resizeMode="cover" />
+                                            {content.caption && <Text style={styles.caption}>{content.caption}</Text>}
                                         </View>
-                                    </View>
-                                );
-                            case 'quiz_objective':
-                                return (
-                                    <View style={styles.quizCard}>
-                                        <View style={styles.quizHeader}>
-                                            <HelpCircle color="#0a6340" size={13}/>
-                                            <Text style={styles.quizTitle}>Knowledge Check</Text>
-                                        </View>
-                                        <Text style={styles.question}>{content.question}</Text>
-                                        {content.options.map((option, index) => (
-                                            <View key={index} style={styles.optionBtn}>
-                                                <View style={[styles.radioOutline, option === content.answer && styles.correctRadio]}>
-                                                    {option === content.answer && <View style={styles.radioInner} />}
+                                    );
+                                case 'video':
+                                    const isYoutube = content.url?.includes("youtube") || content.url?.includes("youtu.be");
+                                    return (
+                                        <View style={styles.videoContainer}>
+                                            {isYoutube ? <VideoPlayer url={content.url} /> : (
+                                                <Video source={{ uri: content.url }} style={styles.videoPlayer} controls />
+                                            )}
+                                            <View style={styles.videoCardBottom}>
+                                                <View style={styles.videoLabelRow}>
+                                                    <Play color="#0a6340" size={16} fill="#0a6340" />
+                                                    <Text style={styles.videoLabel}>Technical Training Module</Text>
                                                 </View>
-                                                <Text style={styles.optionText}>{option}</Text>
+                                                <Text style={styles.transcript}>{content.transcript || "No transcript."}</Text>
                                             </View>
-                                        ))}
-                                    </View>
-                                );
-                            default:
-                                return null;
-                        }
-                    })()}
+                                        </View>
+                                    );
+                                case 'quiz_objective':
+                                    return (
+                                        <View style={[styles.quizCard, quiz.submitted && !quiz.isCorrect && styles.quizCardError]}>
+                                            <View style={styles.quizHeader}>
+                                                <HelpCircle color="#0a6340" size={13}/>
+                                                <Text style={styles.quizTitle}>Knowledge Check</Text>
+                                            </View>
+                                            <Text style={styles.question}>{content.question}</Text>
+                                            {content.options.map((option, idx) => {
+                                                const isSelected = quiz.selected === option;
+                                                const showSuccess = quiz.submitted && option === content.answer;
+                                                const showDanger = quiz.submitted && isSelected && !quiz.isCorrect;
+                                                return (
+                                                    <TouchableOpacity 
+                                                        key={idx} 
+                                                        disabled={isAdmin || quiz.submitted}
+                                                        onPress={() => handleQuizSubmit(el, option)}
+                                                        style={[
+                                                            styles.optionBtn,
+                                                            isSelected && styles.optionSelected,
+                                                            showSuccess && styles.optionSuccess,
+                                                            showDanger && styles.optionDanger
+                                                        ]}
+                                                    >
+                                                        <View style={[styles.radioOutline, isSelected && styles.correctRadio]}>
+                                                            {(isSelected || showSuccess) && <View style={styles.radioInner} />}
+                                                        </View>
+                                                        <Text style={styles.optionText}>{option}</Text>
+                                                    </TouchableOpacity>
+                                                );
+                                            })}
+                                            {quiz.submitted && (
+                                                <View style={styles.quizFeedback}>
+                                                    {!quiz.isCorrect ? (
+                                                        <>
+                                                            <View style={styles.feedbackRow}>
+                                                                <AlertCircle size={16} color="#dc2626" />
+                                                                <Text style={styles.errorText}>Incorrect. The correct answer is: {content.answer}</Text>
+                                                            </View>
+                                                            <TouchableOpacity style={styles.redoBtn} onPress={() => resetQuiz(id)}>
+                                                                <RotateCcw size={14} color="#0a6340" />
+                                                                <Text style={styles.redoText}>Try Again</Text>
+                                                            </TouchableOpacity>
+                                                        </>
+                                                    ) : (
+                                                        <Text style={styles.successText}>Correct! Well done.</Text>
+                                                    )}
+                                                </View>
+                                            )}
+                                        </View>
+                                    );
+                                default:
+                                    return null;
+                            }
+                        })()}
+                    </View>
                 </View>
-            </View>
+            </IntersectionWrapper>
         );
     };
 
@@ -490,6 +593,70 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center'
     },
+    userScoreHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 5,
+        marginBottom: 5,
+        justifyContent: 'flex-end',
+        marginRight:20
+    },
+    userScoreText: {
+        fontSize: 15,
+        color: '#666',
+        fontWeight: '600'
+    },
+    optionSelected: {
+        borderColor: '#0a6340',
+        backgroundColor: '#f0fdf4'
+    },
+    optionSuccess: {
+        borderColor: '#0a6340',
+        backgroundColor: '#dcfce7'
+    },
+    optionDanger: {
+        borderColor: '#dc2626',
+        backgroundColor: '#fef2f2'
+    },
+    quizFeedback: {
+        marginTop: 15,
+        paddingTop: 15,
+        borderTopWidth: 1,
+        borderTopColor: '#eee'
+    },
+    feedbackRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        marginBottom: 10
+    },
+    errorText: {
+        color: '#dc2626',
+        fontSize: 13,
+        fontWeight: '600'
+    },
+    successText: {
+        color: '#0a6340',
+        fontSize: 13,
+        fontWeight: '600'
+    },
+    redoBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 5,
+        alignSelf: 'flex-start',
+        padding: 8,
+        backgroundColor: '#f0fdf4',
+        borderRadius: 5
+    },
+    redoText: {
+        color: '#0a6340',
+        fontSize: 12,
+        fontWeight: 'bold'
+    },
+    quizCardError: {
+        borderColor: '#fecaca'
+    }
 });
 
 export default PageRenderer;
