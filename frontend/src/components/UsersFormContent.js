@@ -56,20 +56,7 @@ const UsersFormContent=({onSubmit, onCancel, isLoading})=>{
     const handleSubmit=async()=>{
         if(validateForm()){
             const result=await onSubmit(form);
-            if(result && !result.success && result.serverError){
-                const msg=result.serverError.toLowerCase();
-                let serverErrors = {};
-
-                if (msg.includes('email')) {
-                    serverErrors.email = "* This email is already registered.";
-                } else if (msg.includes('identification') || msg.includes('ic')) {
-                    serverErrors.ic = "* This IC/Passport is already in use.";
-                } else {
-                    alert(result.serverError);
-                }
-
-                setErrors(prev => ({ ...prev, ...serverErrors }));
-            }
+            iz
         }
     }
     
@@ -173,7 +160,11 @@ const UsersFormContent=({onSubmit, onCancel, isLoading})=>{
                 </View>
                
             </View>
-            {errors ? <Text style={{color:'red',marginTop:15}}>{errors.fname}</Text> : null}
+            {Object.values(errors).length > 0 ? (
+                <Text style={{color: 'red', marginTop: 15}}>
+                    {Object.values(errors).find(msg => msg !== null && msg !== "")}
+                </Text>
+            ) : null}
             <Pressable 
                 style={styles.Btn} 
                 onPress={handleSubmit}

@@ -139,29 +139,35 @@ const AdminCourse = ({ navigation }) => {
       ) : (
         <>
           <View style={styles.cardContainer}>
-            {courses?.data?.map((course) => {
-              const numModules = course.modules ? course.modules.length : 0;
-              return (
-                <CourseCard
-                  key={course.id}
-                  id={course.id}
-                  coverImgUrl={course.cover_img_url}
-                  courseTitle={course.title}
-                  numModules={numModules || 16}
-                  duration={course.expected_completion_weeks}
-                  expiry={course.must_complete_in_weeks}
-                  userType="admin"
-                  onPress={() =>
-                    navigation.navigate("AdminStack", {
-                      screen: "Course Details",
-                      params: { id: course.id },
-                    })
-                  }
-                  onEdit={() => handleEdit(course)}
-                  onDelete={() => handleDelete(course.id)}
-                />
-              );
-            })}
+            {courses?.data && courses.data.length > 0 ? (
+              courses?.data?.map((course) => {
+                const numModules = course.modules ? course.modules.length : 0;
+                return (
+                  <CourseCard
+                    key={course.id}
+                    id={course.id}
+                    coverImgUrl={course.cover_img_url}
+                    courseTitle={course.title}
+                    numModules={numModules || 16}
+                    duration={course.expected_completion_weeks}
+                    expiry={course.must_complete_in_weeks}
+                    userType="admin"
+                    onPress={() =>
+                      navigation.navigate("AdminStack", {
+                        screen: "Course Details",
+                        params: { id: course.id },
+                      })
+                    }
+                    onEdit={() => handleEdit(course)}
+                    onDelete={() => handleDelete(course.id)}
+                  />
+                );
+              })
+            ) : (
+              <View style={styles.emptyContainer}>
+                <Text style={styles.emptyText}>No courses found.</Text>
+              </View>
+            )}
           </View>
         </>
       )}

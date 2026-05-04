@@ -60,18 +60,17 @@ export const useAccountManagement=()=>{
             return;
         }
         setLoading(true);
-        try{
+        try {
             await AccountService.create(formData);
             Alert.alert("Success", "Account created successfully.");
-
-            return {success:true};
-        } catch(err){
-            const serverMessage=err.response?.data?.message || "Internal Server Error";
-            return{
-                success:false,
-                serverError:serverMessage
+            return { success: true };
+        } catch (err) {
+            const errorMessage = err.response?.data?.message || "An error occurred";
+            return {
+                success: false,
+                displayMessage: `* ${errorMessage}`,
             };
-        }finally{
+        } finally {
             setLoading(false);
         }
     };
