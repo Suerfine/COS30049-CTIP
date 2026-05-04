@@ -43,18 +43,25 @@ export const getAllModules = async (
 };
 
 export const getModuleById = async (
-  req: Request<{ module_id: string }>,
+  req: Request<{ course_Id: string; module_id: string }>,
   res: Response<ModuleResponse | { message: string }>,
   next: NextFunction,
 ) => {
   try {
+    const courseId = parseId(req.params.course_Id);
     const moduleId = parseId(req.params.module_id);
+
+    if (courseId === null) {
+      return res.status(400).json({ message: "Invalid course_Id" });
+    }
 
     if (moduleId === null) {
       return res.status(400).json({ message: "Invalid module_id" });
     }
 
-    const module = await Module.findByPk(moduleId);
+    const module = await Module.findOne({
+      where: { id: moduleId, course_id: courseId },
+    });
 
     if (!module) {
       return res.status(404).json({ message: "Module not found" });
@@ -123,7 +130,11 @@ export const createModule = async (
 };
 
 export const upsertModule = async (
-  req: Request<{ module_id: string }, {}, UpdateModuleRequest>,
+  req: Request<
+    { course_Id: string; module_id: string },
+    {},
+    UpdateModuleRequest
+  >,
   res: Response<ModuleResponse | { message: string }>,
   next: NextFunction,
 ) => {
@@ -131,7 +142,7 @@ export const upsertModule = async (
     const body = (req.body ?? {}) as Partial<UpdateModuleRequest>;
 
     // Check if the module to update exists
-    const module = await GetModule(req.params.module_id);
+    const module = await GetModule(req.params.course_Id, req.params.module_id);
 
     // Validate and prepare fields to update
     const updates: Partial<Module> = {};
@@ -195,12 +206,12 @@ export const upsertModule = async (
 };
 
 export const deleteModule = async (
-  req: Request<{ module_id: string }>,
+  req: Request<{ course_Id: string; module_id: string }>,
   res: Response<{ message: string }>,
   next: NextFunction,
 ) => {
   try {
-    const module = await GetModule(req.params.module_id);
+    const module = await GetModule(req.params.course_Id, req.params.module_id);
 
     await module.destroy();
 
@@ -212,12 +223,18 @@ export const deleteModule = async (
   }
 };
 
-async function GetModule(moduleId: string): Promise<Module> {
+async function GetModule(courseId: string, moduleId: string): Promise<Module> {
+  const _courseId = parseId(courseId);
   const _moduleId = parseId(moduleId);
+  if (_courseId === null) {
+    throw new Error("Invalid course_Id");
+  }
   if (_moduleId === null) {
     throw new Error("Invalid module_id");
   }
-  const module = await Module.findByPk(_moduleId);
+  const module = await Module.findOne({
+    where: { id: _moduleId, course_id: _courseId },
+  });
   if (!module) {
     throw new Error("Module not found");
   }

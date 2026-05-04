@@ -48,14 +48,6 @@ const options: swaggerJSDoc.Options = {
         name: "Elements",
         description: "Element management endpoints",
       },
-      {
-        name: "Discussions",
-        description: "Discussion management endpoints",
-      },
-      {
-        name: "Messages",
-        description: "Message management endpoints",
-      },
     ],
     components: {
       securitySchemes: {
@@ -867,81 +859,6 @@ const options: swaggerJSDoc.Options = {
                   example: "2026-04-24T08:00:00.000Z",
                 },
               },
-            },
-          },
-        },
-        CreateDiscussionRequest: {
-          type: "object",
-          required: ["title"],
-          properties: {
-            title: { type: "string", example: "Discussion Title" },
-            is_public: {
-              type: "boolean",
-              example: true,
-              description:
-                "Whether the discussion is public or private. A public discussion means any ParkGuide and Admin can see and comment on it, while a private discussion is only visible to the creator and Admins.",
-            },
-          },
-        },
-        DiscussionResponse: {
-          type: "object",
-          properties: {
-            id: { type: "integer", example: 1 },
-            title: { type: "string", example: "Discussion Title" },
-            is_public: {
-              type: "boolean",
-              example: true,
-              description:
-                "Whether the discussion is public or private. A public discussion means any ParkGuide and Admin can see and comment on it, while a private discussion is only visible to the creator and Admins.",
-            },
-            created_at: {
-              type: "string",
-              format: "date-time",
-              example: "2026-04-24T08:00:00.000Z",
-            },
-            updated_at: {
-              type: "string",
-              format: "date-time",
-              example: "2026-04-24T08:00:00.000Z",
-            },
-          },
-        },
-        Discussion: {
-          type: "object",
-          properties: {
-            id: { type: "integer", example: 1 },
-            course_id: { type: "integer", example: 1 },
-            creator_user_id: { type: "integer", example: 1 },
-            title: { type: "string", example: "Discussion on Module 1" },
-            is_public: { type: "boolean", example: true },
-            created_at: {
-              type: "string",
-              format: "date-time",
-              example: "2026-04-24T08:00:00.000Z",
-            },
-            updated_at: {
-              type: "string",
-              format: "date-time",
-              example: "2026-04-24T08:00:00.000Z",
-            },
-          },
-        },
-        Message: {
-          type: "object",
-          properties: {
-            id: { type: "integer", example: 1 },
-            discussion_id: { type: "integer", example: 1 },
-            creator_user_id: { type: "integer", example: 1 },
-            content: { type: "string", example: "This is my message response" },
-            created_at: {
-              type: "string",
-              format: "date-time",
-              example: "2026-04-24T08:00:00.000Z",
-            },
-            updated_at: {
-              type: "string",
-              format: "date-time",
-              example: "2026-04-24T08:00:00.000Z",
             },
           },
         },
