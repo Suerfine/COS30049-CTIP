@@ -48,6 +48,14 @@ const options: swaggerJSDoc.Options = {
         name: "Elements",
         description: "Element management endpoints",
       },
+      {
+        name: "Discussions",
+        description: "Discussion threads for courses",
+      },
+      {
+        name: "Messages",
+        description: "Messages within discussion threads",
+      },
     ],
     components: {
       securitySchemes: {
@@ -813,6 +821,91 @@ const options: swaggerJSDoc.Options = {
               },
               description: "Array of elements to update.",
             },
+          },
+        },
+        Discussion: {
+          type: "object",
+          properties: {
+            id: { type: "integer", example: 1 },
+            course_id: { type: "integer", example: 10 },
+            user_id: { type: "integer", example: 2 },
+            title: { type: "string", example: "Discussion on Module 1" },
+            is_public: { type: "boolean", example: true },
+            created_at: {
+              type: "string",
+              format: "date-time",
+              example: "2026-04-24T08:00:00.000Z",
+            },
+            updated_at: {
+              type: "string",
+              format: "date-time",
+              example: "2026-04-24T08:00:00.000Z",
+            },
+            deleted_at: {
+              type: "string",
+              format: "date-time",
+              nullable: true,
+              example: null,
+            },
+          },
+        },
+        CreateDiscussionRequest: {
+          type: "object",
+          required: ["title"],
+          properties: {
+            title: { type: "string", example: "Discussion on Module 1" },
+            is_public: { type: "boolean", example: true },
+          },
+        },
+        UpdateDiscussionRequest: {
+          type: "object",
+          properties: {
+            title: { type: "string", example: "Updated title" },
+            is_public: { type: "boolean", example: false },
+          },
+        },
+        Message: {
+          type: "object",
+          properties: {
+            id: { type: "integer", example: 1 },
+            discussion_id: { type: "integer", example: 5 },
+            user_id: { type: "integer", example: 2 },
+            content: {
+              type: "string",
+              example: "I found this module very helpful.",
+            },
+            created_at: {
+              type: "string",
+              format: "date-time",
+              example: "2026-04-24T08:00:00.000Z",
+            },
+            updated_at: {
+              type: "string",
+              format: "date-time",
+              example: "2026-04-24T08:00:00.000Z",
+            },
+            deleted_at: {
+              type: "string",
+              format: "date-time",
+              nullable: true,
+              example: null,
+            },
+          },
+        },
+        CreateMessageRequest: {
+          type: "object",
+          required: ["content"],
+          properties: {
+            content: {
+              type: "string",
+              example: "I found this module very helpful.",
+            },
+          },
+        },
+        UpdateMessageRequest: {
+          type: "object",
+          properties: {
+            content: { type: "string", example: "Updated message content." },
           },
         },
         RejectRegistrationRequest: {
