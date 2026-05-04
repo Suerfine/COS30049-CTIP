@@ -452,6 +452,18 @@ const styles = StyleSheet.create({
         marginTop: 10, 
         color: '#666' 
     },
+    messageContainer: {
+        padding: 15,
+        backgroundColor: '#fff',
+        borderRadius: 12,
+        marginBottom: 10,
+    },
+    attachmentImage: {
+        width: '100%',
+        height: 200, 
+        borderRadius: 8,
+        marginTop: 10,
+    }
 });
 
 export default EditCourseDetail;
