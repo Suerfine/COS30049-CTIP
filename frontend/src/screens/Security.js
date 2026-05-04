@@ -1,5 +1,5 @@
 import {useState, useEffect} from 'react';
-import { View, Text, TextInput, StyleSheet, Pressable, ScrollView, Image, ImageBackground, Dimensions, Modal } from 'react-native';
+import { View, Text, TextInput, StyleSheet, Pressable, ScrollView, Image, ImageBackground, Dimensions, Modal, Alert} from 'react-native';
 import { SquarePen } from 'lucide-react-native';
 import { Eye, EyeOff } from 'lucide-react-native';
 
@@ -20,7 +20,31 @@ const Security = ({ navigation }) => {
         showCurrentPassword, setShowCurrentPassword,
         showNewPassword, setShowNewPassword,
         currentPassword, setCurrentPassword,
+        handleSavePassword, handleSaveUsername,
     }=useUserProfile();
+    const [errors, setErrors] = useState({});
+
+    const clearError = (field) => {
+        setErrors(prev => {
+            const updated = { ...prev };
+            delete updated[field];
+            return updated;
+        });
+    };
+    
+    const validateUsername = () => {
+        let tempErrors = {};
+
+        if (!username.trim()) {
+            tempErrors.username = "* Username is required.";
+        } else if (!/^[A-Za-z]+#[0-9]{4}$/.test(username)) {
+            tempErrors.username = "* Username must follow format: name#1234 (letters + # + 4 digits).";
+        }
+
+        setErrors(tempErrors);
+        return Object.keys(tempErrors).length === 0;
+    };
+
     return(
         <View style={styles.container}>
             <ScrollView>
@@ -32,15 +56,18 @@ const Security = ({ navigation }) => {
                     <View style={styles.securityField}>
                         <Text style={styles.fieldLabel}>Username</Text>
                         <View style={styles.securityRow}>
-                            <TextInput
-                                style={[styles.input, styles.securityInput, !editingUsername && styles.inputDisabled]}
-                                value={username}
-                                onChangeText={setUsername}
-                                placeholder="Username"
-                                placeholderTextColor="grey"
-                                editable={editingUsername}
-                                autoCapitalize="none"
-                            />
+                        <TextInput
+                            style={[styles.input, styles.securityInput, !editingUsername && styles.inputDisabled]}
+                            value={username}
+                            onChangeText={(text) => {
+                                setUsername(text);
+                                clearError("username");
+                            }}
+                            placeholder="Username"
+                            placeholderTextColor="grey"
+                            editable={editingUsername}
+                            autoCapitalize="none"
+                        />
                             <Pressable 
                                 style={({ hovered }) => [
                                     styles.changeBtn,
@@ -48,8 +75,9 @@ const Security = ({ navigation }) => {
                                 ]}
                                 onPress={() => {
                                     if (editingUsername) {
-                                        // user click confirm button, save changes and exit edit mode
-                                        setEditingUsername(false);
+                                        if (validateUsername()) {
+                                            handleSaveUsername();
+                                        }
                                     } else {
                                         setEditingUsername(true);
                                     }
@@ -75,6 +103,9 @@ const Security = ({ navigation }) => {
                                 </Pressable>
                             )}
                         </View>
+                        {errors.username && (
+                            <Text style={styles.errorText}>{errors.username}</Text>
+                        )}
                     </View>
 
                     {/* Password */}
@@ -82,14 +113,9 @@ const Security = ({ navigation }) => {
                         <Text style={styles.fieldLabel}>Password</Text>
                         <View style={styles.securityRow}>
                             <TextInput
-                                style={[styles.input, styles.securityInput, !editingPassword && styles.inputDisabled]}
-                                value={editingPassword ? password : '••••••••'}
-                                onChangeText={setPassword}
-                                placeholder="New password"
-                                placeholderTextColor="grey"
-                                secureTextEntry={editingPassword}
-                                editable={editingPassword}
-                                autoCapitalize="none"
+                                style={[styles.input, styles.securityInput, styles.inputDisabled]}
+                                value='••••••••'
+                                editable={false}
                             />
                             <Pressable 
                                 style={({ hovered }) => [
@@ -98,9 +124,7 @@ const Security = ({ navigation }) => {
                                 ]}
                                 onPress={() => setPasswordModalVisible(true)}
                             >
-                                <Text style={styles.changeBtnText}>
-                                    {editingPassword ? 'Save' : 'Change'}
-                                </Text>
+                                <Text style={styles.changeBtnText}>Change</Text>
                             </Pressable>
                         </View>
 
@@ -119,6 +143,7 @@ const Security = ({ navigation }) => {
                                 showNewPassword={showNewPassword}
                                 setShowNewPassword={setShowNewPassword}
                                 onClose={() => setPasswordModalVisible(false)}
+                                onSave={() => handleSavePassword(currentPassword, password)}
                             />
                         </ModalLayout>
                     </View>
@@ -245,6 +270,13 @@ const styles = StyleSheet.create({
 
     hoverBtnOutline: {
         backgroundColor: '#e6f2e6',
+    },
+    errorText: {
+        color: "#b42318",
+        fontSize: 13,
+        fontWeight: "600",
+        marginTop: 2,
+        textAlign: "left",
     },
 });
 

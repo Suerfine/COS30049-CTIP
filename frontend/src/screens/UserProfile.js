@@ -22,28 +22,72 @@ import { ModalStyle } from "../components/ModalStyle";
 import { useUserProfile } from "../hooks/useUserProfile";
 import { userProfileService } from "../services/userProfileService";
 import { useSignUp } from "../hooks/useSignUp";
+import { isValidEmail, isOnlyLetters, phoneRegex, isValidPassword } from "../utils/Validation";
 
 const UserProfile = ({ navigation }) => {
-    const {
-        user,
-        form, setForm,
-        updateField,
-        username, setUsername,
-        password, setPassword,
-        editingUsername, setEditingUsername,
-        editingPassword, setEditingPassword,
-        pfpModalVisible, setPfpModalVisible,
-        passwordModalVisible, setPasswordModalVisible,
-        newImagePath, setNewImagePath,
-        showCurrentPassword, setShowCurrentPassword,
-        showNewPassword, setShowNewPassword,
-        currentPassword, setCurrentPassword,
-        isEditing, setIsEditing,
-        handleSave,
-    } = useUserProfile();
-    const [originalData, setOriginalData] = useState(null);
-    const [profileImage, setProfileImage] = useState(null);
-    const { handleUpload, file, setFile, error, setError } = useSignUp();
+  const {
+      user,
+      form, setForm,
+      updateField,
+      username, setUsername,
+      password, setPassword,
+      editingUsername, setEditingUsername,
+      editingPassword, setEditingPassword,
+      pfpModalVisible, setPfpModalVisible,
+      passwordModalVisible, setPasswordModalVisible,
+      newImagePath, setNewImagePath,
+      showCurrentPassword, setShowCurrentPassword,
+      showNewPassword, setShowNewPassword,
+      currentPassword, setCurrentPassword,
+      isEditing, setIsEditing,
+      handleSave,
+  } = useUserProfile();
+  const [originalData, setOriginalData] = useState(null);
+  const [profileImage, setProfileImage] = useState(null);
+  const [errors, setErrors] = useState({}); 
+  const { handleUpload, file, setFile} = useSignUp();
+
+  // validate form
+  const validateForm = () => {
+    let tempErrors = {};
+
+    if (!form.firstname?.trim()) {
+      tempErrors.firstname = "* First name is required.";
+    }else if (form.firstname.trim().length < 3) {
+      tempErrors.firstname = "* First name must be at least 3 characters."; 
+    } else if (!isOnlyLetters(form.firstname)) {
+      tempErrors.firstname = "* First name must only contain letters.";
+    }
+
+    if (!form.lastname?.trim()) {
+      tempErrors.lastname = "* Last name is required.";
+    } else if (form.lastname.trim().length < 2) {
+      tempErrors.lastname = "* Last name must be at least 2 characters.";
+    } 
+    else if (!isOnlyLetters(form.lastname)) {
+      tempErrors.lastname = "* Last name must only contain letters.";
+    }
+
+    if (!form.identification?.trim()) {
+      tempErrors.identification = "* IC / Passport is required.";
+    }
+
+    if (!form.personal_email?.trim()) {
+      tempErrors.personal_email = "* Email is required.";
+    } else if (!isValidEmail(form.personal_email)) {
+      tempErrors.personal_email = "* Invalid email format.";
+    }
+
+    if (!form.tel?.trim()) {
+      tempErrors.tel = "* Phone number is required.";
+    } else if (!phoneRegex.test(form.tel)) {
+      tempErrors.tel = "* Invalid phone number.";
+    }
+
+    setErrors(tempErrors);
+    return Object.keys(tempErrors).length === 0;
+  };
+
     return (
         <View style={styles.container}>
         <ScrollView>
@@ -126,7 +170,12 @@ const UserProfile = ({ navigation }) => {
                         <Text style={styles.cancelBtnText}>Cancel</Text>
                     </Pressable>
 
-                    <Pressable style={styles.saveBtn} onPress={handleSave}>
+                    <Pressable style={styles.saveBtn} onPress={() => {
+                      if (validateForm()) {
+                          handleSave();
+                        }
+                    }}
+                    >
                         <Text style={styles.saveBtnText}>Save Changes</Text>
                     </Pressable>
                     </>
@@ -141,11 +190,17 @@ const UserProfile = ({ navigation }) => {
                 <TextInput
                     style={[styles.input, !isEditing && styles.inputDisabled]}
                     value={form.firstname}
-                    onChangeText={(text) => updateField("firstname", text)}
+                    onChangeText={(text) => {
+                      updateField("firstname", text);
+                      setErrors(prev => ({ ...prev, firstname: null }));
+                    }}
                     editable={isEditing}
                     placeholder="First name"
                     placeholderTextColor="grey"
                 />
+                {errors.firstname && (
+                  <Text style={styles.errorText}>{errors.firstname}</Text>
+                )}
                 </View>
 
                 <View style={styles.fieldGroup}>
@@ -153,11 +208,17 @@ const UserProfile = ({ navigation }) => {
                 <TextInput
                     style={[styles.input, !isEditing && styles.inputDisabled]}
                     value={form.lastname}
-                    onChangeText={(text) => updateField("lastname", text)}
+                    onChangeText={(text) => {
+                      updateField("lastname", text);
+                      setErrors(prev => ({ ...prev, lastname: null }));
+                    }}
                     editable={isEditing}
                     placeholder="Last name"
                     placeholderTextColor="grey"
-                />
+                />                
+                {errors.lastname && (
+                  <Text style={styles.errorText}>{errors.lastname}</Text>
+                )}               
                 </View>
             </View>
 
@@ -181,13 +242,19 @@ const UserProfile = ({ navigation }) => {
                 <TextInput
                     style={[styles.input, !isEditing && styles.inputDisabled]}
                     value={form.personal_email}
-                    onChangeText={(text) => updateField("personal_email", text)}
+                    onChangeText={(text) => {
+                      updateField("personal_email", text);
+                      setErrors(prev => ({ ...prev, personal_email: null }));
+                    }}
                     editable={isEditing}
                     placeholder="Email address"
                     placeholderTextColor="grey"
                     keyboardType="email-address"
                     autoCapitalize="none"
                 />
+                {errors.personal_email && (
+                  <Text style={styles.errorText}>{errors.personal_email}</Text>
+                )}
                 </View>
 
                 <View style={styles.fieldGroup}>
@@ -195,12 +262,18 @@ const UserProfile = ({ navigation }) => {
                 <TextInput
                     style={[styles.input, !isEditing && styles.inputDisabled]}
                     value={form.tel}
-                    onChangeText={(text) => updateField("tel", text)}
+                    onChangeText={(text) => {
+                      updateField("tel", text);
+                      setErrors(prev => ({ ...prev, tel: null }));
+                    }}
                     editable={isEditing}
                     placeholder="Phone number"
                     placeholderTextColor="grey"
                     keyboardType="phone-pad"
                 />
+                {errors.tel && (
+                  <Text style={styles.errorText}>{errors.tel}</Text>
+                )}
                 </View>
             </View>
             </View>

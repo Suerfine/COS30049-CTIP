@@ -2,6 +2,7 @@ import {useState, useEffect} from 'react';
 import { userProfileService } from "../services/userProfileService";
 import { Alert } from "react-native";
 import { useUserDashboard } from './useUserDashboard';
+import { isValidPassword } from "../utils/Validation";
 
 export const useUserProfile=()=>{
     const {user} = useUserDashboard();
@@ -15,11 +16,11 @@ export const useUserProfile=()=>{
     });
 
     const updateField = (key, value) => {
-    setForm(prev => ({
-        ...prev,
-        [key]: value
-    }));
-};
+        setForm(prev => ({
+            ...prev,
+            [key]: value
+        }));
+    };
     const [isEditing, setIsEditing]=useState(false);
 
     // Account Security state
@@ -89,18 +90,13 @@ export const useUserProfile=()=>{
 
     // SECURITY
     const handleSaveUsername = async () => {
-        if (!username.trim()) {
-            Alert.alert("Error", "Username cannot be empty.");
-            return;
-        }
-        setLoading(true);
         try {
             const result = await userProfileService.update(user.id, { username });
             if (result.success) {
-                Alert.alert("Success", "Username updated successfully.");
+                window.alert("Success", "Username updated successfully.");
                 setEditingUsername(false);
             } else {
-                Alert.alert("Error", result.serverError);
+                window.alert("Error", result.serverError);
             }
         } finally {
             setLoading(false);
@@ -108,20 +104,32 @@ export const useUserProfile=()=>{
     };
 
     const handleSavePassword = async (currentPw, newPw) => {
-        if (!newPw || newPw.length < 6) {
-            Alert.alert("Error", "Password must be at least 6 characters.");
+        if (!currentPw || !newPw) return;
+
+        if (!isValidPassword(newPw)) {
+            window.alert("Error", "Password must include letters, numbers and symbols (min 6 chars).");
             return;
         }
+
+        if (currentPw === newPw) {
+            window.alert("Error", "New password must be different.");
+            return;
+        }
+
         setLoading(true);
         try {
-            const result = await userProfileService.update(user.id, { password: newPw });
+            const result = await userProfileService.update(user.id, {
+                currentPassword: currentPw,
+                password: newPw
+            });
+
             if (result.success) {
-                Alert.alert("Success", "Password updated successfully.");
+                window.alert("Success", "Password updated successfully.");
                 setPasswordModalVisible(false);
                 setPassword('');
                 setCurrentPassword('');
             } else {
-                Alert.alert("Error", result.serverError);
+                window.alert("Error", result.serverError);
             }
         } finally {
             setLoading(false);
@@ -159,5 +167,7 @@ export const useUserProfile=()=>{
         pickImage,
         isEditing, setIsEditing,
         handleSave,
+        handleSavePassword,
+        handleSaveUsername,
     };
 };
