@@ -2,9 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { Circle, CircleCheckBig } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
+import { UserRoles } from '../enum/UserRoles';
 
-
-const FilterSidebar = ({ visible, tempFilters, setTempFilters, onApply, onReset, onClose }) => {
+const FilterSidebar = ({ visible, tempFilters, setTempFilters, onApply, onReset, onClose, role }) => {
     const {t, i18n}=useTranslation();
     const [translateX, setTranslateX] = useState(300);
 
@@ -48,10 +48,6 @@ const FilterSidebar = ({ visible, tempFilters, setTempFilters, onApply, onReset,
         </Pressable>
     );
 
-    const removeFilter=(key,value)=>{
-        setTempFilters
-    }
-
     return (
         <>
             {visible && (
@@ -62,20 +58,28 @@ const FilterSidebar = ({ visible, tempFilters, setTempFilters, onApply, onReset,
                 <Text style={styles.title}>{t("filters")}</Text>
 
                 {/* filter by status */}
-                <Text style={styles.section}>{t('progress')}</Text>
-                {['inProgress', 'completed', 'notEnrolled'].map(status => (
+                {role===UserRoles.ADMIN ? (
+                    ""
+                ) : (
+                    <>
+                    <Text style={styles.section}>{t('progress')}</Text>
+                    {['inProgress', 'completed', 'notEnrolled'].map(status => (
+                        <FilterItem
+                            key={status}
+                            label={statusLabels[status]}
+                            isSelected={tempFilters.status === status}
+                            onPress={() => toggle('status', status)}
+                        />
+                    ))}
                     <FilterItem
-                        key={status}
-                        label={statusLabels[status]}
-                        isSelected={tempFilters.status === status}
-                        onPress={() => toggle('status', status)}
+                        label="All"
+                        isSelected={tempFilters.status === 'all'}
+                        onPress={() => setTempFilters(prev => ({ ...prev, status: 'all' }))}
                     />
-                ))}
-                <FilterItem
-                    label="All"
-                    isSelected={tempFilters.status === 'all'}
-                    onPress={() => setTempFilters(prev => ({ ...prev, status: 'all' }))}
-                />
+                    </>
+                )}
+                
+                
 
                 {/* Tag Filter */}
                 <Text style={styles.section}>{t("categories")}</Text>

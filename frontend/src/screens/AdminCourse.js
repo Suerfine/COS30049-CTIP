@@ -10,21 +10,24 @@ import {
   Modal,
   ActivityIndicator,
 } from "react-native";
-import { CopyPlus, Search, SlidersHorizontal } from "lucide-react-native";
+import { CopyPlus, Search, SlidersHorizontal, CircleX } from "lucide-react-native";
 
 // Import Components
 import CourseCard from "../components/CourseCard.js";
 import CourseFormContent from "../components/CourseFormContent.js";
 import ModalLayout from "../components/ModalLayout.js";
 import { useCourses } from "../hooks/useCourses.js";
+import FilterSidebar from '../components/FilterSidebar';
+import { useAuth } from "../context/AuthContext.js";
 
 const AdminCourse = ({ navigation }) => {
-  const { courses, loadCourses, loading, addCourse, editCourse, deleteCourse } =
+  const { courses, loadCourses, loading, addCourse, editCourse, deleteCourse,filterVisible, setFilterVisible,tempFilters, setTempFilters,filters, setFilters,statusLabels, removeFilter} =
     useCourses();
   const [modalVisible, setModalVisible] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [searchText, setSearchText] = useState("");
+  const {currentUser}=useAuth();
 
   useEffect(() => {
     loadCourses();
@@ -75,6 +78,7 @@ const AdminCourse = ({ navigation }) => {
   };
 
   return (
+    <>
     <ScrollView style={styles.container}>
       {/* Background Image */}
       <ImageBackground
@@ -127,10 +131,34 @@ const AdminCourse = ({ navigation }) => {
           style={({ hovered }) => [
             styles.filter,
             hovered && styles.filterHover,
-          ]}
+          ]
+        }
+          onPress={() => {
+              setTempFilters(filters);
+              setFilterVisible(true);
+          }}
         >
           <SlidersHorizontal />
         </Pressable>
+      </View>
+      <View style={styles.pillContainer}>
+          {filters.status !== 'all' && (
+              <View style={styles.pill}>
+                  <Text style={styles.pillText}>{statusLabels[filters.status]}</Text>
+                  <Pressable onPress={() => removeFilter('status')}>
+                      <CircleX size={16} color="white" />
+                  </Pressable>
+              </View>
+          )}
+
+          {Array.isArray(filters.category) && filters.category.map((catName) => (
+              <View key={catName} style={styles.pill}>
+                  <Text style={styles.pillText}>{catName}</Text>
+                  <Pressable onPress={() => removeFilter('category', catName)}>
+                      <CircleX size={16} color="white" />
+                  </Pressable>
+              </View>
+          ))}
       </View>
 
       {/* Course Card */}
@@ -172,6 +200,23 @@ const AdminCourse = ({ navigation }) => {
         </>
       )}
     </ScrollView>
+    <FilterSidebar
+        visible={filterVisible}
+        tempFilters={tempFilters}
+        setTempFilters={setTempFilters}
+        onClose={() => setFilterVisible(false)}
+        onApply={() => {
+            setFilters(tempFilters);
+            setFilterVisible(false);
+        }}
+        onReset={() => {
+            const reset = { level: 'all', status: 'all' };
+            setTempFilters(reset);
+            setFilters(reset);
+        }}
+        role={currentUser.role}
+    />
+    </>
   );
 };
 
@@ -261,6 +306,26 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     marginTop: 20,
   },
+  pillContainer:{
+        flexDirection:'row',
+        flexWrap:'wrap',
+        gap:8,
+        marginTop:15,
+    },
+    pill:{
+        flexDirection:'row',
+        alignItems:'center',
+        backgroundColor: '#0a6340',
+        paddingHorizontal:12,
+        paddingVertical:8,
+        borderRadius:20,
+    },
+    pillText:{
+        fontSize:14,
+        color:"white",
+        marginRight:6,
+        fontWeight:'500'
+    },
 });
 
 export default AdminCourse;
