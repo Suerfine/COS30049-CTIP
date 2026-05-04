@@ -11,10 +11,11 @@ export const useDiscussions = (courseId, forumType) => {
         try {
             const response = await discussionService.getDiscussions(courseId);
             
-            const actualDiscussions = response?.data || (Array.isArray(response) ? response : []);
+            const allData = Array.isArray(response) ? response : [response];
+            console.log(allData);
             
-            const filtered = actualDiscussions.filter(d => {
-                const isPublic = Boolean(d.is_public); 
+            const filtered = allData.filter(d => {
+                const isPublic = d.is_public === true;
                 return forumType === 'Public' ? isPublic : !isPublic;
             });
             console.log(filtered);

@@ -20,6 +20,6 @@ export const API_ENDPOINTS={
     },
     DISCUSSION:{
         LIST:(courseId)=>`/courses/${courseId}/discussion`,
-        MESSAGES:(discussionId)=>`/discussions/${discussionId}/messages`,
+        MESSAGES:(discussionId)=>`/discussion/${discussionId}/messages`,
     },
 };
