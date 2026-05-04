@@ -25,5 +25,7 @@ export const API_ENDPOINTS={
     ENROLLMENT: {
         LIST: '/enrollments',
         ENROLL: (courseId) => `/enrollments/${courseId}/enroll`,
+        UPDATE_STATUS: (id, status) => `/enrollments/${id}/status/${status}`,
+        MY_ENROLLMENTS:`/enrollments/my-enrollments`,
     },
 };

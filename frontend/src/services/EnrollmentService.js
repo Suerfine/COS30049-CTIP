@@ -1,20 +1,21 @@
 import { API_ENDPOINTS } from "../config/ApiEndpoints";
+import apiClient from "../config/apiConfig";
 
-export const enrollmentService={
-    // GET: fetch all enrollments
+export const enrollmentService = {
+    /**
+     * GET: Fetch all enrollments enriched with User names (Admin View)
+     */
     getAll: async () => {
         try {
+            // Using apiClient for centralized headers/base URL
             const [enrollRes, userRes] = await Promise.all([
-                fetch(API_ENDPOINTS.ENROLLMENT.LIST),
-                fetch(API_ENDPOINTS.USER.ACCOUNT)
+                apiClient.get(API_ENDPOINTS.ENROLLMENT.LIST),
+                apiClient.get(API_ENDPOINTS.USER.ACCOUNT)
             ]);
 
-            if (!enrollRes.ok || !userRes.ok) {
-                throw new Error("Failed to fetch enrollment or user data");
-            }
-
-            const enrollments = await enrollRes.json();
-            const users = await userRes.json();
+            // apiClient usually handles .json() and .ok checks internally
+            const enrollments = enrollRes.data; 
+            const users = userRes.data;
 
             return enrollments.map(enroll => {
                 const user = users.find(u => u.id === enroll.user_id);
@@ -27,20 +28,51 @@ export const enrollmentService={
             console.error("Enrollment Service Error:", error);
             return [];
         }
-        
-    },  
+    },
 
+    /**
+     * GET: My personal enrollments (Current User View)
+     */
+    getMyEnrollments: async () => {
+        try {
+            const res = await apiClient.get(API_ENDPOINTS.ENROLLMENT.MY_ENROLLMENTS);
+            return res.data;
+        } catch (error) {
+            console.error("My Enrollments Error:", error);
+            return [];
+        }
+    },
+
+    /**
+     * GET: Filter enrollments based on user id locally
+     */
     getByUserId: async (userId) => {
         const allEnrollments = await enrollmentService.getAll();
         return allEnrollments.filter(enroll => enroll.user_id === userId);
     },
-    
+
+    /**
+     * POST: Create new Enrollment
+     */
     enroll: async (courseId, userId) => {
-        const res = await fetch(API_ENDPOINTS.ENROLLMENT.ENROLL(courseId), {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ user_id: userId }),
+        const res = await apiClient.post(API_ENDPOINTS.ENROLLMENT.ENROLL(courseId), {
+            user_id: userId 
         });
-        return await res.json();
+        return res.data;
+    },
+
+    /**
+     * PATCH: Update enrollment status (Approval Logic)
+     */
+    updateStatus: async (enrollmentId, status) => {
+        try {
+            const res = await apiClient.patch(
+                API_ENDPOINTS.ENROLLMENT.UPDATE_STATUS(enrollmentId, status)
+            );
+            return res.data;
+        } catch (error) {
+            console.error("Update Status Error:", error);
+            throw error;
+        }
     }
-}
+};
