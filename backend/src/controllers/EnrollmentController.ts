@@ -235,7 +235,14 @@ export const updateEnrollmentStatus = async (
         }
         enrollment.status = newStatus;
         break;
-      // For other statuses, we may want to set completed_at to null as well, depending on the business logic
+      case EnrollmentStatus.IN_PROGRESS:
+        if (
+          enrollment.status !== EnrollmentStatus.IN_REVIEW
+        ) {
+          throw new HttpError(400, "Invalid enrollment status transition");
+        }
+        enrollment.status = newStatus;
+        break;
       default:
         throw new HttpError(400, "Unsupported enrollment status transition");
     }
