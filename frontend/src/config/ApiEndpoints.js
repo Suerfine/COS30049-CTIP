@@ -27,5 +27,6 @@ export const API_ENDPOINTS={
         ENROLL: (courseId) => `/enrollments/${courseId}/enroll`,
         UPDATE_STATUS: (id, status) => `/enrollments/${id}/status/${status}`,
         MY_ENROLLMENTS:`/enrollments/my-enrollments`,
+        DETAIL:(id)=>`/enrollments/${id}`,
     },
 };

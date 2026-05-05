@@ -43,8 +43,15 @@ export const useEnrollmentManagement=()=>{
             await fetchData();
             return { success: true };
         } catch (err) {
-            console.error("Status Update Error:", err);
-            return { success: false, error: err.message };
+            const isBadRequest = err.response?.status === 400;
+            const errorMessage = isBadRequest 
+                ? "Action cannot be done. Cannot repeat same action." 
+                : (err.response?.data?.message || "Failed to update status.");
+
+            return { 
+                success: false, 
+                error: errorMessage 
+            };
         }
     };
 
@@ -60,6 +67,17 @@ export const useEnrollmentManagement=()=>{
     const resetSort=()=>{
         setSortConfig({key:null, direction:'asc'});
     }
+
+    const deleteRecord = async (enrollmentId) => {
+        try {
+            await enrollmentService.delete(enrollmentId);
+            await fetchData();
+            return { success: true };
+        } catch (err) {
+            console.error("Delete Error:", err);
+            return { success: false, error: err.message };
+        }
+    };
 
 
     useEffect(()=>{
@@ -77,6 +95,8 @@ export const useEnrollmentManagement=()=>{
         setCurrentStatus,
         sortConfig,
         setSortConfig,
-        requestSort,resetSort
+        requestSort,resetSort,
+        handleUpdateStatus,
+        deleteRecord
     };
 };
