@@ -32,7 +32,7 @@ router.use("/users", userRouter);
  *               username:
  *                 type: string
  *                 format: email
- *                 description: Your SFC account email address (example: 050812130827@sfc.gov.my).
+ *                 description: "Your SFC account email address (example: 050812130827@sfc.gov.my)."
  *               password:
  *                 type: string
  *     responses:

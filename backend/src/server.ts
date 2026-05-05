@@ -6,6 +6,7 @@ import sequelize from "./config/Database";
 import "./models";
 import routes from "./routes";
 import swaggerSpec from "./config/Swagger";
+import { auditLogger } from "./middelware/AuditLogger";
 
 // Load environment variables from .env file
 const dotenv = require("dotenv");
@@ -60,7 +61,7 @@ app.use(
 );
 
 // Mount ALL routes on /api
-app.use("/api", routes);
+app.use("/api", auditLogger, routes);
 
 const startServer = async (): Promise<void> => {
   try {
