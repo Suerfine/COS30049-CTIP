@@ -354,7 +354,7 @@ export const approveRegistration = async (
       firstname: registration.firstname,
       lastname: registration.lastname,
       identification: registration.identification,
-      personal_email: sfcEmail,
+      personal_email: registration.personal_email,
       tel: registration.tel,
       role: UserRoles.PARK_GUIDE,
       password_hash: await hashPassword(temporary_password),

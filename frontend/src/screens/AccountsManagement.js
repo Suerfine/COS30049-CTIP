@@ -139,7 +139,7 @@ const AccountManagement=()=>{
             {/* Username */}
             <Text style={{flex:2}}>{item.username}</Text>
             {/* Work Email */}
-            <Text style={{flex:3}}>{item.username + " @example.com"}</Text>
+            <Text style={{flex:3}}>{item.identification + "@sfc.gov.my"}</Text>
             {/* Role */}
             <Text style={{flex:1}}>{item.role === "admin" ? "Admin" : "Park Guide"}</Text>
             {/* Joined On */}
@@ -380,7 +380,7 @@ const AccountManagement=()=>{
                                     <Mail size={18} color="#4f4f4f"/>
                                     <Text style={styles.panelLabel}>Work Email:</Text>
                                 </View>
-                                <Text style={styles.userDetails}>{selectedAcc.username+"@example.com"}</Text>
+                                <Text style={styles.userDetails}>{selectedAcc.identification+"@sfc.gov.my"}</Text>
                                 <View style={styles.row}>
                                     <Text style={[styles.panelLabel, {marginLeft:35, marginTop:15}]}>Personal Email:</Text>
                                 </View>

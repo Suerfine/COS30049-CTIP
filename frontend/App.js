@@ -18,6 +18,7 @@ const linking = {
       Login: "login",
       SignUp: "signup",
       ForgotPassword: "forgot-password",
+      ResetPassword: "reset-password",
       "Course Management": "courseManagement",
       "Course Details": "course/:id",
       Dashboard: "dashboard",

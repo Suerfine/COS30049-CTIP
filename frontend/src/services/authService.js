@@ -53,4 +53,41 @@ export const authService = {
       );
     }
   },
+
+  async requestPasswordReset(email) {
+    try {
+      const response = await apiClient.post("/forgot-password", {
+        email,
+      });
+
+      return response.data;
+    } catch (error) {
+      if (error.response) {
+        throw new Error(error.response.data?.message || "Failed to request password reset");
+      }
+
+      throw new Error(
+        "Unable to connect to server. Please check backend is running.",
+      );
+    }
+  },
+
+  async resetPassword(token, password) {
+    try {
+      const response = await apiClient.post("/reset-password", {
+        token,
+        password,
+      });
+
+      return response.data;
+    } catch (error) {
+      if (error.response) {
+        throw new Error(error.response.data?.message || "Failed to reset password");
+      }
+
+      throw new Error(
+        "Unable to connect to server. Please check backend is running.",
+      );
+    }
+  },
 };

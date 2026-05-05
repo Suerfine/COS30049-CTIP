@@ -1,34 +1,39 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { View, Text, StyleSheet, Pressable, ScrollView, TextInput, Alert, Image, useWindowDimensions } from 'react-native';
-import { Mail, ArrowLeft } from 'lucide-react-native';
+import { ArrowLeft, Lock } from 'lucide-react-native';
 import { authService } from '../services/authService';
 
-const ForgotPassword = ({ navigation }) => {
+const ResetPassword = ({ navigation, route }) => {
     const { width } = useWindowDimensions();
     const isDesktop = width >= 980;
-    const [email, setEmail] = useState('');
+    const token = useMemo(() => route?.params?.token || '', [route?.params?.token]);
+    const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
     const [loading, setLoading] = useState(false);
 
-    const isValidEmail = (value) => /^\S+@\S+\.\S+$/.test(value);
-
-    const handleReset = async () => {
-        if (!email.trim()) {
-            Alert.alert('Missing email', 'Please enter your email address.');
+    const handleSubmit = async () => {
+        if (!token) {
+            Alert.alert('Missing token', 'This reset link is invalid or expired.');
             return;
         }
 
-        if (!isValidEmail(email.trim())) {
-            Alert.alert('Invalid email', 'Please enter a valid email address.');
+        if (!password || password.length < 8) {
+            Alert.alert('Weak password', 'Password must be at least 8 characters long.');
+            return;
+        }
+
+        if (password !== confirmPassword) {
+            Alert.alert('Password mismatch', 'The passwords do not match.');
             return;
         }
 
         try {
             setLoading(true);
-            await authService.requestPasswordReset(email.trim());
-            Alert.alert('Reset link sent', 'If this email exists, a password reset link will be sent.');
+            await authService.resetPassword(token, password);
+            Alert.alert('Password updated', 'Your password has been reset successfully. Please sign in with your new password.');
             navigation.navigate('Login');
         } catch (error) {
-            Alert.alert('Unable to send reset link', error.message || 'Please try again later.');
+            Alert.alert('Unable to reset password', error.message || 'Please request a new reset link.');
         } finally {
             setLoading(false);
         }
@@ -47,12 +52,8 @@ const ForgotPassword = ({ navigation }) => {
                             />
                             <View style={styles.heroOverlay} />
                             <View style={styles.heroContent}>
-                                <Text style={styles.heroTitle}>Reset Access</Text>
-                                <Text style={styles.heroSubtitle}>Use your registered email to receive a password reset link and regain access to your training account.</Text>
-                                <View style={styles.heroChipRow}>
-                                    <Text style={styles.heroChip}>Secure Reset</Text>
-                                    <Text style={styles.heroChip}>Email Verification</Text>
-                                </View>
+                                <Text style={styles.heroTitle}>Set New Password</Text>
+                                <Text style={styles.heroSubtitle}>Create a new password for your SFC training account and continue where you left off.</Text>
                             </View>
                         </View>
                     )}
@@ -71,23 +72,38 @@ const ForgotPassword = ({ navigation }) => {
                         </View>
 
                         <View style={styles.header}>
-                            <Text style={styles.title}>Forgot Password</Text>
-                            <Text style={styles.subtitle}>Enter your email and we’ll send a reset link if the account exists.</Text>
+                            <Text style={styles.title}>Reset Password</Text>
+                            <Text style={styles.subtitle}>Enter a new password to regain access to your account.</Text>
                         </View>
 
                         <View style={styles.form}>
                             <View style={styles.inputGroup}>
-                                <Text style={styles.label}>Email</Text>
+                                <Text style={styles.label}>New Password</Text>
                                 <View style={styles.inputContainer}>
-                                    <Mail size={20} color="#2f6618fe" style={styles.icon} />
+                                    <Lock size={20} color="#2f6618fe" style={styles.icon} />
                                     <TextInput
                                         style={styles.input}
-                                        placeholder="Enter your email"
+                                        placeholder="Enter new password"
                                         placeholderTextColor="#8f8f8f"
-                                        value={email}
-                                        onChangeText={setEmail}
-                                        keyboardType="email-address"
-                                        autoCapitalize="none"
+                                        value={password}
+                                        onChangeText={setPassword}
+                                        secureTextEntry
+                                        editable={!loading}
+                                    />
+                                </View>
+                            </View>
+
+                            <View style={styles.inputGroup}>
+                                <Text style={styles.label}>Confirm Password</Text>
+                                <View style={styles.inputContainer}>
+                                    <Lock size={20} color="#2f6618fe" style={styles.icon} />
+                                    <TextInput
+                                        style={styles.input}
+                                        placeholder="Confirm new password"
+                                        placeholderTextColor="#8f8f8f"
+                                        value={confirmPassword}
+                                        onChangeText={setConfirmPassword}
+                                        secureTextEntry
                                         editable={!loading}
                                     />
                                 </View>
@@ -95,10 +111,10 @@ const ForgotPassword = ({ navigation }) => {
 
                             <Pressable
                                 style={[styles.button, loading && styles.disabledButton]}
-                                onPress={handleReset}
+                                onPress={handleSubmit}
                                 disabled={loading}
                             >
-                                <Text style={styles.buttonText}>{loading ? 'Sending...' : 'Send Reset Link'}</Text>
+                                <Text style={styles.buttonText}>{loading ? 'Saving...' : 'Reset Password'}</Text>
                             </Pressable>
 
                             <Pressable style={styles.backRow} onPress={() => navigation.navigate('Login')}>
@@ -116,12 +132,11 @@ const ForgotPassword = ({ navigation }) => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        height:'100vh',
+        height: '100vh',
         backgroundColor: '#e8efe7',
     },
     scrollView: {
         flex: 1,
-        minHeight: 0,
     },
     scrollContent: {
         flexGrow: 1,
@@ -133,6 +148,7 @@ const styles = StyleSheet.create({
         maxWidth: 1000,
         alignSelf: 'center',
         borderRadius: 20,
+        overflow: 'hidden',
         backgroundColor: '#ffffff',
         borderWidth: 1,
         borderColor: '#d8e2d6',
@@ -140,7 +156,6 @@ const styles = StyleSheet.create({
     },
     shellDesktop: {
         flexDirection: 'row',
-        alignItems: 'stretch',
     },
     shellMobile: {
         flexDirection: 'column',
@@ -151,8 +166,6 @@ const styles = StyleSheet.create({
         minHeight: 280,
         position: 'relative',
         overflow: 'hidden',
-        borderTopLeftRadius: 20,
-        borderBottomLeftRadius: 20,
     },
     heroImageFill: {
         ...StyleSheet.absoluteFillObject,
@@ -167,7 +180,6 @@ const styles = StyleSheet.create({
     heroContent: {
         padding: 28,
         gap: 12,
-        userSelect:'none'
     },
     heroTitle: {
         color: '#ffffff',
@@ -180,29 +192,10 @@ const styles = StyleSheet.create({
         lineHeight: 22,
         maxWidth: 380,
     },
-    heroChipRow: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: 10,
-        marginTop: 8,
-    },
-    heroChip: {
-        color: '#e2ffd8',
-        borderWidth: 1,
-        borderColor: '#8ccd7e',
-        borderRadius: 999,
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        fontSize: 12,
-        fontWeight: '600',
-        backgroundColor: 'rgba(52, 95, 44, 0.55)',
-    },
     formPanel: {
         width: '53%',
         padding: 28,
         justifyContent: 'flex-start',
-        borderTopRightRadius: 20,
-        borderBottomRightRadius: 20,
     },
     brandRow: {
         flexDirection: 'row',
@@ -226,7 +219,7 @@ const styles = StyleSheet.create({
     },
     header: {
         marginBottom: 26,
-        marginTop:20
+        marginTop: 20,
     },
     title: {
         fontSize: 34,
@@ -267,7 +260,7 @@ const styles = StyleSheet.create({
         flex: 1,
         fontSize: 16,
         color: '#333',
-        outlineStyle:'none'
+        outlineStyle: 'none',
     },
     button: {
         backgroundColor: '#2f6618fe',
@@ -298,4 +291,4 @@ const styles = StyleSheet.create({
     },
 });
 
-export default ForgotPassword;
+export default ResetPassword;

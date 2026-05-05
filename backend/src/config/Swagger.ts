@@ -100,6 +100,25 @@ const options: swaggerJSDoc.Options = {
             },
           },
         },
+        ForgotPasswordRequest: {
+          type: "object",
+          required: ["email"],
+          properties: {
+            email: {
+              type: "string",
+              format: "email",
+              example: "admin@sfc.gov.my",
+            },
+          },
+        },
+        ResetPasswordRequest: {
+          type: "object",
+          required: ["token", "password"],
+          properties: {
+            token: { type: "string" },
+            password: { type: "string", example: "NewPassword123!" },
+          },
+        },
         User: {
           type: "object",
           properties: {

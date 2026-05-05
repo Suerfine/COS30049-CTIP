@@ -61,6 +61,69 @@ router.use("/users", userRouter);
  */
 router.post("/token", AuthController.token);
 
+/**
+ * @openapi
+ * /api/forgot-password:
+ *   post:
+ *     tags:
+ *       - Auth
+ *     summary: Request a password reset link
+ *     description: Sends a password reset link to the user's registered email address if the account exists.
+ *     security: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: admin@sfc.gov.my
+ *     responses:
+ *       200:
+ *         description: Reset link request accepted
+ *       400:
+ *         description: Email is required
+ */
+router.post("/forgot-password", AuthController.forgotPassword);
+
+/**
+ * @openapi
+ * /api/reset-password:
+ *   post:
+ *     tags:
+ *       - Auth
+ *     summary: Reset the account password
+ *     description: Accepts a valid password reset token and updates the user's password.
+ *     security: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - token
+ *               - password
+ *             properties:
+ *               token:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Password reset successfully
+ *       400:
+ *         description: Invalid request or reset token
+ *       404:
+ *         description: User not found
+ */
+router.post("/reset-password", AuthController.resetPassword);
+
 /*===============================
 =     REGISTRATION ROUTES      =
 ===============================*/

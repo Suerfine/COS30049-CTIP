@@ -16,6 +16,10 @@ type RejectionEmailInput = RegistrationEmailInput & {
   reason?: string | null;
 };
 
+type PasswordResetEmailInput = RegistrationEmailInput & {
+  resetUrl: string;
+};
+
 function getMailerConfig() {
   const host = process.env.SMTP_HOST;
   const user = process.env.SMTP_USER;
@@ -204,6 +208,45 @@ export async function sendRegistrationRejectedEmail(
     from: mailer.from,
     to: input.to,
     subject: "Your CTIP Training Portal registration was rejected",
+    html,
+  });
+}
+
+export async function sendPasswordResetEmail(
+  input: PasswordResetEmailInput,
+): Promise<void> {
+  const mailer = createTransporter();
+
+  if (!mailer) {
+    console.warn("SMTP is not configured; skipped password reset email.");
+    return;
+  }
+
+  const safeName = escapeHtml(getFullName(input));
+  const safeResetUrl = escapeHtml(input.resetUrl);
+  const html = buildEmailShell(`
+    <p style="margin:0 0 18px;text-align:center;font-size:14px;">Hi ${safeName},</p>
+    <p style="margin:0 0 18px;text-align:center;font-size:16px;font-weight:700;">
+      We received a request to reset your CTIP Training Portal password.
+    </p>
+    <p style="margin:0 0 18px;text-align:center;font-size:14px;">
+      Click the link below to create a new password. This link will expire in 15 minutes.
+    </p>
+    <p style="margin:28px 0;text-align:center;">
+      <a href="${safeResetUrl}" style="display:inline-block;padding:14px 24px;background:#14532d;color:#ffffff;text-decoration:none;border-radius:8px;font-weight:700;">
+        Reset Password
+      </a>
+    </p>
+    <p style="margin:0;text-align:center;font-size:12px;color:#52645a;word-break:break-all;">
+      If the button does not work, copy and paste this link into your browser:<br />
+      <span style="color:#14532d;">${safeResetUrl}</span>
+    </p>
+  `);
+
+  await mailer.transporter.sendMail({
+    from: mailer.from,
+    to: input.to,
+    subject: "Reset your CTIP Training Portal password",
     html,
   });
 }
