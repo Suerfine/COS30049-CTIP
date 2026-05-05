@@ -92,8 +92,8 @@ void processSensors() {
   // 1. FIRE SENSOR (Temp + MQ2)
   float t = dht.readTemperature();
   int smoke = analogRead(PIN_MQ2);
-  String currentFireStatus = (t > 50 || smoke > 1500) ? "alert" : "normal";
-  unsigned long fireInterval = (currentFireStatus == "alert") ? INT_ALERT : INT_NORMAL;
+  String currentFireStatus = (t > 50 || smoke > 1500) ? "alerting" : "normal";
+  unsigned long fireInterval = (currentFireStatus == "alerting") ? INT_ALERT : INT_NORMAL;
 
   if (currentFireStatus != lastFireStatus || (now - lastFireLog >= fireInterval)) {
     String fireData = "{";
@@ -109,8 +109,8 @@ void processSensors() {
 
   // 2. MICROWAVE SENSOR
   bool motion = digitalRead(PIN_MICROWAVE);
-  String currentMicroStatus = motion ? "alert" : "normal";
-  unsigned long microInterval = (currentMicroStatus == "alert") ? INT_ALERT : INT_NORMAL;
+  String currentMicroStatus = motion ? "alerting" : "normal";
+  unsigned long microInterval = (currentMicroStatus == "alerting") ? INT_ALERT : INT_NORMAL;
 
   if (currentMicroStatus != lastMicroStatus || (now - lastMicrowaveLog >= microInterval)) {
     String motionData = "{";
@@ -126,8 +126,8 @@ void processSensors() {
   // 3. ACOUSTIC SENSOR
   int sound = analogRead(PIN_ACOUSTIC);
   avgSound = (avgSound * 0.9) + (sound * 0.1);
-  String currentSoundStatus = (abs(sound - avgSound) > 800) ? "alert" : "normal";
-  unsigned long soundInterval = (currentSoundStatus == "alert") ? INT_ALERT : INT_NORMAL;
+  String currentSoundStatus = (abs(sound - avgSound) > 800) ? "alerting" : "normal";
+  unsigned long soundInterval = (currentSoundStatus == "alerting") ? INT_ALERT : INT_NORMAL;
 
   if (currentSoundStatus != lastSoundStatus || (now - lastAcousticLog >= soundInterval)) {
     String soundData = "{";
@@ -143,8 +143,8 @@ void processSensors() {
   // 4. ULTRASONIC SENSOR
   // (Insert your Trigger/Echo logic here to get 'dist')
   int dist = getDistance(); 
-  String currentFloodStatus = (dist > 0 && dist < 15) ? "alert" : "normal";
-  unsigned long floodInterval = (currentFloodStatus == "alert") ? INT_ALERT : INT_NORMAL;
+  String currentFloodStatus = (dist > 0 && dist < 15) ? "alerting" : "normal";
+  unsigned long floodInterval = (currentFloodStatus == "alerting") ? INT_ALERT : INT_NORMAL;
 
   if (currentFloodStatus != lastFloodStatus || (now - lastFloodLog >= floodInterval)) {
     String floodData = "{";
@@ -157,7 +157,7 @@ void processSensors() {
     lastFloodStatus = currentFloodStatus;
   }
 
-  if (currentMicroStatus == "alert") {
+  if (currentMicroStatus == "alerting") {
     digitalWrite(PIN_BUZZER, HIGH); // Alarm ON
   } else {
     digitalWrite(PIN_BUZZER, LOW);  // Alarm OFF
