@@ -1,10 +1,13 @@
 import React, {useState} from 'react';
 import { View, Text, StyleSheet, Pressable, TextInput, ImageBackground, ScrollView, FlatList, Image} from 'react-native';
-import { useEnrollmentManagement } from '../hooks/useEnrollmentManagement';
 import { RotateCcw, Search, ChevronDown, ChevronUp,ArrowUpNarrowWide, ArrowDownWideNarrow, Circle, Trash2, ChevronLeft, ChevronsLeft, ChevronRight, ChevronsRight} from 'lucide-react-native';
 import {Animated} from 'react-native';
+
+// Import other hook and service
 import SlidingTabs from '../components/SlidingTabs';
 import { formatDate } from '../utils/formatDate';
+import { useEnrollmentManagement } from '../hooks/useEnrollmentManagement';
+import EnrollmentDetailModal from '../components/EnrollmentDetailModal';
 
 const EnrollmentManagement = () => {
     const {enrollments, submissions, loading, updateStatus,currentPage,
@@ -17,11 +20,15 @@ const EnrollmentManagement = () => {
         setCurrentStatus,
         sortConfig,
         setSortConfig,
-        requestSort,resetSort
+        requestSort,resetSort,
+        handleUpdateStatus,
+        deleteRecord
     }=useEnrollmentManagement();
     const [activeTab, setActiveTab]=useState('enrollment');
     const enrollFields=['fullName', 'courseName', 'status'];
     const [isOpen, setIsOpen]=useState(false);
+    const [detailModalVisible, setDetailModalVisible] = useState(false);
+    const [selectedUserEnrollment, setSelectedUserEnrollment] = useState(null);
 
     const STATUS_OPTIONS={
         enrollment:['All', 'in_progress','in_review', 'completed', 'failed', 'dropped', 'expired'],
@@ -42,6 +49,18 @@ const EnrollmentManagement = () => {
         {id: 'enrollment', label:'Enrollment'},
         {id: 'submission', label:'Submission'},
     ]
+
+    const formatted=(status) =>{
+        return status.split("_")
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(" ");
+    }
+        
+
+    const handleRowPress = (enrollment) => {
+        setSelectedUserEnrollment(enrollment);
+        setDetailModalVisible(true);
+    };
 
     const renderEnrollmentHeader=()=>(
         <View style={[styles.tableHeader, styles.row]}>
@@ -82,7 +101,7 @@ const EnrollmentManagement = () => {
     );
 
     const renderEnrollmentItem=({item})=>(
-        <View style={[styles.row, styles.tableRow, {backgroundColor:'#f9f9f9'}]}>
+        <Pressable onPress={() => handleRowPress(item)} style={({hovered})=>[styles.row, styles.tableRow, hovered && {backgroundColor:'#f9f9f9'}, selectedUserEnrollment?.id === item.id && {backgroundColor:'#fff8e1'}]}>
             {/* Full Name and profile image */}
             <View style={[{flex:3}, styles.userInfo, styles.row]}>
                 {item.profileImage ? (
@@ -112,17 +131,14 @@ const EnrollmentManagement = () => {
                 <Circle size={10} stroke="red" fill="red" />
                 )}
                 <Text>
-                    {item.status
-                        .replace(/_/g, " ") 
-                        .toLowerCase() 
-                        .replace(/^\w/, c => c.toUpperCase())} 
+                    {formatted(item.status)} 
                 </Text>
             </View>
             {/* Completed On */}
             <Text style={{flex:2, textAlign:'center'}}>{item.completed_at ? formatDate(item.completed_at) : "N/A"}</Text>
             {/* Expiry On */}
             <Text style={{flex:2}}>{item.expiry_date}</Text>
-        </View>
+        </Pressable>
     );
 
     const renderSubmissionsItem=({item})=>(
@@ -228,10 +244,7 @@ const EnrollmentManagement = () => {
                         {isOpen && (
                             <View style={styles.dropdownMenu}>
                                 {STATUS_OPTIONS[activeTab].map((status) => {
-                                    const formatted = status
-                                        .split("_")
-                                        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-                                        .join(" ");
+                                    
                                 return(
                                     <Pressable
                                         key={status}
@@ -248,7 +261,7 @@ const EnrollmentManagement = () => {
                                         <Text style={[
                                             currentStatus === status && styles.menuItemTextActive 
                                         ]}>
-                                            {formatted}
+                                            {formatted(status)}
                                         </Text>
                                     </Pressable>
                                 )})}
@@ -267,6 +280,41 @@ const EnrollmentManagement = () => {
                 />
             </View>
             {totalPages>1 ? renderPagination() : null}
+            <EnrollmentDetailModal 
+                visible={detailModalVisible} 
+                onClose={() => {setDetailModalVisible(false); setSelectedUserEnrollment(null);}} 
+                data={selectedUserEnrollment} 
+                onApprove={async (id) => {
+                    const result = await handleUpdateStatus(id, "in_progress");
+                    setSelectedUserEnrollment(null);
+                    if (result.success) {
+                        setDetailModalVisible(false);
+                    } else {
+                        window.alert("Failed to approve: " + result.error);
+                    }
+                }}
+                onUnenroll={async (id) => {
+                    const result = await handleUpdateStatus(id, "dropped");
+                    setSelectedUserEnrollment(null);
+                    if (result.success) {
+                        setDetailModalVisible(false);
+                    } else {
+                        window.alert("Failed to unenroll: " + result.error);
+                    }
+                }}
+                onDelete={async (id) => {
+                    const confirmed = window.confirm("Are you sure you want to permanently delete this enrollment record? This action cannot be undone.");
+                    
+                    if (confirmed) {
+                        const result = await deleteRecord(id);
+                        if (result.success) {
+                            setDetailModalVisible(false);
+                        } else {
+                            alert("Failed to delete: " + result.error);
+                        }
+                    }
+                }}
+            />
         </ScrollView>
     );
 }
@@ -477,4 +525,4 @@ const styles = StyleSheet.create({
 });
 export default EnrollmentManagement;
 
-// No need action, delete means dropped, and delete is fully delete and approved 
+//  delete means dropped, and delete is fully delete and approved 
