@@ -282,6 +282,7 @@ export const buildModuleGraph = (options: BuildModuleOptions = {}): ModuleFactor
         order: index + 1,
         title: faker.commerce.productName(),
         final_quiz: 0, 
+        passing_score: pageElements.length,
         ...pageOverrides,
       },
       elements: pageElements,
