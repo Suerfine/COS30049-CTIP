@@ -10,10 +10,12 @@ import submissionRouter from "./SubmissionRoute";
 import tagRouter from "./TagRoute";
 import * as AuthController from "../controllers/AuthController";
 import elementRouter from "./ElementRoute";
+import progressRouter from "./ProgressRoute";
 // import sensorRouter from "./SensorRoute";
-// import sensorLogRouter from "./SensorLogRoute";
+import sensorLogRouter from "./SensorLogRoute";
 import * as ElementController from "../controllers/ElementController";
 import { auth } from "../middelware/Auth";
+import sensorRouter from "./SensorRoute";
 const router = Router();
 
 /*=============================
@@ -92,12 +94,12 @@ router.use("/", pageRouter);
 router.use("/", messageRouter);
 router.use("/", enrollmentRouter);
 router.use("/", submissionRouter);
-
+router.use("/progress", progressRouter);
 /*===============================
 =        SENSOR ROUTES         =
 ===============================*/
-// router.use("/sensors", sensorRouter);
-// router.use("/", sensorLogRouter);
+router.use("/sensors", sensorRouter);
+router.use("/", sensorLogRouter);
 
 /*===============================
 =        ENROLLMENT ROUTES        =
