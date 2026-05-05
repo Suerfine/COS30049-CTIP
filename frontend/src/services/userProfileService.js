@@ -36,13 +36,11 @@ export const userProfileService = {
           });
           return { success: true, data: res.data };
       } catch (err) {
-          // Add this to see exactly what the server says
           console.log('Change password error:', err.response?.status, err.response?.data);
           return {
               success: false,
-              serverError: err.response?.status === 400
-                  ? err.response?.data?.message || 'Current password is incorrect.'
-                  : err.response?.data?.message || 'Failed to change password.',
+              status: err.response?.status,
+              message: err.response?.data?.message,
           };
       }
   },
