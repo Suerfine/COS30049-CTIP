@@ -112,17 +112,6 @@ const AnomalyDetection = () => {
         )}
       </Pressable>
       <Pressable
-        onPress={() => requestSort("severity")}
-        style={[styles.headerRow, { flex: 1.2 }]}
-      >
-        <Text style={styles.headerText}>Severity</Text>
-        {sortConfig.key === "severity" && sortConfig.direction === "asc" ? (
-          <ArrowUpNarrowWide size={14} color="white" />
-        ) : (
-          <ArrowDownWideNarrow size={14} color="white" />
-        )}
-      </Pressable>
-      <Pressable
         onPress={() => requestSort("coordinates")}
         style={[styles.headerRow, { flex: 2.5 }]}
       >
@@ -168,18 +157,6 @@ const AnomalyDetection = () => {
       {/* Event Type */}
       <Text style={{ flex: 2 }}>{getEventTypeLabel(item.event_type)}</Text>
 
-      {/* Severity Badge */}
-      <View style={[styles.row, styles.badge, { flex: 1.2 }]}>
-        <Circle
-          size={10}
-          stroke={getSeverityColor(item.severity)}
-          fill={getSeverityColor(item.severity)}
-        />
-        <Text style={{ fontWeight: "500" }}>
-          {item.severity?.charAt(0).toUpperCase() +
-            item.severity?.slice(1).toLowerCase()}
-        </Text>
-      </View>
 
       {/* Description */}
       <Pressable 

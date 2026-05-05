@@ -9,7 +9,7 @@ export const AnomalyService = {
 
       if (searchQuery.trim()) {
         const q = searchQuery.trim();
-        filters.push(`event_type like "%${q}%" or description like "%${q}%"`);
+        filters.push(`event_type like "%${q}%"`);
       }
 
       if (filters.length > 0) {
@@ -23,7 +23,7 @@ export const AnomalyService = {
         params.orderBy = "created_at desc";
       }
 
-      const response = await apiClient.get("/compliance-events", { params });
+      const response = await apiClient.get("/Anomaly-events", { params });
       return response.data;
     } catch (error) {
       console.error("Get Anomalies Error:", error);
@@ -34,7 +34,7 @@ export const AnomalyService = {
   // GET: get anomaly statistics
   getStatistics: async () => {
     try {
-      const response = await apiClient.get("/compliance-events/statistics");
+      const response = await apiClient.get("/Anomaly-events/statistics");
       return response.data;
     } catch (error) {
       console.error("Get Anomaly Statistics Error:", error);

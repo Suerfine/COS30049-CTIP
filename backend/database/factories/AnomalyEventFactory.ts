@@ -68,6 +68,15 @@ export const buildComplianceEvent = (
     {
       type: "forest_fire",
     },
+    {
+      type: "loud_noise",
+    },
+    {
+      type: "trespassing",
+    },
+    {
+      type: "flooding",
+    },
   ];
 
   const selectedEvent = faker.helpers.arrayElement(eventTypesWithSeverity);
@@ -80,8 +89,8 @@ export const buildComplianceEvent = (
       detection_confidence: faker.number.float({ min: 0.5, max: 0.99 }),
       pose_keypoints_detected: faker.number.int({ min: 10, max: 17 }),
     },
-    latitude: faker.location.latitude({ min: 1.3, max: 1.6 }), // Malaysia coordinates
-    longitude: faker.location.longitude({ min: 101, max: 104 }), // Malaysia coordinates
+    latitude: faker.location.latitude({ min: 1.45, max: 1.60 }), // Kuching latitude
+    longitude: faker.location.longitude({ min: 110.30, max: 110.45 }), // Kuching longitude
   };
 
   return {

@@ -68,9 +68,9 @@ export const createAnomalyEvent = async (
 ) => {
   try {
     // Validate user exists
-    const user = await User.findByPk(req.body.user_id);
+    const user = req.user
     if (!user) {
-      throw new HttpError(404, "User not found");
+      throw new HttpError(404, "User not found" + req.user?.username);
     }
 
     const event = await AnomalyEvent.create({

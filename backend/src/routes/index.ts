@@ -5,7 +5,7 @@ import courseRouter from "./CourseRoute";
 import moduleRouter from "./ModuleRoute";
 import pageRouter from "./PageRoute";
 import messageRouter from "./MessageRoute";
-import anomalyEventRouter from "./AnomlayEventRoute";
+import anomalyEventRouter from "./AnomalyEventRoute";
 import * as AuthController from "../controllers/AuthController";
 const router = Router();
 

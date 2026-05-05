@@ -2,6 +2,7 @@ import { Router } from "express";
 import * as AnomalyEventController from "../controllers/AnomalyEventController";
 import { body, param } from "express-validator";
 import { validate } from "../middelware/Validate";
+import { auth } from "../middelware/Auth";
 
 const AnomalyEventRouter = Router();
 
@@ -29,8 +30,8 @@ const AnomalyEventRouter = Router();
  *               event_type:
  *                 type: string
  *                 description: Type of anomaly event detected
- *                 enum: [plucking, animal_strike, extended_touch, other]
- *                 example: plucking
+ *                 enum: [plucking_plant, animal_strike, extended_touch, other]
+ *                 example: plucking_plant
  *               metadata:
  *                 type: object
  *                 description: Optional metadata object
@@ -70,18 +71,18 @@ const AnomalyEventRouter = Router();
  *                   format: date-time
  */
 AnomalyEventRouter.post(
-  "/",
+  "/", auth,
   [
     body("user_id").isInt({ min: 1 }),
     body("event_type").isIn([
-      "plucking",
+      "touch_plant",
+      "touch_animal",
+      "plucking_plant",
       "animal_strike",
-      "extended_touch",
-      "other",
+      "extended_touch_animal",
+      "extended_touch_plant"
     ]),
-    body("severity").isIn(["low", "medium", "high"]),
-    body("description").isString().notEmpty(),
-    body("metadata").optional().isObject(),
+    body("metadata").optional(),
     body("latitude").optional().isFloat(),
     body("longitude").optional().isFloat(),
   ],
