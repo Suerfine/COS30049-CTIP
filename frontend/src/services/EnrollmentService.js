@@ -49,6 +49,7 @@ export const enrollmentService = {
                     ...enroll,
                     fullName: user ? `${user.firstname} ${user.lastname}` : `User #${enroll.user_id}`,
                     courseName: course ? course.title : `Course #${enroll.course_id}`,
+                    course:course,
                     expiry_date: expiryDate 
                 };
             });
@@ -63,7 +64,8 @@ export const enrollmentService = {
 
             return {
                 ...enrollmentData,
-                data: enrichedData
+                data: enrichedData,
+                courses:coursesArray,
             };
         } catch (error) {
             console.error("Enrollment Service Error:", error);

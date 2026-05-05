@@ -22,13 +22,15 @@ const EnrollmentManagement = () => {
         setSortConfig,
         requestSort,resetSort,
         handleUpdateStatus,
-        deleteRecord
+        deleteRecord,
+        courses
     }=useEnrollmentManagement();
     const [activeTab, setActiveTab]=useState('enrollment');
     const enrollFields=['fullName', 'courseName', 'status'];
     const [isOpen, setIsOpen]=useState(false);
     const [detailModalVisible, setDetailModalVisible] = useState(false);
     const [selectedUserEnrollment, setSelectedUserEnrollment] = useState(null);
+    const [selectedUserHistory, setSelectedUserHistory] = useState([])
 
     const STATUS_OPTIONS={
         enrollment:['All', 'in_progress','in_review', 'completed', 'failed', 'dropped', 'expired'],
@@ -59,6 +61,8 @@ const EnrollmentManagement = () => {
 
     const handleRowPress = (enrollment) => {
         setSelectedUserEnrollment(enrollment);
+        const userHistory = enrollments.filter(e => e.user_id === enrollment.user_id);
+        setSelectedUserHistory(userHistory);
         setDetailModalVisible(true);
     };
 
@@ -282,8 +286,12 @@ const EnrollmentManagement = () => {
             {totalPages>1 ? renderPagination() : null}
             <EnrollmentDetailModal 
                 visible={detailModalVisible} 
-                onClose={() => {setDetailModalVisible(false); setSelectedUserEnrollment(null);}} 
+                onClose={() => {setDetailModalVisible(false); setSelectedUserEnrollment(null);
+                setSelectedUserHistory([]);
+                }} 
                 data={selectedUserEnrollment} 
+                userEnrollments={selectedUserHistory}
+                allCourses={courses}
                 onApprove={async (id) => {
                     const result = await handleUpdateStatus(id, "in_progress");
                     setSelectedUserEnrollment(null);
