@@ -18,7 +18,7 @@ import { useAuth } from '../context/AuthContext.js';
 const EditCourseDetail = () => {
     const route=useRoute();
     const {id}=route.params;
-    const {course, loading, error, updateDescription}=useCourseDetails(id);
+    const {course, loading, error, updateDescription,locationTags, categoryTags}=useCourseDetails(id);
     const {currentUser}=useAuth();
 
     const [selectedPage, setSelectedPage]=useState({type:'overview'});
@@ -49,6 +49,13 @@ const EditCourseDetail = () => {
         }
     });
 
+    const { elements, loading: elementsLoading, createNewElement,updateExistingElement, deleteElement, moveElement,registerWorkshop, 
+    registering,workshopsLoading,loadWorkshops, workshops } = useElements(
+        id,
+        selectedPage?.page?.module_id || selectedPage?.module?.id,
+        selectedPage?.page?.id
+    );
+
 
     useEffect(() => {
         if (course?.description) {
@@ -56,15 +63,17 @@ const EditCourseDetail = () => {
         }
     }, [course]);
 
-    const { elements, loading: elementsLoading, createNewElement,updateExistingElement, deleteElement, moveElement,registerWorkshop, 
-    registering } = useElements(
-        id,
-        selectedPage?.page?.module_id || selectedPage?.module?.id,
-        selectedPage?.page?.id
-    );
+    useEffect(() => {
+        if (activeTab === 'Workshops') {
+            loadWorkshops();
+        }
+    }, [activeTab, loadWorkshops]);
+
+    
     const tabs=[
         {id: 'Overview', label:'Overview'},
-        {id: 'Forum', label:'Forum'}
+        {id: 'Forum', label:'Forum'},
+        {id: 'Workshops', label:'Workshops'},
     ];
 
     const{discussions, loading: discussionsLoading}=useDiscussions(id, forumType);
@@ -350,6 +359,36 @@ const EditCourseDetail = () => {
             case 'Overview':
                 return (
                     <View style={styles.tabSection}>
+                        {/* Tag Sections */}
+                            <View style={styles.tagSectionContainer}>
+                                {/* Render Location Tags */}
+                                {locationTags.length > 0 && (
+                                    <View style={styles.tagGroup}>
+                                        <Text style={styles.tagLabel}>Locations</Text>
+                                        <View style={styles.tagList}>
+                                            {locationTags.map(tag => (
+                                                <View key={tag.id} style={[styles.tagPill, styles.locationPill]}>
+                                                    <Text style={styles.tagPillText}>{tag.title}</Text>
+                                                </View>
+                                            ))}
+                                        </View>
+                                    </View>
+                                )}
+
+                                {/* Render Category Tags */}
+                                {categoryTags.length > 0 && (
+                                    <View style={styles.tagGroup}>
+                                        <Text style={styles.tagLabel}>Categories</Text>
+                                        <View style={styles.tagList}>
+                                            {categoryTags.map(tag => (
+                                                <View key={tag.id} style={[styles.tagPill, styles.categoryPill]}>
+                                                    <Text style={styles.tagPillText}>{tag.title}</Text>
+                                                </View>
+                                            ))}
+                                        </View>
+                                    </View>
+                                )}
+                            </View>
                         {/* Render the dynamic content */}
                         <View style={styles.markdownContainer}>
                             <Markdown style={markdownStyles}>
@@ -408,6 +447,28 @@ const EditCourseDetail = () => {
                         </View>
                     </View>
                 );
+
+            case 'Workshops':
+                return (
+                    <View style={styles.tabSection}>
+                        <Text style={styles.sectionTitle}>Course Workshops</Text>
+                        {workshopsLoading ? (
+                            <ActivityIndicator color="#0a6340" size="large" />
+                        ) : (
+                            <PageRenderer 
+                                elements={workshops}
+                                role={currentUser.role}
+                                courseId={id} 
+                                onEditElement={handleOpenEdit}
+                                onDeleteElement={handleDelete}
+                                onMoveElement={moveElement}
+                                onRegisterWorkshop={registerWorkshop}
+                                registering={registering}
+                            />
+                        )}
+                    </View>
+                );
+
             default:
                 return null;
         }
@@ -1340,6 +1401,43 @@ const styles = StyleSheet.create({
         color: '#0a6340',
         marginVertical: 4,
         textTransform: 'uppercase',
+    },
+    tagSectionContainer: {
+        gap: 25,
+    },
+    tagGroup: {
+        gap: 8,
+    },
+    tagLabel: {
+        fontSize: 12,
+        fontWeight: '700',
+        color: '#0a6340',
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
+    },
+    tagList: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 8,
+    },
+    tagPill: {
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 15,
+        borderWidth: 1,
+    },
+    locationPill: {
+        backgroundColor: '#e8f5e9',
+        borderColor: '#c8e6c9',
+    },
+    categoryPill: {
+        backgroundColor: '#f1f8e9',
+        borderColor: '#dcedc8',
+    },
+    tagPillText: {
+        fontSize: 12,
+        color: '#2e7d32',
+        fontWeight: '600',
     },
 });
 

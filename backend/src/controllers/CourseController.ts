@@ -645,7 +645,7 @@ export const upsertCourse = async (
     const tagIds = parseTagIdsInput(req.body.tag_ids, "tag_ids");
 
     //Delete tags that are not in the tagIds list
-    CourseTag.destroy({
+    await CourseTag.destroy({
       where: {
         course_id: course.id,
         tag_id: {

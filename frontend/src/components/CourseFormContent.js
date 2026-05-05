@@ -1,18 +1,31 @@
 import {useState} from 'react';
 import { View, Text, TextInput, StyleSheet, Pressable, Image, ActivityIndicator, ScrollView} from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import {X, Plus, ChevronDown, Award, ParenthesesIcon} from 'lucide-react-native';
+import {X, Plus, ChevronDown, Award, ParenthesesIcon, Tag} from 'lucide-react-native';
 
 // Import other hook and components
 import { ModalStyle as styles } from './ModalStyle';
 
-const CourseFormContent=({onSubmit, onCancel, isLoading, initialData,allCourseList = []})=>{
+const CourseFormContent=({onSubmit, onCancel, isLoading, initialData,allCourseList = [], allTagList = []})=>{
+
+    const getInitialTagsByType = (type) => {
+        if (!initialData?.tags) return [];
+        return initialData.tags
+            .filter(t => t.type === type)
+            .map(t => ({ id: t.id, title: t.title }));
+    };
+
     const getInitialPrereqs = () => {
         if (!initialData?.prerequisite_groups?.[0]?.prerequisites) return [];
-        return initialData.prerequisite_groups[0].prerequisites.map(p => ({
-            id: p.course_id,
-            title: p.course_title || `Course #${p.course_id}` 
-        }));
+
+        return initialData.prerequisite_groups[0].prerequisites.map(p => {
+            const matchedCourse = allCourseList.find(c => c.id === p.course_id);
+            
+            return {
+                id: p.course_id,
+                title: matchedCourse?.title || p.course_title || `Course #${p.course_id}` 
+            };
+        });
     };
 
     const [form, setForm]=useState({
@@ -23,11 +36,31 @@ const CourseFormContent=({onSubmit, onCancel, isLoading, initialData,allCourseLi
         image:initialData?.cover_img_url || null,
         badgeImage: initialData?.badge_img_url || null,
         status: initialData?.status,
-        tags:['IoT', 'Medical','Hardware'],
+        locationTags: getInitialTagsByType('location'),
+        categoryTags: getInitialTagsByType('category'),
         prerequisites: getInitialPrereqs(),
     });
 
+    const [showLocDropdown, setShowLocDropdown] = useState(false);
+    const [showCatDropdown, setShowCatDropdown] = useState(false);
     const [showPrereqDropdown, setShowPrereqDropdown] = useState(false);
+
+    const addTypedTag = (tag, key) => {
+        if (!form[key].find(t => t.id === tag.id)) {
+            setForm(prev => ({
+                ...prev,
+                [key]: [...prev[key], { id: tag.id, title: tag.title }]
+            }));
+        }
+        key === 'locationTags' ? setShowLocDropdown(false) : setShowCatDropdown(false);
+    };
+
+    const removeTypedTag = (tagId, key) => {
+        setForm(prev => ({
+            ...prev,
+            [key]: prev[key].filter(t => t.id !== tagId)
+        }));
+    };
     
     const handleNumericInput = (key, text) => {
         const cleaned = text.replace(/[^0-9]/g, '');
@@ -72,11 +105,8 @@ const CourseFormContent=({onSubmit, onCancel, isLoading, initialData,allCourseLi
         return {
             ...form,
             status: statusOverride || form.status,
-            prerequisite_groups: [
-                {
-                    prerequisites: form.prerequisites.map(p => ({ course_id: p.id }))
-                }
-            ]
+            prerequisite_course_ids: form.prerequisites.map(p => p.id),
+            tags: [...form.locationTags, ...form.categoryTags].map(t => t.id),
         };
     };
 
@@ -89,8 +119,6 @@ const CourseFormContent=({onSubmit, onCancel, isLoading, initialData,allCourseLi
             expiryWeeks: parseInt(form.expiryWeeks, 10) || 0,
             badgeExpiry: parseInt(form.badgeExpiry, 10) || 0,
         };
-        console.log("Debug",finalPayload);
-        
         onSubmit(finalPayload);
     };
 
@@ -169,20 +197,72 @@ const CourseFormContent=({onSubmit, onCancel, isLoading, initialData,allCourseLi
                     </View>
                     
 
-                    {/* Dummy Tags (Pills) */}
+                    {/* Location Tags */}
                     <View style={localStyles.inputGroup}>
-                        <Text style={styles.label}>Tags:</Text>
-                        <View style={localStyles.tagWrapper}>
-                            {initialData && form.tags.map(tag => (
-                                <View key={tag} style={localStyles.pill}>
-                                    <Text style={localStyles.pillText}>{tag}</Text>
-                                    <X size={12} color="white" />
+                        <Text style={styles.label}>Location Tags:</Text>
+                        <View style={localStyles.multiSelectContainer}>
+                            {form.locationTags.map(tag => (
+                                <View key={tag.id} style={localStyles.pill}>
+                                    <Text style={localStyles.pillText}>{tag.title}</Text>
+                                    <Pressable onPress={() => removeTypedTag(tag.id, 'locationTags')}>
+                                        <X size={12} color="white" />
+                                    </Pressable>
                                 </View>
                             ))}
-                            <Pressable style={localStyles.addPill}>
-                                <Plus size={14} color="#666" />
+                            <Pressable style={localStyles.addTagBtn} onPress={() => setShowLocDropdown(!showLocDropdown)}>
+                                <Plus size={16} color="#217837" />
+                                <Text style={localStyles.addTagText}>Add Location</Text>
                             </Pressable>
                         </View>
+
+                        {showLocDropdown && (
+                            <View style={localStyles.dropdownOverlay}>
+                                <View style={localStyles.Tagdropdown}>
+                                    <ScrollView style={{ maxHeight: 150 }}>
+                                        {allTagList.filter(t => t.type === 'location').map(tag => (
+                                            <Pressable key={tag.id} style={localStyles.TagdropdownItem} onPress={() => addTypedTag(tag, 'locationTags')}>
+                                                <Tag size={14} color="#666" style={{ marginRight: 8 }} />
+                                                <Text>{tag.title}</Text>
+                                            </Pressable>
+                                        ))}
+                                    </ScrollView>
+                                </View>
+                            </View>
+                        )}
+                    </View>
+
+                    {/* Category Tags */}
+                    <View style={localStyles.inputGroup}>
+                        <Text style={styles.label}>Category Tags:</Text>
+                        <View style={localStyles.multiSelectContainer}>
+                            {form.categoryTags.map(tag => (
+                                <View key={tag.id} style={localStyles.pill}>
+                                    <Text style={localStyles.pillText}>{tag.title}</Text>
+                                    <Pressable onPress={() => removeTypedTag(tag.id, 'categoryTags')}>
+                                        <X size={12} color="white" />
+                                    </Pressable>
+                                </View>
+                            ))}
+                            <Pressable style={localStyles.addTagBtn} onPress={() => setShowCatDropdown(!showCatDropdown)}>
+                                <Plus size={16} color="#217837" />
+                                <Text style={localStyles.addTagText}>Add Category</Text>
+                            </Pressable>
+                        </View>
+
+                        {showCatDropdown && (
+                            <View style={localStyles.dropdownOverlay}>
+                                <View style={localStyles.Tagdropdown}>
+                                    <ScrollView style={{ maxHeight: 150 }}>
+                                        {allTagList.filter(t => t.type === 'category').map(tag => (
+                                            <Pressable key={tag.id} style={localStyles.TagdropdownItem} onPress={() => addTypedTag(tag, 'categoryTags')}>
+                                                <Tag size={14} color="#666" style={{ marginRight: 8 }} />
+                                                <Text>{tag.title}</Text>
+                                            </Pressable>
+                                        ))}
+                                    </ScrollView>
+                                </View>
+                            </View>
+                        )}
                     </View>
                     
                     {/* Pre-requisite */}
@@ -435,9 +515,40 @@ const localStyles=StyleSheet.create({
         borderBottomWidth: 1,
         borderBottomColor: '#eee'
     },
+    addTagBtn: { 
+        flexDirection: 'row', 
+        alignItems: 'center', 
+        gap: 4, 
+        marginLeft: 5 
+    },
+    addTagText: { 
+        color: '#217837', 
+        fontSize: 12, 
+        fontWeight: '600' 
+    },
+    dropdownOverlay: {
+        position: 'absolute',
+        backgroundColor: 'rgba(0,0,0,0.05)',
+        width: '100%',
+        bottom:45
+    },
+    Tagdropdown: {
+        backgroundColor: 'white',
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: '#eee',
+        elevation: 3,
+    },
+    TagdropdownItem: {
+        padding: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: '#f0f0f0',
+        flexDirection: 'row',
+        alignItems: 'center'
+    },
 })
 ;
 
 export default CourseFormContent;
 
-// Havent do the validation message, tag
+// Havent do the validation message

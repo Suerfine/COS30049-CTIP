@@ -15,6 +15,7 @@ export const useEnrollmentManagement=()=>{
     const [currentPage, setCurrentPage]=useState(1);
     const [currentStatus, setCurrentStatus]=useState('All');
     const [totalElements, setTotalElements] = useState(0);
+    const [courses, setCourses] = useState([]);
 
     const fetchData = useCallback(async () => {
         setLoading(true);
@@ -25,6 +26,7 @@ export const useEnrollmentManagement=()=>{
             ]);
 
             setEnrollments(enrollData.data || []); 
+            setCourses(enrollData.courses);
             setTotalPages(enrollData.totalPages || 1);
             setTotalElements(enrollData.totalElements || 0);
             
@@ -97,6 +99,7 @@ export const useEnrollmentManagement=()=>{
         setSortConfig,
         requestSort,resetSort,
         handleUpdateStatus,
-        deleteRecord
+        deleteRecord,
+        courses
     };
 };

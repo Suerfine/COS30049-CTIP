@@ -1,12 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
-import { Circle, CircleCheckBig } from 'lucide-react-native';
+import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
+import { Circle, CircleCheckBig, MapPin, Tag } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { UserRoles } from '../enum/UserRoles';
 
-const FilterSidebar = ({ visible, tempFilters, setTempFilters, onApply, onReset, onClose, role }) => {
+const FilterSidebar = ({ visible, tempFilters, setTempFilters, onApply, onReset, onClose, role,allTagList = [] }) => {
     const {t, i18n}=useTranslation();
     const [translateX, setTranslateX] = useState(300);
+
+    const locationTags = allTagList.filter(tag => tag.type === 'location');
+    const categoryTags = allTagList.filter(tag => tag.type === 'category');
 
     const statusLabels = {
         inProgress: t('status.in progress'),
@@ -19,32 +22,32 @@ const FilterSidebar = ({ visible, tempFilters, setTempFilters, onApply, onReset,
     }, [visible]);
 
     const toggle = (key, value) => {
-        setTempFilters(prev=>{
-            if (key==='status'){
-                return {...prev, [key]:prev[key]===value ? 'all':value};
-            }else{
-                const currentCategories=Array.isArray(prev.category) ? prev.category:[];
-                const isExist=currentCategories.includes(value);
+        setTempFilters(prev => {
+            if (key === 'status') {
+                return { ...prev, [key]: prev[key] === value ? 'all' : value };
+            } else {
+                const currentList = Array.isArray(prev[key]) ? prev[key] : [];
+                const isExist = currentList.includes(value);
 
-                return{
-                    ...prev, 
-                    category:isExist ? currentCategories.filter(c=>c !==value) : [...currentCategories, value]
+                return {
+                    ...prev,
+                    [key]: isExist ? currentList.filter(item => item !== value) : [...currentList, value]
                 };
             }
         });
     };
 
-    const setAllCategories=()=>{
-        setTempFilters(prev=>({...prev, category:'all'}));
-    };
+    // const setAllCategories=()=>{
+    //     setTempFilters(prev=>({...prev, category:'all'}));
+    // };
 
     const FilterItem = ({ label, isSelected, onPress }) => (
         <Pressable style={styles.item} onPress={onPress}>
             {isSelected
-                ? <CircleCheckBig size={18} color="green" />
+                ? <CircleCheckBig size={18} color="#0a6340" />
                 : <Circle size={18} color="gray" />
             }
-            <Text style={styles.text}>{label}</Text>
+            <Text style={[styles.text, isSelected && styles.activeText]}>{label}</Text>
         </Pressable>
     );
 
@@ -55,6 +58,7 @@ const FilterSidebar = ({ visible, tempFilters, setTempFilters, onApply, onReset,
             )}
 
             <View style={[styles.sidebar, { transform: [{ translateX }] }]}>
+                <ScrollView showsVerticalScrollIndicator={false}>
                 <Text style={styles.title}>{t("filters")}</Text>
 
                 {/* filter by status */}
@@ -78,25 +82,39 @@ const FilterSidebar = ({ visible, tempFilters, setTempFilters, onApply, onReset,
                     />
                     </>
                 )}
-                
-                
 
-                {/* Tag Filter */}
-                <Text style={styles.section}>{t("categories")}</Text>
-                {['Flora & Fauna', 'Navigation', 'First Aid','Survival', 'History'].map(category => (
-                    <FilterItem
-                        key={category}
-                        label={category}
-                        isSelected={Array.isArray(tempFilters.category) && tempFilters.category.includes(category)}
-                        onPress={() => toggle('category', category)}
-                    />
-                ))}
-                <FilterItem
-                    label="All"
-                    isSelected={tempFilters.status === 'all'}
-                    onPress={() => setTempFilters(prev => ({ ...prev, category: 'all' }))}
-                />
+                {/* Location Filters */}
+                    <View style={styles.sectionGroup}>
+                        <View style={styles.row}>
+                            <MapPin size={16} color="#0a6340" />
+                            <Text style={styles.sectionTitle}>Locations</Text>
+                        </View>
+                        {locationTags.map(tag => (
+                            <FilterItem
+                                key={tag.id}
+                                label={tag.title}
+                                isSelected={tempFilters.location?.includes(tag.title)}
+                                onPress={() => toggle('location', tag.title)}
+                            />
+                        ))}
+                    </View>
 
+                    {/* Category Filters */}
+                    <View style={styles.sectionGroup}>
+                        <View style={styles.row}>
+                            <Tag size={16} color="#0a6340" />
+                            <Text style={styles.sectionTitle}>Categories</Text>
+                        </View>
+                        {categoryTags.map(tag => (
+                            <FilterItem
+                                key={tag.id}
+                                label={tag.title}
+                                isSelected={tempFilters.category?.includes(tag.title)}
+                                onPress={() => toggle('category', tag.title)}
+                            />
+                        ))}
+                    </View>
+                </ScrollView>
                 {/* apply and reset buttons */}
                 <View style={styles.buttons}>
                     <Pressable style={styles.applyBtn} onPress={onApply}>
@@ -171,6 +189,20 @@ const styles = StyleSheet.create({
         padding: 10,
         borderRadius: 8,
         alignItems: 'center',
+    },
+    sectionGroup: { 
+        marginBottom: 20
+    },
+    sectionTitle: { 
+        fontSize: 16, 
+        fontWeight: '700', 
+        color: '#444', 
+        marginLeft: 8 
+    },
+    row: { 
+        flexDirection: 'row', 
+        alignItems: 'center', 
+        marginBottom: 10 
     },
 });
 

@@ -6,7 +6,7 @@ export const courseService = {
     getAll: async (params = {}) => {
         try {
             const response = await apiClient.get(API_ENDPOINTS.COURSE.LIST, {
-                params: {
+                params: { 
                     page: params.page || 1,
                     size: params.size || 20,
                     filter: params.filter || "",
@@ -44,15 +44,10 @@ export const courseService = {
             data.append('must_complete_in_weeks', formData.expiryWeeks);
             data.append('badge_expire_in_months', formData.badgeExpiry);
 
-            const prerequisiteGroups = [
-                {
-                    prerequisites: formData.prerequisites.map(p => ({
-                        course_id: p.id
-                    }))
-                }
-            ];
-
-            data.append('prerequisite_groups', JSON.stringify(prerequisiteGroups));
+            data.append(
+                'prerequisite_course_ids',
+                JSON.stringify(formData.prerequisites.map(p => p.id))
+            );
 
             const getMimeType = (ext) => {
                 if (ext === 'jpg') return 'image/jpeg';
@@ -98,36 +93,29 @@ export const courseService = {
     },
 
     update: async (id, courseData) => {
-    try {
-        const payload = {
-            title: courseData.courseTitle,
-            description: courseData.description || "",
-            status: courseData.status,
-            expected_completion_weeks: parseInt(courseData.duration, 10),
-            must_complete_in_weeks: parseInt(courseData.expiryWeeks, 10),
-            badge_expire_in_months: parseInt(courseData.badgeExpiry, 10),
-            
-            prerequisite_groups: (courseData.prerequisite_groups || []).map(group => ({
-                id: group.id || undefined, 
-                prerequisites: group.prerequisites.map(p => ({
-                    id: p.id || undefined, 
-                    course_id: p.course_id 
-                }))
-            }))
-        };
+        try {
+            const payload = {
+                title: courseData.courseTitle,
+                description: courseData.description || "",
+                status: courseData.status,
+                expected_completion_weeks: parseInt(courseData.duration, 10),
+                must_complete_in_weeks: parseInt(courseData.expiryWeeks, 10),
+                badge_expire_in_months: parseInt(courseData.badgeExpiry, 10),
+                tag_ids: courseData.tags || [],
+                prerequisite_course_ids: courseData.prerequisite_course_ids || []
+            };
+            const response = await apiClient.put(
+                API_ENDPOINTS.COURSE.DETAIL(id),
+                payload
+            );
 
-        const response = await apiClient.put(
-            API_ENDPOINTS.COURSE.DETAIL(id),
-            payload
-        );
-
-        return response.data;
-    } catch (error) {
-        return Promise.reject(
-            error.response?.data?.message || 'Failed to update course.'
-        );
-    }
-},
+            return response.data;
+        } catch (error) {
+            return Promise.reject(
+                error.response?.data?.message || 'Failed to update course.'
+            );
+        }
+    },
 
     // Delete: delete existing course
     delete: async (id) => {
@@ -137,7 +125,27 @@ export const courseService = {
         } catch (error) {
             return Promise.reject(error.response?.data?.message || "Failed to delete a course.");
         }
-    }
+    },
 
+    // GET: get all tags
+    getAllTags: async () => {
+        try {
+            const response = await apiClient.get(API_ENDPOINTS.TAGS.LIST);
+            return response.data; 
+        } catch (err) {
+            console.error("Fetch Tags Error:", err);
+            throw err;
+        }
+    },
+
+    // POST:create new tags
+    createTag: async (tagData) => {
+        try {
+            const response = await apiClient.post(API_ENDPOINTS.TAGS.CREATE, tagData);
+            return response.data;
+        } catch (error) {
+            return Promise.reject(error.response?.data?.message || 'Failed to create tag.');
+        }
+    },
     
 };
