@@ -23,9 +23,12 @@ const UserCourse=({navigation})=>{
         tempFilters, setTempFilters,
         statusLabels,
         tabs,
+        myEnrollments,
         coursesWithStatus,
         filteredCourses, courses,
-        removeFilter
+        removeFilter,
+        handleEnrollment, 
+        handleDrop,
     }=useUserCourse();
 
     const handleFilterPass=useCallback(()=>{
@@ -99,14 +102,29 @@ const UserCourse=({navigation})=>{
                             duration={course.expected_completion_weeks}
                             expiry={course.must_complete_in_weeks}
                             userType={userType}
+                            progress={course.progress}
+                            // enrollment
+                            enrollmentStatus={course.enrollmentStatus}
+                            prerequisiteGroups={course.prerequisiteGroups || []}
+                            myEnrollments={myEnrollments}
                             onPress={() => navigation.navigate('ParkGuideStack', {
                                 screen: 'UserModule', 
                                 params: { id: course.id }
                             })}
                             onEnroll={() => {
-                                setSelectedCourse(course);
-                                setModalVisible(true);
+                                Alert.alert(
+                                    "Confirm Enrollment",
+                                    `Are you sure you want to enroll in ${course.title}?`,
+                                    [
+                                        { text: "Cancel", style: "cancel" },
+                                        { 
+                                            text: "Enroll", 
+                                            onPress: () => handleEnrollment(course.id) 
+                                        }
+                                    ]
+                                );
                             }}
+                            onDrop={() => handleDrop(course.id)}
                         />)
                 })
                 )}
@@ -125,19 +143,6 @@ const UserCourse=({navigation})=>{
                     const reset = { level: 'all', status: 'all' };
                     setTempFilters(reset);
                     setFilters(reset);
-                }}
-            />
-
-            <ConfirmEnroll
-                visible={modalVisible}
-                course={selectedCourse}
-                onClose={() => setModalVisible(false)}
-                onConfirm={() => {
-                    console.log("Enrolled:", selectedCourse.id);
-
-                    // call api
-
-                    setModalVisible(false);
                 }}
             />
         </SafeAreaView>

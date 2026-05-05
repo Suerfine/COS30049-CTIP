@@ -120,15 +120,30 @@ const UserDashboard = ({ navigation }) => {
                                     );
                                 })}
                             </View>
-                            {/* Categories: When user click one of the category, navigate to course page  */}
+                            {/* Categories */}
                             <Text style={styles.sectionTitle}>Explore Categories</Text>
-                            <View style={styles.tagContainer}>
-                                {categories.map((item)=>(
-                                    <Pressable key={item.id} style={styles.categoryTag} >
-                                        <Text style={styles.tagText}>{item.name}</Text>
-                                    </Pressable>
-                                ))}
-                            </View>
+                                <View style={styles.tagContainer}>
+                                    {categories.length > 0 ? (
+                                        categories
+                                            .filter(tag => tag.type === 'category') 
+                                            .map((item) => (
+                                                <Pressable 
+                                                    key={item.id} 
+                                                    style={styles.categoryTag}
+                                                    onPress={() => navigation.navigate('ParkGuideStack', {
+                                                        screen: 'Courses', 
+                                                        params: { 
+                                                            filterCategory: item.title
+                                                        }
+                                                    })}
+                                                >
+                                                    <Text style={styles.tagText}>{item.title}</Text>
+                                                </Pressable>
+                                            ))
+                                    ) : (
+                                        <Text style={styles.emptyText}>No categories found.</Text>
+                                    )}
+                                </View>
                         </View> 
                 </View>
 

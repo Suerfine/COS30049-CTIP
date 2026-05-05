@@ -5,6 +5,7 @@ import {
   Text,
   StyleSheet,
   Platform,
+  Alert,
 } from "react-native";
 import {
   BookOpenText,
@@ -16,6 +17,33 @@ import {
 import ProgressBar from "./ProgressBar.js";
 import { useTranslation } from "react-i18next";
 
+const EnrollmentStatus = {
+  IN_PROGRESS: "in_progress",
+  IN_REVIEW: "in_review",
+  COMPLETED: "completed",
+  FAILED: "failed",
+  DROPPED: "dropped",
+  EXPIRED: "expired",
+};
+
+// Checks if the user satisfies at least one prerequisite group for the course.
+// A group is satisfied when ALL prerequisites within it are completed.
+const checkPrerequisitesMet = (prerequisiteGroups, myEnrollments) => {
+  if (!prerequisiteGroups || prerequisiteGroups.length === 0) return true;
+ 
+  return prerequisiteGroups.some((group) => {
+    const prereqs = group.prerequisites || [];
+    if (prereqs.length === 0) return true;
+ 
+    return prereqs.every((prereq) => {
+      const enrollment = myEnrollments.find(
+        (e) => Number(e.course_id) === Number(prereq.course_id)
+      );
+      return enrollment?.status === EnrollmentStatus.COMPLETED;
+    });
+  });
+};
+
 const CourseCard = ({
   coverImgUrl,
   courseTitle,
@@ -24,13 +52,129 @@ const CourseCard = ({
   expiry,
   userType,
   progress,
+  enrollmentStatus,
+  prerequisiteGroups,
+  myEnrollments,
   onPress,
   onEdit,
   onDelete,
   onEnroll,
+  onDrop, // drop courses
 }) => {
   const { t, i18n } = useTranslation();
   const isWeb = Platform.OS === "web";
+
+  const isAdmin = userType === "admin";
+  const isNotEnrolled = enrollmentStatus === null || enrollmentStatus === undefined;
+  const isInProgress = enrollmentStatus === EnrollmentStatus.IN_PROGRESS;
+  const isInReview = enrollmentStatus === EnrollmentStatus.IN_REVIEW;
+  const isCompleted = enrollmentStatus === EnrollmentStatus.COMPLETED;
+  const isFailed = enrollmentStatus === EnrollmentStatus.FAILED;
+
+  const cardPressable = isInProgress;
+
+  // HANDLERS
+  // check prerequisites
+  const handleEnrollPress = () => {
+    const prereqsMet = checkPrerequisitesMet(prerequisiteGroups, myEnrollments || []);
+ 
+    if (!prereqsMet) {
+      if (Platform.OS === "web") {
+        window.alert("You need to pass the prerequisite(s) before enrolling in this course.");
+      } else {
+        Alert.alert(
+          "Prerequisites Not Met",
+          "You need to pass the prerequisite(s) before enrolling in this course."
+        );
+      }
+      return;
+    }
+ 
+    // if prerequisites satisfied or no prerequisites then set status = in review
+    onEnroll?.();
+  };
+  
+  // handle drop courses
+  const handleDropPress = () => {
+    if (Platform.OS === "web") {
+      const confirmed = window.confirm("Are you sure you want to drop the course?");
+      if (confirmed) onDrop?.();
+      } else {
+        Alert.alert(
+          "Drop Course",
+          "Are you sure you want to drop the course?",
+          [
+            { text: "Cancel", style: "cancel" },
+            {
+              text: "Confirm",
+              style: "destructive",
+              onPress: () => onDrop?.(),
+            },
+          ]
+        );
+      }
+  };
+
+  // show status (enroll, progress bar, in review, completed)
+  const renderEnrollmentWidget = () => {
+    if (isNotEnrolled) {
+      return (
+        <Pressable style={styles.enrollBtn} onPress={handleEnrollPress}>
+          <Text style={styles.enrollText}>{t("enroll") || "Enroll"}</Text>
+        </Pressable>
+      );
+    }
+
+    if (isInProgress) {
+      return <ProgressBar progress={progress} />;
+    }
+
+    if (isInReview) {
+      return (
+        <View style={[styles.statusBadge, styles.badgeInReview]}>
+          <Text style={styles.statusBadgeText}>In Review</Text>
+        </View>
+      );
+    }
+
+    if (isCompleted) {
+      return (
+        <View style={[styles.statusBadge, styles.badgeCompleted]}>
+          <Text style={styles.statusBadgeText}>Completed</Text>
+        </View>
+      );
+    }
+
+    if (isFailed) {
+      return (
+        <View style={[styles.statusBadge, styles.badgeFailed]}>
+          <Text style={styles.statusBadgeText}>Completed</Text>
+        </View>
+      );
+    }
+
+    return null;
+  };
+
+  // render drop course toolbar
+  const renderDropToolbar = () => {
+    if (isAdmin || !isInProgress) return null;
+ 
+    return (
+      <View style={styles.dropToolbarContainer}>
+        <Pressable
+          style={({ hovered, pressed }) => [
+            styles.dropBtn,
+            (isWeb && hovered) || pressed ? styles.dropBtnActive : null,
+          ]}
+          onPress={handleDropPress}
+          accessibilityLabel="Drop course"
+        >
+          <Trash2 size={16} color="#fff"/>
+        </Pressable>
+      </View>
+    );
+  };
 
   return (
     // Title need change to course ID later
@@ -41,13 +185,17 @@ const CourseCard = ({
         isWeb && hovered && styles.cardHover,
         !isWeb && pressed && styles.cardPressed,
       ]}
-      onPress={progress === null || progress === 0 ? undefined : onPress}
+      onPress={onPress}
     >
-      <Image
-        source={{ uri: coverImgUrl }}
-        style={styles.courseImg}
-        accessibilityLabel="Cover Photo of Course"
-      />
+      <View style={styles.imageWrapper}>
+        <Image
+          source={{ uri: coverImgUrl }}
+          style={styles.courseImg}
+          accessibilityLabel="Cover Photo of Course"
+        />
+        {renderDropToolbar()}
+      </View>
+
       <View style={styles.details}>
         <Text style={styles.CourseTitle}>{courseTitle}</Text>
         <View style={styles.row}>
@@ -68,21 +216,16 @@ const CourseCard = ({
             </View>
           </View>
 
-          {userType !== "admin" && !isWeb && (
-            <>
-              {progress === null || progress === 0 ? (
-                <Pressable style={styles.enrollBtn} onPress={onEnroll}>
-                  <Text style={styles.enrollText}>{t("enroll")}</Text>
-                </Pressable>
-              ) : (
-                <ProgressBar progress={progress} />
-              )}
-            </>
+          {/* mobile */}
+          {!isAdmin && !isWeb && (
+            <View style={styles.mobileWidgetContainer}>
+              {renderEnrollmentWidget()}
+            </View>
           )}
         </View>
       </View>
 
-      {userType === "admin" && (
+      {isAdmin && (
         <View style={styles.icon}>
           <Pressable
             onPress={onEdit}
@@ -98,16 +241,12 @@ const CourseCard = ({
           </Pressable>
         </View>
       )}
-      {userType !== "admin" && isWeb && (
-        <>
-          {progress === null || progress === 0 ? (
-            <Pressable style={styles.enrollBtn} onPress={onEnroll}>
-              <Text style={styles.enrollText}>Enroll</Text>
-            </Pressable>
-          ) : (
-            <ProgressBar progress={progress} />
-          )}
-        </>
+
+      {/* web */}
+      {!isAdmin && isWeb && (
+        <View style={styles.webWidgetContainer}>
+          {renderEnrollmentWidget()}
+        </View>
       )}
     </Pressable>
   );
@@ -139,6 +278,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 6,
   },
+  imageWrapper: {
+    position: "relative",
+  },
   courseImg: {
     width: Platform.select({
       web: 250,
@@ -151,6 +293,26 @@ const styles = StyleSheet.create({
     resizeMode: "fill",
     alignSelf: "center",
   },
+  // drop courses toolbar
+  dropToolbarContainer: {
+    position: "absolute",
+    top: 8,
+    right: 8,
+    zIndex: 10,
+  },
+  dropBtn: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: "rgba(0,0,0,0.60)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  dropBtnActive: {
+    backgroundColor: "red",
+    opacity: 2.0,
+  },
+  // course detail
   CourseTitle: {
     borderBottomColor: "#8f8f8f",
     borderBottomWidth: 1,
@@ -227,6 +389,41 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: "row",
     justifyContent: "space-between",
+    alignItems: "flex-end",
+  },
+  mobileWidgetContainer:{
+    justifyContent: "flex-end",
+    alignItems: "flex-end",
+  },
+  webWidgetContainer: {
+    marginTop: 10,
+  },
+  // status
+  statusBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 6,
+    alignSelf: "flex-start",
+  },
+  badgeInReview: {
+    backgroundColor: "#fff3cd",
+    borderWidth: 1,
+    borderColor: "#ffc107",
+  },
+  badgeCompleted: {
+    backgroundColor: "#d4edda",
+    borderWidth: 1,
+    borderColor: "#28a745",
+  },
+  badgeFailed:{
+    backgroundColor: "#ffb7b3",
+    borderWidth: 1,
+    borderColor: "red",
+  },
+  statusBadgeText: {
+    fontSize: Platform.select({ web: 13, default: 10 }),
+    fontWeight: "600",
+    color: "#3e3e3e",
   },
 });
 

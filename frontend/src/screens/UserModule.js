@@ -12,12 +12,19 @@ import { useElements } from '../hooks/useElements.js';
 import PageRenderer from '../components/pageRenderer.js';
 import { useAuth } from '../context/AuthContext.js';
 import { markdownStyles } from '../components/markdownStyle.js';
+import { useCourses } from '../hooks/useCourses.js';
 
 const UserModule = ({navigation}) => {
     const route=useRoute();
-    const {id}=route.params;
+    const {id, enrollmentStatus}=route.params;
+    const isLocked = enrollmentStatus === null ||
+        enrollmentStatus === undefined ||
+        enrollmentStatus === 'in_review' ||
+        enrollmentStatus === 'dropped' ||
+        enrollmentStatus === 'expired';
     const {currentUser}=useAuth();
-    const {course, loading, error}=useCourseDetails(id);
+    const {course, loading, error,locationTags, categoryTags}=useCourseDetails(id);
+    const {allCourseList}=useCourses();
 
     const [selectedPage, setSelectedPage]=useState({type:'overview'});
     const [isCollapsed, setIsCollapsed]=useState(false);
@@ -25,15 +32,21 @@ const UserModule = ({navigation}) => {
     const [forumType, setForumType]=useState('Public');
 
     const { elements, loading: elementsLoading,registerWorkshop, 
-    registering } = useElements(
+    registering,workshopsLoading,loadWorkshops, workshops } = useElements(
         id,
         selectedPage?.page?.module_id || selectedPage?.module?.id,
         selectedPage?.page?.id
     );
+    useEffect(() => {
+        if (activeTab === 'Workshops') {
+            loadWorkshops();
+        }
+    }, [activeTab, loadWorkshops]);
 
     const tabs=[
         {id: 'Overview', label:'Overview'},
-        {id: 'Forum', label:'Forum'}
+        {id: 'Forum', label:'Forum'},
+        {id: 'Workshops', label:'Workshops'},
     ];
 
     if(loading)return(
@@ -57,8 +70,58 @@ const UserModule = ({navigation}) => {
     const renderOverviewContent = () => {
         switch (activeTab) {
             case 'Overview':
+                const prerequisiteTitles = course.prerequisite_groups?.flatMap(group => 
+                    group.prerequisites?.map(p => {
+                        const match = allCourseList.find(c => c.id === p.course_id);
+                        return match ? match.title : `Course #${p.course_id}`;
+                    })
+                ) || [];
                 return (
                     <View style={styles.tabSection}>
+                        {/* Prerequisite Section */}
+                        {prerequisiteTitles.length > 0 && (
+                            <View style={styles.prereqSection}>
+                                <Text style={styles.sectionTitle}>Required Prerequisite Courses</Text>
+                                <View>
+                                    {prerequisiteTitles.map((title, index) => (
+                                        <View key={index} style={styles.prereqItem}>
+                                            <View style={styles.prereqDot} />
+                                            <Text style={styles.prereqText}>{title}</Text>
+                                        </View>
+                                    ))}
+                                </View>
+                            </View>
+                        )}
+                        {/* Tag Sections */}
+                        <View style={styles.tagSectionContainer}>
+                            {/* Render Location Tags */}
+                            {locationTags.length > 0 && (
+                                <View style={styles.tagGroup}>
+                                    <Text style={styles.tagLabel}>Locations</Text>
+                                    <View style={styles.tagList}>
+                                        {locationTags.map(tag => (
+                                            <View key={tag.id} style={[styles.tagPill, styles.locationPill]}>
+                                                <Text style={styles.tagPillText}>{tag.title}</Text>
+                                            </View>
+                                        ))}
+                                    </View>
+                                </View>
+                            )}
+
+                            {/* Render Category Tags */}
+                            {categoryTags.length > 0 && (
+                                <View style={styles.tagGroup}>
+                                    <Text style={styles.tagLabel}>Categories</Text>
+                                    <View style={styles.tagList}>
+                                        {categoryTags.map(tag => (
+                                            <View key={tag.id} style={[styles.tagPill, styles.categoryPill]}>
+                                                <Text style={styles.tagPillText}>{tag.title}</Text>
+                                            </View>
+                                        ))}
+                                    </View>
+                                </View>
+                            )}
+                        </View>
                         {/* Description */}
                         <View style={styles.markdownContainer}>
                             <Markdown style={markdownStyles}>
@@ -128,6 +191,25 @@ const UserModule = ({navigation}) => {
                         </View>
                     </View>
                 );
+
+            case 'Workshops':
+                return (
+                    <View style={styles.tabSection}>
+                        <Text style={styles.sectionTitle}>Course Workshops</Text>
+                        {workshopsLoading ? (
+                            <ActivityIndicator color="#0a6340" size="large" />
+                        ) : (
+                            <PageRenderer 
+                                elements={workshops}
+                                role={currentUser.role}
+                                courseId={id} 
+                                onRegisterWorkshop={registerWorkshop}
+                                registering={registering}
+                            />
+                        )}
+                    </View>
+                );
+
             default:
                 return null;
         }
@@ -136,7 +218,7 @@ const UserModule = ({navigation}) => {
     return (
         <View style={styles.rowContainer}>
             {/* Outlinebar */}
-            <OutlineBar course={course} onSelectPage={setSelectedPage} editable={false} isCollapsed={isCollapsed}/>
+            <OutlineBar course={course} onSelectPage={setSelectedPage} editable={false} isCollapsed={isCollapsed} isLocked={isLocked}/>
             <ScrollView style={{height:'100vh'}}>
                 <View style={styles.container}>
                     {/* Background Image */}
@@ -163,6 +245,30 @@ const UserModule = ({navigation}) => {
                             <View style={styles.editorContainer}>
                                 <Text style={styles.editorLabel}>Lesson Learning</Text>
                                 <Text style={styles.pageTitle}>{selectedPage.page.title}</Text>
+
+                                {currentUser.role === 'park_guide' && selectedPage.page?.final_quiz === true && (
+                                    <View style={styles.guideInfoCard}>
+                                        <View style={styles.guideInfoHeader}>
+                                            <Award size={20} color="#15803d" />
+                                            <Text style={styles.guideInfoTitle}>Final Assessment Requirements</Text>
+                                        </View>
+                                        
+                                        <View style={styles.statsRow}>
+                                            <View style={styles.guideStatChip}>
+                                                <Text style={styles.statLabel}>Max Attempts:</Text>
+                                                <Text style={styles.statValue}>{course.max_tries || selectedPage.page?.max_tries || 1}</Text>
+                                            </View>
+                                            <View style={styles.guideStatChip}>
+                                                <Text style={styles.statLabel}>Passing Score:</Text>
+                                                <Text style={styles.statValue}>{selectedPage.page?.passing_score || 80}%</Text>
+                                            </View>
+                                        </View>
+                                        
+                                        <Text style={styles.guideNotice}>
+                                            You must achieve the passing score to earn your certificate and badge.
+                                        </Text>
+                                    </View>
+                                )}
                                 
                                 {elementsLoading ? (
                                     <View style={styles.elementLoader}>
@@ -442,6 +548,119 @@ const styles = StyleSheet.create({
         padding:8,
         borderRadius:50,
     },
+    tagSectionContainer: {
+        gap: 25,
+        marginTop:5
+    },
+    tagGroup: {
+        gap: 8,
+    },
+    tagLabel: {
+        fontSize: 12,
+        fontWeight: '700',
+        color: '#0a6340',
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
+    },
+    tagList: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 8,
+    },
+    tagPill: {
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 15,
+        borderWidth: 1,
+    },
+    locationPill: {
+        backgroundColor: '#e8f5e9',
+        borderColor: '#c8e6c9',
+    },
+    categoryPill: {
+        backgroundColor: '#f1f8e9',
+        borderColor: '#dcedc8',
+    },
+    tagPillText: {
+        fontSize: 12,
+        color: '#2e7d32',
+        fontWeight: '600',
+    },
+    prereqSection: {
+        backgroundColor: '#fffbeb',
+        padding: 15,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#fef3c7',
+        marginTop: 10,
+    },
+    prereqItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 6,
+    },
+    prereqDot: {
+        width: 6,
+        height: 6,
+        borderRadius: 3,
+        backgroundColor: '#d97706',
+        marginRight: 10,
+    },
+    prereqText: {
+        fontSize: 14,
+        color: '#92400e',
+        fontWeight: '500',
+    },
+    guideInfoCard: {
+        paddingVertical: 16,
+        paddingHorizontal: 20,
+        backgroundColor: 'transparent',
+        borderWidth: 2,
+        borderColor: '#e5e7eb', 
+        borderRadius: 8,
+        marginBottom: 25,
+    },
+    guideInfoHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        marginBottom: 16,
+    },
+    guideInfoTitle: {
+        fontSize: 14,
+        fontWeight: '700',
+        color: '#374151',
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
+    },
+    statsRow: {
+        flexDirection: 'row',
+        gap: 24, 
+        marginBottom: 12,
+    },
+    guideStatChip: {
+        flexDirection: 'column',
+        gap: 4,
+    },
+    statLabel: {
+        fontSize: 12,
+        color: '#6b7280', 
+        fontWeight: '500',
+    },
+    statValue: {
+        fontSize: 18,
+        fontWeight: '800',
+        color: '#111827', 
+    },
+    guideNotice: {
+        fontSize: 13,
+        color: '#4b5563',
+        lineHeight: 18,
+        borderTopWidth: 1,
+        borderTopColor: '#f3f4f6',
+        paddingTop: 12,
+        marginTop: 4,
+    }
 });
 
 export default UserModule;
