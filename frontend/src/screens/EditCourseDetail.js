@@ -20,7 +20,8 @@ const EditCourseDetail = () => {
     const route=useRoute();
     const {id}=route.params;
     const {course, loading, error, updateDescription,locationTags, categoryTags}=useCourseDetails(id);
-    const {currentUser}=useAuth();
+    const auth = useAuth();
+    const currentUser = auth?.currentUser;
     const {allCourseList}=useCourses();
 
     const [selectedPage, setSelectedPage]=useState({type:'overview'});
@@ -537,7 +538,7 @@ const EditCourseDetail = () => {
                                 <Text style={styles.editorLabel}>Lesson Editor</Text>
                                 <Text style={styles.pageTitle}>{selectedPage.page?.title || "Lesson Overview"}</Text>
                                 {/* Final Quiz Settings Section */}
-                                {selectedPage.page?.final_quiz === true && (
+                                {currentUser.role==='admin' && selectedPage.page?.final_quiz === true && (
                                     <View style={styles.quizSettingsCard}>
                                         <View style={styles.quizSettingsHeader}>
                                             <Settings size={18} color="#064114" />
@@ -570,7 +571,6 @@ const EditCourseDetail = () => {
                                         </View>
                                     </View>
                                 )}
-                                
                                 
                                 {elementsLoading ? (
                                     <View style={styles.elementLoader}>
@@ -1575,6 +1575,46 @@ const styles = StyleSheet.create({
         color: '#15803d',
         marginBottom: 6,
         textTransform: 'uppercase',
+    },
+    guideInfoCard: {
+        backgroundColor: '#f0fdf4', // Light SIGMAmed Green
+        borderRadius: 12,
+        padding: 20,
+        borderWidth: 1,
+        borderColor: '#bbf7d0',
+        marginBottom: 25,
+    },
+    guideInfoHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+        marginBottom: 15,
+    },
+    guideInfoTitle: {
+        fontSize: 16,
+        fontWeight: '700',
+        color: '#166534',
+    },
+    guideStatChip: {
+        flex: 1,
+        backgroundColor: 'white',
+        padding: 12,
+        borderRadius: 8,
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#dcfce7',
+    },
+    statValue: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: '#0a6340',
+    },
+    guideNotice: {
+        fontSize: 12,
+        color: '#15803d',
+        fontStyle: 'italic',
+        marginTop: 15,
+        textAlign: 'center',
     }
 });
 
