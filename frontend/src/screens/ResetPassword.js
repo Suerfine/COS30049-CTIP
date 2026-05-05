@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { View, Text, StyleSheet, Pressable, ScrollView, TextInput, Alert, Image, useWindowDimensions } from 'react-native';
-import { ArrowLeft, Lock } from 'lucide-react-native';
+import { ArrowLeft, Lock, Check, X, Eye, EyeOff } from 'lucide-react-native';
 import { authService } from '../services/authService';
 
 const ResetPassword = ({ navigation, route }) => {
@@ -10,6 +10,39 @@ const ResetPassword = ({ navigation, route }) => {
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [loading, setLoading] = useState(false);
+    const [errorMessage, setErrorMessage] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirm, setShowConfirm] = useState(false);
+    
+    const computePasswordStrength = (pwd) => {
+        const hasLength = typeof pwd === 'string' && pwd.length >= 8;
+        const hasUpperLower = /[a-z]/.test(pwd) && /[A-Z]/.test(pwd);
+        const hasNumber = /[0-9]/.test(pwd);
+        const hasSymbol = /[^A-Za-z0-9]/.test(pwd);
+
+        let score = 0;
+        if (hasLength) score += 1;
+        if (hasUpperLower) score += 1;
+        if (hasNumber) score += 1;
+        if (hasSymbol) score += 1;
+
+        let label = 'Weak';
+        let color = '#e53935';
+        if (score <= 1) {
+            label = 'Weak'; color = '#e53935';
+        } else if (score === 2) {
+            label = 'Medium'; color = '#f9a825';
+        } else if (score === 3) {
+            label = 'Strong'; color = '#43a047';
+        } else if (score === 4) {
+            label = 'Very Strong'; color = '#1b5e20';
+        }
+
+        return { score, label, color, requirements: { hasLength, hasUpperLower, hasNumber, hasSymbol } };
+    };
+
+    const pwdStrength = computePasswordStrength(password);
+    const allReqMet = Object.values(pwdStrength.requirements).every(Boolean);
 
     const handleSubmit = async () => {
         if (!token) {
@@ -23,17 +56,20 @@ const ResetPassword = ({ navigation, route }) => {
         }
 
         if (password !== confirmPassword) {
-            Alert.alert('Password mismatch', 'The passwords do not match.');
+            setErrorMessage('Passwords do not match');
             return;
         }
 
         try {
             setLoading(true);
+            setErrorMessage('');
             await authService.resetPassword(token, password);
             Alert.alert('Password updated', 'Your password has been reset successfully. Please sign in with your new password.');
             navigation.navigate('Login');
         } catch (error) {
-            Alert.alert('Unable to reset password', error.message || 'Please request a new reset link.');
+            const msg = error?.message || 'Please request a new reset link.';
+            setErrorMessage(msg);
+            Alert.alert('Unable to reset password', msg);
         } finally {
             setLoading(false);
         }
@@ -77,6 +113,9 @@ const ResetPassword = ({ navigation, route }) => {
                         </View>
 
                         <View style={styles.form}>
+                            {errorMessage ? (
+                                <Text style={styles.errorText}>{errorMessage}</Text>
+                            ) : null}
                             <View style={styles.inputGroup}>
                                 <Text style={styles.label}>New Password</Text>
                                 <View style={styles.inputContainer}>
@@ -86,10 +125,38 @@ const ResetPassword = ({ navigation, route }) => {
                                         placeholder="Enter new password"
                                         placeholderTextColor="#8f8f8f"
                                         value={password}
-                                        onChangeText={setPassword}
-                                        secureTextEntry
+                                        onChangeText={(text) => { setPassword(text); if (errorMessage) setErrorMessage(''); }}
+                                        secureTextEntry={!showPassword}
                                         editable={!loading}
                                     />
+                                    <Pressable onPress={() => setShowPassword(p => !p)} style={styles.iconRight}>
+                                        {showPassword ? <EyeOff size={18} color="#6b6b6b" /> : <Eye size={18} color="#6b6b6b" />}
+                                    </Pressable>
+                                </View>
+                                <View style={styles.strengthRow}>
+                                    <View style={styles.strengthBarContainer}>
+                                        <View style={[styles.strengthBar, { width: `${(pwdStrength.score / 4) * 100}%`, backgroundColor: pwdStrength.color }]} />
+                                    </View>
+                                    <Text style={[styles.strengthLabel, { color: pwdStrength.color }]}>{pwdStrength.label}</Text>
+                                </View>
+                                <View style={styles.requirements}>
+                                    <Text style={styles.reqTitle}>Password requirements</Text>
+                                    <View style={styles.reqLine}>
+                                        {pwdStrength.requirements.hasLength ? <Check size={16} color="#2e7d32" /> : <X size={16} color="#b00020" />}
+                                        <Text style={styles.reqItem}>At least 8 characters</Text>
+                                    </View>
+                                    <View style={styles.reqLine}>
+                                        {pwdStrength.requirements.hasUpperLower ? <Check size={16} color="#2e7d32" /> : <X size={16} color="#b00020" />}
+                                        <Text style={styles.reqItem}>Mix of upper and lower case letters</Text>
+                                    </View>
+                                    <View style={styles.reqLine}>
+                                        {pwdStrength.requirements.hasNumber ? <Check size={16} color="#2e7d32" /> : <X size={16} color="#b00020" />}
+                                        <Text style={styles.reqItem}>At least one number</Text>
+                                    </View>
+                                    <View style={styles.reqLine}>
+                                        {pwdStrength.requirements.hasSymbol ? <Check size={16} color="#2e7d32" /> : <X size={16} color="#b00020" />}
+                                        <Text style={styles.reqItem}>At least one symbol (e.g. !@#$%)</Text>
+                                    </View>
                                 </View>
                             </View>
 
@@ -102,17 +169,20 @@ const ResetPassword = ({ navigation, route }) => {
                                         placeholder="Confirm new password"
                                         placeholderTextColor="#8f8f8f"
                                         value={confirmPassword}
-                                        onChangeText={setConfirmPassword}
-                                        secureTextEntry
+                                        onChangeText={(text) => { setConfirmPassword(text); if (errorMessage) setErrorMessage(''); }}
+                                        secureTextEntry={!showConfirm}
                                         editable={!loading}
                                     />
+                                    <Pressable onPress={() => setShowConfirm(p => !p)} style={styles.iconRight}>
+                                        {showConfirm ? <EyeOff size={18} color="#6b6b6b" /> : <Eye size={18} color="#6b6b6b" />}
+                                    </Pressable>
                                 </View>
                             </View>
 
                             <Pressable
-                                style={[styles.button, loading && styles.disabledButton]}
+                                style={[styles.button, (loading || pwdStrength.score < 2) && styles.disabledButton]}
                                 onPress={handleSubmit}
-                                disabled={loading}
+                                disabled={loading || pwdStrength.score < 2}
                             >
                                 <Text style={styles.buttonText}>{loading ? 'Saving...' : 'Reset Password'}</Text>
                             </Pressable>
@@ -262,6 +332,10 @@ const styles = StyleSheet.create({
         color: '#333',
         outlineStyle: 'none',
     },
+    iconRight: {
+        marginLeft: 8,
+        padding: 6,
+    },
     button: {
         backgroundColor: '#2f6618fe',
         paddingVertical: 14,
@@ -288,6 +362,58 @@ const styles = StyleSheet.create({
         color: '#2f6618fe',
         fontSize: 14,
         fontWeight: '600',
+    },
+    errorText: {
+        color: '#b00020',
+        backgroundColor: '#fff1f1',
+        padding: 10,
+        borderRadius: 8,
+        marginBottom: 8,
+    },
+    strengthRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+        marginTop: 8,
+    },
+    strengthBarContainer: {
+        flex: 1,
+        height: 8,
+        backgroundColor: '#eef4ea',
+        borderRadius: 6,
+        overflow: 'hidden',
+    },
+    strengthBar: {
+        height: '100%',
+        width: '0%',
+        backgroundColor: '#e53935',
+    },
+    strengthLabel: {
+        width: 100,
+        textAlign: 'right',
+        fontWeight: '600',
+    },
+    requirements: {
+        marginTop: 10,
+        backgroundColor: '#f6fbf6',
+        padding: 10,
+        borderRadius: 8,
+    },
+    reqTitle: {
+        fontWeight: '700',
+        color: '#1f4f13',
+        marginBottom: 6,
+    },
+    reqItem: {
+        color: '#3b4b3a',
+        fontSize: 13,
+        marginBottom: 4,
+    },
+    reqLine: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        marginBottom: 6,
     },
 });
 

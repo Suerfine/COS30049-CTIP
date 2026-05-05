@@ -78,16 +78,18 @@ export const token = async (
       return;
     }
 
-    const isValidPassword = await verifyPassword(password, user.password_hash);
+    const isValidPassword = verifyPassword(password, user.password_hash);
 
     if (!isValidPassword) {
+      console.log(`[Login] Password verification FAILED for user ${user.identification}. Password length: ${password.length}, Hash: ${user.password_hash.substring(0, 30)}...`);
       res.status(401).json({ message: "Incorrect username or password" });
       return;
     }
+    
+    console.log(`[Login] Password verification SUCCESS for user ${user.identification}`);
 
     if (!isBcryptHash(user.password_hash)) {
-      user.password_hash = await hashPassword(password);
-    }
+      user.password_hash = await hashPassword(password);      await user.save();    }
 
     const jwtSecret = process.env.JWT_SECRET;
     console.log("JWT Secret:", jwtSecret);
@@ -225,9 +227,14 @@ export const resetPassword = async (
       return;
     }
 
-    user.password_hash = await hashPassword(password);
+    console.log(`[Password Reset] User ID: ${user.id}, Identification: ${user.identification}, Password length: ${password.length}`);
+    
+    user.password_hash = hashPassword(password);
+    console.log(`[Password Reset] New hash created: ${user.password_hash.substring(0, 30)}...`);
+    
     user.updated_at = new Date();
     await user.save();
+    console.log(`[Password Reset] Password saved successfully for user ${user.identification}`);
 
     res.status(200).json({ message: "Password reset successfully" });
   } catch (error) {

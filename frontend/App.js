@@ -14,11 +14,15 @@ const linking = {
   prefixes: ["http://localhost:8081", "parkguide://"],
   config: {
     screens: {
-      Landing: "landing",
-      Login: "login",
-      SignUp: "signup",
-      ForgotPassword: "forgot-password",
-      ResetPassword: "reset-password",
+      SFC: {
+        screens: {
+          Landing: "landing",
+          Login: "login",
+          SignUp: "signup",
+          ForgotPassword: "forgot-password",
+          ResetPassword: "reset-password",
+        }
+      },
       "Course Management": "courseManagement",
       "Course Details": "course/:id",
       Dashboard: "dashboard",
