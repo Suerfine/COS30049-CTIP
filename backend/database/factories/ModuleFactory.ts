@@ -49,6 +49,84 @@ const moduleTopics = [
   "Real-Time Ecosystem Alert Systems"
 ];
 
+const quizBank = (moduleTitle: string) => [
+  {
+    question: `What is the primary objective of ${moduleTitle}?`,
+    options: ["Safety", "Efficiency", "Monitoring", "All of the above"],
+    answer: "All of the above"
+  },
+  {
+    question: `Which action is essential for ${moduleTitle} compliance?`,
+    options: ["Ignore alerts", "Strict adherence", "Delay reporting", "Random checks"],
+    answer: "Strict adherence"
+  },
+  {
+    question: `What should be prioritized in ${moduleTitle}?`,
+    options: ["Risk control", "Speed only", "Cost cutting", "Ignoring data"],
+    answer: "Risk control"
+  },
+  {
+    question: `How often should ${moduleTitle} protocols be reviewed?`,
+    options: ["Daily", "Weekly", "Monthly", "Annually"],
+    answer: "Weekly"
+  },
+  {
+    question: `Which system supports ${moduleTitle} monitoring?`,
+    options: ["Manual logs", "Automated system", "Paper records", "None"],
+    answer: "Automated system"
+  },
+  {
+    question: `What indicates a failure in ${moduleTitle}?`,
+    options: ["Anomaly detection", "No logs", "System alerts", "All of the above"],
+    answer: "All of the above"
+  },
+  {
+    question: `Who is responsible for ${moduleTitle} compliance?`,
+    options: ["All staff", "Managers only", "External auditors", "No one"],
+    answer: "All staff"
+  },
+  {
+    question: `What is the first response in ${moduleTitle} issues?`,
+    options: ["Ignore", "Report immediately", "Wait", "Delete logs"],
+    answer: "Report immediately"
+  },
+  {
+    question: `Which tool is used in ${moduleTitle}?`,
+    options: ["Monitoring dashboard", "Spreadsheet only", "Manual paper", "Email only"],
+    answer: "Monitoring dashboard"
+  },
+  {
+    question: `What improves ${moduleTitle} efficiency?`,
+    options: ["Automation", "Delay", "Manual errors", "None"],
+    answer: "Automation"
+  },
+  {
+    question: `What is a key risk in ${moduleTitle}?`,
+    options: ["Data loss", "Over-reporting", "Clean logs", "Automation"],
+    answer: "Data loss"
+  },
+  {
+    question: `How should ${moduleTitle} incidents be recorded?`,
+    options: ["Immediately", "Weekly batch", "Never", "Optional"],
+    answer: "Immediately"
+  },
+  {
+    question: `Which improves decision-making in ${moduleTitle}?`,
+    options: ["Data analysis", "Guessing", "Ignoring data", "Random choice"],
+    answer: "Data analysis"
+  },
+  {
+    question: `What ensures success in ${moduleTitle}?`,
+    options: ["Consistency", "Negligence", "Random actions", "Delays"],
+    answer: "Consistency"
+  },
+  {
+    question: `Final validation for ${moduleTitle} requires?`,
+    options: ["Full audit", "No review", "Partial logs", "Skipping checks"],
+    answer: "Full audit"
+  }
+];
+
 
 let moduleTitleCache: Set<string> = new Set<string>();
 
@@ -137,15 +215,15 @@ export const buildModuleGraph = (options: BuildModuleOptions = {}): ModuleFactor
     const isFirstPage = index === 0;
     const isLastPage = index === pageCount - 1;
 
-    let pageElements;
+    let pageElements: any[] = [];
 
     if (isFirstPage) {
       pageElements = [
         buildElement({
           order: 1,
           type: ElementTypes.TEXT,
-          content: { 
-            text: `# Welcome to ${module.title}\n\nThis module covers essential protocols for ${faker.commerce.department()}. Please review the introductory video and imagery below.` 
+          content: {
+            text: `# Welcome to ${module.title}\n\nThis module covers essential protocols for ${faker.commerce.department()}. Please review the introductory video and imagery below.`
           }
         }),
         buildElement({
@@ -165,26 +243,45 @@ export const buildModuleGraph = (options: BuildModuleOptions = {}): ModuleFactor
           }
         })
       ];
-    } else if (isLastPage) {
-      pageElements = [
+    }
+
+    else if (isLastPage) {
+      const questions = faker.helpers
+        .shuffle(quizBank(module.title))
+        .slice(0, 15);
+
+      const passingScore = Math.ceil(questions.length * 0.7);
+
+      pageElements = questions.map((q, i) =>
         buildElement({
-          order: 1,
+          order: i + 1,
           type: ElementTypes.QUIZ_OBJECTIVE,
-          content: {
-            question: `Which protocol is most critical for the management of ${module.title}?`,
-            options: ["Strict Adherence", "Standard Reporting", "Anomaly Detection", "All of the above"],
-            answer: "All of the above"
-          }
+          content: q,
+          score: 1,
         })
-      ];
-    } else {
+      );
+
+      return {
+        page: {
+          order: index + 1,
+          title: "Final Assessment",
+          final_quiz: 1,
+          passing_score: passingScore,
+          ...pageOverrides,
+        },
+        elements: pageElements,
+      };
+    }
+
+    else {
       pageElements = buildElements(elementsPerPage, elementOverrides);
     }
 
     return {
       page: {
         order: index + 1,
-        title: isFirstPage ? "Introduction" : isLastPage ? "Final Assessment" : faker.commerce.productName(),
+        title: faker.commerce.productName(),
+        final_quiz: 0, 
         ...pageOverrides,
       },
       elements: pageElements,
@@ -192,7 +289,7 @@ export const buildModuleGraph = (options: BuildModuleOptions = {}): ModuleFactor
   });
 
   return {
-    module: module,
+    module,
     pages: pages as PageFactoryResult[], 
   };
 };
