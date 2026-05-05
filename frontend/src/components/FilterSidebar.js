@@ -84,20 +84,20 @@ const FilterSidebar = ({ visible, tempFilters, setTempFilters, onApply, onReset,
                 )}
 
                 {/* Location Filters */}
-                    <View style={styles.sectionGroup}>
-                        <View style={styles.row}>
-                            <MapPin size={16} color="#0a6340" />
-                            <Text style={styles.sectionTitle}>Locations</Text>
-                        </View>
-                        {locationTags.map(tag => (
-                            <FilterItem
-                                key={tag.id}
-                                label={tag.title}
-                                isSelected={tempFilters.location?.includes(tag.title)}
-                                onPress={() => toggle('location', tag.title)}
-                            />
-                        ))}
+                <View style={styles.sectionGroup}>
+                    <View style={styles.row}>
+                        <MapPin size={16} color="#0a6340" />
+                        <Text style={styles.sectionTitle}>Locations</Text>
                     </View>
+                    {locationTags.map(tag => (
+                        <FilterItem
+                            key={tag.id}
+                            label={tag.title}
+                            isSelected={tempFilters.location?.includes(tag.title)}
+                            onPress={() => toggle('location', tag.title)}
+                        />
+                    ))}
+                </View>
 
                     {/* Category Filters */}
                     <View style={styles.sectionGroup}>

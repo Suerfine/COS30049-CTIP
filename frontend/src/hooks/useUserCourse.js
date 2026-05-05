@@ -135,8 +135,9 @@ export const useUserCourse=()=>{
         });
     }, [courses, myEnrollments, progressData]);
 
+    // marge enrollment status first via courses with status, then apply filters based on tag
     const filteredCourses = useMemo(() => {
-        return courses.filter(course => {
+        return coursesWithStatus.filter(course => {
             const hasPrerequisites = course.prerequisite_groups && course.prerequisite_groups.length > 0;
             
             let matchesTab = true;
@@ -158,7 +159,7 @@ export const useUserCourse=()=>{
 
             return matchesTab && matchesSearch && matchesLocation && matchesCategory;
         });
-    }, [courses, searchText, filters, allcourseFilter]);
+    }, [coursesWithStatus, searchText, filters, allcourseFilter]);
 
     const handleSearch = (text) => {
         setSearchText(text);
