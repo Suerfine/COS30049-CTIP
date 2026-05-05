@@ -67,7 +67,7 @@ function parseNumericIdArray(value: unknown): number[] {
  * /api/courses:
  *   post:
  *     summary: Create a new course
- *     description: Creates a course with optional badge image, status, release timestamp, and prerequisite groups.
+ *     description: Creates a course with optional badge image, status, release timestamp, and prerequisites (flat `prerequisite_course_ids`, works like `tag_ids`).
  *     tags: [Courses]
  *     security:
  *       - OAuth2: ["all"]
@@ -109,6 +109,12 @@ courseRouter.post(
     body("description").optional().isString(),
     body("status").optional().isIn(Object.values(CourseStatus)),
     body("tag_ids")
+      .optional()
+      .custom((value) => {
+        parseNumericIdArray(value);
+        return true;
+      }),
+    body("prerequisite_course_ids")
       .optional()
       .custom((value) => {
         parseNumericIdArray(value);
@@ -245,7 +251,7 @@ courseRouter.get("/:id", auth, CourseController.getCourseById);
  * /api/courses/{id}:
  *   put:
  *     summary: Update course
- *     description: Updates an existing course with one or more fields, including status, release timestamp, prerequisites, and optional badge image.
+ *     description: Updates an existing course with one or more fields, including status, release timestamp, prerequisites (flat `prerequisite_course_ids`, works like `tag_ids`), and optional badge image.
  *     tags: [Courses]
  *     security:
  *       - OAuth2: ["all"]

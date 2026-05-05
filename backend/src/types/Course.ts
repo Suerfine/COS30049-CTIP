@@ -50,7 +50,7 @@ export interface CreateCourseRequest {
   must_complete_in_weeks?: number;
   badge_expire_in_months?: number;
   tag_ids?: number[];
-  prerequisite_course_ids?: number[][];
+  prerequisite_course_ids?: number[];
 }
 
 export interface UpdateCourseRequest {
@@ -62,5 +62,5 @@ export interface UpdateCourseRequest {
   must_complete_in_weeks?: number | null;
   badge_expire_in_months?: number;
   tag_ids?: number[];
-  prerequisite_course_ids?: number[][];
+  prerequisite_course_ids?: number[];
 }

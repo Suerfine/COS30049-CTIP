@@ -458,15 +458,12 @@ const options: swaggerJSDoc.Options = {
             prerequisite_course_ids: {
               type: "array",
               description:
-                "Array of prerequisite groups. Each inner array represents OR logic; groups represent AND logic.",
+                "Flat array of prerequisite course IDs (works like tag_ids).",
               items: {
-                type: "array",
-                items: {
-                  type: "integer",
-                  example: 2,
-                },
+                type: "integer",
+                example: 2,
               },
-              example: [[2, 3], [4]],
+              example: [2, 3, 4],
             },
             badge: {
               type: "string",
@@ -541,15 +538,12 @@ const options: swaggerJSDoc.Options = {
             prerequisite_course_ids: {
               type: "array",
               description:
-                "Array of prerequisite groups. Each inner array represents OR logic; groups represent AND logic.",
+                "Flat array of prerequisite course IDs (works like tag_ids).",
               items: {
-                type: "array",
-                items: {
-                  type: "integer",
-                  example: 2,
-                },
+                type: "integer",
+                example: 2,
               },
-              example: [[2, 3], [4]],
+              example: [2, 3, 4],
             },
             badge: {
               type: "string",

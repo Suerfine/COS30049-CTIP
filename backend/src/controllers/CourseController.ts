@@ -173,46 +173,52 @@ function parseCourseReleasedAt(releasedAt: unknown): Date | null | undefined {
 
 /**
  * Helper function to validate the structure of prerequisite_course_ids input.
- * @param prerequisite_course_ids - The input to validate, expected to be an array of arrays of numbers.
+ * @param prerequisite_course_ids - The input to validate, expected to be a flat array of numbers (works like tag_ids).
  * @throws Will throw an error if the input is not in the expected format.
  */
 async function _verify_prerequisite_course_ids_input(
   prerequisite_course_ids: unknown,
 ): Promise<void> {
   if (typeof prerequisite_course_ids === "string") {
-    prerequisite_course_ids = JSON.parse(prerequisite_course_ids);
+    const trimmed = prerequisite_course_ids.trim();
+    if (trimmed === "") {
+      prerequisite_course_ids = [];
+    } else if (trimmed.startsWith("[")) {
+      prerequisite_course_ids = JSON.parse(trimmed);
+    } else if (trimmed.includes(",")) {
+      prerequisite_course_ids = trimmed
+        .split(",")
+        .map((p) => p.trim())
+        .filter((p) => p !== "");
+    } else {
+      prerequisite_course_ids = [trimmed];
+    }
   }
 
   if (!Array.isArray(prerequisite_course_ids)) {
     throw new Error("prerequisite_course_ids must be an array");
   }
 
-  for (const group of prerequisite_course_ids) {
-    if (!Array.isArray(group)) {
-      throw new Error("Each group of prerequisite_course_ids must be an array");
+  // Normalize to numbers and ensure uniqueness
+  const ids = prerequisite_course_ids.map((id) => Number(id));
+  for (const id of ids) {
+    if (!Number.isInteger(id) || id <= 0) {
+      throw new Error(
+        `Each course ID in prerequisite_course_ids must be a positive integer: ${id}`,
+      );
     }
+  }
 
-    for (const courseId of group) {
-      // Making sure every id in the group is unique within the group
-      const uniqueIds = new Set(group);
-      if (uniqueIds.size !== group.length) {
-        throw new Error(
-          "Each group of prerequisite_course_ids must contain unique course IDs",
-        );
-      }
-      // Checking if each courseID in the group is a number
-      if (typeof courseId !== "number" || isNaN(courseId)) {
-        throw new Error(
-          "Each course ID in prerequisite_course_ids must be a number" +
-            JSON.stringify(courseId),
-        );
-      }
+  const uniqueIds = Array.from(new Set(ids));
+  if (uniqueIds.length !== ids.length) {
+    throw new Error("prerequisite_course_ids must contain unique course IDs");
+  }
 
-      //checking if the courseId exists in the database
-      const course = await Course.findByPk(Number(courseId));
-      if (!course) {
-        throw new Error(`Course with ID ${courseId} does not exist`);
-      }
+  // Verify existence
+  for (const courseId of uniqueIds) {
+    const course = await Course.findByPk(Number(courseId));
+    if (!course) {
+      throw new Error(`Course with ID ${courseId} does not exist`);
     }
   }
 }
@@ -345,31 +351,47 @@ async function removeCourseTags(
 
 async function createPrerequisiteGroupsAndPrerequisites(
   courseId: number,
-  prerequisite_course_ids: number[][],
+  prerequisite_course_ids: unknown,
   transaction: any,
 ): Promise<void> {
   if (typeof prerequisite_course_ids === "string") {
-    prerequisite_course_ids = JSON.parse(prerequisite_course_ids);
+    const trimmed = prerequisite_course_ids.trim();
+    if (trimmed === "") {
+      prerequisite_course_ids = [];
+    } else if (trimmed.startsWith("[")) {
+      prerequisite_course_ids = JSON.parse(trimmed);
+    } else if (trimmed.includes(",")) {
+      prerequisite_course_ids = trimmed
+        .split(",")
+        .map((p) => p.trim())
+        .filter((p) => p !== "");
+    } else {
+      prerequisite_course_ids = [trimmed];
+    }
   }
 
-  for (const group of prerequisite_course_ids) {
-    const prerequisiteGroup = await PrerequisiteGroup.create(
-      { course_id: courseId },
-      { transaction },
-    );
+  const ids = Array.isArray(prerequisite_course_ids)
+    ? prerequisite_course_ids.map((id) => Number(id))
+    : [];
 
-    await Promise.all(
-      group.map((courseId) =>
-        Prerequisite.create(
-          {
-            course_id: Number(courseId),
-            prerequisite_group_id: prerequisiteGroup.id,
-          },
-          { transaction },
-        ),
+  if (ids.length === 0) return;
+
+  const prerequisiteGroup = await PrerequisiteGroup.create(
+    { course_id: courseId },
+    { transaction },
+  );
+
+  await Promise.all(
+    ids.map((cid) =>
+      Prerequisite.create(
+        {
+          course_id: Number(cid),
+          prerequisite_group_id: prerequisiteGroup.id,
+        },
+        { transaction },
       ),
-    );
-  }
+    ),
+  );
 }
 
 export const createCourse = async (
