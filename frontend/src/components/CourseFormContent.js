@@ -1,13 +1,13 @@
 import {useState} from 'react';
 import { View, Text, TextInput, StyleSheet, Pressable, Image, ActivityIndicator, ScrollView} from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import {X, Plus, ChevronDown, Award, ParenthesesIcon} from 'lucide-react-native';
+import {X, Plus, ChevronDown, Award, ParenthesesIcon, Tag} from 'lucide-react-native';
 
 // Import other hook and components
 import { ModalStyle as styles } from './ModalStyle';
 
-const CourseFormContent=({onSubmit, onCancel, isLoading, initialData,allCourseList = []})=>{
-    
+const CourseFormContent=({onSubmit, onCancel, isLoading, initialData,allCourseList = [], allTagList = []})=>{
+
     const getInitialPrereqs = () => {
         if (!initialData?.prerequisite_groups?.[0]?.prerequisites) return [];
 
@@ -21,6 +21,11 @@ const CourseFormContent=({onSubmit, onCancel, isLoading, initialData,allCourseLi
         });
     };
 
+    const getInitialTags = () => {
+        if (!initialData?.tags) return [];
+        return initialData.tags.map(t => ({ id: t.id, title: t.title }));
+    };
+
     const [form, setForm]=useState({
         courseTitle: initialData?.title || '',
         duration: initialData?.expected_completion_weeks || '',
@@ -29,11 +34,12 @@ const CourseFormContent=({onSubmit, onCancel, isLoading, initialData,allCourseLi
         image:initialData?.cover_img_url || null,
         badgeImage: initialData?.badge_img_url || null,
         status: initialData?.status,
-        tags:['IoT', 'Medical','Hardware'],
+        tags: getInitialTags(),
         prerequisites: getInitialPrereqs(),
     });
 
     const [showPrereqDropdown, setShowPrereqDropdown] = useState(false);
+    const [showTagDropdown, setShowTagDropdown] = useState(false);
     
     const handleNumericInput = (key, text) => {
         const cleaned = text.replace(/[^0-9]/g, '');
@@ -48,6 +54,23 @@ const CourseFormContent=({onSubmit, onCancel, isLoading, initialData,allCourseLi
             }));
         }
         setShowPrereqDropdown(false);
+    };
+
+    const addTag = (tag) => {
+        if (!form.tags.find(t => t.id === tag.id)) {
+            setForm(prev => ({
+                ...prev,
+                tags: [...prev.tags, { id: tag.id, title: tag.title }]
+            }));
+        }
+        setShowTagDropdown(false);
+    };
+
+    const removeTag = (tagId) => {
+        setForm(prev => ({
+            ...prev,
+            tags: prev.tags.filter(t => t.id !== tagId)
+        }));
     };
 
     const pickImage=async(type)=>{
@@ -78,7 +101,8 @@ const CourseFormContent=({onSubmit, onCancel, isLoading, initialData,allCourseLi
         return {
             ...form,
             status: statusOverride || form.status,
-            prerequisite_course_ids: form.prerequisites.map(p => p.id)
+            prerequisite_course_ids: form.prerequisites.map(p => p.id),
+            tags: form.tags.map(t => t.id),
         };
     };
 
@@ -91,8 +115,6 @@ const CourseFormContent=({onSubmit, onCancel, isLoading, initialData,allCourseLi
             expiryWeeks: parseInt(form.expiryWeeks, 10) || 0,
             badgeExpiry: parseInt(form.badgeExpiry, 10) || 0,
         };
-        console.log("Debug",finalPayload);
-        
         onSubmit(finalPayload);
     };
 
@@ -171,20 +193,38 @@ const CourseFormContent=({onSubmit, onCancel, isLoading, initialData,allCourseLi
                     </View>
                     
 
-                    {/* Dummy Tags (Pills) */}
+                    {/* Tags */}
                     <View style={localStyles.inputGroup}>
-                        <Text style={styles.label}>Tags:</Text>
-                        <View style={localStyles.tagWrapper}>
-                            {initialData && form.tags.map(tag => (
-                                <View key={tag} style={localStyles.pill}>
-                                    <Text style={localStyles.pillText}>{tag}</Text>
-                                    <X size={12} color="white" />
+                            <Text style={styles.label}>Course Tags:</Text>
+                            <View style={localStyles.multiSelectContainer}>
+                                {form.tags.map(tag => (
+                                    <View key={tag.id} style={localStyles.pill}>
+                                        <Text style={localStyles.pillText}>{tag.title}</Text>
+                                        <Pressable onPress={() => removeTag(tag.id)}>
+                                            <X size={12} color="white" />
+                                        </Pressable>
+                                    </View>
+                                ))}
+                                <Pressable style={localStyles.addTagBtn} onPress={() => setShowTagDropdown(!showTagDropdown)}>
+                                    <Plus size={16} color="#217837" />
+                                    <Text style={localStyles.addTagText}>Add Tag</Text>
+                                </Pressable>
+                            </View>
+
+                            {showTagDropdown && (
+                            <View style={localStyles.dropdownOverlay}>
+                                <View style={localStyles.Tagdropdown}>
+                                    <ScrollView style={{ maxHeight: 150 }}>
+                                        {allTagList.length > 0 ? allTagList.map(tag => (
+                                            <Pressable key={tag.id} style={localStyles.TagdropdownItem} onPress={() => addTag(tag)}>
+                                                <Tag size={14} color="#666" style={{ marginRight: 8 }} />
+                                                <Text>{tag.title}</Text>
+                                            </Pressable>
+                                        )) : <Text style={{ padding: 10, color: '#999' }}>No tags available</Text>}
+                                    </ScrollView>
                                 </View>
-                            ))}
-                            <Pressable style={localStyles.addPill}>
-                                <Plus size={14} color="#666" />
-                            </Pressable>
-                        </View>
+                            </View>
+                        )}
                     </View>
                     
                     {/* Pre-requisite */}
@@ -437,9 +477,40 @@ const localStyles=StyleSheet.create({
         borderBottomWidth: 1,
         borderBottomColor: '#eee'
     },
+    addTagBtn: { 
+        flexDirection: 'row', 
+        alignItems: 'center', 
+        gap: 4, 
+        marginLeft: 5 
+    },
+    addTagText: { 
+        color: '#217837', 
+        fontSize: 12, 
+        fontWeight: '600' 
+    },
+    dropdownOverlay: {
+        position: 'absolute',
+        backgroundColor: 'rgba(0,0,0,0.05)',
+        width: '100%',
+        bottom:45
+    },
+    Tagdropdown: {
+        backgroundColor: 'white',
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: '#eee',
+        elevation: 3,
+    },
+    TagdropdownItem: {
+        padding: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: '#f0f0f0',
+        flexDirection: 'row',
+        alignItems: 'center'
+    },
 })
 ;
 
 export default CourseFormContent;
 
-// Havent do the validation message, tag
+// Havent do the validation message

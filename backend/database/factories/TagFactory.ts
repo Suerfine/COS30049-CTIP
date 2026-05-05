@@ -1,6 +1,7 @@
 import { faker } from "@faker-js/faker";
 
-const TAG_TYPES = ["category", "difficulty", "topic"] as const;
+const TAG_TYPES = ["category", "location"] as const;
+type TagType = typeof TAG_TYPES[number];
 
 let tagKeyCache: Set<string> = new Set<string>();
 
@@ -16,17 +17,24 @@ export type TagFactoryAttributes = {
 export type TagFactoryInput = Partial<TagFactoryAttributes>;
 
 const buildUniqueTag = (): Pick<TagFactoryAttributes, "title" | "type"> => {
-  let type = faker.helpers.arrayElement(TAG_TYPES);
-  let title = faker.word.words({ count: { min: 1, max: 2 } });
-  let key = `${type}:${title.toLowerCase()}`;
+  let type: TagType;
+  let title: string;
+  let key: string;
 
-  while (tagKeyCache.has(key)) {
+  do {
     type = faker.helpers.arrayElement(TAG_TYPES);
-    title = faker.word.words({ count: { min: 1, max: 2 } });
+
+    if (type === "location") {
+      title = faker.location.city();
+    } else {
+      title = faker.word.words({ count: { min: 1, max: 2 } }); 
+    }
+
     key = `${type}:${title.toLowerCase()}`;
-  }
+  } while (tagKeyCache.has(key));
 
   tagKeyCache.add(key);
+
   return { title, type };
 };
 

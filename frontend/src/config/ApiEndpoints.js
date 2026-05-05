@@ -34,5 +34,9 @@ export const API_ENDPOINTS={
         JOIN_WORKSHOP: (courseId, elementId) => 
         `/api/courses/${courseId}/elements/${elementId}/workshops/join`,
         ALL_WORKSHOP:(courseId)=>`/courses/${courseId}/elements/workshops`,
+    },
+    TAGS: {
+        LIST: '/tags',
+        CREATE:'/tags'
     }
 };

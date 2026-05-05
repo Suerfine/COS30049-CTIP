@@ -6,6 +6,7 @@ export const useCourses=()=>{
     const [courses, setCourses]=useState([]);
     const [loading, setLoading]=useState(false);
     const [allCourseList, setAllCourseList] = useState([]);
+    const [allTagList, setAllTagList] = useState([]);
     const [pagination, setPagination]=useState({
         currentPage:1,
         totalPages:0,
@@ -29,22 +30,29 @@ export const useCourses=()=>{
         setLoading(true);
         try {
             const response = await courseService.getAll(params);
-            setCourses(response); 
+            setCourses(response.data ?? response ?? []); 
+            
             setPagination({
                 currentPage: response.page || 1,
                 totalPages: response.totalPages || 0,
                 totalElements: response.totalElements || 0
             });
-            if (allCourseList.length === 0) {
-                const fullList = await courseService.getAll({ size: 100 });
-                setAllCourseList(fullList.data || []);
+
+            if (allCourseList.length === 0 || allTagList.length === 0) {
+                const [fullCourseRes, fullTagRes] = await Promise.all([
+                    courseService.getAll({ size: 100 }),
+                    courseService.getAllTags() 
+                ]);
+                
+                setAllCourseList(fullCourseRes.data || []);
+                setAllTagList(fullTagRes.data || fullTagRes || []); 
             }
         } catch (err) {
             console.error("Fetch failed", err);
         } finally {
             setLoading(false);
         }
-    }, [allCourseList.length]);
+    }, [allCourseList.length, allTagList.length]);
 
     useEffect(() => { loadCourses(); }, [loadCourses]);
 
@@ -74,14 +82,15 @@ export const useCourses=()=>{
                 duration: formData.duration ?? existingCourse.expected_completion_weeks,
                 expiryWeeks: formData.expiryWeeks ?? existingCourse.must_complete_in_weeks,
                 badgeExpiry: formData.badgeExpiry ?? existingCourse.badge_expire_in_months,
+                tags: formData.tags ?? [],
                 prerequisite_course_ids:
                 formData.prerequisite_course_ids ??
                 existingCourse.prerequisite_groups?.flatMap(group =>
                     group.prerequisites.map(p => p.course_id)
                 ) ??
                 []
+                
             };
-
             await courseService.update(id, payload);
 
             await loadCourses();
@@ -124,5 +133,29 @@ export const useCourses=()=>{
         });
     };
 
-    return {courses,loadCourses, loading, addCourse, editCourse, deleteCourse,filterVisible, setFilterVisible,tempFilters, setTempFilters,filters, setFilters, statusLabels, removeFilter, allCourseList};
+    const addTag = async (tagData) => {
+        const isDuplicate = allTagList.some(
+            (t) => t.title.toLowerCase() === tagData.title.toLowerCase()
+        );
+
+        if (isDuplicate) {
+            window.alert("A tag with this name already exists.");
+            return false;
+        }
+
+        try {
+            setLoading(true);
+            await courseService.createTag(tagData);
+            const updatedTags = await courseService.getAllTags();
+            setAllTagList(updatedTags.data || updatedTags);
+            return true;
+        } catch (error) {
+            console.error("Tag Creation Error:", error);
+            return false;
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return {courses,loadCourses, loading, addCourse, editCourse, deleteCourse,filterVisible, setFilterVisible,tempFilters, setTempFilters,filters, setFilters, statusLabels, removeFilter, allCourseList,allTagList, addTag};
 };

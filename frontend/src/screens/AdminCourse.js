@@ -10,7 +10,7 @@ import {
   Modal,
   ActivityIndicator,
 } from "react-native";
-import { CopyPlus, Search, SlidersHorizontal, CircleX } from "lucide-react-native";
+import { CopyPlus, Search, SlidersHorizontal, CircleX, Plus } from "lucide-react-native";
 
 // Import Components
 import CourseCard from "../components/CourseCard.js";
@@ -19,15 +19,16 @@ import ModalLayout from "../components/ModalLayout.js";
 import { useCourses } from "../hooks/useCourses.js";
 import FilterSidebar from '../components/FilterSidebar';
 import { useAuth } from "../context/AuthContext.js";
+import TagCreationModal from "../components/TagCreationModal.js";
 
 const AdminCourse = ({ navigation }) => {
-  const { courses, loadCourses, loading, addCourse, editCourse, deleteCourse,filterVisible, setFilterVisible,tempFilters, setTempFilters,filters, setFilters,statusLabels, removeFilter,allCourseList} =
-    useCourses();
+  const { courses, loadCourses, loading, addCourse, editCourse, deleteCourse,filterVisible, setFilterVisible,tempFilters, setTempFilters,filters, setFilters,statusLabels, removeFilter,allCourseList, allTagList, addTag} =useCourses();
   const [modalVisible, setModalVisible] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [searchText, setSearchText] = useState("");
   const {currentUser}=useAuth();
+  const [isTagModalVisible, setTagModalVisible] = useState(false);
 
   useEffect(() => {
     loadCourses();
@@ -113,6 +114,7 @@ const AdminCourse = ({ navigation }) => {
           isLoading={loading}
           initialData={selectedCourse}
           allCourseList={allCourseList}
+          allTagList={allTagList}
         />
       </ModalLayout>
 
@@ -128,19 +130,28 @@ const AdminCourse = ({ navigation }) => {
             placeholderTextColor="#8f8f8f"
           />
         </View>
-        <Pressable
-          style={({ hovered }) => [
-            styles.filter,
-            hovered && styles.filterHover,
-          ]
-        }
-          onPress={() => {
-              setTempFilters(filters);
-              setFilterVisible(true);
-          }}
-        >
-          <SlidersHorizontal />
-        </Pressable>
+        <View style={styles.row}>
+          <Pressable 
+              style={styles.addTagButton} 
+              onPress={() => setTagModalVisible(true)}
+          >
+              <Plus size={16} color="white" />
+              <Text style={{color: 'white', fontWeight: 'bold'}}>New Tag</Text>
+          </Pressable>
+          <Pressable
+            style={({ hovered }) => [
+              styles.filter,
+              hovered && styles.filterHover,
+            ]
+          }
+            onPress={() => {
+                setTempFilters(filters);
+                setFilterVisible(true);
+            }}
+          >
+            <SlidersHorizontal />
+          </Pressable>
+          </View>
       </View>
       <View style={styles.pillContainer}>
           {filters.status !== 'all' && (
@@ -168,8 +179,8 @@ const AdminCourse = ({ navigation }) => {
       ) : (
         <>
           <View style={styles.cardContainer}>
-            {courses?.data && courses.data.length > 0 ? (
-              courses?.data?.map((course) => {
+            {Array.isArray(courses) && courses.length > 0 ? (
+              courses.map((course) => {
                 const numModules = course.modules ? course.modules.length : 0;
                 return (
                   <CourseCard
@@ -201,6 +212,15 @@ const AdminCourse = ({ navigation }) => {
         </>
       )}
     </ScrollView>
+    <TagCreationModal 
+        visible={isTagModalVisible}
+        isLoading={loading}
+        onCancel={() => setTagModalVisible(false)}
+        onSave={async (data) => {
+            const success = await addTag(data);
+            if (success) setTagModalVisible(false);
+        }}
+    />
     <FilterSidebar
         visible={filterVisible}
         tempFilters={tempFilters}
@@ -327,6 +347,28 @@ const styles = StyleSheet.create({
         marginRight:6,
         fontWeight:'500'
     },
+    toolbar: {
+      justifyContent: "space-between",
+      flexDirection: "row",
+      alignItems: "center",
+      marginTop: 20,
+      gap: 15,
+    },
+    
+    addTagButton: {
+      flexDirection: "row",
+      backgroundColor: "#0a6340",
+      paddingHorizontal: 15,
+      paddingVertical: 10,
+      borderRadius: 12,
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 8,
+    },
+    row:{
+      flexDirection:'row',
+      gap:25
+    }
 });
 
 export default AdminCourse;
