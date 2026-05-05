@@ -86,7 +86,7 @@ function buildEmailShell(content: string): string {
             <tr>
               <td style="background:#14532d;padding:26px 32px;color:#ffffff;">
                 <div style="font-size:13px;letter-spacing:1px;text-transform:uppercase;color:#cce8d2;">Sarawak Forestry Corporation</div>
-                <div style="font-size:28px;font-weight:700;line-height:1.2;margin-top:6px;">CTIP Training Portal</div>
+                <div style="font-size:28px;font-weight:700;line-height:1.2;margin-top:6px;">SFC Training Portal</div>
               </td>
             </tr>
             <tr>
@@ -96,7 +96,7 @@ function buildEmailShell(content: string): string {
             </tr>
             <tr>
               <td style="background:#eef5ee;padding:16px 32px;text-align:center;font-size:12px;color:#4f6256;">
-                For enquiries, please contact the CTIP administration team.
+                For enquiries, please contact the SFC administration team.
               </td>
             </tr>
           </table>
@@ -124,7 +124,7 @@ function buildCredentialTable(accountEmail: string, password: string): string {
       <tr>
         <td style="padding:12px;border:1px solid #26352b;background:#f2f4f1;font-size:14px;">Portal:</td>
         <td style="padding:12px;border:1px solid #26352b;font-size:14px;">
-          ${escapeHtml(process.env.FRONTEND_URL ?? "CTIP Training Portal")}
+          ${escapeHtml(process.env.FRONTEND_URL ?? "SFC Training Portal")}
         </td>
       </tr>
     </table>
@@ -158,7 +158,7 @@ export async function sendRegistrationApprovedEmail(
   const html = buildEmailShell(`
     <p style="margin:0 0 18px;text-align:center;font-size:14px;">Hi ${safeName},</p>
     <p style="margin:0 0 18px;text-align:center;font-size:16px;font-weight:700;">
-      Congratulations! Your CTIP Training Portal account has been created.
+      Congratulations! Your SFC Training Portal account has been created.
     </p>
     <p style="margin:0 0 10px;text-align:center;font-size:14px;">
       Your registration has been approved by the administration team.
@@ -175,7 +175,7 @@ export async function sendRegistrationApprovedEmail(
   await mailer.transporter.sendMail({
     from: mailer.from,
     to: input.to,
-    subject: "Your CTIP Training Portal account has been approved",
+    subject: "Your SFC Training Portal account has been approved",
     html,
   });
 }
@@ -196,7 +196,7 @@ export async function sendRegistrationRejectedEmail(
   const html = buildEmailShell(`
     <p style="margin:0 0 18px;text-align:center;font-size:14px;">Hi ${escapeHtml(getFullName(input))},</p>
     <p style="margin:0 0 18px;text-align:center;font-size:16px;font-weight:700;">
-      Your CTIP Training Portal registration was not approved.
+      Your SFC Training Portal registration was not approved.
     </p>
     <p style="margin:0;text-align:center;font-size:14px;">
       After reviewing your submission, the administration team has rejected this registration request.
@@ -207,7 +207,7 @@ export async function sendRegistrationRejectedEmail(
   await mailer.transporter.sendMail({
     from: mailer.from,
     to: input.to,
-    subject: "Your CTIP Training Portal registration was rejected",
+    subject: "Your SFC Training Portal registration was rejected",
     html,
   });
 }
@@ -227,7 +227,7 @@ export async function sendPasswordResetEmail(
   const html = buildEmailShell(`
     <p style="margin:0 0 18px;text-align:center;font-size:14px;">Hi ${safeName},</p>
     <p style="margin:0 0 18px;text-align:center;font-size:16px;font-weight:700;">
-      We received a request to reset your CTIP Training Portal password.
+      We received a request to reset your SFC Training Portal password.
     </p>
     <p style="margin:0 0 18px;text-align:center;font-size:14px;">
       Click the link below to create a new password. This link will expire in 30 minutes.
@@ -246,7 +246,7 @@ export async function sendPasswordResetEmail(
   await mailer.transporter.sendMail({
     from: mailer.from,
     to: input.to,
-    subject: "Reset your CTIP Training Portal password",
+    subject: "Reset your SFC Training Portal password",
     html,
   });
 }
@@ -265,17 +265,17 @@ export async function sendPasswordChangedEmail(
   const html = buildEmailShell(`
     <p style="margin:0 0 18px;text-align:center;font-size:14px;">Hi ${safeName},</p>
     <p style="margin:0 0 18px;text-align:center;font-size:16px;font-weight:700;">
-      Your CTIP Training Portal password was changed.
+      Your SFC Training Portal password was changed.
     </p>
     <p style="margin:0 0 18px;text-align:center;font-size:14px;">
-      If you did not perform this change, please contact the CTIP administration immediately to secure your account.
+      If you did not perform this change, please contact the SFC administration immediately to secure your account.
     </p>
   `);
 
   await mailer.transporter.sendMail({
     from: mailer.from,
     to: input.to,
-    subject: "Your CTIP Training Portal password has been changed",
+    subject: "Your SFC Training Portal password has been changed",
     html,
   });
 }
