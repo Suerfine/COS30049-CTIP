@@ -41,7 +41,7 @@ export const useUserDashboard = () => {
         
         setLoading(true);
         try {
-            const [progress, courses, todos, fullProfile, tagsRes] = await Promise.all([
+            const [progressRes, coursesRes, todosRes, fullProfileRes, tagsRes] = await Promise.allSettled([
                 userDashboardService.getProgress(),
                 userDashboardService.getCourses(),
                 userDashboardService.getTodos(),
@@ -49,11 +49,16 @@ export const useUserDashboard = () => {
                 courseService.getAllTags() 
             ]);
 
-            setProgressData(progress);
-            setCourses(courses);
-            setTodos(todos);
-            setUser(fullProfile);
-            setCategories(tagsRes.data || tagsRes || []); 
+            if (progressRes.status === 'fulfilled') setProgressData(progressRes.value);
+            if (coursesRes.status  === 'fulfilled') setCourses(coursesRes.value);
+            if (todosRes.status    === 'fulfilled') setTodos(todosRes.value);
+            if (fullProfileRes.status  === 'fulfilled') setUser(fullProfileRes.value);
+            if (tagsRes.status     === 'fulfilled') setCategories(tagsRes.value?.data || tagsRes.value || []);
+
+            // Log any failures for debugging
+            [progressRes, coursesRes, todosRes, fullProfileRes, tagsRes].forEach((r, i) => {
+                if (r.status === 'rejected') console.error(`Fetch #${i} failed:`, r.reason);
+            });
 
         } catch (err) {
             console.error("Dashboard fetch error:", err);
@@ -133,12 +138,12 @@ export const useUserDashboard = () => {
     
     // COURSES LOGIC
     // get in progress courses
-    const inProgressCourses = courses.filter(course => {
+    const inProgressCourses = Array.isArray(courses) ? courses.filter(course => {
         const progressObj = progressData.find(p => p.courseId === course.id);
         const progress = progressObj ? progressObj.progress : null;
 
         return progress !== null && progress > 0 && progress < 1;
-    });
+    }) : [];
 
      // TODOLIST LOGIC
     // Toggle checkbox

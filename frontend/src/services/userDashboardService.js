@@ -1,25 +1,41 @@
-import { API_BASE_URL } from "../config/DummyapiConfig";
+// import { API_BASE_URL } from "../config/DummyapiConfig";
 import apiClient from "../config/apiConfig";
 import { API_ENDPOINTS } from "../config/ApiEndpoints";
 
-const BASE_URL = `${API_BASE_URL}/api`;
+// const BASE_URL = `${API_BASE_URL}/api`;
 
 export const userDashboardService = {
 
+    // getProgress: async () => {
+    //     const res = await fetch(`${BASE_URL}/progress`);
+    //     return await res.json();
+    // },
+
+    // getCourses: async () => {
+    //     const res = await fetch(`${BASE_URL}/courses`);
+    //     return await res.json();
+    // },
+
+    // getTodos: async () => {
+    //     const res = await fetch(`${BASE_URL}/todos`);
+    //     return await res.json();
+    // },
+
     getProgress: async () => {
-        const res = await fetch(`${BASE_URL}/progress`);
-        return await res.json();
+        const response = await apiClient.get('/progress');
+        return response.data;
     },
 
     getCourses: async () => {
-        const res = await fetch(`${BASE_URL}/courses`);
-        return await res.json();
+        const response = await apiClient.get(API_ENDPOINTS.COURSE.LIST);
+        return response.data;
     },
 
     getTodos: async () => {
-        const res = await fetch(`${BASE_URL}/todos`);
-        return await res.json();
+        const response = await apiClient.get('/todos');
+        return response.data;
     },
+
 
     // get first name, email, telefon, id, pfp
     getUserProfile: async () => {
