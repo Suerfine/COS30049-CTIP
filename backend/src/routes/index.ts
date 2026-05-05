@@ -7,6 +7,7 @@ import pageRouter from "./PageRoute";
 import messageRouter from "./MessageRoute";
 import enrollmentRouter from "./EnrollmentRoute";
 import submissionRouter from "./SubmissionRoute";
+import tagRouter from "./TagRoute";
 import * as AuthController from "../controllers/AuthController";
 import elementRouter from "./ElementRoute";
 // import sensorRouter from "./SensorRoute";
@@ -85,6 +86,7 @@ router.use("/enrollments", enrollmentRouter);
 =        COURSE ROUTES         =
 ===============================*/
 router.use("/courses", courseRouter);
+router.use("/tags", tagRouter);
 router.use("/", moduleRouter);
 router.use("/", pageRouter);
 router.use("/", messageRouter);

@@ -37,6 +37,10 @@ const options: swaggerJSDoc.Options = {
         description: "Course management endpoints",
       },
       {
+        name: "Tags",
+        description: "Tag management endpoints",
+      },
+      {
         name: "Modules",
         description: "Module management endpoints",
       },
@@ -1242,7 +1246,8 @@ const options: swaggerJSDoc.Options = {
                 properties: {
                   href: {
                     type: "string",
-                    example: "http://localhost:5000/api/sensors/logs?page=1&size=20",
+                    example:
+                      "http://localhost:5000/api/sensors/logs?page=1&size=20",
                   },
                 },
               },
