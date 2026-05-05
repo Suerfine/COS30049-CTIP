@@ -29,7 +29,9 @@ import numpy as np
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from ultralytics import YOLO
-from vision_model.scripts.compliance import ComplianceEvaluator
+from compliance import ComplianceEvaluator
+from zeroconf import ServiceInfo, Zeroconf
+import socket
 evaluator = ComplianceEvaluator()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("parkguard")
@@ -126,7 +128,31 @@ async def lifespan(app: FastAPI):
     models["detector"] = YOLO("object_detection_model.pt")
     models["pose"]     = YOLO("yolo26n-pose.pt")
     logger.info("✅ Models ready!")
+    
+    # Setup Zeroconf service registration
+    info = ServiceInfo(
+        "_parkguard._tcp.local.",
+        "ParkGuard Server._parkguard._tcp.local.",
+        addresses=[socket.inet_aton("0.0.0.0")],
+        port=8000,
+    )
+    zeroconf = Zeroconf()
+    try:
+        zeroconf.register_service(info)
+        logger.info("✅ Zeroconf service registered")
+    except Exception as e:
+        logger.warning(f"⚠️ Failed to register Zeroconf service: {e}")
+    
     yield
+    
+    # Cleanup
+    try:
+        zeroconf.unregister_service(info)
+        zeroconf.close()
+        logger.info("✅ Zeroconf service unregistered")
+    except Exception as e:
+        logger.warning(f"⚠️ Failed to unregister Zeroconf service: {e}")
+    
     models.clear()
 
 app = FastAPI(title="ParkGuard AI Server", lifespan=lifespan)
@@ -191,29 +217,38 @@ def parse_poses(results) -> list[list[dict]]:
 # ---------------------------------------------------------------------------
 # Event logging to Express API
 # ---------------------------------------------------------------------------
+# Default GPS coordinates for the park (Kuching, Sarawak)
+PARK_LATITUDE  = 1.5533
+PARK_LONGITUDE = 110.3592
+
 async def log_compliance_event_to_backend(
     user_id: int,
     event_type: str,
     severity: str,
     description: str,
     metadata: dict = None,
-    latitude: float = None,
-    longitude: float = None,
+    latitude: float = PARK_LATITUDE,
+    longitude: float = PARK_LONGITUDE,
 ):
     """
     Logs a compliance event to the Express backend API.
     Runs asynchronously to avoid blocking inference.
+
+    latitude/longitude default to the park coordinates so they are
+    never sent as null (which the Express validator rejects).
     """
     try:
         async with httpx.AsyncClient(timeout=5.0) as client:
+            # Build payload — only include keys with real values so we never
+            # send explicit null fields that fail Express validation.
             payload = {
-                "user_id": user_id,
-                "event_type": event_type,
-                "severity": severity,
+                "user_id":     user_id,
+                "event_type":  event_type,
+                "severity":    severity,
                 "description": description,
-                "metadata": metadata or {},
-                "latitude": latitude,
-                "longitude": longitude,
+                "metadata":    metadata or {},
+                "latitude":    latitude,
+                "longitude":   longitude,
             }
             response = await client.post(
                 f"{EXPRESS_API_URL}/compliance-events",
@@ -308,13 +343,13 @@ async def ws_detect(websocket: WebSocket):
                     asyncio.create_task(
                         log_compliance_event_to_backend(
                             user_id=user_id,
-                            event_type="plucking_plants",
+                            event_type="plucking", 
                             severity="medium",
                             description="Plant plucking detected - user attempted to pluck vegetation",
                             metadata={
                                 "pluck_count": compliance.get("pluck_event_count", 0),
                                 "hand_plant_overlaps": compliance.get("hand_plant_overlaps", 0),
-                            },
+                            }
                         )
                     )
                     prev_plucking_count = compliance.get("pluck_event_count", 0)
@@ -324,12 +359,12 @@ async def ws_detect(websocket: WebSocket):
                     asyncio.create_task(
                         log_compliance_event_to_backend(
                             user_id=user_id,
-                            event_type="hitting_animal",
+                            event_type="animal_strike",
                             severity="medium",
                             description="Animal strike detected - user attempted to strike an animal",
                             metadata={
                                 "strike_count": compliance.get("strike_event_count", 0),
-                            },
+                            }
                         )
                     )
                     prev_strike_count = compliance.get("strike_event_count", 0)
@@ -340,14 +375,12 @@ async def ws_detect(websocket: WebSocket):
                     asyncio.create_task(
                         log_compliance_event_to_backend(
                             user_id=user_id,
-                            event_type="extended_animal_touch",
+                            event_type="extended_touch",
                             severity="medium",
-                            description="Extended animal touch detected - user in prolonged contact with animal",
+                            description="Extended animal touch detected - user in prolonged contact with animal"
                         )
                     )
                     prev_animal_touch = compliance.get("animal_extended_touch", False)
-                elif not compliance.get("animal_extended_touch", False):
-                    prev_animal_touch = False
                 
                 await websocket.send_text(json.dumps(result))
             except Exception as exc:

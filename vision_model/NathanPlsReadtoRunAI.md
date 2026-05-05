@@ -12,8 +12,6 @@ npm run dev
 cd c:\COS30049-CTIP
 uvicorn server:app --host 0.0.0.0 --port 8000 --reload
 
-
-
 # 5. Start mobile app (Terminal 3)
 cd frontend
 npm start

@@ -19,21 +19,38 @@ export const useAnomalyDetection = () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await AnomalyService.getAll(
-        currentPage,
-        10,
-        searchQuery,
-        sortConfig
-      );
+
+      // AnomalyService.getAll must call GET /api/compliance-events
+      // with query params: page, limit, search, sortKey, sortDir
+      // NOT /api/compliance-events/:id (which returns 404 for a page number)
+      const response = await AnomalyService.getAll({
+        page:      currentPage,
+        limit:     10,
+        search:    searchQuery,
+        sortKey:   sortConfig.key,
+        sortDir:   sortConfig.direction,
+      });
 
       console.log("Anomaly Response:", response);
-      
+
+      // Handle both array responses and paginated envelope responses.
+      // Express pagination typically returns: { data, total, page, totalPages }
+      // (NOT totalElements — that's a Spring/Java convention)
       const rawAnomalies = Array.isArray(response)
         ? response
         : response.data || [];
+
       setAnomalies(rawAnomalies);
-      setTotalAnomalies(response.totalElements || 0);
-      setTotalPages(response.totalPages || 1);
+      setTotalAnomalies(
+        response.total       ??  // Express standard
+        response.totalElements ?? // fallback if renamed
+        rawAnomalies.length
+      );
+      setTotalPages(
+        response.totalPages  ??
+        response.pages       ??
+        1
+      );
     } catch (err) {
       console.error("Failed to fetch anomalies: ", err);
       setError(err.message || "Failed to fetch anomalies");
