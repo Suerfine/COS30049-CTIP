@@ -7,12 +7,18 @@ import {X, Plus, ChevronDown, Award, ParenthesesIcon} from 'lucide-react-native'
 import { ModalStyle as styles } from './ModalStyle';
 
 const CourseFormContent=({onSubmit, onCancel, isLoading, initialData,allCourseList = []})=>{
+    
     const getInitialPrereqs = () => {
         if (!initialData?.prerequisite_groups?.[0]?.prerequisites) return [];
-        return initialData.prerequisite_groups[0].prerequisites.map(p => ({
-            id: p.course_id,
-            title: p.course_title || `Course #${p.course_id}` 
-        }));
+
+        return initialData.prerequisite_groups[0].prerequisites.map(p => {
+            const matchedCourse = allCourseList.find(c => c.id === p.course_id);
+            
+            return {
+                id: p.course_id,
+                title: matchedCourse?.title || p.course_title || `Course #${p.course_id}` 
+            };
+        });
     };
 
     const [form, setForm]=useState({
@@ -72,11 +78,7 @@ const CourseFormContent=({onSubmit, onCancel, isLoading, initialData,allCourseLi
         return {
             ...form,
             status: statusOverride || form.status,
-            prerequisite_groups: [
-                {
-                    prerequisites: form.prerequisites.map(p => ({ course_id: p.id }))
-                }
-            ]
+            prerequisite_course_ids: form.prerequisites.map(p => p.id)
         };
     };
 

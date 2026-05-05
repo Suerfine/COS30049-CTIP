@@ -23,7 +23,7 @@ export const useCourses=()=>{
         inProgress: t('status.in progress'),
         completed: t('status.completed'),
         notEnrolled: t('not enrolled'),
-    };
+    }; 
 
     const loadCourses = useCallback(async (params = {}) => {
         setLoading(true);
@@ -65,10 +65,8 @@ export const useCourses=()=>{
     const editCourse = async (id, formData) => {
         setLoading(true);
         try {
-            // 1. Get existing course (VERY IMPORTANT)
             const existingCourse = await courseService.getById(id);
 
-            // 2. Merge old + new
             const payload = {
                 courseTitle: formData.courseTitle ?? existingCourse.title,
                 description: formData.description ?? existingCourse.description,
@@ -76,12 +74,14 @@ export const useCourses=()=>{
                 duration: formData.duration ?? existingCourse.expected_completion_weeks,
                 expiryWeeks: formData.expiryWeeks ?? existingCourse.must_complete_in_weeks,
                 badgeExpiry: formData.badgeExpiry ?? existingCourse.badge_expire_in_months,
-                prerequisite_groups: formData.prerequisite_groups ?? existingCourse.prerequisite_groups ?? []
+                prerequisite_course_ids:
+                formData.prerequisite_course_ids ??
+                existingCourse.prerequisite_groups?.flatMap(group =>
+                    group.prerequisites.map(p => p.course_id)
+                ) ??
+                []
             };
 
-            console.log("MERGED PAYLOAD:", payload);
-
-            // 3. Send full payload
             await courseService.update(id, payload);
 
             await loadCourses();

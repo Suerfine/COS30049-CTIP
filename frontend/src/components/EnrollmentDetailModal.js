@@ -1,22 +1,53 @@
 import React from 'react';
 import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
-import { X, Trash2 } from 'lucide-react-native';
+import { X, Trash2, AlertCircle, CheckCircle2, Clock, Ban } from 'lucide-react-native';
 import ModalLayout from './ModalLayout'; 
+import { formatDate } from '../utils/formatDate';
 
-const EnrollmentDetailModal = ({ visible, onClose, data, onApprove, onUnenroll, onDelete }) => {
+const EnrollmentDetailModal = ({ 
+    visible, 
+    onClose, 
+    data,
+    userEnrollments = [], 
+    onApprove, 
+    onUnenroll, 
+    onDelete 
+}) => {
     if (!data) return null;
 
-    const guideCourses = [
-        { id: 101, title: 'Basic Electronics', status: 'completed', date: '2025-12-10' },
-        { id: 102, title: 'Wildlife First Aid', status: 'approved', date: '2026-01-15' },
-        { id: 103, title: 'Introduction to IoT', status: 'in_progress', date: '2026-03-01' },
-    ];
+    const requiredPrereqs = data.course?.prerequisite_groups?.[0]?.prerequisites || [];
+
+    const processedPrereqs = requiredPrereqs.map(prereq => {
+        const matchingEnrollment = userEnrollments.find(e => e.course_id === prereq.course_id);
+        
+        return {
+            id: prereq.course_id,
+            title: prereq.course_title,
+            status: matchingEnrollment ? matchingEnrollment.status : 'not_started',
+            date: matchingEnrollment ? matchingEnrollment.enrolled_at : null
+        };
+    });
+
+    const getStatusStyles = (status) => {
+        switch (status) {
+            case 'completed':
+            case 'approved':
+                return { bg: '#e8f5e9', text: '#2e7d32', icon: <CheckCircle2 size={12} color="#2e7d32" /> };
+            case 'in_progress':
+            case 'in_review':
+                return { bg: '#fff3e0', text: '#ef6c00', icon: <Clock size={12} color="#ef6c00" /> };
+            case 'failed':
+            case 'dropped':
+                return { bg: '#fef2f2', text: '#dc2626', icon: <Ban size={12} color="#dc2626" /> };
+            default:
+                return { bg: '#f3f4f6', text: '#666', icon: <AlertCircle size={12} color="#666" /> };
+        }
+    };
 
     return (
         <ModalLayout visible={visible} onClose={onClose}>
             <View style={modalStyles.container}>
                 
-                {/* Header Section: User Profile & ID */}
                 <View style={modalStyles.header}>
                     <View style={modalStyles.userInfo}>
                         <View style={modalStyles.pfpPlaceholder}>
@@ -26,7 +57,9 @@ const EnrollmentDetailModal = ({ visible, onClose, data, onApprove, onUnenroll, 
                         </View>
                         <View>
                             <Text style={modalStyles.userName}>{data.fullName}</Text>
-                            <Text style={modalStyles.userSubtitle}>Park Guide Enrollment ID: #{data.id}</Text>
+                            <Text style={modalStyles.userSubtitle}>
+                                Enrollment ID: #{data.id} | {data.courseName}
+                            </Text>
                         </View>
                     </View>
                     <Pressable onPress={onClose} style={modalStyles.closeBtn}>
@@ -34,56 +67,59 @@ const EnrollmentDetailModal = ({ visible, onClose, data, onApprove, onUnenroll, 
                     </Pressable>
                 </View>
 
-                {/* Course List Section: Prerequisites & Progress */}
-                <Text style={modalStyles.sectionTitle}>Course Progress & Prerequisites</Text>
+                <Text style={modalStyles.sectionTitle}>Prerequisite Verification</Text>
                 <ScrollView style={modalStyles.scrollArea} showsVerticalScrollIndicator={false}>
-                    {guideCourses.map((course) => (
-                        <View key={course.id} style={modalStyles.courseCard}>
-                            <View style={modalStyles.courseInfo}>
-                                <Text style={modalStyles.courseTitle}>{course.title}</Text>
-                                <Text style={modalStyles.courseDate}>Started: {course.date}</Text>
-                            </View>
-                            
-                            {/* Status Badge with dynamic styling */}
-                            <View style={[
-                                modalStyles.statusBadge, 
-                                { backgroundColor: course.status === 'completed' || course.status === 'approved' ? '#e8f5e9' : '#fff3e0' }
-                            ]}>
-                                <Text style={[
-                                    modalStyles.statusText,
-                                    { color: course.status === 'completed' || course.status === 'approved' ? '#2e7d32' : '#ef6c00' }
-                                ]}>
-                                    {course.status.replace('_', ' ').toUpperCase()}
-                                </Text>
-                            </View>
+                    {processedPrereqs.length > 0 ? (
+                        processedPrereqs.map((course) => {
+                            const styles = getStatusStyles(course.status);
+                            return (
+                                <View key={course.id} style={modalStyles.courseCard}>
+                                    <View style={modalStyles.courseInfo}>
+                                        <Text style={modalStyles.courseTitle}>{course.title}</Text>
+                                        <Text style={modalStyles.courseDate}>
+                                            {course.date ? `Enrolled: ${formatDate(course.date)}` : 'Not yet enrolled'}
+                                        </Text>
+                                    </View>
+                                    
+                                    <View style={[modalStyles.statusBadge, { backgroundColor: styles.bg }]}>
+                                        {styles.icon}
+                                        <Text style={[modalStyles.statusText, { color: styles.text, marginLeft: 4 }]}>
+                                            {course.status.replace('_', ' ').toUpperCase()}
+                                        </Text>
+                                    </View>
+                                </View>
+                            );
+                        })
+                    ) : (
+                        <View style={modalStyles.emptyState}>
+                            <CheckCircle2 size={20} color="#059669" />
+                            <Text style={modalStyles.emptyText}>No prerequisites required for this course.</Text>
                         </View>
-                    ))}
+                    )}
                 </ScrollView>
 
-                {/* Action Buttons: Administrative Controls */}
                 <View style={modalStyles.footer}>
                     <Pressable 
                         style={[modalStyles.actionBtn, modalStyles.iconDeleteBtn]}
-                        onPress={()=>onDelete(data.id)}
+                        onPress={() => onDelete(data.id)}
                     >
                         <Trash2 size={20} color="#dc2626" />
                     </Pressable>
                     <View style={modalStyles.row}>
                         <Pressable 
                             style={[modalStyles.actionBtn, modalStyles.outlineBtn]}
-                            onPress={()=>onUnenroll(data.id)}
-
+                            onPress={() => onUnenroll(data.id)}
                         >
                             <Text style={modalStyles.outlineBtnText}>Unenroll</Text>
                         </Pressable>
 
                         <Pressable 
                             style={[modalStyles.actionBtn, modalStyles.solidApproveBtn]}
-                            onPress={()=>onApprove(data.id)}
+                            onPress={() => onApprove(data.id)}
                         >
                             <Text style={modalStyles.solidBtnText}>Approve</Text>
                         </Pressable>
-                        </View>
+                    </View>
                 </View>
             </View>
         </ModalLayout>
@@ -92,7 +128,6 @@ const EnrollmentDetailModal = ({ visible, onClose, data, onApprove, onUnenroll, 
 
 const modalStyles = StyleSheet.create({
     container: {
-        
         backgroundColor: 'white',
         borderRadius: 12,
         padding: 24,
@@ -171,19 +206,35 @@ const modalStyles = StyleSheet.create({
         paddingHorizontal: 8,
         paddingVertical: 4,
         borderRadius: 4,
-        minWidth: 85,
+        minWidth: 100,
+        flexDirection: 'row',
         alignItems: 'center',
+        justifyContent: 'center',
     },
     statusText: {
         fontSize: 10,
         fontWeight: '700',
+    },
+    emptyState: {
+        padding: 20,
+        alignItems: 'center',
+        backgroundColor: '#f0fdf4',
+        borderRadius: 8,
+        flexDirection: 'row',
+        justifyContent: 'center',
+        gap: 8,
+    },
+    emptyText: {
+        color: '#065f46',
+        fontSize: 13,
+        fontWeight: '500',
     },
     footer: {
         flexDirection: 'row',
         gap: 12,
         marginTop: 32,
         alignItems: 'center',
-        justifyContent:'space-between'
+        justifyContent: 'space-between'
     },
     actionBtn: {
         height: 48,
@@ -192,7 +243,7 @@ const modalStyles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         gap: 8,
-        width:170
+        width: 170
     },
     solidApproveBtn: {
         backgroundColor: '#059669',
@@ -207,7 +258,7 @@ const modalStyles = StyleSheet.create({
         borderWidth: 1.5,
         borderColor: '#e5e7eb',
         paddingHorizontal: 16,
-        width:170
+        width: 170
     },
     outlineBtnText: {
         color: '#4b5563',
@@ -220,9 +271,9 @@ const modalStyles = StyleSheet.create({
         borderWidth: 1,
         borderColor: '#fee2e2',
     },
-    row:{
-        flexDirection:'row',
-        gap:20
+    row: {
+        flexDirection: 'row',
+        gap: 20
     }
 });
 
