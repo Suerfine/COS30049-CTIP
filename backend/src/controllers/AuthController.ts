@@ -1,10 +1,12 @@
 import { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
+import crypto from "crypto";
 import User from "../models/User";
+import PasswordResetToken from "../models/PasswordResetToken";
 import { Op } from "sequelize";
 import { hashPassword, isBcryptHash, verifyPassword } from "../utils/password";
 import { DatabaseError } from "sequelize/lib/errors/index";
-import { sendPasswordResetEmail } from "../utils/mailer";
+import { sendPasswordResetEmail, sendPasswordChangedEmail } from "../utils/mailer";
 
 type TokenRequestBody = {
   username?: string;
@@ -21,7 +23,7 @@ type ResetPasswordRequestBody = {
 };
 
 const SFC_EMAIL_DOMAIN = "sfc.gov.my";
-const PASSWORD_RESET_EXPIRY = "15m";
+const PASSWORD_RESET_EXPIRY = "30m";
 
 function parseSfcLoginEmail(value: string): string | null {
   const email = value.trim().toLowerCase();
@@ -151,26 +153,30 @@ export const forgotPassword = async (
     });
 
     if (user) {
-      const jwtSecret = process.env.JWT_SECRET;
+      // generate a random token, store its hash in DB with expiry, and email the plaintext token
+      const token = crypto.randomBytes(32).toString("hex");
+      const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+      const expiresAt = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes
 
-      if (!jwtSecret) {
-        res.status(500).json({ message: "JWT is not configured" });
-        return;
-      }
-
-      const resetToken = jwt.sign(
-        { id: user.id, purpose: "password-reset" },
-        jwtSecret,
-        { expiresIn: PASSWORD_RESET_EXPIRY },
-      );
-      const resetUrl = buildPasswordResetUrl(resetToken);
-
-      await sendPasswordResetEmail({
-        to: user.personal_email,
-        firstname: user.firstname,
-        lastname: user.lastname,
-        resetUrl,
+      await PasswordResetToken.create({
+        user_id: user.id,
+        token_hash: tokenHash,
+        expires_at: expiresAt,
       });
+
+      const resetUrl = buildPasswordResetUrl(token);
+
+      try {
+        await sendPasswordResetEmail({
+          to: user.personal_email,
+          firstname: user.firstname,
+          lastname: user.lastname,
+          resetUrl,
+        });
+      } catch (emailError) {
+        // Log the error but don't fail the request (don't leak email existence)
+        console.warn("Failed to send password reset email:", emailError instanceof Error ? emailError.message : emailError);
+      }
     }
 
     res.status(200).json({
@@ -203,24 +209,27 @@ export const resetPassword = async (
       return;
     }
 
-    const jwtSecret = process.env.JWT_SECRET;
+    // verify token via DB lookup
 
-    if (!jwtSecret) {
-      res.status(500).json({ message: "JWT is not configured" });
-      return;
-    }
+    const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+    const tokenRecord = await PasswordResetToken.findOne({ where: { token_hash: tokenHash } });
 
-    const payload = jwt.verify(token, jwtSecret) as {
-      id?: number;
-      purpose?: string;
-    };
-
-    if (payload.purpose !== "password-reset" || typeof payload.id !== "number") {
+    if (!tokenRecord) {
       res.status(400).json({ message: "Invalid or expired reset token" });
       return;
     }
 
-    const user = await User.findByPk(payload.id);
+    if (tokenRecord.used_at) {
+      res.status(400).json({ message: "Reset token has already been used" });
+      return;
+    }
+
+    if (tokenRecord.expires_at.getTime() < Date.now()) {
+      res.status(400).json({ message: "Invalid or expired reset token" });
+      return;
+    }
+
+    const user = await User.findByPk(tokenRecord.user_id);
 
     if (!user) {
       res.status(404).json({ message: "User not found" });
@@ -228,13 +237,28 @@ export const resetPassword = async (
     }
 
     console.log(`[Password Reset] User ID: ${user.id}, Identification: ${user.identification}, Password length: ${password.length}`);
-    
+
     user.password_hash = hashPassword(password);
     console.log(`[Password Reset] New hash created: ${user.password_hash.substring(0, 30)}...`);
-    
+
     user.updated_at = new Date();
     await user.save();
+
+    tokenRecord.used_at = new Date();
+    await tokenRecord.save();
+
     console.log(`[Password Reset] Password saved successfully for user ${user.identification}`);
+
+    // send confirmation email to user (best effort, don't fail if email fails)
+    try {
+      await sendPasswordChangedEmail({
+        to: user.personal_email,
+        firstname: user.firstname,
+        lastname: user.lastname,
+      });
+    } catch (emailError) {
+      console.warn("Failed to send password changed confirmation email:", emailError instanceof Error ? emailError.message : emailError);
+    }
 
     res.status(200).json({ message: "Password reset successfully" });
   } catch (error) {

@@ -5,3 +5,11 @@
 
 # Frontend and backend node modules
 node_modules/
+
+# Temporary test and setup files
+*.sqlite
+test-result.txt
+test-output.txt
+create-password-reset-tokens-table.js
+verify-table.js
+integration-test.sqlite

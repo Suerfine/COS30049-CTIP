@@ -230,7 +230,7 @@ export async function sendPasswordResetEmail(
       We received a request to reset your CTIP Training Portal password.
     </p>
     <p style="margin:0 0 18px;text-align:center;font-size:14px;">
-      Click the link below to create a new password. This link will expire in 15 minutes.
+      Click the link below to create a new password. This link will expire in 30 minutes.
     </p>
     <p style="margin:28px 0;text-align:center;">
       <a href="${safeResetUrl}" style="display:inline-block;padding:14px 24px;background:#14532d;color:#ffffff;text-decoration:none;border-radius:8px;font-weight:700;">
@@ -247,6 +247,35 @@ export async function sendPasswordResetEmail(
     from: mailer.from,
     to: input.to,
     subject: "Reset your CTIP Training Portal password",
+    html,
+  });
+}
+
+export async function sendPasswordChangedEmail(
+  input: RegistrationEmailInput,
+): Promise<void> {
+  const mailer = createTransporter();
+
+  if (!mailer) {
+    console.warn("SMTP is not configured; skipped password changed email.");
+    return;
+  }
+
+  const safeName = escapeHtml(getFullName(input));
+  const html = buildEmailShell(`
+    <p style="margin:0 0 18px;text-align:center;font-size:14px;">Hi ${safeName},</p>
+    <p style="margin:0 0 18px;text-align:center;font-size:16px;font-weight:700;">
+      Your CTIP Training Portal password was changed.
+    </p>
+    <p style="margin:0 0 18px;text-align:center;font-size:14px;">
+      If you did not perform this change, please contact the CTIP administration immediately to secure your account.
+    </p>
+  `);
+
+  await mailer.transporter.sendMail({
+    from: mailer.from,
+    to: input.to,
+    subject: "Your CTIP Training Portal password has been changed",
     html,
   });
 }

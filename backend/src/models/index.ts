@@ -14,6 +14,7 @@ import Notification from "./Notification";
 import CourseTag from "./CourseTag";
 import PrerequisiteGroup from "./PrerequisiteGroup";
 import Prerequisite from "./Prerequisite";
+import PasswordResetToken from "./PasswordResetToken";
 import { RegistrationStatus } from "../enum/RegistrationStatus";
 
 // Associations
@@ -148,6 +149,10 @@ Course.hasMany(Prerequisite, {
 User.hasMany(Notification, { foreignKey: "user_id", as: "notifications" });
 Notification.belongsTo(User, { foreignKey: "user_id", as: "user" });
 
+// Password reset tokens
+User.hasMany(PasswordResetToken, { foreignKey: 'user_id', as: 'password_reset_tokens' });
+PasswordResetToken.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+
 export {
   User,
   Course,
@@ -165,4 +170,5 @@ export {
   Prerequisite,
   Event,
   Notification,
+  PasswordResetToken,
 };
