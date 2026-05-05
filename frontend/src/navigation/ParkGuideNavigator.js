@@ -14,6 +14,7 @@ import Calendar from "../screens/Calendar.native";
 import TaskDetails from "../screens/TaskDetails.native";
 import Settings from "../screens/Settings.native";
 import UserAnomaly from "../screens/UserAnomaly";
+import Badge from "../screens/Badge";
 
 // Import components
 import MobileTopBar from "../components/MobileTopBar";
@@ -94,7 +95,7 @@ function MobileTabNavigator() {
         />
         <Tab.Screen
           name="Badge"
-          component={Award}
+          component={Badge}
           options={{
             tabBarIcon: ({ color }) => <Award color={color} size={20} />,
           }}
@@ -172,6 +173,7 @@ export default function ParkGuideNavigator() {
           <Stack.Screen name="Courses" component={UserCourse} />
           <Stack.Screen name="UserModule" component={UserModule} />
           <Stack.Screen name="UserAnomaly" component={UserAnomaly}/>
+          <Stack.Screen name="Badge" component={Badge}/>
 
           {/* UserProfile, Preferences and Security screens */}
           <Stack.Screen name="ProfileStack" component={ProfileStack} />
