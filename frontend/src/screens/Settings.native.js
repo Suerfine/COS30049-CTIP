@@ -18,7 +18,8 @@ const Settings=({navigation})=>{
         form, user,editingUsername, setEditingUsername,
         editingPassword, setEditingPassword,username,setUsername,
         password,setPassword,passwordModalVisible, setPasswordModalVisible,currentPassword, setCurrentPassword,showCurrentPassword, setShowCurrentPassword,
-        showNewPassword, setShowNewPassword,account
+        showNewPassword, setShowNewPassword,account,
+        handleSavePassword, handleSaveUsername,
     }=useUserProfile();
 
     const {
@@ -34,6 +35,29 @@ const Settings=({navigation})=>{
         selectLanguage(langVal);
         const langCode=langVal==='Bahasa Melayu' ? 'bm':'en';
         i18n.changeLanguage(langCode);
+    };
+
+    const [errors, setErrors] = useState({});
+
+    const clearError = (field) => {
+        setErrors(prev => {
+            const updated = { ...prev };
+            delete updated[field];
+            return updated;
+        });
+    };
+
+    const validateUsername = () => {
+        let tempErrors = {};
+
+        if (!username.trim()) {
+            tempErrors.username = "* Username is required.";
+        } else if (!/^[A-Za-z]+#[0-9]{4}$/.test(username)) {
+            tempErrors.username = "* Username must follow format: name#1234 (letters + # + 4 digits).";
+        }
+
+        setErrors(tempErrors);
+        return Object.keys(tempErrors).length === 0;
     };
 
     return(
@@ -86,7 +110,10 @@ const Settings=({navigation})=>{
                         <TextInput
                             style={[styles.input, styles.securityInput, !editingUsername && styles.inputDisabled]}
                             value={username}
-                            onChangeText={setUsername}
+                            onChangeText={(text) => {
+                                setUsername(text);
+                                clearError("username");
+                            }}
                             placeholder="Username"
                             placeholderTextColor="grey"
                             editable={editingUsername}
@@ -98,13 +125,14 @@ const Settings=({navigation})=>{
                                 hovered && styles.hoverBtn
                             ]}
                             onPress={() => {
-                                if (editingUsername) {
-                                    // user click confirm button, save changes and exit edit mode
-                                    setEditingUsername(false);
-                                } else {
-                                    setEditingUsername(true);
-                                }
-                            }}
+                                    if (editingUsername) {
+                                        if (validateUsername()) {
+                                            handleSaveUsername();
+                                        }
+                                    } else {
+                                        setEditingUsername(true);
+                                    }
+                                }}
                         >
                             <Text style={styles.changeBtnText}>
                                 {editingUsername ? t('confirm'): t('change')}
@@ -113,18 +141,22 @@ const Settings=({navigation})=>{
 
                         {editingUsername && (
                             <Pressable 
-                                style={
-                                    styles.cancelBtn
-                                    }
+                                style={({ hovered }) => [
+                                    styles.cancelBtn,
+                                    hovered && styles.hoverBtnOutline
+                                ]}
                                 onPress={() => {
                                     setEditingUsername(false);
-                                    setUsername(account?.username || '');
+                                    setUsername(user?.username || '');
                                 }}
                             >
-                                <Text style={styles.cancelBtnText}>Cancel</Text>
+                                <Text style={styles.cancelBtnText}>{t('cancel')}</Text>
                             </Pressable>
                         )}
                     </View>
+                    {errors.username && (
+                        <Text style={styles.errorText}>{errors.username}</Text>
+                    )}
                 </View>
 
                 {/* Password */}
@@ -132,23 +164,18 @@ const Settings=({navigation})=>{
                     <Text style={styles.fieldLabel}>{t("password")}</Text>
                     <View style={styles.securityRow}>
                         <TextInput
-                            style={[styles.input, styles.securityInput, !editingPassword && styles.inputDisabled]}
-                            value={editingPassword ? password : '••••••••'}
-                            onChangeText={setPassword}
-                            placeholder="New password"
-                            placeholderTextColor="grey"
-                            secureTextEntry={editingPassword}
-                            editable={editingPassword}
-                            autoCapitalize="none"
+                            style={[styles.input, styles.securityInput, styles.inputDisabled]}
+                            value='••••••••'
+                            editable={false}
                         />
                         <Pressable 
-                            style={
-                                styles.changeBtn}
+                            style={({ hovered }) => [
+                                styles.changeBtn,
+                                hovered && styles.hoverBtn
+                            ]}
                             onPress={() => setPasswordModalVisible(true)}
                         >
-                            <Text style={styles.changeBtnText}>
-                                {editingUsername ? t('save'): t('change')}
-                            </Text>
+                            <Text style={styles.changeBtnText}>{t('change')}</Text>
                         </Pressable>
                     </View>
 
@@ -167,6 +194,7 @@ const Settings=({navigation})=>{
                             showNewPassword={showNewPassword}
                             setShowNewPassword={setShowNewPassword}
                             onClose={() => setPasswordModalVisible(false)}
+                            onSave={(currentPw, newPw) => handleSavePassword(currentPw, newPw)}
                         />
                     </ModalLayout>
                 </View>
@@ -455,7 +483,34 @@ const styles=StyleSheet.create({
         borderBottomColor:'#eee',
         backgroundColor:'white',
         paddingHorizontal:10
-    }
+    },
+    // hover button styles
+    hoverBtn: {
+        backgroundColor: '#A5D6A7',
+    },
+
+    hoverBtnOutline: {
+        backgroundColor: '#e6f2e6',
+    },
+    errorText: {
+        color: "#b42318",
+        fontSize: 13,
+        fontWeight: "600",
+        marginTop: 2,
+        textAlign: "left",
+    },
+    cancelBtn:{
+        borderWidth: 1,
+        borderColor: '#2f6618fe',
+        borderRadius: 8,
+        paddingHorizontal: 14,
+        paddingVertical: 10,
+    },
+    cancelBtnText:{
+        fontSize: 13,
+        color: '#2f6618fe',
+        fontWeight: '500',
+    },
 });
 
 export default Settings;

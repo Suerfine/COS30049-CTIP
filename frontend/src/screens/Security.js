@@ -8,6 +8,7 @@ import ChangePasswordContent from '../components/ChangePasswordContent';
 import ModalLayout from '../components/ModalLayout';
 import { ModalStyle } from '../components/ModalStyle';
 import { useUserProfile } from '../hooks/useUserProfile';
+import { useTranslation } from 'react-i18next';
 
 const Security = ({ navigation }) => {
     const {
@@ -22,6 +23,7 @@ const Security = ({ navigation }) => {
         currentPassword, setCurrentPassword,
         handleSavePassword, handleSaveUsername,
     }=useUserProfile();
+    const {t, i18n}=useTranslation();
     const [errors, setErrors] = useState({});
 
     const clearError = (field) => {
@@ -54,7 +56,7 @@ const Security = ({ navigation }) => {
 
                     {/* Username */}
                     <View style={styles.securityField}>
-                        <Text style={styles.fieldLabel}>Username</Text>
+                        <Text style={styles.fieldLabel}>{t('username')}</Text>
                         <View style={styles.securityRow}>
                         <TextInput
                             style={[styles.input, styles.securityInput, !editingUsername && styles.inputDisabled]}
@@ -84,7 +86,7 @@ const Security = ({ navigation }) => {
                                 }}
                             >
                                 <Text style={styles.changeBtnText}>
-                                    {editingUsername ? 'Confirm' : 'Change'}
+                                    {editingUsername ? t('confirm'): t('change')}
                                 </Text>
                             </Pressable>
 
@@ -99,7 +101,7 @@ const Security = ({ navigation }) => {
                                         setUsername(user?.username || '');
                                     }}
                                 >
-                                    <Text style={styles.cancelBtnText}>Cancel</Text>
+                                    <Text style={styles.cancelBtnText}>{t('cancel')}</Text>
                                 </Pressable>
                             )}
                         </View>
@@ -124,7 +126,7 @@ const Security = ({ navigation }) => {
                                 ]}
                                 onPress={() => setPasswordModalVisible(true)}
                             >
-                                <Text style={styles.changeBtnText}>Change</Text>
+                                <Text style={styles.changeBtnText}>{t('change')}</Text>
                             </Pressable>
                         </View>
 
@@ -190,7 +192,7 @@ const styles = StyleSheet.create({
         borderColor: '#2f6618fe',
         borderRadius: 8,
         paddingHorizontal: 14,
-        paddingVertical: 7,
+        paddingVertical: 10,
     },
     cancelBtnText:{
         fontSize: 13,
