@@ -385,12 +385,15 @@ export const submitSubmission = async (
       );
     }
 
+    //TODO: Add mark gradding logic here based on element.score and content, for now we just set it to 0 and let the admin mark it manually later
+    const earnedGrade = 0;
+
     const submittedAttempt = await Submission.create({
       enrollment_id: submission.enrollment_id,
       element_id: submission.element_id,
       submission_id: rootSubmissionId,
       content,
-      earned_grade: 0,
+      earned_grade: earnedGrade,
       marking_remark: null,
     });
 
