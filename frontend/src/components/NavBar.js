@@ -114,7 +114,7 @@ const NavBar = () => {
   // Navigation Links
   const navLinks = [
     { name: "Courses", route: "Courses" },
-    { name: "Badges", route: "Badges" },
+    { name: "Badge", route: "Badge" },
     { name: "Anomaly", route: "UserAnomaly" },
   ];
 
