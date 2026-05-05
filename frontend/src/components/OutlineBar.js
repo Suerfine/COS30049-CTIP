@@ -3,7 +3,7 @@ import {View, Text, StyleSheet, Pressable, FlatList,TextInput} from 'react-nativ
 import {Plus, ChevronRight, ChevronDown,Search, Trash2} from 'lucide-react-native';
 import { useOutline } from '../hooks/useOutline';
 
-const OutlineBar=({course, onSelectPage, editable, isCollapsed})=>{
+const OutlineBar=({course, onSelectPage, editable, isCollapsed, isLocked})=>{
     const{
         allModules,
         expandedModule,
@@ -29,6 +29,7 @@ const OutlineBar=({course, onSelectPage, editable, isCollapsed})=>{
     }
 
     const handleSelect=(item)=>{
+        if (isLocked && item.type !== 'overview') return;
         setSelectedItem(item);
         onSelectPage(item);
     }
@@ -107,8 +108,9 @@ const OutlineBar=({course, onSelectPage, editable, isCollapsed})=>{
                     return (
                     <View style={[isSelected ? styles.selectedModule : null]}>
 
-                        <Pressable style={[styles.moduleBlock, isSelected ? styles.selected : null]} 
+                        <Pressable style={[styles.moduleBlock, isSelected ? styles.selected : null, isLocked && styles.lockedItem]} 
                               onPress={()=> {
+                                if (isLocked) return;
                                 if(isEditing){
                                     return;
                                 }
@@ -203,9 +205,10 @@ const OutlineBar=({course, onSelectPage, editable, isCollapsed})=>{
                                             key={page.id} 
                                             style={[
                                                 styles.pageItem, 
-                                                selectedItem?.type === 'page' && selectedItem?.page?.id === page.id && styles.selectedPage
+                                                selectedItem?.type === 'page' && selectedItem?.page?.id === page.id && styles.selectedPage, isLocked && styles.lockedItem,
                                             ]}
                                             onPress={() => {
+                                                if (isLocked) return;
                                                 handleSelect({ type: 'page', module, page });
                                                 if (editable) {
                                                     setEditingItem({ type: 'page', moduleId: mid, pageId: page.id });
@@ -356,6 +359,9 @@ const styles=StyleSheet.create({
         fontWeight: '700',
         color: '#000',
     },
+    lockedItem:{
+        opacity: 0.4,
+    }
 });
 
 export default OutlineBar;

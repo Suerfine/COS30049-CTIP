@@ -185,7 +185,7 @@ const CourseCard = ({
         isWeb && hovered && styles.cardHover,
         !isWeb && pressed && styles.cardPressed,
       ]}
-      onPress={progress === null || progress === 0 ? undefined : onPress}
+      onPress={onPress}
     >
       <View style={styles.imageWrapper}>
         <Image

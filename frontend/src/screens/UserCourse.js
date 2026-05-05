@@ -131,7 +131,10 @@ const UserCourse = ({ navigation }) => {
                                 // handlers
                                 onPress={() => navigation.navigate('ParkGuideStack', {
                                     screen: 'UserModule', 
-                                    params: { id: course.id }
+                                    params: { 
+                                        id: course.id,
+                                        enrollmentStatus: course.enrollmentStatus ?? null
+                                    }
                                 })}
                                onEnroll={() => {
                                     const confirmed = window.confirm(`Are you sure you want to enroll in ${course.title}?`);

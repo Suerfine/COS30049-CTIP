@@ -16,7 +16,12 @@ import { useCourses } from '../hooks/useCourses.js';
 
 const UserModule = ({navigation}) => {
     const route=useRoute();
-    const {id}=route.params;
+    const {id, enrollmentStatus}=route.params;
+    const isLocked = enrollmentStatus === null ||
+        enrollmentStatus === undefined ||
+        enrollmentStatus === 'in_review' ||
+        enrollmentStatus === 'dropped' ||
+        enrollmentStatus === 'expired';
     const {currentUser}=useAuth();
     const {course, loading, error,locationTags, categoryTags}=useCourseDetails(id);
     const {allCourseList}=useCourses();
@@ -213,7 +218,7 @@ const UserModule = ({navigation}) => {
     return (
         <View style={styles.rowContainer}>
             {/* Outlinebar */}
-            <OutlineBar course={course} onSelectPage={setSelectedPage} editable={false} isCollapsed={isCollapsed}/>
+            <OutlineBar course={course} onSelectPage={setSelectedPage} editable={false} isCollapsed={isCollapsed} isLocked={isLocked}/>
             <ScrollView style={{height:'100vh'}}>
                 <View style={styles.container}>
                     {/* Background Image */}
