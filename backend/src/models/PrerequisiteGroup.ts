@@ -15,9 +15,6 @@ class PrerequisiteGroup extends Model<
 > {
   declare id: CreationOptional<number>;
   declare course_id: ForeignKey<Course["id"]>;
-  declare created_at: CreationOptional<Date>;
-  declare updated_at: CreationOptional<Date>;
-  declare deleted_at: CreationOptional<Date | null>;
 }
 
 PrerequisiteGroup.init(
@@ -37,29 +34,12 @@ PrerequisiteGroup.init(
       onUpdate: "CASCADE",
       onDelete: "CASCADE",
     },
-    created_at: {
-      type: DataTypes.DATE,
-      allowNull: false,
-      defaultValue: DataTypes.NOW,
-    },
-    updated_at: {
-      type: DataTypes.DATE,
-      allowNull: false,
-      defaultValue: DataTypes.NOW,
-    },
-    deleted_at: {
-      type: DataTypes.DATE,
-      allowNull: true,
-    },
   },
   {
     sequelize,
     tableName: "prerequisite_groups",
     timestamps: true,
-    createdAt: "created_at",
-    updatedAt: "updated_at",
-    paranoid: true,
-    deletedAt: "deleted_at",
+    paranoid: false,
   },
 );
 
