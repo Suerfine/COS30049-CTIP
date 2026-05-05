@@ -385,8 +385,8 @@ export const submitSubmission = async (
       );
     }
 
-    //TODO: Add mark gradding logic here based on element.score and content, for now we just set it to 0 and let the admin mark it manually later
-    const earnedGrade = 0;
+    //TODO: Add mark gradding logic here based on element.score and content, for now we just random between 0 and max score
+    const earnedGrade = Math.random() * (element.score ?? 0);
 
     const submittedAttempt = await Submission.create({
       enrollment_id: submission.enrollment_id,
