@@ -240,6 +240,30 @@ const UserModule = ({navigation}) => {
                             <View style={styles.editorContainer}>
                                 <Text style={styles.editorLabel}>Lesson Learning</Text>
                                 <Text style={styles.pageTitle}>{selectedPage.page.title}</Text>
+
+                                {currentUser.role === 'park_guide' && selectedPage.page?.final_quiz === true && (
+                                    <View style={styles.guideInfoCard}>
+                                        <View style={styles.guideInfoHeader}>
+                                            <Award size={20} color="#15803d" />
+                                            <Text style={styles.guideInfoTitle}>Final Assessment Requirements</Text>
+                                        </View>
+                                        
+                                        <View style={styles.statsRow}>
+                                            <View style={styles.guideStatChip}>
+                                                <Text style={styles.statLabel}>Max Attempts:</Text>
+                                                <Text style={styles.statValue}>{course.max_tries || selectedPage.page?.max_tries || 1}</Text>
+                                            </View>
+                                            <View style={styles.guideStatChip}>
+                                                <Text style={styles.statLabel}>Passing Score:</Text>
+                                                <Text style={styles.statValue}>{selectedPage.page?.passing_score || 80}%</Text>
+                                            </View>
+                                        </View>
+                                        
+                                        <Text style={styles.guideNotice}>
+                                            You must achieve the passing score to earn your certificate and badge.
+                                        </Text>
+                                    </View>
+                                )}
                                 
                                 {elementsLoading ? (
                                     <View style={styles.elementLoader}>
@@ -582,6 +606,56 @@ const styles = StyleSheet.create({
         color: '#92400e',
         fontWeight: '500',
     },
+    guideInfoCard: {
+        paddingVertical: 16,
+        paddingHorizontal: 20,
+        backgroundColor: 'transparent',
+        borderWidth: 2,
+        borderColor: '#e5e7eb', 
+        borderRadius: 8,
+        marginBottom: 25,
+    },
+    guideInfoHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        marginBottom: 16,
+    },
+    guideInfoTitle: {
+        fontSize: 14,
+        fontWeight: '700',
+        color: '#374151',
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
+    },
+    statsRow: {
+        flexDirection: 'row',
+        gap: 24, 
+        marginBottom: 12,
+    },
+    guideStatChip: {
+        flexDirection: 'column',
+        gap: 4,
+    },
+    statLabel: {
+        fontSize: 12,
+        color: '#6b7280', 
+        fontWeight: '500',
+    },
+    statValue: {
+        fontSize: 18,
+        fontWeight: '800',
+        color: '#111827', 
+    },
+    guideNotice: {
+        fontSize: 13,
+        color: '#4b5563',
+        lineHeight: 18,
+        borderTopWidth: 1,
+        borderTopColor: '#f3f4f6',
+        paddingTop: 12,
+        marginTop: 4,
+    }
 });
 
 export default UserModule;
