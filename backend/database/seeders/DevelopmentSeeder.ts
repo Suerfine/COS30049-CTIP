@@ -11,6 +11,8 @@ import Registration from "../../src/models/Registration";
 import Module from "../../src/models/Module";
 import Page from "../../src/models/Page";
 import Element from "../../src/models/Element";
+import Sensor from "../../src/models/Sensor";
+import { SensorStatus } from "../../src/enum/SensorStatus";
 import {
   buildUser,
   buildUsers,
@@ -187,6 +189,48 @@ export async function runSeeders(
       }
     }
   }
+
+  // Seed sensors for IoT monitoring
+  console.log("Seeding sensors...");
+  const sensors = [
+    {
+      id: 1,
+      name: "Fire & Smoke Detector - Park A Zone 1",
+      type: "gas_temp",
+      location: "3.1390,101.6869", // Kuala Lumpur coordinates as example
+      current_status: SensorStatus.NORMAL,
+    },
+    {
+      id: 2,
+      name: "Motion Radar - Park A Zone 1",
+      type: "microwave",
+      location: "3.1390,101.6869",
+      current_status: SensorStatus.NORMAL,
+    },
+    {
+      id: 3,
+      name: "Acoustic Monitor - Park A Zone 1",
+      type: "acoustic",
+      location: "3.1390,101.6869",
+      current_status: SensorStatus.NORMAL,
+    },
+    {
+      id: 4,
+      name: "Ultrasonic Level Sensor - Park A Zone 1",
+      type: "ultrasonic",
+      location: "3.1390,101.6869",
+      current_status: SensorStatus.NORMAL,
+    },
+  ];
+
+  for (const sensorData of sensors) {
+    await Sensor.create({
+      ...sensorData,
+      created_at: new Date(),
+      updated_at: new Date(),
+    });
+  }
+  console.log("Sensors seeded successfully");
 }
 
 export async function runDevelopmentSeeder(): Promise<void> {

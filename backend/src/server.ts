@@ -1,3 +1,8 @@
+// Load environment variables from .env file FIRST (before all imports)
+const dotenv = require("dotenv");
+dotenv.config();
+console.log("Loaded JWT_SECRET:", Boolean(process.env.JWT_SECRET));
+
 import express, { Application, Request, Response } from "express";
 import path from "path";
 import cors from "cors";
@@ -6,10 +11,7 @@ import sequelize from "./config/Database";
 import "./models";
 import routes from "./routes";
 import swaggerSpec from "./config/Swagger";
-
-// Load environment variables from .env file
-const dotenv = require("dotenv");
-dotenv.config();
+import mqttService from "./iot/MqttService";
 
 // Issue with augmeneted Express Request type not being recognized in middleware, so we need to redeclare it here
 import { User } from "../src/models";
@@ -68,6 +70,15 @@ const startServer = async (): Promise<void> => {
   try {
     await sequelize.authenticate();
     console.log("Database connection has been established successfully.");
+
+    // Initialize MQTT service
+    try {
+      await mqttService.connect();
+      console.log("MQTT service initialized successfully.");
+    } catch (mqttError) {
+      console.error("Failed to initialize MQTT service:", mqttError);
+      // Don't exit the server if MQTT fails, just log the error
+    }
 
     app.listen(port, () => {
       console.log(`Server is running on http://localhost:${port}`);
