@@ -24,7 +24,8 @@ const UserModule = ({navigation}) => {
     const [activeTab,setActiveTab]=useState('Overview');
     const [forumType, setForumType]=useState('Public');
 
-    const { elements, loading: elementsLoading } = useElements(
+    const { elements, loading: elementsLoading,registerWorkshop, 
+    registering } = useElements(
         id,
         selectedPage?.page?.module_id || selectedPage?.module?.id,
         selectedPage?.page?.id
@@ -174,6 +175,9 @@ const UserModule = ({navigation}) => {
                                         role={currentUser.role}
                                         courseId={id}
                                         onProgressUpdate={saveProgress}
+                                        onRegisterWorkshop=
+                                        {registerWorkshop}
+                                        registering={registering}
                                     />
                                 )}
                             </View>

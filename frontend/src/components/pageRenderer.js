@@ -1,6 +1,6 @@
 import { useState,useEffect, useRef } from 'react';
 import { View, Text, Image, StyleSheet, TouchableOpacity, Linking, Platform } from 'react-native';
-import { FileText, Play, Download, HelpCircle, Edit3, editCircle, Trash2,ChevronUp, ChevronDown, CheckCircle2, RotateCcw, AlertCircle} from 'lucide-react-native';
+import { FileText, Play, Download, HelpCircle, Edit3, editCircle, Trash2,ChevronUp, ChevronDown, CheckCircle2, RotateCcw, AlertCircle, Calendar, Clock, MapPin, ExternalLink} from 'lucide-react-native';
 import Markdown from 'react-native-markdown-display';
 import * as Progress from 'react-native-progress';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -10,17 +10,20 @@ import WebView from 'react-native-webview';
 import { markdownStyles } from './markdownStyle';
 import { UserRoles } from '../enum/UserRoles';
 
-const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement, onMoveElement, onProgressUpdate}) => {
+const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement, onMoveElement, onProgressUpdate, onRegisterWorkshop, registering}) => {
     const isAdmin = role === UserRoles.ADMIN;
     const [videoProgress, setVideoProgress]=useState({});
     const [quizStates, setQuizStates]=useState({});
     const [viewedElements, setViewedElements] = useState({});
+    const [workshopRegistrations, setWorkshopRegistrations] = useState({});
+    const [selectedSessions, setSelectedSessions] = useState({});
+    const [autoAddTodo, setAutoAddTodo] = useState(true);
 
     const IntersectionWrapper = ({ children, id, score, type }) => {
         const elementRef = useRef(null);
 
         useEffect(() => {
-            if (isAdmin || type === 'quiz_objective' || viewedElements[id]) return;
+            if (isAdmin || type === 'quiz_objective' || type==='workshop' || viewedElements[id]) return;
 
             const observer = new IntersectionObserver(
                 ([entry]) => {
@@ -303,6 +306,111 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
                                                     )}
                                                 </View>
                                             )}
+                                        </View>
+                                    );
+                                case 'workshop':
+                                    const { title, description, sessions, location, link } = content;
+                                    const selectedSessionIdx = selectedSessions[id];
+                                    const isRegistered = workshopRegistrations[id];
+
+                                    return (
+                                        <View style={styles.workshopCard}>
+                                            <View style={[styles.workshopDateTag, isRegistered && { backgroundColor: '#0a6340' }]}>
+                                                {isRegistered ? (
+                                                    <CheckCircle2 color="white" size={26} />
+                                                ) : (
+                                                    <Calendar color="white" size={26} />
+                                                )}
+                                                <Text style={styles.workshopLabel}>
+                                                    {isRegistered ? "ENROLLED" : "WORKSHOP"}
+                                                </Text>
+                                            </View>
+                                            
+                                            <View style={styles.workshopDetails}>
+                                                <Text style={styles.workshopTitle}>{title}</Text>
+                                                <Text style={styles.workshopDesc}>{description}</Text>
+                                                
+                                                <Text style={styles.miniLabel}>Available Sessions (Select One):</Text>
+                                                <View style={styles.sessionList}>
+                                                    {sessions && sessions.map((item, idx) => {
+                                                        const isSelected = selectedSessionIdx === idx;
+                                                        return (
+                                                            <TouchableOpacity 
+                                                                key={idx} 
+                                                                disabled={isAdmin || isRegistered}
+                                                                onPress={() => setSelectedSessions(prev => ({ ...prev, [id]: idx }))}
+                                                                style={[
+                                                                    styles.sessionItem, 
+                                                                    isSelected && styles.sessionItemSelected,
+                                                                    idx === sessions.length - 1 && { borderBottomWidth: 0 }
+                                                                ]}
+                                                            >
+                                                                <View style={styles.sessionDateRow}>
+                                                                    <View style={[styles.radioOutline, isSelected && styles.correctRadio]}>
+                                                                        {isSelected && <View style={styles.radioInner} />}
+                                                                    </View>
+                                                                    <Text style={[styles.sessionDateText, isSelected && { color: '#0a6340' }]}>
+                                                                        {item.date}
+                                                                    </Text>
+                                                                </View>
+                                                                <View style={styles.sessionTimeRow}>
+                                                                    <Clock size={14} color={isSelected ? "#0a6340" : "#666"} />
+                                                                    <Text style={[styles.sessionTimeText, isSelected && { color: '#0a6340', fontWeight: '600' }]}>
+                                                                        {item.startTime} — {item.endTime}
+                                                                    </Text>
+                                                                </View>
+                                                            </TouchableOpacity>
+                                                        );
+                                                    })}
+                                                </View>
+
+                                                {!isAdmin && !isRegistered && (
+                                                    <View style={styles.toggleRow}>
+                                                        <Text style={styles.toggleLabel}>Add to my Todo list automatically?</Text>
+                                                        <TouchableOpacity 
+                                                            onPress={() => setAutoAddTodo(!autoAddTodo)}
+                                                            style={[styles.toggleTrack, autoAddTodo && styles.toggleTrackActive]}
+                                                        >
+                                                            <View style={[styles.toggleThumb, autoAddTodo && styles.toggleThumbActive]} />
+                                                        </TouchableOpacity>
+                                                    </View>
+                                                )}
+
+                                                <View style={styles.footerRow}>
+                                                    <View style={styles.infoRow}>
+                                                        <MapPin size={14} color="#666" />
+                                                        <Text style={styles.infoText}>{location || "TBA"}</Text>
+                                                    </View>
+
+                                                    {!isAdmin && (
+                                                        <TouchableOpacity 
+                                                            style={[
+                                                                styles.joinBtn, 
+                                                                (selectedSessionIdx === undefined || isRegistered || registering) && styles.joinBtnDisabled
+                                                            ]}
+                                                            disabled={selectedSessionIdx === undefined || isRegistered || registering}
+                                                            onPress={async () => {
+                                                                const result = await onRegisterWorkshop(id, selectedSessionIdx, autoAddTodo);
+                                                                
+                                                                if (result.success) {
+                                                                    // 2. Update local state on success
+                                                                    setWorkshopRegistrations(prev => ({ ...prev, [id]: true }));
+                                                                    markAsComplete(id, score);
+                                                                    
+                                                                    if (link) Linking.openURL(link);
+                                                                } else {
+                                                                    alert(result.error || "Failed to register for workshop");
+                                                                }
+                                                            }}
+                                                        >
+                                                            <Text style={styles.joinBtnText}>
+                                                                {registering ? "Processing..." : isRegistered ? "Registered" : "Register"}
+                                                            </Text>
+                                                            {isRegistered ? <CheckCircle2 size={14} color="white" /> : <ExternalLink size={14} color="white" />}
+                                                        </TouchableOpacity>
+                                                    )}
+                                                </View>
+                                            </View>
                                         </View>
                                     );
                                 default:
@@ -656,7 +764,169 @@ const styles = StyleSheet.create({
     },
     quizCardError: {
         borderColor: '#fecaca'
-    }
+    },
+    workshopCard: {
+        backgroundColor: '#fff',
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#e5e7eb',
+        flexDirection: 'row',
+        overflow: 'hidden',
+        marginBottom: 25,
+    },
+    workshopDateTag: {
+        backgroundColor: '#0a6340',
+        padding: 15,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderRightWidth: 1,
+        borderRightColor: '#dcfce7',
+        width: 80,
+    },
+    workshopLabel: {
+        fontSize: 10,
+        fontWeight: 'bold',
+        color: 'white',
+        marginTop: 5,
+        letterSpacing: 1,
+    },
+    workshopDetails: {
+        flex: 1,
+        padding: 20,
+    },
+    workshopTitle: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: '#111827',
+        marginBottom: 8,
+    },
+    workshopDesc: {
+        fontSize: 14,
+        color: '#4b5563',
+        lineHeight: 22,
+        marginBottom: 15,
+    },
+    sessionList: {
+        backgroundColor: '#f9fafb',
+        borderRadius: 12,
+        padding: 12,
+        marginBottom: 15,
+        gap: 10,
+    },
+    sessionItem: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingBottom: 8,
+        borderBottomWidth: 1,
+        borderBottomColor: '#f3f4f6',
+    },
+    sessionDateRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        flex: 1,
+    },
+    sessionTimeRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        flex: 1.2,
+        justifyContent: 'flex-end',
+    },
+    sessionDateText: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#111827',
+    },
+    sessionTimeText: {
+        fontSize: 13,
+        color: '#4b5563',
+    },
+    footerRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginTop: 5,
+    },
+    infoRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+    },
+    infoText: {
+        fontSize: 13,
+        color: '#666',
+    },
+    joinBtn: {
+        backgroundColor: '#0a6340',
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 8,
+        paddingHorizontal: 16,
+        borderRadius: 8,
+        gap: 8,
+    },
+    joinBtnText: {
+        color: 'white',
+        fontWeight: 'bold',
+        fontSize: 14,
+    },
+    radioOutline: { 
+        width: 16, 
+        height: 16, 
+        borderRadius: 8, 
+        borderWidth: 2, 
+        borderColor: '#ccc', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        marginRight: 10 
+    },
+    correctRadio: { 
+        borderColor: '#0a6340' 
+    },
+    radioInner: { 
+        width: 8, 
+        height: 8, 
+        borderRadius: 4, 
+        backgroundColor: '#0a6340' 
+    },
+    toggleRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        backgroundColor: '#f8fafc',
+        padding: 10,
+        borderRadius: 8,
+        marginBottom: 15,
+        borderWidth: 1,
+        borderColor: '#f1f5f9',
+    },
+    toggleLabel: {
+        fontSize: 12,
+        color: '#475569',
+        fontWeight: '500',
+    },
+    toggleTrack: {
+        width: 36,
+        height: 20,
+        borderRadius: 10,
+        backgroundColor: '#cbd5e1',
+        padding: 2,
+    },
+    toggleTrackActive: {
+        backgroundColor: '#0a6340',
+    },
+    toggleThumb: {
+        width: 16,
+        height: 16,
+        borderRadius: 8,
+        backgroundColor: 'white',
+        transform: [{ translateX: 0 }],
+    },
+    toggleThumbActive: {
+        transform: [{ translateX: 16 }],
+    },
 });
 
 export default PageRenderer;

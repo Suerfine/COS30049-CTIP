@@ -5,6 +5,7 @@ export const useElements=(courseId, moduleId, pageId)=>{
     const [elements, setElements]=useState([]);
     const [loading, setLoading]=useState(false);
     const [error, setError]=useState(null);
+    const [registering, setRegistering] = useState(false);
 
     const loadElements=useCallback(async()=>{
         if(!courseId || !moduleId || !pageId){
@@ -92,9 +93,21 @@ export const useElements=(courseId, moduleId, pageId)=>{
         }
     };
 
+    const registerWorkshop = async (elementId, sessionIndex, addToTodo) => {
+        setRegistering(true);
+        const result = await ElementService.joinWorkshop(
+            courseId, 
+            elementId, 
+            sessionIndex, 
+            addToTodo
+        );
+        setRegistering(false);
+        return result;
+    };
+
     useEffect(()=>{
         loadElements();
     },[loadElements]);
 
-    return {elements, loading, error, refresh: loadElements, createNewElement, updateExistingElement, deleteElement, moveElement};
+    return {elements, loading, error, refresh: loadElements, createNewElement, updateExistingElement, deleteElement, moveElement, registerWorkshop, registering};
 }

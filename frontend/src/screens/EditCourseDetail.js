@@ -1,7 +1,7 @@
 import React,{useEffect,useState} from 'react';
 import { View, Text, StyleSheet, ScrollView, ImageBackground, Pressable, ActivityIndicator, Image, Modal, TextInput, TouchableOpacity} from 'react-native';
 import {useRoute} from '@react-navigation/native';
-import { Award, Calendar, Clock, Menu, MessageSquare, User,Edit,X,Save, Heading1, Heading2, List, Bold, Italic, Type, AlignLeft, AlignCenter, AlignRight,ListOrdered, CopyPlus, Image as ImageIcon, Video as VideoIcon, HelpCircle as QuizIcon } from 'lucide-react-native';
+import { Award, Calendar, Clock, Menu, MessageSquare, User,Edit,X,Save, Heading1, Heading2, List, Bold, Italic, Type, AlignLeft, AlignCenter, AlignRight,ListOrdered, CopyPlus, Image as ImageIcon, Video as VideoIcon, HelpCircle as QuizIcon, CirclePlus, CircleMinus } from 'lucide-react-native';
 import Markdown from 'react-native-markdown-display';
 
 
@@ -32,7 +32,22 @@ const EditCourseDetail = () => {
     const [editableText, setEditableText] = useState("");
     const [isAddElementVisible, setAddElementVisible] = useState(false);
     const [currentElementType, setCurrentElementType] = useState(null);
-    const [newElementData, setNewElementData] = useState({ text: "", url: "", transcript: "", question: "", options: ["", "", "", ""], answer: "", score:1 });
+    const [newElementData, setNewElementData] = useState({ 
+        text: "", 
+        url: "", 
+        transcript: "", 
+        question: "", 
+        options: ["", "", "", ""], 
+        answer: "", 
+        score: 1,
+        workshop: {
+            title: "",
+            description: "",
+            sessions: [{ date: "", startTime:"", endTime:"" }],
+            location: "",
+            link:""
+        }
+    });
 
 
     useEffect(() => {
@@ -41,7 +56,8 @@ const EditCourseDetail = () => {
         }
     }, [course]);
 
-    const { elements, loading: elementsLoading, createNewElement,updateExistingElement, deleteElement, moveElement } = useElements(
+    const { elements, loading: elementsLoading, createNewElement,updateExistingElement, deleteElement, moveElement,registerWorkshop, 
+    registering } = useElements(
         id,
         selectedPage?.page?.module_id || selectedPage?.module?.id,
         selectedPage?.page?.id
@@ -108,32 +124,81 @@ const EditCourseDetail = () => {
         };
 
     const handleSaveElement = async () => {
+        if (currentElementType === 'workshop') {
+            const { title, sessions } = newElementData.workshop;
+            
+            if (!title.trim()) {
+                alert("Workshop Title is required.");
+                return;
+            }
+
+            const dateRegex = /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/;
+            const timeRegex = /^(0?[1-9]|1[0-2]):[0-5][0-9]\s?(AM|PM)$/i;
+
+            const now = new Date();
+            const tomorrow = new Date();
+            tomorrow.setDate(now.getDate() + 1);
+            tomorrow.setHours(0, 0, 0, 0);
+
+            for (let i = 0; i < sessions.length; i++) {
+                const s = sessions[i];
+                
+                if (!dateRegex.test(s.date)) {
+                    alert(`Session ${i + 1}: Date must be in YYYY-MM-DD format.`);
+                    return;
+                }
+
+                if (!timeRegex.test(s.startTime)) {
+                    alert(`Session ${i + 1}: Start Time is invalid or missing AM/PM.`);
+                    return;
+                }
+                if (!timeRegex.test(s.endTime)) {
+                    alert(`Session ${i + 1}: End Time is invalid or missing AM/PM.`);
+                    return;
+                }
+
+                const selectedDate = new Date(s.date);
+                if (selectedDate < tomorrow) {
+                    alert(`Session ${i + 1}: Date must be at least tomorrow.`);
+                    return;
+                }
+            }
+        }
+
         const payload = {
             page_id: selectedPage.page.id,
             type: currentElementType,
             order: editingElementId ? undefined : elements.length + 1,
-            score: parseInt(newElementData.score) || 1,
+            score: currentElementType === 'workshop' ? 1 : (parseInt(newElementData.score) || 1),
             content: {}
         };
 
-        if (currentElementType === 'text') {
-            payload.content = { text: newElementData.text };
-        } else if (currentElementType === 'image') {
-            payload.content = { 
-                url: newElementData.url, 
-                caption: newElementData.transcript 
-            };
-        } else if (currentElementType === 'video') {
-            payload.content = { 
-                url: newElementData.url, 
-                transcript: newElementData.transcript 
-            };
-        } else if (currentElementType === 'quiz_objective') {
-            payload.content = { 
-                question: newElementData.question, 
-                options: newElementData.options, 
-                answer: newElementData.answer 
-            };
+        switch (currentElementType) {
+            case 'text':
+                payload.content = { text: newElementData.text };
+                break;
+            case 'image':
+                payload.content = { 
+                    url: newElementData.url, 
+                    caption: newElementData.transcript 
+                };
+                break;
+            case 'video':
+                payload.content = { 
+                    url: newElementData.url, 
+                    transcript: newElementData.transcript 
+                };
+                break;
+            case 'quiz_objective':
+                payload.content = { 
+                    question: newElementData.question, 
+                    options: newElementData.options, 
+                    answer: newElementData.answer 
+                };
+                break;
+            case 'workshop':
+                payload.content = { ...newElementData.workshop };
+                break;
         }
 
         let success;
@@ -146,10 +211,76 @@ const EditCourseDetail = () => {
         if (success) {
             setAddElementVisible(false);
             setEditingElementId(null);
-            setNewElementData({ text: "", url: "", transcript: "", question: "", options: ["", "", "", ""], answer: "", score: '1' });
             setCurrentElementType(null);
+            
+            setNewElementData({ 
+                text: "", 
+                url: "", 
+                transcript: "", 
+                question: "", 
+                options: ["", "", "", ""], 
+                answer: "", 
+                score: 1,
+                workshop: { 
+                    title: "", 
+                    description: "", 
+                    location: "", 
+                    link: "",
+                    sessions: [{ date: "", startTime: "", endTime: "" }],
+                }
+            });
         }
     };
+
+    const handleDateChange = (text, index) => {
+        let cleaned = text.replace(/[^0-9]/g, '');
+        if (cleaned.length > 4 && cleaned.length <= 6) {
+            cleaned = `${cleaned.slice(0, 4)}-${cleaned.slice(4)}`;
+        } else if (cleaned.length > 6) {
+            cleaned = `${cleaned.slice(0, 4)}-${cleaned.slice(4, 6)}-${cleaned.slice(6, 8)}`;
+        }
+
+        const newSessions = [...newElementData.workshop.sessions];
+        newSessions[index].date = cleaned;
+
+        setNewElementData({
+            ...newElementData, 
+            workshop: { 
+                ...newElementData.workshop, 
+                sessions: newSessions 
+            }
+        });
+    };
+
+    const handleTimeChange = (text, index, field) => {
+        let cleaned = text.replace(/[^0-9a-zA-Z]/g, '');
+        let formatted = cleaned;
+
+        if (cleaned.length >= 4) {
+            const hh = cleaned.slice(0, 2);
+            const mm = cleaned.slice(2, 4);
+            const ampm = cleaned.slice(4, 6);
+            formatted = `${hh}:${mm}${ampm ? ' ' + ampm : ''}`;
+        } 
+        else if (cleaned.length === 3) {
+            const hh = cleaned.slice(0, 1);
+            const mm = cleaned.slice(1, 3);
+            const ampm = cleaned.slice(3, 5);
+            formatted = `${hh}:${mm}${ampm ? ' ' + ampm : ''}`;
+        }
+
+        const newSessions = [...newElementData.workshop.sessions];
+        newSessions[index][field] = formatted.toUpperCase();
+
+        setNewElementData({
+            ...newElementData,
+            workshop: {
+                ...newElementData.workshop,
+                sessions: newSessions
+            }
+        });
+    };
+
     const renderForumList = () => {
         if (discussionsLoading) return <ActivityIndicator color="#0a6340" style={{marginTop: 20}} />;
         
@@ -179,15 +310,30 @@ const EditCourseDetail = () => {
         setEditingElementId(el.id);
         setCurrentElementType(el.type);
         
-        setNewElementData({
-            text: el.content.text || "",
-            url: el.content.url || "",
-            transcript: el.content.transcript || el.content.caption || "",
-            question: el.content.question || "",
-            options: el.content.options || ["", "", "", ""],
-            answer: el.content.answer || "",
-            score: String(el.score || "1")
-        });
+        if (el.type === 'workshop') {
+            setNewElementData({
+                ...newElementData,
+                workshop: {
+                    title: el.content.title || "",
+                    description: el.content.description || "",
+                    location: el.content.location || "",
+                    link: el.content.link || "",
+                    sessions: el.content.sessions || [{ date: "", startTime: "", endTime: "" }]
+                },
+                score: String(el.score || "1")
+            });
+        } else {
+            setNewElementData({
+                text: el.content.text || "",
+                url: el.content.url || "",
+                transcript: el.content.transcript || el.content.caption || "",
+                question: el.content.question || "",
+                options: el.content.options || ["", "", "", ""],
+                answer: el.content.answer || "",
+                score: String(el.score || "1"),
+                workshop: { title: "", description: "", location: "", link: "", sessions: [{ date: "", startTime: "", endTime: "" }] }
+            });
+        }
         
         setAddElementVisible(true);
     };
@@ -306,7 +452,7 @@ const EditCourseDetail = () => {
                         {selectedPage?.type === 'page' ? (
                             <View style={styles.editorContainer}>
                                 <Text style={styles.editorLabel}>Lesson Editor</Text>
-                                <Text style={styles.pageTitle}>{selectedPage.page.title}</Text>
+                                <Text style={styles.pageTitle}>{selectedPage.page?.title || "Lesson Overview"}</Text>
                                 
                                 {elementsLoading ? (
                                     <View style={styles.elementLoader}>
@@ -321,6 +467,8 @@ const EditCourseDetail = () => {
                                         onEditElement={handleOpenEdit}
                                         onDeleteElement={handleDelete}
                                         onMoveElement={moveElement}
+                                        onRegisterWorkshop={registerWorkshop}
+                                        registering={registering}
                                     />
                                 )}
                             </View>
@@ -411,6 +559,7 @@ const EditCourseDetail = () => {
                         onChangeText={setEditableText}
                         placeholder="Type your description here using Markdown..."
                         textAlignVertical="top"
+                        placeholderTextColor="grey"
                     />
 
                     <Pressable style={styles.saveBtn} onPress={handleSaveDescription}>
@@ -437,6 +586,7 @@ const EditCourseDetail = () => {
                                 <TypeAction icon={<ImageIcon color="#0a6340"/>} label="Image" onPress={() => setCurrentElementType('image')} />
                                 <TypeAction icon={<VideoIcon color="#0a6340"/>} label="Video" onPress={() => setCurrentElementType('video')} />
                                 <TypeAction icon={<QuizIcon color="#0a6340"/>} label="Quiz" onPress={() => setCurrentElementType('quiz_objective')} />
+                                <TypeAction icon={<Calendar color="#0a6340"/>} label="Workshop" onPress={() => setCurrentElementType('workshop')} />
                             </View>
                         ) : (
                             <ScrollView>
@@ -472,6 +622,7 @@ const EditCourseDetail = () => {
                                             onChangeText={(v) => setNewElementData({...newElementData, text: v})} 
                                             placeholder="Write your content here..." 
                                             textAlignVertical="top"
+                                            placeholderTextColor="grey"
                                         />
                                         <View style={styles.scoreSection}>
                                             <Text style={styles.inputLabel}>Mark / Weightage</Text>
@@ -482,6 +633,7 @@ const EditCourseDetail = () => {
                                                     value={newElementData.score}
                                                     onChangeText={(v) => setNewElementData({...newElementData, score: v})}
                                                     placeholder="1"
+                                                    placeholderTextColor="grey"
                                                 />
                                                 <Text style={styles.scoreHint}>Default is 1.</Text>
                                             </View>
@@ -494,7 +646,8 @@ const EditCourseDetail = () => {
                                         <Text style={styles.inputLabel}>Source URL</Text>
                                         <TextInput style={styles.inputField} value={newElementData.url} onChangeText={(v) => setNewElementData({...newElementData, url: v})} placeholder="https://..." />
                                         <Text style={styles.inputLabel}>{currentElementType === 'image' ? 'Caption' : 'Transcript'}</Text>
-                                        <TextInput style={styles.inputField} multiline value={newElementData.transcript} onChangeText={(v) => setNewElementData({...newElementData, transcript: v})} placeholder="Enter description..." />
+                                        <TextInput style={styles.inputField} multiline value={newElementData.transcript} onChangeText={(v) => setNewElementData({...newElementData, transcript: v})} placeholder="Enter description..." 
+                                            placeholderTextColor="grey"/>
                                     </View>
                                 )}
 
@@ -506,6 +659,7 @@ const EditCourseDetail = () => {
                                             value={newElementData.question} 
                                             onChangeText={(v) => setNewElementData({...newElementData, question: v})} 
                                             placeholder="e.g., What is the primary protocol for park safety?" 
+                                            placeholderTextColor="grey"
                                         />
 
                                         <Text style={styles.inputLabel}>Options (Select the radio button for the correct answer)</Text>
@@ -526,6 +680,7 @@ const EditCourseDetail = () => {
                                                         setNewElementData({...newElementData, options: newOpts});
                                                     }} 
                                                     placeholder={`Option ${i+1}`} 
+                                                    placeholderTextColor="grey"
                                                 />
                                             </View>
                                         ))}
@@ -543,6 +698,132 @@ const EditCourseDetail = () => {
                                                 <Text style={styles.scoreHint}>Default is 1.</Text>
                                             </View>
                                         </View>
+                                    </View>
+                                )}
+
+                                {currentElementType === 'workshop' && (
+                                    <View style={styles.workshopEditor}>
+                                        <Text style={styles.inputLabel}>Workshop Title</Text>
+                                        <TextInput 
+                                            style={styles.inputField} 
+                                            value={newElementData.workshop.title} 
+                                            onChangeText={(v) => setNewElementData({
+                                                ...newElementData, 
+                                                workshop: {...newElementData.workshop, title: v}
+                                            })} 
+                                            placeholder="e.g., On-Site Navigation Training" 
+                                            placeholderTextColor="grey"
+                                        />
+
+                                        <Text style={styles.inputLabel}>Description</Text>
+                                        <TextInput 
+                                            style={[styles.inputField, {height: 80}]} 
+                                            multiline
+                                            value={newElementData.workshop.description} 
+                                            onChangeText={(v) => setNewElementData({
+                                                ...newElementData, 
+                                                workshop: {...newElementData.workshop, description: v}
+                                            })} 
+                                            placeholder="Briefly explain what will happen..." 
+                                            placeholderTextColor="grey"
+                                        />
+
+                                        <Text style={styles.inputLabel}>Workshop Sessions</Text>
+                                        {newElementData.workshop.sessions.map((session, index) => (
+                                            <View key={index} style={[styles.row, { marginBottom: 12, alignItems: 'flex-end' }]}>
+                                                
+                                                <View style={{ flex: 1.2, marginRight: 8 }}>
+                                                    <Text style={styles.miniLabel}>Date</Text>
+                                                    <TextInput 
+                                                        style={styles.inputField} 
+                                                        value={session.date} 
+                                                        maxLength={10}
+                                                        onChangeText={(v) => handleDateChange(v, index)} 
+                                                        placeholder="YYYY-MM-DD" 
+                                                        placeholderTextColor="grey"
+                                                    />
+                                                </View>
+                                                <View style={{ flex: 1, marginRight: 8 }}>
+                                                    <Text style={styles.miniLabel}>Start</Text>
+                                                    <TextInput 
+                                                        style={styles.inputField} 
+                                                        value={session.startTime} 
+                                                        maxLength={8}
+                                                        onChangeText={(v) => handleTimeChange(v, index, 'startTime')} 
+                                                        placeholder="10:00 AM"
+                                                        placeholderTextColor="grey"
+                                                    />
+                                                </View>
+                                                <View style={{ flex: 1, marginRight: 8 }}>
+                                                    <Text style={styles.miniLabel}>End</Text>
+                                                    <TextInput 
+                                                        style={styles.inputField} 
+                                                        value={session.endTime} 
+                                                        maxLength={8}
+                                                        onChangeText={(v) => handleTimeChange(v, index, 'endTime')} 
+                                                        placeholder="12:00 PM"
+                                                        placeholderTextColor="grey"
+                                                    />
+                                                </View>
+                                                
+                                                {newElementData.workshop.sessions.length > 1 && (
+                                                    <TouchableOpacity 
+                                                        style={{ marginBottom: 15 }}
+                                                        onPress={() => {
+                                                            const newSessions = newElementData.workshop.sessions.filter((_, i) => i !== index);
+                                                            setNewElementData({
+                                                                ...newElementData,
+                                                                workshop: { ...newElementData.workshop, sessions: newSessions }
+                                                            });
+                                                        }}
+                                                    >
+                                                        <CircleMinus color="#dc2626" size={20} />
+                                                    </TouchableOpacity>
+                                                )}
+                                            </View>
+                                        ))}
+
+                                        <TouchableOpacity 
+                                            style={styles.addSessionBtn}
+                                            onPress={() => {
+                                            setNewElementData({
+                                                ...newElementData, 
+                                                workshop: {
+                                                    ...newElementData.workshop, 
+                                                    sessions: [...newElementData.workshop.sessions, { date: "", startTime: "", endTime: "" }]
+                                                }
+                                            });
+                                        }}
+                                        >
+                                            <CirclePlus color="#0a6340" size={18} />
+                                            <Text style={styles.addSessionText}>Add Another Slot</Text>
+                                        </TouchableOpacity>
+
+                                        <Text style={styles.inputLabel}>Location (Physical or Platform)</Text>
+                                        <TextInput 
+                                            style={styles.inputField} 
+                                            value={newElementData.workshop.location} 
+                                            onChangeText={(v) => setNewElementData({
+                                                ...newElementData, 
+                                                workshop: {...newElementData.workshop, location: v}
+                                            })} 
+                                            placeholder="e.g. SFC Hall or Zoom"
+                                            placeholderTextColor="grey" 
+                                        />
+
+                                        <Text style={styles.inputLabel}>Session URL (Optional Link)</Text>
+                                        <TextInput 
+                                            style={styles.inputField} 
+                                            value={newElementData.workshop.link} 
+                                            onChangeText={(v) => setNewElementData({
+                                                ...newElementData, 
+                                                workshop: {...newElementData.workshop, link: v}
+                                            })} 
+                                            placeholder="https://..." 
+                                            placeholderTextColor="grey"
+                                        />
+                                        
+                                        <Text style={styles.scoreHint}>Points awarded: 1 (Static)</Text>
                                     </View>
                                 )}
 
@@ -1018,7 +1299,48 @@ const styles = StyleSheet.create({
         color: '#666',
         fontWeight: 'bold',
         textDecorationLine: 'underline'
-    }
+    },
+    workshopEditor: {
+    paddingTop: 10,
+    gap: 2,
+    },
+    row: {
+        flexDirection: 'row',
+    },
+    typeActionBtn: {
+        width: '45%', 
+        backgroundColor: '#f8f9fa',
+        borderRadius: 12,
+        padding: 16,
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#eee',
+        cursor: 'pointer',
+        transition: 'all 0.2s ease',
+    },
+    addSessionBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        marginTop: -5,
+        marginBottom: 15,
+        padding: 8,
+        backgroundColor: '#f0fdf4',
+        borderRadius: 8,
+        alignSelf: 'flex-start'
+    },
+    addSessionText: {
+        fontSize: 13,
+        color: '#0a6340',
+        fontWeight: '600'
+    },
+    miniLabel: {
+        fontSize: 10,
+        fontWeight: '700',
+        color: '#0a6340',
+        marginVertical: 4,
+        textTransform: 'uppercase',
+    },
 });
 
 export default EditCourseDetail;

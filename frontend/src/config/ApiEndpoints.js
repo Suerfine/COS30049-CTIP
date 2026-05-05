@@ -30,4 +30,8 @@ export const API_ENDPOINTS={
         MY_ENROLLMENTS:`/enrollments/my-enrollments`,
         DETAIL:(id)=>`/enrollments/${id}`,
     },
+    WORKSHOP:{
+        JOIN_WORKSHOP: (courseId, elementId) => 
+        `/api/courses/${courseId}/elements/${elementId}/workshops/join`,
+    }
 };

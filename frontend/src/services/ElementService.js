@@ -62,4 +62,23 @@ export const ElementService={
             throw error.response?.data?.message || "Failed to update order";
         }
     },
+
+    // POST: join workshop
+    joinWorkshop: async (courseId, elementId, sessionIndex, addToTodo) => {
+        try {
+            const response = await api.post(
+                API_ENDPOINTS.JOIN_WORKSHOP(courseId, elementId), 
+                {
+                    session_index: sessionIndex,
+                    add_to_todo: addToTodo
+                }
+            );
+            return { success: true, data: response.data };
+        } catch (error) {
+            return { 
+                success: false, 
+                error: error.response?.data?.message || "Failed to join workshop" 
+            };
+        }
+    }
 }
