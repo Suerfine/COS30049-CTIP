@@ -30,6 +30,9 @@ export const useCourseDetails=(id)=>{
             setLoading(false);
         }
     },[id]);
+    
+    const locationTags = course?.tags?.filter(tag => tag.type === 'location') || [];
+    const categoryTags = course?.tags?.filter(tag => tag.type === 'category') || [];
 
     // Update only for description
     const updateDescription = async (newDescription) => {
@@ -70,6 +73,7 @@ export const useCourseDetails=(id)=>{
         loading,
         error,
         refresh:fetchCourse,
-        updateDescription
+        updateDescription,
+        locationTags, categoryTags
     };
 }

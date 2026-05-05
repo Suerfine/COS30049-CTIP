@@ -16,9 +16,11 @@ export const useCourses=()=>{
     const [filterVisible, setFilterVisible] = useState(false);
     const [filters, setFilters] = useState({
         status: 'all',
-        category:'all',
+        category: [],
+        location: [] 
     });
     const [tempFilters, setTempFilters] = useState(filters);
+    const [searchText, setSearchText] = useState("");
 
     const statusLabels = {
         inProgress: t('status.in progress'),
@@ -118,18 +120,15 @@ export const useCourses=()=>{
         }
     };
 
-    const removeFilter=(key, value)=>{
-        setFilters(prev=>{
-            if (key==='status'){
-                return {...prev, status:'all'};
-            }
-            if(key==='category'){
-                const newCats=prev.category.filter(c=>c !== value);
-                return {
-                    ...prev, category:newCats.length>0 ? newCats :'all'
-                };
-            }
-            return prev;
+    const removeFilter = (key, value) => {
+        setFilters(prev => {
+            if (key === 'status') return { ...prev, status: 'all' };
+            
+            const newList = Array.isArray(prev[key]) 
+                ? prev[key].filter(item => item !== value) 
+                : [];
+                
+            return { ...prev, [key]: newList };
         });
     };
 
@@ -157,5 +156,28 @@ export const useCourses=()=>{
         }
     };
 
-    return {courses,loadCourses, loading, addCourse, editCourse, deleteCourse,filterVisible, setFilterVisible,tempFilters, setTempFilters,filters, setFilters, statusLabels, removeFilter, allCourseList,allTagList, addTag};
+    const filteredCourses = React.useMemo(() => {
+        return courses.filter(course => {
+            const matchesSearch = course.title.toLowerCase().includes(searchText.toLowerCase());
+            const matchesLocation = !filters.location || filters.location === 'all' || 
+                (Array.isArray(filters.location) && filters.location.length === 0) ||
+                course.tags?.some(tag => tag.type === 'location' && filters.location.includes(tag.title));
+            const matchesCategory = !filters.category || filters.category === 'all' || 
+                (Array.isArray(filters.category) && filters.category.length === 0) ||
+                course.tags?.some(tag => tag.type === 'category' && filters.category.includes(tag.title));
+
+            return matchesSearch && matchesLocation && matchesCategory;
+        });
+    }, [courses, searchText, filters]);
+
+    const handleSearch = (text) => {
+        setSearchText(text);
+        const filterString = text
+        ? `title like "%${text}%" or description like "%${text}%"`
+        : "";
+
+        loadCourses({ filter: filterString, page: 1 });
+    };
+
+    return {courses,loadCourses, loading, addCourse, editCourse, deleteCourse,filterVisible, setFilterVisible,tempFilters, setTempFilters,filters, setFilters, statusLabels, removeFilter, allCourseList,allTagList, addTag, filteredCourses,searchText, setSearchText, handleSearch};
 };

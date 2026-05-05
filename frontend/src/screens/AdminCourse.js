@@ -22,11 +22,10 @@ import { useAuth } from "../context/AuthContext.js";
 import TagCreationModal from "../components/TagCreationModal.js";
 
 const AdminCourse = ({ navigation }) => {
-  const { courses, loadCourses, loading, addCourse, editCourse, deleteCourse,filterVisible, setFilterVisible,tempFilters, setTempFilters,filters, setFilters,statusLabels, removeFilter,allCourseList, allTagList, addTag} =useCourses();
+  const { courses, loadCourses, loading, addCourse, editCourse, deleteCourse,filterVisible, setFilterVisible,tempFilters, setTempFilters,filters, setFilters,statusLabels, removeFilter,allCourseList, allTagList, addTag, filteredCourses,searchText, setSearchText, handleSearch} =useCourses();
   const [modalVisible, setModalVisible] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState(null);
-  const [searchText, setSearchText] = useState("");
   const {currentUser}=useAuth();
   const [isTagModalVisible, setTagModalVisible] = useState(false);
 
@@ -34,14 +33,6 @@ const AdminCourse = ({ navigation }) => {
     loadCourses();
   }, [loadCourses]);
 
-  const handleSearch = (text) => {
-    setSearchText(text);
-    const filterString = text
-      ? `title like "%${text}%" or description like "%${text}%"`
-      : "";
-
-    loadCourses({ filter: filterString, page: 1 });
-  };
 
   const handleAdd = () => {
     setIsEditing(false);
@@ -154,6 +145,7 @@ const AdminCourse = ({ navigation }) => {
           </View>
       </View>
       <View style={styles.pillContainer}>
+          {/* Status Pill */}
           {filters.status !== 'all' && (
               <View style={styles.pill}>
                   <Text style={styles.pillText}>{statusLabels[filters.status]}</Text>
@@ -163,6 +155,17 @@ const AdminCourse = ({ navigation }) => {
               </View>
           )}
 
+          {/* Location Pills */}
+          {Array.isArray(filters.location) && filters.location.map((locName) => (
+              <View key={locName} style={[styles.pill, { backgroundColor: '#18704d' }]}>
+                  <Text style={styles.pillText}>{locName}</Text>
+                  <Pressable onPress={() => removeFilter('location', locName)}>
+                      <CircleX size={16} color="white" />
+                  </Pressable>
+              </View>
+          ))}
+
+          {/* Category Pills */}
           {Array.isArray(filters.category) && filters.category.map((catName) => (
               <View key={catName} style={styles.pill}>
                   <Text style={styles.pillText}>{catName}</Text>
@@ -179,8 +182,8 @@ const AdminCourse = ({ navigation }) => {
       ) : (
         <>
           <View style={styles.cardContainer}>
-            {Array.isArray(courses) && courses.length > 0 ? (
-              courses.map((course) => {
+            {Array.isArray(filteredCourses) && filteredCourses.length > 0 ? (
+              filteredCourses.map((course) => {
                 const numModules = course.modules ? course.modules.length : 0;
                 return (
                   <CourseCard
@@ -223,6 +226,7 @@ const AdminCourse = ({ navigation }) => {
     />
     <FilterSidebar
         visible={filterVisible}
+        allTagList={allTagList}
         tempFilters={tempFilters}
         setTempFilters={setTempFilters}
         onClose={() => setFilterVisible(false)}
@@ -231,7 +235,7 @@ const AdminCourse = ({ navigation }) => {
             setFilterVisible(false);
         }}
         onReset={() => {
-            const reset = { level: 'all', status: 'all' };
+            const reset = { status: 'all', category: [], location: [] };
             setTempFilters(reset);
             setFilters(reset);
         }}
