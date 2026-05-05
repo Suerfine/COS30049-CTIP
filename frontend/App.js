@@ -25,6 +25,7 @@ const linking = {
       "User Module": "userModule/:id",
       Courses: "courses",
       UserProfile: "profile",
+      Anomaly: "anomaly",
       "Enrollment Management": "enrollmentManagement",
     },
   },

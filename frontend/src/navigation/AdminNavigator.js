@@ -10,6 +10,7 @@ import AccountsManagement from "../screens/AccountsManagement";
 import EnrollmentManagement from "../screens/EnrollmentManagement";
 import UserProfile from "../screens/UserProfile";
 import AdminDashboard from "../screens/AdminDashboard";
+import AnomalyDetection from "../screens/AnomalyDetection";
 
 // Import components
 import SideBar from "../components/SideBar";
@@ -46,6 +47,10 @@ export default function AdminNavigator() {
             <Stack.Screen
               name="Admin Dashboard"
               component={AdminDashboard}
+            />
+            <Stack.Screen
+              name="Anomaly Detection"
+              component={AnomalyDetection}
             />
             <Stack.Screen name="User Profile" component={UserProfile} />
           </Stack.Navigator>

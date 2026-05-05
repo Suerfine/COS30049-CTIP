@@ -14,6 +14,7 @@ import Notification from "./Notification";
 import CourseTag from "./CourseTag";
 import PrerequisiteGroup from "./PrerequisiteGroup";
 import Prerequisite from "./Prerequisite";
+import ComplianceEvent from "./ComplianceEvent";
 import { RegistrationStatus } from "../enum/RegistrationStatus";
 
 // Associations
@@ -148,6 +149,9 @@ Course.hasMany(Prerequisite, {
 User.hasMany(Notification, { foreignKey: "user_id", as: "notifications" });
 Notification.belongsTo(User, { foreignKey: "user_id", as: "user" });
 
+User.hasMany(ComplianceEvent, { foreignKey: "user_id", as: "compliance_events" });
+ComplianceEvent.belongsTo(User, { foreignKey: "user_id", as: "user" });
+
 export {
   User,
   Course,
@@ -165,4 +169,5 @@ export {
   Prerequisite,
   Event,
   Notification,
+  ComplianceEvent,
 };
