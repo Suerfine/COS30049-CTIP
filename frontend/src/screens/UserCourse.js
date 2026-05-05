@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, ScrollView, Pressable, ImageBackground } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, ImageBackground, Platform, Alert } from 'react-native';
 import { useMemo, useState } from 'react';
 import { CircleX, ListFilter, SignalZero, SlidersHorizontal } from 'lucide-react-native'
 
@@ -8,7 +8,6 @@ import { useUserCourse } from '../hooks/useUserCourse';
 import NavBar from '../components/NavBar';
 import SlidingTabs from '../components/SlidingTabs';
 import FilterSidebar from '../components/FilterSidebar';
-import ConfirmEnroll from '../components/ConfirmEnroll';
 import CourseCard from '../components/CourseCard';
 
 const UserCourse = ({ navigation }) => {
@@ -21,9 +20,12 @@ const UserCourse = ({ navigation }) => {
         tempFilters, setTempFilters,
         statusLabels,
         tabs,
+        myEnrollments,
         coursesWithStatus,
         filteredCourses, courses,
-        removeFilter
+        removeFilter,
+        handleEnrollment, 
+        handleDrop,
     }=useUserCourse();
 
     return (
@@ -79,12 +81,12 @@ const UserCourse = ({ navigation }) => {
                         ))}
                     </View>
                     <View style={styles.cardContainer}>
-                        {courses.length === 0?(
+                        {filteredCourses.length === 0?(
                             
                             <View style={styles.emptyContainer}>
                                 <Text style={styles.emptyText}>No courses found</Text>
                             </View>
-                        ) : ( courses.map(course => {
+                        ) : ( filteredCourses.map(course => {
                             const numModules = course.modules ? course.modules.length : 0;
                             return(
                             <CourseCard
@@ -96,14 +98,23 @@ const UserCourse = ({ navigation }) => {
                                 duration={course.expected_completion_weeks}
                                 expiry={course.must_complete_in_weeks}
                                 userType={userType}
+                                progress={course.progress}
+                                // enrollment
+                                enrollmentStatus={course.enrollmentStatus}
+                                prerequisiteGroups={course.prerequisiteGroups || []}
+                                myEnrollments={myEnrollments}
+                                // handlers
                                 onPress={() => navigation.navigate('ParkGuideStack', {
                                     screen: 'UserModule', 
                                     params: { id: course.id }
                                 })}
-                                onEnroll={() => {
-                                    setSelectedCourse(course);
-                                    setModalVisible(true);
+                               onEnroll={() => {
+                                    const confirmed = window.confirm(`Are you sure you want to enroll in ${course.title}?`);
+                                    if (confirmed) {
+                                        handleEnrollment(course.id);
+                                    }
                                 }}
+                                onDrop={() => handleDrop(course.id)}
                             />)
                         })
                     )}
@@ -124,19 +135,6 @@ const UserCourse = ({ navigation }) => {
                     const reset = { level: 'all', status: 'all' };
                     setTempFilters(reset);
                     setFilters(reset);
-                }}
-            />
-
-            <ConfirmEnroll
-                visible={modalVisible}
-                course={selectedCourse}
-                onClose={() => setModalVisible(false)}
-                onConfirm={() => {
-                    console.log("Enrolled:", selectedCourse.id);
-
-                    // call api
-
-                    setModalVisible(false);
                 }}
             />
         </View>

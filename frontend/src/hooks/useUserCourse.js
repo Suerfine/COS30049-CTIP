@@ -1,17 +1,22 @@
 import { useState, useEffect, useMemo, useCallback} from 'react';
+import { Platform, Alert } from 'react-native';
 import { useUserDashboard } from './useUserDashboard';
 import { useTranslation } from 'react-i18next';
 import { courseService } from '../services/courseService';
+import { enrollmentService } from '../services/EnrollmentService';
+import { useAuth } from '../context/AuthContext';
 
 export const useUserCourse=()=>{
     const {t, i18n}=useTranslation();
-    const { progressData  } = useUserDashboard();
+    const { progressData } = useUserDashboard();
+    const { currentUser } = useAuth();
     const [selectedCourse, setSelectedCourse] = useState(null);
     const [modalVisible, setModalVisible] = useState(false);
     const [filterVisible, setFilterVisible] = useState(false);
     const [courses,setCourses]=useState([]);
     const [allcourseFilter, setAllCourseFilter]=useState('all');
     const [loading, setLoading]=useState(false);
+    const [myEnrollments, setMyEnrollments] = useState([]); // current user enrollments
 
     const [filters, setFilters] = useState({
         status: 'all',
@@ -31,27 +36,96 @@ export const useUserCourse=()=>{
         {id:'advanced',label:t('status.advanced')}
     ];
 
-    const coursesWithStatus = useMemo(() => {
-        return courses.map(course => {
-            const progressObj = progressData.find(
-                p => p.courseId === course.id
-            );
-
-            const progress = progressObj ? progressObj.progress : null;
-
-            let status = 'notEnrolled';
-            if (typeof progress === 'number') {
-                if (progress >= 1) status = 'completed';
-                else if (progress > 0) status = 'inProgress';
+    // load courses
+    const loadCourses = useCallback(async (params = {}) => {
+        setLoading(true);
+        try {
+            const response = await courseService.getAll(params);
+            setCourses(Array.isArray(response) ? response : response.data || []);
+        } catch (err) {
+            console.error('Fetch courses failed', err);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+ 
+    // load the current user's enrollments
+    const loadMyEnrollments = useCallback(async () => {
+        try {
+            const data = await enrollmentService.getMyEnrollments();
+            setMyEnrollments(Array.isArray(data) ? data : data?.data || []);
+        } catch (err) {
+            console.error('Fetch my enrollments failed', err);
+        }
+    }, []);
+ 
+    useEffect(() => {
+        loadCourses();
+        loadMyEnrollments();
+    }, [loadCourses, loadMyEnrollments]);
+ 
+    // Called after confirm enroll
+    // has already validated prerequisites so sets enrollment to IN_REVIEW (admin approves)
+    const handleEnrollment = useCallback(async (courseId) => {
+        try {
+            await enrollmentService.enroll(courseId, currentUser.id);
+            await loadMyEnrollments();
+        } catch (err) {
+            const message =
+                typeof err === 'string' ? err : err?.message || 'Failed to enroll. Please try again.';
+ 
+            if (Platform.OS === 'web') {
+                window.alert(message);
+            } else {
+                Alert.alert('Enrollment Failed', message);
             }
+        }
+    }, [currentUser, loadMyEnrollments]);
+ 
+    // drop courses
+    // finds the enrollment record for that specific course and deletes it
+    const handleDrop = useCallback(async (courseId) => {
+        try {
+            const enrollment = myEnrollments.find(
+                (e) => Number(e.course_id) === Number(courseId)
+            );
+ 
+            if (!enrollment) {
+                console.warn('No enrollment record found to drop for course', courseId);
+                return;
+            }
+ 
+            await enrollmentService.delete(enrollment.id);
+            await loadMyEnrollments();
+        } catch (err) {
+            const message =
+                typeof err === 'string' ? err : err?.message || 'Failed to drop course. Please try again.';
+ 
+            if (Platform.OS === 'web') {
+                window.alert(message);
+            } else {
+                Alert.alert('Drop Failed', message);
+            }
+        }
+    }, [myEnrollments, loadMyEnrollments]);
 
+    const coursesWithStatus = useMemo(() => {
+        return courses.map((course) => {
+            const enrollment = myEnrollments.find(
+                (e) => Number(e.course_id) === Number(course.id)
+            );
+ 
+            const progressObj = progressData?.find((p) => p.courseId === course.id);
+            const progress = progressObj ? progressObj.progress : null;
+ 
             return {
                 ...course,
                 progress,
-                status,
+                enrollmentStatus: enrollment?.status ?? null,
+                enrollmentId: enrollment?.id ?? null,
             };
         });
-    }, [courses, progressData]);
+    }, [courses, myEnrollments, progressData]);
 
     // filter by level/status
     const filteredCourses = useMemo(() => {
@@ -83,22 +157,6 @@ export const useUserCourse=()=>{
         });
     };
 
-    const loadCourses=useCallback(async(params={})=>{
-        setLoading(true);
-        try{
-            const response=await courseService.getAll(params);
-            setCourses(Array.isArray(response) ? response : response.data || []);
-        }catch(err){
-            console.error("Fetch failed", err);
-        }finally{
-            setLoading(false);
-        }
-    },[]);
-
-    useEffect(() => {
-        loadCourses();
-    }, [loadCourses]);
-
     return {
         selectedCourse, setSelectedCourse,
         modalVisible, setModalVisible,
@@ -110,6 +168,9 @@ export const useUserCourse=()=>{
         tabs,
         coursesWithStatus,
         filteredCourses,
-        removeFilter, courses
+        removeFilter, courses,
+        myEnrollments,
+        handleEnrollment,
+        handleDrop,
     };
 };
