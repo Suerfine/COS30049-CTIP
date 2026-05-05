@@ -19,6 +19,49 @@ const courseRouter = Router();
 courseRouter.use("/:course_Id/modules", moduleRouter);
 courseRouter.use("/:id/discussion", discussionRouter);
 
+function parseNumericIdArray(value: unknown): number[] {
+  if (value === undefined || value === null || value === "") {
+    return [];
+  }
+
+  let parsedValue: unknown;
+  if (typeof value === "string") {
+    const trimmedValue = value.trim();
+    if (trimmedValue === "") {
+      return [];
+    }
+
+    if (trimmedValue.startsWith("[")) {
+      parsedValue = JSON.parse(trimmedValue);
+    } else if (trimmedValue.includes(",")) {
+      parsedValue = trimmedValue
+        .split(",")
+        .map((part) => part.trim())
+        .filter((part) => part !== "");
+    } else {
+      parsedValue = [trimmedValue];
+    }
+  } else if (Array.isArray(value)) {
+    parsedValue = value;
+  } else if (typeof value === "number") {
+    parsedValue = [value];
+  } else {
+    throw new Error("tag_ids must be an array");
+  }
+
+  if (!Array.isArray(parsedValue)) {
+    throw new Error("tag_ids must be an array");
+  }
+
+  return parsedValue.map((id) => {
+    const parsedId = Number(id);
+    if (!Number.isInteger(parsedId) || parsedId <= 0) {
+      throw new Error("tag_ids must contain positive integers");
+    }
+    return parsedId;
+  });
+}
+
 /**
  * @swagger
  * /api/courses:
@@ -65,6 +108,12 @@ courseRouter.post(
     body("title").isString().notEmpty(),
     body("description").optional().isString(),
     body("status").optional().isIn(Object.values(CourseStatus)),
+    body("tag_ids")
+      .optional()
+      .custom((value) => {
+        parseNumericIdArray(value);
+        return true;
+      }),
   ],
   validate,
   CourseController.createCourse,

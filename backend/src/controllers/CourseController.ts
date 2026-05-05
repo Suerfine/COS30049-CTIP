@@ -1,7 +1,13 @@
 import { NextFunction, Request, Response } from "express";
-import fs, { createReadStream } from "fs";
-import path from "path";
-import { Course, User, PrerequisiteGroup, Prerequisite } from "../models";
+import { Op } from "sequelize";
+import {
+  Course,
+  CourseTag,
+  Prerequisite,
+  PrerequisiteGroup,
+  Tag,
+  User,
+} from "../models";
 import sequelize from "../config/Database";
 import { PaginateRequestParams, PaginateResponse } from "../types/common";
 import { formatPaginateResponse, paginateModel } from "../utils/paginate";
@@ -26,6 +32,20 @@ class HttpError extends Error {
 }
 
 function toCourseResponse(course: Course, req?: Request<any>): CourseResponse {
+  const tagsRaw =
+    ((course.toJSON() as { tags?: unknown }).tags as
+      | Array<{
+          id: number;
+          title: string;
+          type: string;
+        }>
+      | undefined) ?? [];
+  const tags = tagsRaw.map((tag) => ({
+    id: tag.id,
+    title: tag.title,
+    type: tag.type,
+  }));
+
   const prerequisiteGroupsRaw =
     ((course.toJSON() as { prerequisite_groups?: unknown })
       .prerequisite_groups as
@@ -89,6 +109,7 @@ function toCourseResponse(course: Course, req?: Request<any>): CourseResponse {
     badge_expire_in_months: course.badge_expire_in_months,
     badge_img_url: badge_url,
     cover_img_url: cover_url,
+    tags,
     prerequisite_groups,
     created_at: course.created_at,
     updated_at: course.updated_at,
@@ -98,6 +119,11 @@ function toCourseResponse(course: Course, req?: Request<any>): CourseResponse {
 }
 
 const COURSE_PREREQUISITE_INCLUDE = [
+  {
+    model: Tag,
+    as: "tags",
+    through: { attributes: [] },
+  },
   {
     model: PrerequisiteGroup,
     as: "prerequisite_groups",
@@ -191,6 +217,132 @@ async function _verify_prerequisite_course_ids_input(
   }
 }
 
+function parseTagIdsInput(value: unknown, fieldName: string): number[] {
+  if (value === undefined || value === null || value === "") {
+    return [];
+  }
+
+  let parsedValue: unknown;
+  if (typeof value === "string") {
+    const trimmedValue = value.trim();
+    if (trimmedValue === "") {
+      return [];
+    }
+
+    if (trimmedValue.startsWith("[")) {
+      parsedValue = JSON.parse(trimmedValue);
+    } else if (trimmedValue.includes(",")) {
+      parsedValue = trimmedValue
+        .split(",")
+        .map((part) => part.trim())
+        .filter((part) => part !== "");
+    } else {
+      parsedValue = [trimmedValue];
+    }
+  } else if (Array.isArray(value)) {
+    parsedValue = value;
+  } else if (typeof value === "number") {
+    parsedValue = [value];
+  } else {
+    throw new Error(`${fieldName} must be an array of numbers`);
+  }
+
+  if (!Array.isArray(parsedValue)) {
+    throw new Error(`${fieldName} must be an array of numbers`);
+  }
+
+  const tagIds = parsedValue.map((id) => {
+    const parsedId = Number(id);
+    if (!Number.isInteger(parsedId) || parsedId <= 0) {
+      throw new Error(`${fieldName} must contain valid positive integer IDs`);
+    }
+    return parsedId;
+  });
+
+  return [...new Set(tagIds)];
+}
+
+async function verifyTagIdsExist(tagIds: number[]): Promise<void> {
+  if (tagIds.length === 0) {
+    return;
+  }
+
+  const existingTags = await Tag.findAll({
+    where: { id: tagIds },
+    attributes: ["id"],
+  });
+
+  const existingIds = new Set(existingTags.map((tag) => tag.id));
+  const missingTagIds = tagIds.filter((id) => !existingIds.has(id));
+
+  if (missingTagIds.length > 0) {
+    throw new Error(`Tag(s) not found: ${missingTagIds.join(", ")}`);
+  }
+}
+
+async function addCourseTags(
+  courseId: number,
+  tagIds: number[],
+  transaction: any,
+): Promise<void> {
+  if (tagIds.length === 0) {
+    return;
+  }
+
+  const existingAssociations = await CourseTag.findAll({
+    where: {
+      course_id: courseId,
+      tag_id: tagIds,
+    },
+    transaction,
+    paranoid: false,
+  });
+
+  const associationsByTagId = new Map(
+    existingAssociations.map((association) => [
+      association.tag_id,
+      association,
+    ]),
+  );
+
+  for (const tagId of tagIds) {
+    const association = associationsByTagId.get(tagId);
+
+    if (!association) {
+      await CourseTag.create(
+        {
+          course_id: courseId,
+          tag_id: tagId,
+        },
+        { transaction },
+      );
+      continue;
+    }
+
+    if (association.deleted_at) {
+      await association.restore({ transaction });
+    }
+  }
+}
+
+async function removeCourseTags(
+  courseId: number,
+  tagIds: number[],
+  transaction: any,
+): Promise<void> {
+  if (tagIds.length === 0) {
+    return;
+  }
+
+  await CourseTag.destroy({
+    where: {
+      course_id: courseId,
+      tag_id: tagIds,
+    },
+    transaction,
+  });
+}
+
 async function createPrerequisiteGroupsAndPrerequisites(
   courseId: number,
   prerequisite_course_ids: number[][],
@@ -227,6 +379,9 @@ export const createCourse = async (
 ) => {
   const transaction = await sequelize.transaction();
   try {
+    const tagIds = parseTagIdsInput(req.body.tag_ids, "tag_ids");
+    await verifyTagIdsExist(tagIds);
+
     // Validate if the prerequisite_course_ids is a valid array of courses
     if (req.body.prerequisite_course_ids) {
       await _verify_prerequisite_course_ids_input(
@@ -263,6 +418,9 @@ export const createCourse = async (
         transaction,
       );
     }
+
+    await addCourseTags(course.id, tagIds, transaction);
+
     // Handle course cover and badge images from multipart field uploads.
     const storage = getStorage();
     const uploadedFiles: { [fieldname: string]: Express.Multer.File[] } =
@@ -378,44 +536,37 @@ export const upsertCourse = async (
   res: Response<CourseResponse | { message: string }>,
   next: NextFunction,
 ) => {
-  let transaction: any;
-
+  let transaction = await sequelize.transaction();
   try {
-    transaction = await sequelize.transaction();
+    // Check if the course exists or not
     const course = await Course.findByPk(req.params.id);
-
     if (!course) {
-      await transaction.rollback();
-      return res.status(404).json({ message: "Course not found" });
+      throw new HttpError(404, "Course does not exist");
     }
 
+    // Validate and apply the updates from the request body and file
     const updates: Partial<Course> = {};
     const status = parseCourseStatus(req.body.status);
     const releasedAtInput = parseCourseReleasedAt(req.body.released_at);
-
     if (typeof req.body.title === "string" && req.body.title.trim() !== "") {
       updates.title = req.body.title;
     }
-
     if (req.body.description !== undefined) {
       updates.description = req.body.description;
     }
-
     if (typeof req.body.expected_completion_weeks === "number") {
       updates.expected_completion_weeks = req.body.expected_completion_weeks;
     }
-
     if (typeof req.body.must_complete_in_weeks === "number") {
       updates.must_complete_in_weeks = req.body.must_complete_in_weeks;
     }
-
     if (typeof req.body.badge_expire_in_months === "number") {
       updates.badge_expire_in_months = req.body.badge_expire_in_months;
     }
 
+    //TODO: Update the status validation logic
     if (status !== undefined) {
       updates.status = status;
-
       if (releasedAtInput !== undefined) {
         updates.released_at = releasedAtInput;
       } else if (status === CourseStatus.RELEASED) {
@@ -427,6 +578,7 @@ export const upsertCourse = async (
       updates.released_at = releasedAtInput;
     }
 
+    //TODO: Handle cover image uploads
     if (req.file) {
       const storage = getStorage();
       const ext = req.file.originalname.split(".").pop();
@@ -439,16 +591,16 @@ export const upsertCourse = async (
       });
       updates.badge_img_path = savedPath;
     }
-
     if (
       Object.keys(updates).length === 0 &&
-      req.body.prerequisite_course_ids === undefined
+      req.body.prerequisite_course_ids === undefined &&
+      req.body.tag_ids === undefined
     ) {
       throw new Error("No valid fields provided for update");
     }
-
     await course.update(updates, { transaction });
 
+    // Handle prerequisite courses updates if provided
     if (req.body.prerequisite_course_ids !== undefined) {
       await _verify_prerequisite_course_ids_input(
         req.body.prerequisite_course_ids,
@@ -466,6 +618,23 @@ export const upsertCourse = async (
         transaction,
       );
     }
+
+    //Handle course tags updates if provided
+    const tagIds = parseTagIdsInput(req.body.tag_ids, "tag_ids");
+
+    //Delete tags that are not in the tagIds list
+    CourseTag.destroy({
+      where: {
+        course_id: course.id,
+        tag_id: {
+          [Op.notIn]: tagIds,
+        },
+      },
+      transaction,
+    });
+
+    // Add new tags that are in the tagIds list but not currently associated with the course
+    await addCourseTags(course.id, tagIds, transaction);
 
     await transaction.commit();
 

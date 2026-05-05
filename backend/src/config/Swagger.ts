@@ -353,6 +353,12 @@ const options: swaggerJSDoc.Options = {
                 $ref: "#/components/schemas/PrerequisiteGroup",
               },
             },
+            tags: {
+              type: "array",
+              items: {
+                $ref: "#/components/schemas/CourseTag",
+              },
+            },
             created_at: {
               type: "string",
               format: "date-time",
@@ -406,6 +412,14 @@ const options: swaggerJSDoc.Options = {
             },
           },
         },
+        CourseTag: {
+          type: "object",
+          properties: {
+            id: { type: "integer", example: 1 },
+            title: { type: "string", example: "Safety" },
+            type: { type: "string", example: "course" },
+          },
+        },
         CreateCourseRequest: {
           type: "object",
           required: ["title", "badge"],
@@ -427,6 +441,15 @@ const options: swaggerJSDoc.Options = {
             badge_expire_in_months: {
               type: "integer",
               example: 24,
+            },
+            tag_ids: {
+              type: "array",
+              description: "Tag IDs to attach when creating the course.",
+              items: {
+                type: "integer",
+                example: 1,
+              },
+              example: [1, 2],
             },
             prerequisite_course_ids: {
               type: "array",
@@ -492,6 +515,24 @@ const options: swaggerJSDoc.Options = {
             badge_expire_in_months: {
               type: "integer",
               example: 24,
+            },
+            add_tag_ids: {
+              type: "array",
+              description: "Tag IDs to add to the course.",
+              items: {
+                type: "integer",
+                example: 1,
+              },
+              example: [1, 2],
+            },
+            remove_tag_ids: {
+              type: "array",
+              description: "Tag IDs to remove from the course.",
+              items: {
+                type: "integer",
+                example: 3,
+              },
+              example: [3],
             },
             prerequisite_course_ids: {
               type: "array",
