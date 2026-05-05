@@ -19,6 +19,7 @@ Run with:
 import asyncio
 import json
 import logging
+import os
 import time
 from contextlib import asynccontextmanager
 
@@ -28,7 +29,7 @@ import numpy as np
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from ultralytics import YOLO
-from compliance import ComplianceEvaluator
+from vision_model.scripts.compliance import ComplianceEvaluator
 evaluator = ComplianceEvaluator()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("parkguard")
@@ -38,12 +39,93 @@ logger = logging.getLogger("parkguard")
 # ---------------------------------------------------------------------------
 models: dict = {}
 
+
+# ---------------------------------------------------------------------------
+# Model Download Functions
+# ---------------------------------------------------------------------------
+async def download_model(url: str, save_path: str):
+    """
+    Download a model file from Google Drive or direct URL.
+    Converts Google Drive share links to direct download links.
+    """
+    logger.info(f"Downloading model to {save_path}...")
+    
+    # Convert Google Drive share link to direct download link
+    if "drive.google.com" in url:
+        if "/file/d/" in url:
+            file_id = url.split("/file/d/")[1].split("/")[0]
+            url = f"https://drive.google.com/uc?id={file_id}&export=download"
+        else:
+            logger.error(f"Could not extract file ID from Google Drive URL: {url}")
+            return False
+    
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(url, follow_redirects=True, timeout=300.0)
+            response.raise_for_status()
+            
+            with open(save_path, "wb") as f:
+                f.write(response.content)
+            
+            logger.info(f"✅ Successfully downloaded to {save_path}")
+            return True
+    except Exception as e:
+        logger.error(f"❌ Failed to download model: {e}")
+        return False
+
+
+async def check_and_download_models():
+    """
+    Check if required models exist locally.
+    If missing, download them from Google Drive.
+    """
+    models_to_check = [
+        {
+            "name": "object_detection_model.pt",
+            "url": "https://drive.google.com/file/d/1f1mXVV37U7nor5tY9asqtgHrEssak3Ot/view?usp=drive_link",
+            "description": "Object Detection Model (YOLO)"
+        },
+        {
+            "name": "yolo26n-pose.pt",
+            "url": "https://drive.google.com/file/d/1F5AyMn4guPdvpRXYbFBJN7ls9dcUfYCo/view?usp=sharing",
+            "description": "Pose Estimation Model (YOLO Nano)"
+        },
+    ]
+    
+    for model_info in models_to_check:
+        model_name = model_info["name"]
+        url = model_info["url"]
+        description = model_info["description"]
+        
+        if os.path.exists(model_name):
+            file_size = os.path.getsize(model_name) / (1024 * 1024)  # MB
+            logger.info(f"✅ {description} found locally ({file_size:.1f}MB)")
+        else:
+            logger.warning(f"⚠️  {description} not found. Downloading from Google Drive...")
+            success = await download_model(url, model_name)
+            
+            if success:
+                file_size = os.path.getsize(model_name) / (1024 * 1024)
+                logger.info(f"✅ {description} ready ({file_size:.1f}MB)")
+            else:
+                logger.error(f"❌ Failed to download {description}")
+                raise RuntimeError(
+                    f"Could not load or download {model_name}. "
+                    f"Please download manually from: {url}"
+                )
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    logger.info("Loading YOLO models…")
-    models["detector"] = YOLO("runs/detect/object-detection8/weights/best.pt")
+    logger.info("🚀 Checking for required models...")
+    
+    # Check and download models if necessary
+    await check_and_download_models()
+    
+    logger.info("📦 Loading YOLO models…")
+    models["detector"] = YOLO("object_detection_model.pt")
     models["pose"]     = YOLO("yolo26n-pose.pt")
-    logger.info("Models ready.")
+    logger.info("✅ Models ready!")
     yield
     models.clear()
 
