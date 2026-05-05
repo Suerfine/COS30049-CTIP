@@ -115,9 +115,6 @@ export const courseService = {
                 }))
             }))
         };
-        
-
-        console.log("SENDING JSON:", payload);
 
         const response = await apiClient.put(
             API_ENDPOINTS.COURSE.DETAIL(id),

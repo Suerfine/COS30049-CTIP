@@ -5,11 +5,14 @@ import { Pressable, StyleSheet, FlatList, View,Text, Image, TextInput, ActivityI
 // Import other components and hooks
 import { useRegisterManagement } from '../hooks/useRegisterManagement';
 import { formatDate } from '../utils/formatDate';
+import RejectModal from '../components/RejectModal';
 
 const RegistrationManagement=()=>{
     const {users, loading,currentPage, setCurrentPage, totalPages, totalUsers,selectedUser,setSelectedUser,handleSearch, searchQuery,sortConfig, requestSort,resetSort,currentStatus, setCurrentStatus,isCreating,setIsCreating,
-        handleCreateUser,}=useRegisterManagement();
-    const [isOpen, setIsOpen]=useState(false);    
+        handleCreateUser, isRejecting, handleRejectUser }=useRegisterManagement();
+    const [isOpen, setIsOpen]=useState(false);
+    const [isRejectModalVisible, setIsRejectModalVisible] = useState(false);
+    const [rejectReason, setRejectReason] = useState("");
 
     const handleNextPage=()=>{
         if(currentPage<totalPages){
@@ -21,6 +24,11 @@ const RegistrationManagement=()=>{
         if(currentPage>1){
             setCurrentPage(prev=>prev-1);
         }
+    };
+
+    const handleOpenRejectModal = () => {
+        setRejectReason("");
+        setIsRejectModalVisible(true);
     };
 
     const itemsPerPage = 10; 
@@ -279,22 +287,51 @@ const RegistrationManagement=()=>{
                             </View>
                         </View>
                         {selectedUser.status=='pending' &&(
-                        <Pressable 
-                           style={({ hovered }) => [styles.Btn,
-                                hovered && styles.btnHover, 
-                            ]} onPress={()=>handleCreateUser(selectedUser)}
-                        >
-                            {isCreating ? (
-                                <ActivityIndicator color="white" size="small" />
-                            ) : (
-                                <Text style={styles.btnText}>Approve</Text>
-                            )}
-                        </Pressable>
+                        <View style={styles.actionContainer}>
+                            {/* Reject Button */}
+                            <Pressable 
+                                style={({ hovered }) => [styles.rejectbtn,
+                                    hovered && styles.rejectBtnHover, 
+                                ]} 
+                                onPress={()=>setIsRejectModalVisible(true)}
+                                disabled={isRejecting || isCreating}
+                            >
+                                {isRejecting ? (
+                                    <ActivityIndicator color="#dc2626" size="small" />
+                                ) : (
+                                    <Text >Reject</Text>
+                                )}
+                            </Pressable>
+                            <Pressable 
+                            style={({ hovered }) => [styles.Btn,
+                                    hovered && styles.btnHover, 
+                                ]} onPress={()=>handleCreateUser(selectedUser)}
+                            >
+                                {isCreating ? (
+                                    <ActivityIndicator color="white" size="small" />
+                                ) : (
+                                    <Text style={styles.btnText}>Approve</Text>
+                                )}
+                            </Pressable>
+                        </View>
                         )}
                         
                     </View>
                 </View>
             )}
+            <RejectModal 
+                visible={isRejectModalVisible}
+                onClose={() => setIsRejectModalVisible(false)}
+                reason={rejectReason}
+                setReason={setRejectReason}
+                loading={isRejecting}
+                onConfirm={async () => {
+                    const result = await handleRejectUser(selectedUser, rejectReason);
+                    if (result?.success) {
+                        setIsRejectModalVisible(false);
+                    }
+                }}
+            />
         </View>
     );
 }
@@ -595,9 +632,6 @@ const styles = StyleSheet.create({
         paddingHorizontal:20,
         paddingVertical:8,
         marginTop:15,
-        position:'absolute',
-        bottom:15,
-        right:15
     },
     headerRow:{
         flexDirection:'row',
@@ -633,7 +667,27 @@ const styles = StyleSheet.create({
         color:'#0a6340',
         fontSize:13,
         fontWeight:'500'
-    }
+    },
+    actionContainer:{
+        flexDirection: 'row',
+        gap: 12,
+        position:'absolute',
+        bottom:15,
+        right:15
+    },
+    rejectbtn: {
+        width:120,
+        alignItems:'center',
+        borderColor: '#dc2626',
+        borderWidth:1,
+        borderRadius:10,
+        paddingHorizontal:20,
+        paddingVertical:8,
+        marginTop:15,
+    },
+    rejectBtnHover:{
+        backgroundColor:'#dc2626',
+    },
 });
 
 export default RegistrationManagement;

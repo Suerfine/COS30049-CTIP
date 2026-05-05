@@ -74,6 +74,19 @@ export const RegisterService={
             console.error("Approve Error Status:", err.response?.status);
             throw new Error(message);
         }
+    },
+
+    // POST: reject registration
+    reject:async(id,reason)=>{
+        try{
+            const response=await apiClient.post(API_ENDPOINTS.ADMIN.REJECT(id),{
+                message:reason
+            });
+            return response.data;
+        }catch (error) {
+            const message = error.response?.data?.message || "Failed to reject registration";
+            return Promise.reject(message);
+        }
     }
 
 };

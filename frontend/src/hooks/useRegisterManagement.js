@@ -16,6 +16,7 @@ export const useRegisterManagement=()=>{
         direction:'asc'
     });
     const [currentStatus, setCurrentStatus]=useState('All');
+    const [isRejecting,setIsRejecting]=useState(false);
 
     // Fetch all users
     const fetchUsers=async()=>{
@@ -76,6 +77,27 @@ export const useRegisterManagement=()=>{
         setSortConfig({key:null, direction:'asc'});
     }
 
+    const handleRejectUser = async (user, reason) => {
+        if (!reason || reason.trim() === "") {
+            alert("A rejection reason is required.");
+            return { success: false };
+        }
+
+        setIsRejecting(true);
+        try {
+            await RegisterService.reject(user.id, reason);
+            
+            await fetchUsers(); 
+            setSelectedUser(null);
+            return { success: true };
+        } catch (err) {
+            alert(err);
+            return { success: false };
+        } finally {
+            setIsRejecting(false);
+        }
+    };
+
     return {
         users,
         loading,
@@ -88,5 +110,6 @@ export const useRegisterManagement=()=>{
         currentStatus, setCurrentStatus,
         isCreating,setIsCreating,
         handleCreateUser,
+        isRejecting, handleRejectUser
     }
 }
