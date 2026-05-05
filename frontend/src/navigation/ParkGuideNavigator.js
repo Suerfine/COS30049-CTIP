@@ -13,6 +13,7 @@ import UserProfile from "../screens/UserProfile";
 import Calendar from "../screens/Calendar.native";
 import TaskDetails from "../screens/TaskDetails.native";
 import Settings from "../screens/Settings.native";
+import UserAnomaly from "../screens/UserAnomaly";
 
 // Import components
 import MobileTopBar from "../components/MobileTopBar";
@@ -170,6 +171,7 @@ export default function ParkGuideNavigator() {
           <Stack.Screen name="Dashboard" component={UserDashboard} />
           <Stack.Screen name="Courses" component={UserCourse} />
           <Stack.Screen name="UserModule" component={UserModule} />
+          <Stack.Screen name="UserAnomaly" component={UserAnomaly}/>
 
           {/* UserProfile, Preferences and Security screens */}
           <Stack.Screen name="ProfileStack" component={ProfileStack} />
