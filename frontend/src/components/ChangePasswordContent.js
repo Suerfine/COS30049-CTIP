@@ -52,8 +52,21 @@ const ChangePasswordContent = ({
 
         // call onSave and wait for server-side error (e.g. wrong current password)
         const result = await onSave?.(currentPassword, password);
-        if (result?.error) {
-            setErrors({ currentPassword: result.error });
+            if (result?.error) {
+                const { status, message } = result.error;
+
+            let serverErrorMsg;
+
+            if (status === 400) {
+                serverErrorMsg = t('current password is incorrect.');
+            }
+            else {
+                serverErrorMsg = t('failed to change password.');
+            }
+            setErrors(prev => ({
+                ...prev,
+                currentPassword: serverErrorMsg
+            }));
         }
     };
 
@@ -88,13 +101,13 @@ const ChangePasswordContent = ({
                     placeholder={t('enter current password')}
                     placeholderTextColor={'grey'}
                 />
-                {errors.currentPassword && (
-                    <Text style={localStyles.errorText}>{errors.currentPassword}</Text>
-                )}
                 <Pressable onPress={() => setShowCurrentPassword(prev => !prev)}>
                     {showCurrentPassword ? <Eye/> : <EyeOff/>}
                 </Pressable>
             </View>
+            {errors.currentPassword && (
+                <Text style={localStyles.errorText}>{errors.currentPassword}</Text>
+            )}
 
             {/* NEW PASSWORD */}
             <Text style={styles.label}>{t("new password")}</Text>
@@ -143,7 +156,7 @@ const localStyles = StyleSheet.create({
     errorText: {
         color: 'red',
         fontSize: 12,
-        marginTop: 5
+        marginBottom: 12,
     }
 });
 
