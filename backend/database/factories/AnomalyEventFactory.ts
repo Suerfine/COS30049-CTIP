@@ -1,6 +1,6 @@
 import { faker } from "@faker-js/faker";
 
-export type ComplianceEventFactoryAttributes = {
+export type AnomalyEventFactoryAttributes = {
   id?: number;
   user_id: number;
   event_type:
@@ -11,9 +11,9 @@ export type ComplianceEventFactoryAttributes = {
     | "extended_plant_touch"
     | "extended_animal_touch"
     | "forest_fire"
-    | "other";
-  severity: "low" | "medium" | "high";
-  description: string;
+    | "flooding"
+    | "loud_noise"
+    | "trespassing";
   metadata?: Record<string, any> | null;
   latitude?: number | null;
   longitude?: number | null;
@@ -22,7 +22,7 @@ export type ComplianceEventFactoryAttributes = {
   deleted_at?: Date | null;
 };
 
-export type ComplianceEventFactoryInput = Partial<ComplianceEventFactoryAttributes>;
+export type AnomalyEventFactoryInput = Partial<AnomalyEventFactoryAttributes>;
 
 /**
  * Generates a single ComplianceEvent attributes object for seeding purposes.
@@ -32,8 +32,8 @@ export type ComplianceEventFactoryInput = Partial<ComplianceEventFactoryAttribut
  */
 export const buildComplianceEvent = (
   userId: number,
-  overrides: ComplianceEventFactoryInput = {},
-): ComplianceEventFactoryAttributes => {
+  overrides: AnomalyEventFactoryInput = {},
+): AnomalyEventFactoryAttributes => {
   const eventTypesWithSeverity: Array<{
     type:
       | "touching_plant"
@@ -43,59 +43,38 @@ export const buildComplianceEvent = (
       | "extended_plant_touch"
       | "extended_animal_touch"
       | "forest_fire"
-      | "other";
-    severity: "low" | "medium" | "high";
-    description: string;
+      | "flooding"
+      | "loud_noise"
+      | "trespassing";
   }> = [
     {
       type: "touching_plant",
-      severity: "low",
-      description: "User detected touching a protected plant",
     },
     {
       type: "touching_animal",
-      severity: "low",
-      description: "User detected touching a protected animal",
     },
     {
       type: "plucking_plants",
-      severity: "medium",
-      description: "User detected attempting to pluck vegetation",
     },
     {
       type: "hitting_animal",
-      severity: "medium",
-      description: "User detected attempting to hit an animal",
     },
     {
       type: "extended_plant_touch",
-      severity: "medium",
-      description: "User detected in prolonged contact with a protected plant",
     },
     {
       type: "extended_animal_touch",
-      severity: "medium",
-      description: "User detected in prolonged contact with a protected animal",
     },
     {
       type: "forest_fire",
-      severity: "high",
-      description: "Forest fire detected in park area",
-    },
-    {
-      type: "other",
-      severity: "medium",
-      description: "General compliance violation detected",
     },
   ];
 
   const selectedEvent = faker.helpers.arrayElement(eventTypesWithSeverity);
 
-  const defaultEvent: ComplianceEventFactoryAttributes = {
+  const defaultEvent: AnomalyEventFactoryAttributes = {
     user_id: userId,
     event_type: selectedEvent.type,
-    severity: selectedEvent.severity,
-    description: selectedEvent.description,
     metadata: {
       frame_number: faker.number.int({ min: 1, max: 10000 }),
       detection_confidence: faker.number.float({ min: 0.5, max: 0.99 }),
@@ -121,9 +100,9 @@ export const buildComplianceEvent = (
 export const buildComplianceEvents = (
   userId: number,
   count: number,
-  overrides: ComplianceEventFactoryInput = {},
-): ComplianceEventFactoryAttributes[] => {
-  const events: ComplianceEventFactoryAttributes[] = [];
+  overrides: AnomalyEventFactoryInput = {},
+): AnomalyEventFactoryAttributes[] => {
+  const events: AnomalyEventFactoryAttributes[] = [];
 
   for (let i = 0; i < count; i++) {
     events.push(buildComplianceEvent(userId, overrides));

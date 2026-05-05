@@ -5,7 +5,7 @@ import courseRouter from "./CourseRoute";
 import moduleRouter from "./ModuleRoute";
 import pageRouter from "./PageRoute";
 import messageRouter from "./MessageRoute";
-import complianceEventRouter from "./ComplianceEventRoute";
+import anomalyEventRouter from "./AnomlayEventRoute";
 import * as AuthController from "../controllers/AuthController";
 const router = Router();
 
@@ -71,9 +71,9 @@ router.post("/token", AuthController.token);
 router.use("/registrations", registrationRouter);
 
 /*===============================
-=   COMPLIANCE EVENT ROUTES     =
+=   Anomaly EVENT ROUTES     =
 ===============================*/
-router.use("/compliance-events", complianceEventRouter);
+router.use("/Anomaly-events", anomalyEventRouter);
 
 /*===============================
 =        COURSE ROUTES         =

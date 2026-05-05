@@ -7,9 +7,9 @@ import {
 } from "sequelize";
 import sequelize from "../config/Database";
 
-class ComplianceEvent extends Model<
-  InferAttributes<ComplianceEvent>,
-  InferCreationAttributes<ComplianceEvent>
+class AnomalyEvent extends Model<
+  InferAttributes<AnomalyEvent>,
+  InferCreationAttributes<AnomalyEvent>
 > {
   declare id: CreationOptional<number>;
   declare user_id: number;
@@ -21,9 +21,9 @@ class ComplianceEvent extends Model<
     | "extended_plant_touch"
     | "extended_animal_touch"
     | "forest_fire"
-    | "other";
-  declare severity: "low" | "medium" | "high";
-  declare description: string;
+    | "flooding"
+    | "loud_noise"
+    | "trespassing";
   declare metadata: CreationOptional<Record<string, any> | null>;
   declare latitude: CreationOptional<number | null>;
   declare longitude: CreationOptional<number | null>;
@@ -32,7 +32,7 @@ class ComplianceEvent extends Model<
   declare deleted_at: CreationOptional<Date | null>;
 }
 
-ComplianceEvent.init(
+AnomalyEvent.init(
   {
     id: {
       type: DataTypes.INTEGER,
@@ -58,17 +58,10 @@ ComplianceEvent.init(
         "extended_plant_touch",
         "extended_animal_touch",
         "forest_fire",
-        "other"
+        "flooding",
+        "loud_noise",
+        "trespassing"
       ),
-      allowNull: false,
-    },
-    severity: {
-      type: DataTypes.ENUM("low", "medium", "high"),
-      allowNull: false,
-      defaultValue: "medium",
-    },
-    description: {
-      type: DataTypes.TEXT,
       allowNull: false,
     },
     metadata: {
@@ -108,4 +101,4 @@ ComplianceEvent.init(
   },
 );
 
-export default ComplianceEvent;
+export default AnomalyEvent;

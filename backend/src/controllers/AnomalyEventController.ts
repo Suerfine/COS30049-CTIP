@@ -1,10 +1,10 @@
 import { NextFunction, Request, Response } from "express";
-import { ComplianceEvent, User } from "../models";
+import { AnomalyEvent as AnomalyEvent, User } from "../models";
 import { DatabaseError, Op } from "sequelize";
 import { PaginateRequestParams, PaginateResponse } from "../types/common";
 import { paginateModel } from "../utils/paginate";
 
-interface CreateComplianceEventRequest {
+interface CreateAnomalyEventRequest {
   user_id: number;
   event_type:
     | "touching_plant"
@@ -14,20 +14,18 @@ interface CreateComplianceEventRequest {
     | "extended_plant_touch"
     | "extended_animal_touch"
     | "forest_fire"
-    | "other";
-  severity: "low" | "medium" | "high";
-  description: string;
+    | "flooding"
+    | "loud_noise"
+    | "trespassing";
   metadata?: Record<string, any>;
   latitude?: number;
   longitude?: number;
 }
 
-interface ComplianceEventResponse {
+interface AnomalyEventResponse {
   id: number;
   user_id: number;
   event_type: string;
-  severity: string;
-  description: string;
   metadata?: Record<string, any> | null;
   latitude?: number | null;
   longitude?: number | null;
@@ -44,15 +42,13 @@ class HttpError extends Error {
   }
 }
 
-function toComplianceEventResponse(
-  event: ComplianceEvent,
-): ComplianceEventResponse {
+function toAnomalyEventResponse(
+  event: AnomalyEvent,
+): AnomalyEventResponse {
   return {
     id: event.id,
     user_id: event.user_id,
     event_type: event.event_type,
-    severity: event.severity,
-    description: event.description,
     metadata: event.metadata,
     latitude: event.latitude,
     longitude: event.longitude,
@@ -62,12 +58,12 @@ function toComplianceEventResponse(
 }
 
 /**
- * POST /api/compliance-events
- * Create a new compliance event (called from AI server)
+ * POST /api/Anomaly-events
+ * Create a new Anomaly event (called from AI server)
  */
-export const createComplianceEvent = async (
-  req: Request<{}, {}, CreateComplianceEventRequest>,
-  res: Response<ComplianceEventResponse | { message: string }>,
+export const createAnomalyEvent = async (
+  req: Request<{}, {}, CreateAnomalyEventRequest>,
+  res: Response<AnomalyEventResponse | { message: string }>,
   next: NextFunction,
 ) => {
   try {
@@ -77,17 +73,15 @@ export const createComplianceEvent = async (
       throw new HttpError(404, "User not found");
     }
 
-    const event = await ComplianceEvent.create({
+    const event = await AnomalyEvent.create({
       user_id: req.body.user_id,
       event_type: req.body.event_type,
-      severity: req.body.severity,
-      description: req.body.description,
       metadata: req.body.metadata || null,
       latitude: req.body.latitude || null,
       longitude: req.body.longitude || null,
     });
 
-    res.status(201).json(toComplianceEventResponse(event));
+    res.status(201).json(toAnomalyEventResponse(event));
   } catch (error) {
     if (error instanceof HttpError) {
       return res.status(error.status).json({ message: error.message });
@@ -103,18 +97,18 @@ export const createComplianceEvent = async (
 };
 
 /**
- * GET /api/compliance-events
- * List all compliance events with pagination
+ * GET /api/Anomaly-events
+ * List all Anomaly events with pagination
  */
-export const getComplianceEvents = async (
+export const getAnomalyEvents = async (
   req: Request<{}, {}, {}, PaginateRequestParams>,
-  res: Response<PaginateResponse<ComplianceEventResponse> | { message: string }>,
+  res: Response<PaginateResponse<AnomalyEventResponse> | { message: string }>,
   next: NextFunction,
 ) => {
   try {
     const { page = 1, size = 20, orderBy = "created_at desc" } = req.query;
 
-    const result = await paginateModel(ComplianceEvent, {
+    const result = await paginateModel(AnomalyEvent, {
       page: parseInt(page as string),
       size: parseInt(size as string),
       orderBy: orderBy as string,
@@ -123,8 +117,6 @@ export const getComplianceEvents = async (
         "id",
         "user_id",
         "event_type",
-        "severity",
-        "description",
         "metadata",
         "latitude",
         "longitude",
@@ -148,12 +140,12 @@ export const getComplianceEvents = async (
 };
 
 /**
- * GET /api/compliance-events/:userId
- * Get compliance events for a specific user
+ * GET /api/Anomaly-events/:userId
+ * Get Anomaly events for a specific user
  */
-export const getUserComplianceEvents = async (
+export const getUserAnomalyEvents = async (
   req: Request<{ userId: string }, {}, {}, PaginateRequestParams>,
-  res: Response<PaginateResponse<ComplianceEventResponse> | { message: string }>,
+  res: Response<PaginateResponse<AnomalyEventResponse> | { message: string }>,
   next: NextFunction,
 ) => {
   try {
@@ -166,7 +158,7 @@ export const getUserComplianceEvents = async (
       return res.status(404).json({ message: "User not found" });
     }
 
-    const result = await paginateModel(ComplianceEvent, {
+    const result = await paginateModel(AnomalyEvent, {
       page: parseInt(page as string),
       size: parseInt(size as string),
       orderBy: orderBy as string,
@@ -175,8 +167,6 @@ export const getUserComplianceEvents = async (
         "id",
         "user_id",
         "event_type",
-        "severity",
-        "description",
         "metadata",
         "latitude",
         "longitude",
@@ -193,10 +183,10 @@ export const getUserComplianceEvents = async (
 };
 
 /**
- * GET /api/compliance-events/stats/:userId
- * Get compliance statistics for a user (event counts by type/severity)
+ * GET /api/Anomaly-events/stats/:userId
+ * Get Anomaly statistics for a user (event counts by type/severity)
  */
-export const getUserComplianceStats = async (
+export const getUserAnomalyStats = async (
   req: Request<{ userId: string }, {}, {}>,
   res: Response<any>,
   next: NextFunction,
@@ -210,10 +200,9 @@ export const getUserComplianceStats = async (
       return res.status(404).json({ message: "User not found" });
     }
 
-    const stats = await ComplianceEvent.findAll({
+    const stats = await AnomalyEvent.findAll({
       attributes: [
         "event_type",
-        "severity",
         [
           // Using sequelize.literal to get count
           (
@@ -223,17 +212,17 @@ export const getUserComplianceStats = async (
         ],
       ],
       where: { user_id: userId },
-      group: ["event_type", "severity"],
+      group: ["event_type"],
       raw: true,
     });
 
     // Count total events
-    const totalEvents = await ComplianceEvent.count({
+    const totalEvents = await AnomalyEvent.count({
       where: { user_id: userId },
     });
 
     // Count by event type
-    const eventTypeCounts = await ComplianceEvent.findAll({
+    const eventTypeCounts = await AnomalyEvent.findAll({
       attributes: [
         "event_type",
         [(await import("sequelize")).literal("COUNT(*)"), "count"],
@@ -247,7 +236,6 @@ export const getUserComplianceStats = async (
       user_id: userId,
       total_events: totalEvents,
       by_type: eventTypeCounts,
-      by_severity: stats,
     });
   } catch (error) {
     console.error(error);

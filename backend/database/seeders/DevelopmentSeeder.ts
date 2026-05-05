@@ -24,8 +24,8 @@ import {
   EnrollmentFactoryCourse,
 } from "../factories/EnrollmentFactory";
 import { buildRegistrationHistory } from "../factories/RegistrationFactory";
-import { buildComplianceEvents } from "../factories/ComplianceEventFactory";
-import ComplianceEvent from "../../src/models/ComplianceEvent";
+import { buildComplianceEvents } from "../factories/AnomalyEventFactory";
+import AnomalyEvent from "../../src/models/AnomalyEvent";
 import "../../src/models";
 
 export async function runSeeders(
@@ -176,7 +176,7 @@ export async function runSeeders(
     );
 
     for (const event of complianceEvents) {
-      await ComplianceEvent.create(event);
+      await AnomalyEvent.create(event);
     }
   }
   console.log(
