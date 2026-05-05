@@ -1,14 +1,4 @@
-const SENSITIVE_KEYWORDS = [
-  "password",
-  "token",
-  "secret",
-  "authorization",
-  "personal_email",
-  "email",
-  "identification",
-  "tel",
-  "phone",
-];
+import { SENSITIVE_LOG_KEYWORDS } from "../config/SensitiveFields";
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return Object.prototype.toString.call(value) === "[object Object]";
@@ -16,7 +6,7 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 
 function shouldSanitize(key: string): boolean {
   const normalized = key.trim().toLowerCase();
-  return SENSITIVE_KEYWORDS.some((keyword) => normalized.includes(keyword));
+  return SENSITIVE_LOG_KEYWORDS.some((keyword) => normalized.includes(keyword));
 }
 
 function maskEmail(value: string): string {

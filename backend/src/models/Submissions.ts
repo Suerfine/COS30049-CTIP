@@ -10,6 +10,8 @@ import sequelize from "../config/Database";
 import Enrollment from "./Enrollment";
 import Element from "./Element";
 import User from "./User";
+import { encryptAssessmentData } from "../utils/assessmentData";
+import { isRandomlyEncrypted } from "../utils/encryption";
 
 class Submission extends Model<
   InferAttributes<Submission>,
@@ -20,7 +22,7 @@ class Submission extends Model<
   declare element_id: ForeignKey<Element["id"]>;
   declare submission_id: CreationOptional<ForeignKey<Submission["id"]> | null>;
   declare marked_by_user_id: CreationOptional<ForeignKey<User["id"]> | null>;
-  declare data: Record<string, unknown>;
+  declare data: string;
   declare earned_grade: number;
   declare created_at: CreationOptional<Date>;
   declare updated_at: CreationOptional<Date>;
@@ -75,8 +77,16 @@ Submission.init(
       onDelete: "SET NULL",
     },
     data: {
-      type: DataTypes.JSON,
+      type: DataTypes.TEXT,
       allowNull: false,
+      set(value: unknown) {
+        if (typeof value === "string" && isRandomlyEncrypted(value)) {
+          this.setDataValue("data", value);
+          return;
+        }
+
+        this.setDataValue("data", encryptAssessmentData(value));
+      },
     },
     earned_grade: {
       type: DataTypes.INTEGER,

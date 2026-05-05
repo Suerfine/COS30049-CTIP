@@ -2,6 +2,9 @@ import express, { Application, Request, Response } from "express";
 import path from "path";
 import cors from "cors";
 import swaggerUi from "swagger-ui-express";
+import fs from "fs";
+import http from "http";
+import https from "https";
 import sequelize from "./config/Database";
 import "./models";
 import routes from "./routes";
@@ -26,11 +29,71 @@ const app: Application = express();
 const port = Number(process.env.PORT) || 5000;
 const publicStoragePath = path.resolve(__dirname, "../storage/public");
 
+function parseBooleanFlag(value: string | undefined): boolean {
+  if (!value) {
+    return false;
+  }
+
+  const normalized = value.trim().toLowerCase();
+  return normalized === "true" || normalized === "1" || normalized === "yes";
+}
+
+function createHttpOrHttpsServer(application: Application): http.Server | https.Server {
+  const httpsEnabled = parseBooleanFlag(process.env.HTTPS_ENABLED);
+  if (!httpsEnabled) {
+    return http.createServer(application);
+  }
+
+  const keyPath = process.env.HTTPS_KEY_PATH?.trim();
+  const certPath = process.env.HTTPS_CERT_PATH?.trim();
+  const caPath = process.env.HTTPS_CA_PATH?.trim();
+
+  if (!keyPath || !certPath) {
+    throw new Error(
+      "HTTPS_ENABLED is true, but HTTPS_KEY_PATH and HTTPS_CERT_PATH are not configured.",
+    );
+  }
+
+  const httpsOptions: https.ServerOptions = {
+    key: fs.readFileSync(path.resolve(keyPath)),
+    cert: fs.readFileSync(path.resolve(certPath)),
+  };
+
+  if (caPath) {
+    httpsOptions.ca = fs.readFileSync(path.resolve(caPath));
+  }
+
+  return https.createServer(httpsOptions, application);
+}
+
 // Enable URL-encoded form data parsing
 app.use(express.urlencoded({ extended: true }));
 
 // Middleware to parse JSON bodies
 app.use(express.json());
+
+if (parseBooleanFlag(process.env.FORCE_HTTPS_REDIRECT)) {
+  app.set("trust proxy", 1);
+  app.use((req: Request, res: Response, next) => {
+    const forwardedProto = req.headers["x-forwarded-proto"];
+    const isForwardedHttps =
+      typeof forwardedProto === "string" &&
+      forwardedProto.toLowerCase().includes("https");
+
+    if (req.secure || isForwardedHttps) {
+      next();
+      return;
+    }
+
+    const host = req.get("host");
+    if (!host) {
+      next();
+      return;
+    }
+
+    res.redirect(301, `https://${host}${req.originalUrl}`);
+  });
+}
 
 // Enable CORS for all routes
 app.use(
@@ -68,8 +131,12 @@ const startServer = async (): Promise<void> => {
     await sequelize.authenticate();
     console.log("Database connection has been established successfully.");
 
-    app.listen(port, () => {
-      console.log(`Server is running on http://localhost:${port}`);
+    const server = createHttpOrHttpsServer(app);
+    server.listen(port, () => {
+      const protocol = parseBooleanFlag(process.env.HTTPS_ENABLED)
+        ? "https"
+        : "http";
+      console.log(`Server is running on ${protocol}://localhost:${port}`);
     });
   } catch (error) {
     console.error("Error occurred while starting the server:", error);

@@ -18,6 +18,10 @@ const options: swaggerJSDoc.Options = {
         url: "http://localhost:5000",
         description: "Local development server",
       },
+      {
+        url: "https://localhost:5000",
+        description: "Local HTTPS development server",
+      },
     ],
     tags: [
       {
@@ -47,6 +51,10 @@ const options: swaggerJSDoc.Options = {
       {
         name: "Elements",
         description: "Element management endpoints",
+      },
+      {
+        name: "Submissions",
+        description: "Submission and assessment data endpoints",
       },
     ],
     components: {

@@ -32,6 +32,26 @@ Seeds the database with test data and synchorise the database models. Call this 
 
 Starts the server on live hotreload (the server automatically restarts when it detects changes).
 
+`npm run test:audit`
+
+Runs automated verification for audit logging SCRUM items (schema, middleware logging, and log sanitization).
+
+`npm run test:security`
+
+Runs automated verification for encryption SCRUM items (AES-256 encrypted storage, role-based assessment decryption).
+
+## HTTPS/TLS configuration
+
+The server supports optional TLS transport with environment variables:
+
+- `HTTPS_ENABLED=true`
+- `HTTPS_KEY_PATH=path/to/private-key.pem`
+- `HTTPS_CERT_PATH=path/to/certificate.pem`
+- `HTTPS_CA_PATH=path/to/ca-chain.pem` (optional)
+- `FORCE_HTTPS_REDIRECT=true` (optional, for proxy deployments)
+
+When `HTTPS_ENABLED=true`, the app starts as an HTTPS server and serves `https://localhost:<PORT>`.
+
 # Project Structure:
 
 ```
