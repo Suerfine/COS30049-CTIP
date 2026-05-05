@@ -49,6 +49,13 @@ const EditCourseDetail = () => {
         }
     });
 
+    const { elements, loading: elementsLoading, createNewElement,updateExistingElement, deleteElement, moveElement,registerWorkshop, 
+    registering,workshopsLoading,loadWorkshops, workshops } = useElements(
+        id,
+        selectedPage?.page?.module_id || selectedPage?.module?.id,
+        selectedPage?.page?.id
+    );
+
 
     useEffect(() => {
         if (course?.description) {
@@ -56,15 +63,17 @@ const EditCourseDetail = () => {
         }
     }, [course]);
 
-    const { elements, loading: elementsLoading, createNewElement,updateExistingElement, deleteElement, moveElement,registerWorkshop, 
-    registering } = useElements(
-        id,
-        selectedPage?.page?.module_id || selectedPage?.module?.id,
-        selectedPage?.page?.id
-    );
+    useEffect(() => {
+        if (activeTab === 'Workshops') {
+            loadWorkshops();
+        }
+    }, [activeTab, loadWorkshops]);
+
+    
     const tabs=[
         {id: 'Overview', label:'Overview'},
-        {id: 'Forum', label:'Forum'}
+        {id: 'Forum', label:'Forum'},
+        {id: 'Workshops', label:'Workshops'},
     ];
 
     const{discussions, loading: discussionsLoading}=useDiscussions(id, forumType);
@@ -408,6 +417,28 @@ const EditCourseDetail = () => {
                         </View>
                     </View>
                 );
+
+            case 'Workshops':
+                return (
+                    <View style={styles.tabSection}>
+                        <Text style={styles.sectionTitle}>Course Workshops</Text>
+                        {workshopsLoading ? (
+                            <ActivityIndicator color="#0a6340" size="large" />
+                        ) : (
+                            <PageRenderer 
+                                elements={workshops}
+                                role={currentUser.role}
+                                courseId={id} 
+                                onEditElement={handleOpenEdit}
+                                onDeleteElement={handleDelete}
+                                onMoveElement={moveElement}
+                                onRegisterWorkshop={registerWorkshop}
+                                registering={registering}
+                            />
+                        )}
+                    </View>
+                );
+
             default:
                 return null;
         }

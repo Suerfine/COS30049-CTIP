@@ -6,6 +6,8 @@ export const useElements=(courseId, moduleId, pageId)=>{
     const [loading, setLoading]=useState(false);
     const [error, setError]=useState(null);
     const [registering, setRegistering] = useState(false);
+    const [workshops, setWorkshops] = useState([]);
+    const [workshopsLoading, setWorkshopsLoading] = useState(false);
 
     const loadElements=useCallback(async()=>{
         if(!courseId || !moduleId || !pageId){
@@ -105,9 +107,23 @@ export const useElements=(courseId, moduleId, pageId)=>{
         return result;
     };
 
+    const loadWorkshops = useCallback(async () => {
+        if (!courseId) return;
+        setWorkshopsLoading(true);
+        try {
+            const data = await ElementService.getWorkshops(courseId);
+            setWorkshops(data);
+            console.log(workshops);
+        } catch (err) {
+            console.error("useElements Workshop Error: ", err);
+        } finally {
+            setWorkshopsLoading(false);
+        }
+    }, [courseId]);
+
     useEffect(()=>{
         loadElements();
     },[loadElements]);
 
-    return {elements, loading, error, refresh: loadElements, createNewElement, updateExistingElement, deleteElement, moveElement, registerWorkshop, registering};
+    return {elements, loading, error, refresh: loadElements, createNewElement, updateExistingElement, deleteElement, moveElement, registerWorkshop, registering, workshopsLoading,loadWorkshops, workshops};
 }

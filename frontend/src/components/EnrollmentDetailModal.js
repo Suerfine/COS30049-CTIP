@@ -20,19 +20,16 @@ const EnrollmentDetailModal = ({
     const requiredPrereqs = data.course?.prerequisite_groups?.[0]?.prerequisites || [];
 
     const processedPrereqs = requiredPrereqs.map(prereq => {
-        // 1. First, try to find the record in user's history to get their status
         const matchingEnrollment = userEnrollments.find(
             e => Number(e.course_id) === Number(prereq.course_id)
         );
 
-        // 2. Second, find the name from the master list (this fixes the "Course #4" issue)
         const courseInfo = allCourses.find(
             c => Number(c.id) === Number(prereq.course_id)
         );
         
         return {
             id: prereq.course_id,
-            // Use the name from the master list if found, otherwise the one in prereq, otherwise fallback
             title: courseInfo?.title || prereq.course_title || `Course #${prereq.course_id}`,
             status: matchingEnrollment ? matchingEnrollment.status : 'not_started',
             date: matchingEnrollment ? matchingEnrollment.enrolled_at : 'N/A'

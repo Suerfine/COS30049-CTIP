@@ -80,5 +80,16 @@ export const ElementService={
                 error: error.response?.data?.message || "Failed to join workshop" 
             };
         }
+    },
+
+    // GET: get all workshops
+    getWorkshops: async (courseId) => {
+        try {
+            const response = await apiClient.get(API_ENDPOINTS.WORKSHOP.ALL_WORKSHOP(courseId));
+            return response.data;
+        } catch (err) {
+            console.error("Fetch Workshops Error: ", err);
+            throw err;
+        }
     }
 }
