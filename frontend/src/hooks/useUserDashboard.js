@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback} from 'react';
 import { userDashboardService } from '../services/userDashboardService';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from 'react-i18next';
+import { courseService } from '../services/courseService';
 
 export const useUserDashboard = () => {
     const {t, i18n}=useTranslation();
@@ -13,6 +14,7 @@ export const useUserDashboard = () => {
     const [user, setUser] = useState(null);
     const [account, setAccount] = useState(null);
     const {currentUser}=useAuth();
+    const [categories, setCategories] = useState([]);
 
     // Share between Mobile and Web
     const [selectedDate, setSelectedDate] = useState(null);
@@ -34,34 +36,24 @@ export const useUserDashboard = () => {
         {id: 'completed', label:t('status.completed')}
     ];
 
-    // Dummy tag
-    const categories = [
-        { id: '1', name: 'Flora & Fauna' },
-        { id: '2', name: 'Navigation' },
-        { id: '3', name: 'First Aid' },
-        { id: '4', name: 'Survival' },
-        { id: '5', name: 'History' },
-    ];
-
     const fetchDashboardData = async () => {
-        if(!currentUser){
-            return;
-        }
+        if (!currentUser) return;
         
         setLoading(true);
         try {
-            const [progress, courses, todos, fullProfile] = await Promise.all([
+            const [progress, courses, todos, fullProfile, tagsRes] = await Promise.all([
                 userDashboardService.getProgress(),
                 userDashboardService.getCourses(),
                 userDashboardService.getTodos(),
-                userDashboardService.getUserProfile()
+                userDashboardService.getUserProfile(),
+                courseService.getAllTags() 
             ]);
 
             setProgressData(progress);
             setCourses(courses);
             setTodos(todos);
-
             setUser(fullProfile);
+            setCategories(tagsRes.data || tagsRes || []); 
 
         } catch (err) {
             console.error("Dashboard fetch error:", err);

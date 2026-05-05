@@ -33,7 +33,6 @@ const AdminCourse = ({ navigation }) => {
     loadCourses();
   }, [loadCourses]);
 
-
   const handleAdd = () => {
     setIsEditing(false);
     setSelectedCourse(null);

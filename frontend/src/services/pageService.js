@@ -50,5 +50,19 @@ export const pageService={
             console.error("Delete pages Error:",err);
             return Promise.reject(err.response?.data?.message || 'Failed to delete pages.');
         }
-    }
+    },
+
+    // POST: update the other details page
+    updateDetails: async (courseId, moduleId, pageId, data) => {
+        try {
+            const response = await apiClient.put(
+                API_ENDPOINTS.COURSE.PAGES_DETAIL(courseId, moduleId, pageId), 
+                data
+            );
+            return response.data;
+        } catch (err) {
+            console.error("Update pages Error:", err);
+            return Promise.reject(err.response?.data?.message || 'Failed to update pages.');
+        }
+    },
 }

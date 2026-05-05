@@ -1,7 +1,7 @@
 import React,{useEffect,useState} from 'react';
 import { View, Text, StyleSheet, ScrollView, ImageBackground, Pressable, ActivityIndicator, Image, Modal, TextInput, TouchableOpacity} from 'react-native';
 import {useRoute} from '@react-navigation/native';
-import { Award, Calendar, Clock, Menu, MessageSquare, User,Edit,X,Save, Heading1, Heading2, List, Bold, Italic, Type, AlignLeft, AlignCenter, AlignRight,ListOrdered, CopyPlus, Image as ImageIcon, Video as VideoIcon, HelpCircle as QuizIcon, CirclePlus, CircleMinus } from 'lucide-react-native';
+import { Award, Calendar, Clock, Menu, MessageSquare, User,Edit,X,Save, Heading1, Heading2, List, Bold, Italic, Type, AlignLeft, AlignCenter, AlignRight,ListOrdered, CopyPlus, Image as ImageIcon, Video as VideoIcon, HelpCircle as QuizIcon, CirclePlus, CircleMinus, Settings } from 'lucide-react-native';
 import Markdown from 'react-native-markdown-display';
 
 
@@ -14,12 +14,14 @@ import PageRenderer from '../components/pageRenderer.js';
 import { useDiscussions } from '../hooks/useDiscussion.js';
 import { markdownStyles } from '../components/markdownStyle.js';
 import { useAuth } from '../context/AuthContext.js';
+import { useCourses } from '../hooks/useCourses.js';
 
 const EditCourseDetail = () => {
     const route=useRoute();
     const {id}=route.params;
     const {course, loading, error, updateDescription,locationTags, categoryTags}=useCourseDetails(id);
     const {currentUser}=useAuth();
+    const {allCourseList}=useCourses();
 
     const [selectedPage, setSelectedPage]=useState({type:'overview'});
     const [isCollapsed, setIsCollapsed]=useState(false);
@@ -50,12 +52,23 @@ const EditCourseDetail = () => {
     });
 
     const { elements, loading: elementsLoading, createNewElement,updateExistingElement, deleteElement, moveElement,registerWorkshop, 
-    registering,workshopsLoading,loadWorkshops, workshops } = useElements(
+    registering,updatePageSettings } = useElements(
         id,
         selectedPage?.page?.module_id || selectedPage?.module?.id,
         selectedPage?.page?.id
     );
 
+    const tabs=[
+        {id: 'Overview', label:'Overview'},
+        {id: 'Forum', label:'Forum'},
+    ];
+
+    const{discussions, loading: discussionsLoading}=useDiscussions(id, forumType);
+
+    const [quizConfig, setQuizConfig] = useState({
+        max_attempts: 0,
+        passing_score: 0
+    });
 
     useEffect(() => {
         if (course?.description) {
@@ -64,19 +77,29 @@ const EditCourseDetail = () => {
     }, [course]);
 
     useEffect(() => {
-        if (activeTab === 'Workshops') {
-            loadWorkshops();
+        if (selectedPage?.page?.final_quiz === true) {
+            setQuizConfig({
+                max_attempts: String(selectedPage.page.max_tries ?? 1), 
+                passing_score: String(selectedPage.page.passing_score ?? 80)
+            });
         }
-    }, [activeTab, loadWorkshops]);
+    }, [selectedPage]);
 
-    
-    const tabs=[
-        {id: 'Overview', label:'Overview'},
-        {id: 'Forum', label:'Forum'},
-        {id: 'Workshops', label:'Workshops'},
-    ];
+    const handleSaveQuizSettings = async () => {
+        if (!selectedPage?.page?.id) return;
 
-    const{discussions, loading: discussionsLoading}=useDiscussions(id, forumType);
+        const success = await updatePageSettings(selectedPage.page.id, {
+            max_attempts: quizConfig.max_attempts,
+            passing_score: quizConfig.passing_score
+        });
+
+        if (success) {
+            alert("Quiz settings updated successfully!");
+            
+            selectedPage.page.max_tries = parseInt(quizConfig.max_attempts);
+            selectedPage.page.passing_score = parseInt(quizConfig.passing_score);
+        }
+    };
 
     if(loading)return(
         <View style={styles.center}>
@@ -357,8 +380,28 @@ const EditCourseDetail = () => {
     const renderOverviewContent = () => {
         switch (activeTab) {
             case 'Overview':
+                const prerequisiteTitles = course.prerequisite_groups?.flatMap(group => 
+                    group.prerequisites?.map(p => {
+                        const match = allCourseList.find(c => c.id === p.course_id);
+                        return match ? match.title : `Course #${p.course_id}`;
+                    })
+                ) || [];
                 return (
                     <View style={styles.tabSection}>
+                        {/* Prerequisite Section */}
+                        {prerequisiteTitles.length > 0 && (
+                            <View style={styles.prereqSection}>
+                                <Text style={styles.sectionTitle}>Required Prerequisite Courses</Text>
+                                <View>
+                                    {prerequisiteTitles.map((title, index) => (
+                                        <View key={index} style={styles.prereqItem}>
+                                            <View style={styles.prereqDot} />
+                                            <Text style={styles.prereqText}>{title}</Text>
+                                        </View>
+                                    ))}
+                                </View>
+                            </View>
+                        )}
                         {/* Tag Sections */}
                             <View style={styles.tagSectionContainer}>
                                 {/* Render Location Tags */}
@@ -448,27 +491,6 @@ const EditCourseDetail = () => {
                     </View>
                 );
 
-            case 'Workshops':
-                return (
-                    <View style={styles.tabSection}>
-                        <Text style={styles.sectionTitle}>Course Workshops</Text>
-                        {workshopsLoading ? (
-                            <ActivityIndicator color="#0a6340" size="large" />
-                        ) : (
-                            <PageRenderer 
-                                elements={workshops}
-                                role={currentUser.role}
-                                courseId={id} 
-                                onEditElement={handleOpenEdit}
-                                onDeleteElement={handleDelete}
-                                onMoveElement={moveElement}
-                                onRegisterWorkshop={registerWorkshop}
-                                registering={registering}
-                            />
-                        )}
-                    </View>
-                );
-
             default:
                 return null;
         }
@@ -514,6 +536,41 @@ const EditCourseDetail = () => {
                             <View style={styles.editorContainer}>
                                 <Text style={styles.editorLabel}>Lesson Editor</Text>
                                 <Text style={styles.pageTitle}>{selectedPage.page?.title || "Lesson Overview"}</Text>
+                                {/* Final Quiz Settings Section */}
+                                {selectedPage.page?.final_quiz === true && (
+                                    <View style={styles.quizSettingsCard}>
+                                        <View style={styles.quizSettingsHeader}>
+                                            <Settings size={18} color="#064114" />
+                                            <Text style={styles.quizSettingsTitle}>Final Assessment Settings</Text>
+                                        </View>
+                                        
+                                        <View style={styles.row}>
+                                            <View style={{ flex: 1, marginRight: 10 }}>
+                                                <Text style={styles.miniLabel}>Max Attempts</Text>
+                                                <TextInput 
+                                                    style={styles.smallInput}
+                                                    keyboardType="numeric"
+                                                    value={quizConfig.max_attempts}
+                                                    onChangeText={(v) => setQuizConfig({...quizConfig, max_attempts: v})}
+                                                />
+                                            </View>
+                                            <View style={{ flex: 1, marginRight: 10 }}>
+                                                <Text style={styles.miniLabel}>Passing Score (%)</Text>
+                                                <TextInput 
+                                                    style={styles.smallInput}
+                                                    keyboardType="numeric"
+                                                    value={String(quizConfig.passing_score)}
+                                                    onChangeText={(v) => setQuizConfig({...quizConfig, passing_score: v})}
+                                                />
+                                            </View>
+                                            <Pressable style={styles.quizSaveBtn} onPress={handleSaveQuizSettings}>
+                                                <Save size={16} color="white" />
+                                                <Text style={{color: 'white', fontWeight: 'bold', marginLeft: 5}}>Save</Text>
+                                            </Pressable>
+                                        </View>
+                                    </View>
+                                )}
+                                
                                 
                                 {elementsLoading ? (
                                     <View style={styles.elementLoader}>
@@ -1439,6 +1496,86 @@ const styles = StyleSheet.create({
         color: '#2e7d32',
         fontWeight: '600',
     },
+    prereqSection: {
+        backgroundColor: '#fffbeb',
+        padding: 15,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#fef3c7',
+        marginTop: 10,
+    },
+    prereqItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 6,
+    },
+    prereqDot: {
+        width: 6,
+        height: 6,
+        borderRadius: 3,
+        backgroundColor: '#d97706',
+        marginRight: 10,
+    },
+    prereqText: {
+        fontSize: 14,
+        color: '#92400e',
+        fontWeight: '500',
+    },
+    quizSettingsCard: {
+        backgroundColor: '#edefed',
+        borderRadius: 12,
+        padding: 16,
+        borderWidth: 1,
+        borderColor: '#dae8df', 
+        marginBottom: 25,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 5,
+    },
+    quizSettingsHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+        marginBottom: 16,
+        paddingBottom: 8,
+        borderBottomWidth: 1,
+        borderBottomColor: '#dcfce7',
+    },
+    quizSettingsTitle: {
+        fontSize: 15,
+        fontWeight: '700',
+        color: '#166534',
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
+    },
+    smallInput: {
+        backgroundColor: 'white',
+        borderWidth: 1,
+        borderColor: '#b91c1c22',
+        borderRadius: 8,
+        padding: 10,
+        fontSize: 14,
+        color: '#1a1a1a',
+        fontWeight: '600',
+    },
+    quizSaveBtn: {
+        backgroundColor: '#0a6340',
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 18,
+        borderRadius: 8,
+        height: 42,
+        alignSelf: 'flex-end',
+        marginTop: 5,
+    },
+    miniLabel: {
+        fontSize: 11,
+        fontWeight: '700',
+        color: '#15803d',
+        marginBottom: 6,
+        textTransform: 'uppercase',
+    }
 });
 
 export default EditCourseDetail;

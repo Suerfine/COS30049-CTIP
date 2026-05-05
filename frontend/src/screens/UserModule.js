@@ -12,12 +12,14 @@ import { useElements } from '../hooks/useElements.js';
 import PageRenderer from '../components/pageRenderer.js';
 import { useAuth } from '../context/AuthContext.js';
 import { markdownStyles } from '../components/markdownStyle.js';
+import { useCourses } from '../hooks/useCourses.js';
 
 const UserModule = ({navigation}) => {
     const route=useRoute();
     const {id}=route.params;
     const {currentUser}=useAuth();
-    const {course, loading, error}=useCourseDetails(id);
+    const {course, loading, error,locationTags, categoryTags}=useCourseDetails(id);
+    const {allCourseList}=useCourses();
 
     const [selectedPage, setSelectedPage]=useState({type:'overview'});
     const [isCollapsed, setIsCollapsed]=useState(false);
@@ -25,15 +27,21 @@ const UserModule = ({navigation}) => {
     const [forumType, setForumType]=useState('Public');
 
     const { elements, loading: elementsLoading,registerWorkshop, 
-    registering } = useElements(
+    registering,workshopsLoading,loadWorkshops, workshops } = useElements(
         id,
         selectedPage?.page?.module_id || selectedPage?.module?.id,
         selectedPage?.page?.id
     );
+    useEffect(() => {
+        if (activeTab === 'Workshops') {
+            loadWorkshops();
+        }
+    }, [activeTab, loadWorkshops]);
 
     const tabs=[
         {id: 'Overview', label:'Overview'},
-        {id: 'Forum', label:'Forum'}
+        {id: 'Forum', label:'Forum'},
+        {id: 'Workshops', label:'Workshops'},
     ];
 
     if(loading)return(
@@ -57,8 +65,58 @@ const UserModule = ({navigation}) => {
     const renderOverviewContent = () => {
         switch (activeTab) {
             case 'Overview':
+                const prerequisiteTitles = course.prerequisite_groups?.flatMap(group => 
+                    group.prerequisites?.map(p => {
+                        const match = allCourseList.find(c => c.id === p.course_id);
+                        return match ? match.title : `Course #${p.course_id}`;
+                    })
+                ) || [];
                 return (
                     <View style={styles.tabSection}>
+                        {/* Prerequisite Section */}
+                        {prerequisiteTitles.length > 0 && (
+                            <View style={styles.prereqSection}>
+                                <Text style={styles.sectionTitle}>Required Prerequisite Courses</Text>
+                                <View>
+                                    {prerequisiteTitles.map((title, index) => (
+                                        <View key={index} style={styles.prereqItem}>
+                                            <View style={styles.prereqDot} />
+                                            <Text style={styles.prereqText}>{title}</Text>
+                                        </View>
+                                    ))}
+                                </View>
+                            </View>
+                        )}
+                        {/* Tag Sections */}
+                        <View style={styles.tagSectionContainer}>
+                            {/* Render Location Tags */}
+                            {locationTags.length > 0 && (
+                                <View style={styles.tagGroup}>
+                                    <Text style={styles.tagLabel}>Locations</Text>
+                                    <View style={styles.tagList}>
+                                        {locationTags.map(tag => (
+                                            <View key={tag.id} style={[styles.tagPill, styles.locationPill]}>
+                                                <Text style={styles.tagPillText}>{tag.title}</Text>
+                                            </View>
+                                        ))}
+                                    </View>
+                                </View>
+                            )}
+
+                            {/* Render Category Tags */}
+                            {categoryTags.length > 0 && (
+                                <View style={styles.tagGroup}>
+                                    <Text style={styles.tagLabel}>Categories</Text>
+                                    <View style={styles.tagList}>
+                                        {categoryTags.map(tag => (
+                                            <View key={tag.id} style={[styles.tagPill, styles.categoryPill]}>
+                                                <Text style={styles.tagPillText}>{tag.title}</Text>
+                                            </View>
+                                        ))}
+                                    </View>
+                                </View>
+                            )}
+                        </View>
                         {/* Description */}
                         <View style={styles.markdownContainer}>
                             <Markdown style={markdownStyles}>
@@ -128,6 +186,25 @@ const UserModule = ({navigation}) => {
                         </View>
                     </View>
                 );
+
+            case 'Workshops':
+                return (
+                    <View style={styles.tabSection}>
+                        <Text style={styles.sectionTitle}>Course Workshops</Text>
+                        {workshopsLoading ? (
+                            <ActivityIndicator color="#0a6340" size="large" />
+                        ) : (
+                            <PageRenderer 
+                                elements={workshops}
+                                role={currentUser.role}
+                                courseId={id} 
+                                onRegisterWorkshop={registerWorkshop}
+                                registering={registering}
+                            />
+                        )}
+                    </View>
+                );
+
             default:
                 return null;
         }
@@ -441,6 +518,69 @@ const styles = StyleSheet.create({
         backgroundColor:'rgba(168, 168, 168, 0.3)',
         padding:8,
         borderRadius:50,
+    },
+    tagSectionContainer: {
+        gap: 25,
+        marginTop:5
+    },
+    tagGroup: {
+        gap: 8,
+    },
+    tagLabel: {
+        fontSize: 12,
+        fontWeight: '700',
+        color: '#0a6340',
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
+    },
+    tagList: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 8,
+    },
+    tagPill: {
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 15,
+        borderWidth: 1,
+    },
+    locationPill: {
+        backgroundColor: '#e8f5e9',
+        borderColor: '#c8e6c9',
+    },
+    categoryPill: {
+        backgroundColor: '#f1f8e9',
+        borderColor: '#dcedc8',
+    },
+    tagPillText: {
+        fontSize: 12,
+        color: '#2e7d32',
+        fontWeight: '600',
+    },
+    prereqSection: {
+        backgroundColor: '#fffbeb',
+        padding: 15,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#fef3c7',
+        marginTop: 10,
+    },
+    prereqItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 6,
+    },
+    prereqDot: {
+        width: 6,
+        height: 6,
+        borderRadius: 3,
+        backgroundColor: '#d97706',
+        marginRight: 10,
+    },
+    prereqText: {
+        fontSize: 14,
+        color: '#92400e',
+        fontWeight: '500',
     },
 });
 

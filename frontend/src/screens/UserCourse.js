@@ -1,6 +1,6 @@
-import { View, Text, StyleSheet, ScrollView, Pressable, ImageBackground, Platform, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, ImageBackground, TextInput} from 'react-native';
 import { useMemo, useState } from 'react';
-import { CircleX, ListFilter, SignalZero, SlidersHorizontal } from 'lucide-react-native'
+import { CircleX, ListFilter, SignalZero, SlidersHorizontal, Search } from 'lucide-react-native'
 
 // Import other hook and component
 import { useUserDashboard } from '../hooks/useUserDashboard';
@@ -23,9 +23,9 @@ const UserCourse = ({ navigation }) => {
         myEnrollments,
         coursesWithStatus,
         filteredCourses, courses,
-        removeFilter,
         handleEnrollment, 
         handleDrop,
+        removeFilter,allTagList, addTag,searchText, setSearchText, handleSearch,
     }=useUserCourse();
 
     return (
@@ -61,7 +61,21 @@ const UserCourse = ({ navigation }) => {
                             <SlidersHorizontal/>
                         </Pressable>
                     </View>
+                    {/* Search and Filter */}
+                    <View style={styles.toolbar}>
+                        <View style={styles.search}>
+                        <Search size={18} />
+                        <TextInput
+                            style={styles.input}
+                            value={searchText}
+                            onChangeText={handleSearch}
+                            placeholder="Search..."
+                            placeholderTextColor="#8f8f8f"
+                        />
+                        </View>
+                    </View>
                     <View style={styles.pillContainer}>
+                        {/* Status Pill */}
                         {filters.status !== 'all' && (
                             <View style={styles.pill}>
                                 <Text style={styles.pillText}>{statusLabels[filters.status]}</Text>
@@ -71,6 +85,17 @@ const UserCourse = ({ navigation }) => {
                             </View>
                         )}
 
+                        {/* Location Pills */}
+                        {Array.isArray(filters.location) && filters.location.map((locName) => (
+                            <View key={locName} style={[styles.pill, { backgroundColor: '#18704d' }]}>
+                                <Text style={styles.pillText}>{locName}</Text>
+                                <Pressable onPress={() => removeFilter('location', locName)}>
+                                    <CircleX size={16} color="white" />
+                                </Pressable>
+                            </View>
+                        ))}
+            
+                        {/* Category Pills */}
                         {Array.isArray(filters.category) && filters.category.map((catName) => (
                             <View key={catName} style={styles.pill}>
                                 <Text style={styles.pillText}>{catName}</Text>
@@ -78,7 +103,7 @@ const UserCourse = ({ navigation }) => {
                                     <CircleX size={16} color="white" />
                                 </Pressable>
                             </View>
-                        ))}
+                                  ))}
                     </View>
                     <View style={styles.cardContainer}>
                         {filteredCourses.length === 0?(
@@ -124,6 +149,7 @@ const UserCourse = ({ navigation }) => {
 
             <FilterSidebar
                 visible={filterVisible}
+                allTagList={allTagList}
                 tempFilters={tempFilters}
                 setTempFilters={setTempFilters}
                 onClose={() => setFilterVisible(false)}
@@ -132,7 +158,7 @@ const UserCourse = ({ navigation }) => {
                     setFilterVisible(false);
                 }}
                 onReset={() => {
-                    const reset = { level: 'all', status: 'all' };
+                    const reset = { status: 'all', category: [], location: [] };
                     setTempFilters(reset);
                     setFilters(reset);
                 }}
@@ -233,6 +259,28 @@ const styles = StyleSheet.create({
         marginRight:6,
         fontWeight:'500'
     },
+    search: {
+        flexDirection: "row",
+        gap: 7,
+        borderWidth: 1,
+        borderColor: "#8f8f8f",
+        minWidth: 300,
+        padding: 5,
+        backgroundColor: "white",
+        borderRadius: 15,
+        alignItems: "center",
+    },
+    input: {
+        flex: 1,
+        paddingVertical: 2,
+        outlineStyle: "none",
+  },
+  toolbar: {
+    justifyContent: "space-between",
+    flexDirection: "row",
+    marginHorizontal:60,
+    marginBottom:10
+  },
 });
 
 export default UserCourse;
