@@ -6,8 +6,12 @@ import moduleRouter from "./ModuleRoute";
 import pageRouter from "./PageRoute";
 import messageRouter from "./MessageRoute";
 import enrollmentRouter from "./EnrollmentRoute";
+import submissionRouter from "./SubmissionRoute";
+import tagRouter from "./TagRoute";
 import * as AuthController from "../controllers/AuthController";
 import elementRouter from "./ElementRoute";
+// import sensorRouter from "./SensorRoute";
+// import sensorLogRouter from "./SensorLogRoute";
 import * as ElementController from "../controllers/ElementController";
 import { auth } from "../middelware/Auth";
 const router = Router();
@@ -82,10 +86,18 @@ router.use("/enrollments", enrollmentRouter);
 =        COURSE ROUTES         =
 ===============================*/
 router.use("/courses", courseRouter);
+router.use("/tags", tagRouter);
 router.use("/", moduleRouter);
 router.use("/", pageRouter);
 router.use("/", messageRouter);
 router.use("/", enrollmentRouter);
+router.use("/", submissionRouter);
+
+/*===============================
+=        SENSOR ROUTES         =
+===============================*/
+// router.use("/sensors", sensorRouter);
+// router.use("/", sensorLogRouter);
 
 /*===============================
 =        ENROLLMENT ROUTES        =

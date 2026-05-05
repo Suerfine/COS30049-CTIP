@@ -16,6 +16,12 @@ export interface PrerequisiteGroupResponse {
   prerequisites: PrerequisiteResponse[];
 }
 
+export interface CourseTagResponse {
+  id: number;
+  title: string;
+  type: string;
+}
+
 export interface CourseResponse {
   id: number;
   title: string;
@@ -27,6 +33,7 @@ export interface CourseResponse {
   badge_expire_in_months: number;
   badge_img_url: string | null;
   cover_img_url: string | null;
+  tags: CourseTagResponse[];
   final_quiz_max_score: number | null;
   total_max_score: number | null;
   prerequisite_groups: PrerequisiteGroupResponse[];
@@ -42,7 +49,8 @@ export interface CreateCourseRequest {
   expected_completion_weeks?: number;
   must_complete_in_weeks?: number;
   badge_expire_in_months?: number;
-  prerequisite_course_ids?: number[][];
+  tag_ids?: number[];
+  prerequisite_course_ids?: number[];
 }
 
 export interface UpdateCourseRequest {
@@ -53,5 +61,6 @@ export interface UpdateCourseRequest {
   expected_completion_weeks?: number | null;
   must_complete_in_weeks?: number | null;
   badge_expire_in_months?: number;
-  prerequisite_course_ids?: number[][];
+  tag_ids?: number[];
+  prerequisite_course_ids?: number[];
 }

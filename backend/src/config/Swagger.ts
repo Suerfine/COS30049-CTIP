@@ -37,6 +37,10 @@ const options: swaggerJSDoc.Options = {
         description: "Course management endpoints",
       },
       {
+        name: "Tags",
+        description: "Tag management endpoints",
+      },
+      {
         name: "Modules",
         description: "Module management endpoints",
       },
@@ -59,6 +63,14 @@ const options: swaggerJSDoc.Options = {
       {
         name: "Enrollments",
         description: "Course enrollment management endpoints",
+      },
+      {
+        name: "Sensors",
+        description: "Sensor management endpoints",
+      },
+      {
+        name: "Sensor Logs",
+        description: "Sensor log management endpoints",
       },
     ],
     components: {
@@ -345,6 +357,12 @@ const options: swaggerJSDoc.Options = {
                 $ref: "#/components/schemas/PrerequisiteGroup",
               },
             },
+            tags: {
+              type: "array",
+              items: {
+                $ref: "#/components/schemas/CourseTag",
+              },
+            },
             created_at: {
               type: "string",
               format: "date-time",
@@ -398,6 +416,14 @@ const options: swaggerJSDoc.Options = {
             },
           },
         },
+        CourseTag: {
+          type: "object",
+          properties: {
+            id: { type: "integer", example: 1 },
+            title: { type: "string", example: "Safety" },
+            type: { type: "string", example: "course" },
+          },
+        },
         CreateCourseRequest: {
           type: "object",
           required: ["title", "badge"],
@@ -420,18 +446,24 @@ const options: swaggerJSDoc.Options = {
               type: "integer",
               example: 24,
             },
+            tag_ids: {
+              type: "array",
+              description: "Tag IDs to attach when creating the course.",
+              items: {
+                type: "integer",
+                example: 1,
+              },
+              example: [1, 2],
+            },
             prerequisite_course_ids: {
               type: "array",
               description:
-                "Array of prerequisite groups. Each inner array represents OR logic; groups represent AND logic.",
+                "Flat array of prerequisite course IDs (works like tag_ids).",
               items: {
-                type: "array",
-                items: {
-                  type: "integer",
-                  example: 2,
-                },
+                type: "integer",
+                example: 2,
               },
-              example: [[2, 3], [4]],
+              example: [2, 3, 4],
             },
             badge: {
               type: "string",
@@ -485,18 +517,33 @@ const options: swaggerJSDoc.Options = {
               type: "integer",
               example: 24,
             },
+            add_tag_ids: {
+              type: "array",
+              description: "Tag IDs to add to the course.",
+              items: {
+                type: "integer",
+                example: 1,
+              },
+              example: [1, 2],
+            },
+            remove_tag_ids: {
+              type: "array",
+              description: "Tag IDs to remove from the course.",
+              items: {
+                type: "integer",
+                example: 3,
+              },
+              example: [3],
+            },
             prerequisite_course_ids: {
               type: "array",
               description:
-                "Array of prerequisite groups. Each inner array represents OR logic; groups represent AND logic.",
+                "Flat array of prerequisite course IDs (works like tag_ids).",
               items: {
-                type: "array",
-                items: {
-                  type: "integer",
-                  example: 2,
-                },
+                type: "integer",
+                example: 2,
               },
-              example: [[2, 3], [4]],
+              example: [2, 3, 4],
             },
             badge: {
               type: "string",
@@ -1044,6 +1091,157 @@ const options: swaggerJSDoc.Options = {
                     type: "string",
                     example:
                       "http://localhost:5000/api/enrollments?page=1&size=20",
+                  },
+                },
+              },
+            },
+          },
+        },
+        Sensor: {
+          type: "object",
+          properties: {
+            id: { type: "integer", example: 1 },
+            name: { type: "string", example: "Temperature Sensor A" },
+            type: { type: "string", example: "temperature" },
+            location: { type: "string", example: "Building A - Room 101" },
+            current_status: {
+              type: "string",
+              enum: ["normal", "alerting", "maintenance", "deactivated"],
+              example: "normal",
+            },
+            data: {
+              type: "object",
+              nullable: true,
+              example: {},
+            },
+            created_at: {
+              type: "string",
+              format: "date-time",
+              example: "2026-05-04T08:00:00.000Z",
+            },
+            updated_at: {
+              type: "string",
+              format: "date-time",
+              example: "2026-05-04T08:00:00.000Z",
+            },
+          },
+        },
+        CreateSensorRequest: {
+          type: "object",
+          required: ["name", "type", "location"],
+          properties: {
+            name: { type: "string", example: "Temperature Sensor A" },
+            type: { type: "string", example: "temperature" },
+            location: { type: "string", example: "Building A - Room 101" },
+          },
+        },
+        UpdateSensorRequest: {
+          type: "object",
+          properties: {
+            name: { type: "string", example: "Temperature Sensor A Updated" },
+            type: { type: "string", example: "temperature" },
+            location: { type: "string", example: "Building B - Room 201" },
+          },
+        },
+        SensorLog: {
+          type: "object",
+          properties: {
+            id: { type: "integer", example: 1 },
+            sensor_id: { type: "integer", example: 1 },
+            status: {
+              type: "string",
+              enum: ["normal", "alerting", "maintenance", "deactivated"],
+              example: "normal",
+            },
+            data: {
+              type: "object",
+              example: { temperature: 22.5, humidity: 45 },
+            },
+            created_at: {
+              type: "string",
+              format: "date-time",
+              example: "2026-05-04T08:00:00.000Z",
+            },
+          },
+        },
+        CreateSensorLogRequest: {
+          type: "object",
+          required: ["status"],
+          properties: {
+            status: {
+              type: "string",
+              enum: ["normal", "alerting", "maintenance", "deactivated"],
+              example: "normal",
+            },
+            data: {
+              type: "object",
+              nullable: true,
+              example: { temperature: 22.5, humidity: 45 },
+              description: "Optional JSON data associated with the log entry",
+            },
+          },
+        },
+        UpdateSensorLogRequest: {
+          type: "object",
+          properties: {
+            status: {
+              type: "string",
+              enum: ["normal", "alerting", "maintenance", "deactivated"],
+              example: "alerting",
+            },
+            data: {
+              type: "object",
+              nullable: true,
+              example: { temperature: 28.5, humidity: 65 },
+              description: "Optional JSON data associated with the log entry",
+            },
+          },
+        },
+        PaginatedSensorResponse: {
+          type: "object",
+          properties: {
+            data: {
+              type: "array",
+              items: { $ref: "#/components/schemas/Sensor" },
+            },
+            page: { type: "integer", example: 1 },
+            size: { type: "integer", example: 20 },
+            totalElements: { type: "integer", example: 5 },
+            totalPages: { type: "integer", example: 1 },
+            _links: {
+              type: "object",
+              additionalProperties: {
+                type: "object",
+                properties: {
+                  href: {
+                    type: "string",
+                    example: "http://localhost:5000/api/sensors?page=1&size=20",
+                  },
+                },
+              },
+            },
+          },
+        },
+        PaginatedSensorLogResponse: {
+          type: "object",
+          properties: {
+            data: {
+              type: "array",
+              items: { $ref: "#/components/schemas/SensorLog" },
+            },
+            page: { type: "integer", example: 1 },
+            size: { type: "integer", example: 20 },
+            totalElements: { type: "integer", example: 10 },
+            totalPages: { type: "integer", example: 1 },
+            _links: {
+              type: "object",
+              additionalProperties: {
+                type: "object",
+                properties: {
+                  href: {
+                    type: "string",
+                    example:
+                      "http://localhost:5000/api/sensors/logs?page=1&size=20",
                   },
                 },
               },

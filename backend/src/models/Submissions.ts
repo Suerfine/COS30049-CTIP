@@ -20,7 +20,8 @@ class Submission extends Model<
   declare element_id: ForeignKey<Element["id"]>;
   declare submission_id: CreationOptional<ForeignKey<Submission["id"]> | null>;
   declare marked_by_user_id: CreationOptional<ForeignKey<User["id"]> | null>;
-  declare data: Record<string, unknown>;
+  declare content: Record<string, unknown>;
+  declare marking_remark: CreationOptional<string | null>;
   declare earned_grade: number;
   declare created_at: CreationOptional<Date>;
   declare updated_at: CreationOptional<Date>;
@@ -74,9 +75,13 @@ Submission.init(
       onUpdate: "CASCADE",
       onDelete: "SET NULL",
     },
-    data: {
+    content: {
       type: DataTypes.JSON,
       allowNull: false,
+    },
+    marking_remark: {
+      type: DataTypes.TEXT,
+      allowNull: true,
     },
     earned_grade: {
       type: DataTypes.INTEGER,
