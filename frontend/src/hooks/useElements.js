@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { ElementService } from "../services/ElementService";
+import { pageService } from "../services/pageService";
 
 export const useElements=(courseId, moduleId, pageId)=>{
     const [elements, setElements]=useState([]);
@@ -121,9 +122,22 @@ export const useElements=(courseId, moduleId, pageId)=>{
         }
     }, [courseId]);
 
+    const updatePageSettings = async (targetPageId, settings) => {
+        try {
+            await pageService.updateDetails(courseId, moduleId, targetPageId, {
+                max_tries: parseInt(settings.max_attempts),
+                passing_score: parseInt(settings.passing_score)
+            });
+            return true;
+        } catch (err) {
+            console.error("Failed to update page settings:", err);
+            return false;
+        }
+    };
+
     useEffect(()=>{
         loadElements();
     },[loadElements]);
 
-    return {elements, loading, error, refresh: loadElements, createNewElement, updateExistingElement, deleteElement, moveElement, registerWorkshop, registering, workshopsLoading,loadWorkshops, workshops};
+    return {elements, loading, error, refresh: loadElements, createNewElement, updateExistingElement, deleteElement, moveElement, registerWorkshop, registering, workshopsLoading,loadWorkshops, workshops, updatePageSettings};
 }
