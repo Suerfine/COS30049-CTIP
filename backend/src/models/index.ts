@@ -12,6 +12,8 @@ import Message from "./Messages";
 import Tag from "./Tag";
 import Notification from "./Notification";
 import CourseTag from "./CourseTag";
+import Sensor from "./Sensor";
+import SensorLog from "./SensorLogs";
 import PrerequisiteGroup from "./PrerequisiteGroup";
 import Prerequisite from "./Prerequisite";
 import { RegistrationStatus } from "../enum/RegistrationStatus";
@@ -148,6 +150,9 @@ Course.hasMany(Prerequisite, {
 User.hasMany(Notification, { foreignKey: "user_id", as: "notifications" });
 Notification.belongsTo(User, { foreignKey: "user_id", as: "user" });
 
+Sensor.hasMany(SensorLog, { foreignKey: "sensor_id", as: "logs" });
+SensorLog.belongsTo(Sensor, { foreignKey: "sensor_id", as: "sensor" });
+
 export {
   User,
   Course,
@@ -165,4 +170,6 @@ export {
   Prerequisite,
   Event,
   Notification,
+  Sensor,
+  SensorLog,
 };

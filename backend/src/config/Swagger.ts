@@ -60,6 +60,14 @@ const options: swaggerJSDoc.Options = {
         name: "Enrollments",
         description: "Course enrollment management endpoints",
       },
+      {
+        name: "Sensors",
+        description: "Sensor management endpoints",
+      },
+      {
+        name: "Sensor Logs",
+        description: "Sensor log management endpoints",
+      },
     ],
     components: {
       securitySchemes: {
@@ -1044,6 +1052,156 @@ const options: swaggerJSDoc.Options = {
                     type: "string",
                     example:
                       "http://localhost:5000/api/enrollments?page=1&size=20",
+                  },
+                },
+              },
+            },
+          },
+        },
+        Sensor: {
+          type: "object",
+          properties: {
+            id: { type: "integer", example: 1 },
+            name: { type: "string", example: "Temperature Sensor A" },
+            type: { type: "string", example: "temperature" },
+            location: { type: "string", example: "Building A - Room 101" },
+            current_status: {
+              type: "string",
+              enum: ["normal", "alerting", "maintenance", "deactivated"],
+              example: "normal",
+            },
+            data: {
+              type: "object",
+              nullable: true,
+              example: {},
+            },
+            created_at: {
+              type: "string",
+              format: "date-time",
+              example: "2026-05-04T08:00:00.000Z",
+            },
+            updated_at: {
+              type: "string",
+              format: "date-time",
+              example: "2026-05-04T08:00:00.000Z",
+            },
+          },
+        },
+        CreateSensorRequest: {
+          type: "object",
+          required: ["name", "type", "location"],
+          properties: {
+            name: { type: "string", example: "Temperature Sensor A" },
+            type: { type: "string", example: "temperature" },
+            location: { type: "string", example: "Building A - Room 101" },
+          },
+        },
+        UpdateSensorRequest: {
+          type: "object",
+          properties: {
+            name: { type: "string", example: "Temperature Sensor A Updated" },
+            type: { type: "string", example: "temperature" },
+            location: { type: "string", example: "Building B - Room 201" },
+          },
+        },
+        SensorLog: {
+          type: "object",
+          properties: {
+            id: { type: "integer", example: 1 },
+            sensor_id: { type: "integer", example: 1 },
+            status: {
+              type: "string",
+              enum: ["normal", "alerting", "maintenance", "deactivated"],
+              example: "normal",
+            },
+            data: {
+              type: "object",
+              example: { temperature: 22.5, humidity: 45 },
+            },
+            created_at: {
+              type: "string",
+              format: "date-time",
+              example: "2026-05-04T08:00:00.000Z",
+            },
+          },
+        },
+        CreateSensorLogRequest: {
+          type: "object",
+          required: ["status"],
+          properties: {
+            status: {
+              type: "string",
+              enum: ["normal", "alerting", "maintenance", "deactivated"],
+              example: "normal",
+            },
+            data: {
+              type: "object",
+              nullable: true,
+              example: { temperature: 22.5, humidity: 45 },
+              description: "Optional JSON data associated with the log entry",
+            },
+          },
+        },
+        UpdateSensorLogRequest: {
+          type: "object",
+          properties: {
+            status: {
+              type: "string",
+              enum: ["normal", "alerting", "maintenance", "deactivated"],
+              example: "alerting",
+            },
+            data: {
+              type: "object",
+              nullable: true,
+              example: { temperature: 28.5, humidity: 65 },
+              description: "Optional JSON data associated with the log entry",
+            },
+          },
+        },
+        PaginatedSensorResponse: {
+          type: "object",
+          properties: {
+            data: {
+              type: "array",
+              items: { $ref: "#/components/schemas/Sensor" },
+            },
+            page: { type: "integer", example: 1 },
+            size: { type: "integer", example: 20 },
+            totalElements: { type: "integer", example: 5 },
+            totalPages: { type: "integer", example: 1 },
+            _links: {
+              type: "object",
+              additionalProperties: {
+                type: "object",
+                properties: {
+                  href: {
+                    type: "string",
+                    example: "http://localhost:5000/api/sensors?page=1&size=20",
+                  },
+                },
+              },
+            },
+          },
+        },
+        PaginatedSensorLogResponse: {
+          type: "object",
+          properties: {
+            data: {
+              type: "array",
+              items: { $ref: "#/components/schemas/SensorLog" },
+            },
+            page: { type: "integer", example: 1 },
+            size: { type: "integer", example: 20 },
+            totalElements: { type: "integer", example: 10 },
+            totalPages: { type: "integer", example: 1 },
+            _links: {
+              type: "object",
+              additionalProperties: {
+                type: "object",
+                properties: {
+                  href: {
+                    type: "string",
+                    example: "http://localhost:5000/api/sensors/logs?page=1&size=20",
                   },
                 },
               },
