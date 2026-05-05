@@ -14,12 +14,14 @@ import PageRenderer from '../components/pageRenderer.js';
 import { useDiscussions } from '../hooks/useDiscussion.js';
 import { markdownStyles } from '../components/markdownStyle.js';
 import { useAuth } from '../context/AuthContext.js';
+import { useCourses } from '../hooks/useCourses.js';
 
 const EditCourseDetail = () => {
     const route=useRoute();
     const {id}=route.params;
     const {course, loading, error, updateDescription,locationTags, categoryTags}=useCourseDetails(id);
     const {currentUser}=useAuth();
+    const {allCourseList}=useCourses();
 
     const [selectedPage, setSelectedPage]=useState({type:'overview'});
     const [isCollapsed, setIsCollapsed]=useState(false);
@@ -50,12 +52,11 @@ const EditCourseDetail = () => {
     });
 
     const { elements, loading: elementsLoading, createNewElement,updateExistingElement, deleteElement, moveElement,registerWorkshop, 
-    registering,workshopsLoading,loadWorkshops, workshops } = useElements(
+    registering } = useElements(
         id,
         selectedPage?.page?.module_id || selectedPage?.module?.id,
         selectedPage?.page?.id
     );
-
 
     useEffect(() => {
         if (course?.description) {
@@ -63,17 +64,10 @@ const EditCourseDetail = () => {
         }
     }, [course]);
 
-    useEffect(() => {
-        if (activeTab === 'Workshops') {
-            loadWorkshops();
-        }
-    }, [activeTab, loadWorkshops]);
-
     
     const tabs=[
         {id: 'Overview', label:'Overview'},
         {id: 'Forum', label:'Forum'},
-        {id: 'Workshops', label:'Workshops'},
     ];
 
     const{discussions, loading: discussionsLoading}=useDiscussions(id, forumType);
@@ -357,8 +351,28 @@ const EditCourseDetail = () => {
     const renderOverviewContent = () => {
         switch (activeTab) {
             case 'Overview':
+                const prerequisiteTitles = course.prerequisite_groups?.flatMap(group => 
+                    group.prerequisites?.map(p => {
+                        const match = allCourseList.find(c => c.id === p.course_id);
+                        return match ? match.title : `Course #${p.course_id}`;
+                    })
+                ) || [];
                 return (
                     <View style={styles.tabSection}>
+                        {/* Prerequisite Section */}
+                        {prerequisiteTitles.length > 0 && (
+                            <View style={styles.prereqSection}>
+                                <Text style={styles.sectionTitle}>Required Prerequisite Courses</Text>
+                                <View>
+                                    {prerequisiteTitles.map((title, index) => (
+                                        <View key={index} style={styles.prereqItem}>
+                                            <View style={styles.prereqDot} />
+                                            <Text style={styles.prereqText}>{title}</Text>
+                                        </View>
+                                    ))}
+                                </View>
+                            </View>
+                        )}
                         {/* Tag Sections */}
                             <View style={styles.tagSectionContainer}>
                                 {/* Render Location Tags */}
@@ -445,27 +459,6 @@ const EditCourseDetail = () => {
                         <View style={styles.forumListContainer}>
                             {renderForumList()}
                         </View>
-                    </View>
-                );
-
-            case 'Workshops':
-                return (
-                    <View style={styles.tabSection}>
-                        <Text style={styles.sectionTitle}>Course Workshops</Text>
-                        {workshopsLoading ? (
-                            <ActivityIndicator color="#0a6340" size="large" />
-                        ) : (
-                            <PageRenderer 
-                                elements={workshops}
-                                role={currentUser.role}
-                                courseId={id} 
-                                onEditElement={handleOpenEdit}
-                                onDeleteElement={handleDelete}
-                                onMoveElement={moveElement}
-                                onRegisterWorkshop={registerWorkshop}
-                                registering={registering}
-                            />
-                        )}
                     </View>
                 );
 
@@ -1438,6 +1431,31 @@ const styles = StyleSheet.create({
         fontSize: 12,
         color: '#2e7d32',
         fontWeight: '600',
+    },
+    prereqSection: {
+        backgroundColor: '#fffbeb',
+        padding: 15,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#fef3c7',
+        marginTop: 10,
+    },
+    prereqItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 6,
+    },
+    prereqDot: {
+        width: 6,
+        height: 6,
+        borderRadius: 3,
+        backgroundColor: '#d97706',
+        marginRight: 10,
+    },
+    prereqText: {
+        fontSize: 14,
+        color: '#92400e',
+        fontWeight: '500',
     },
 });
 
