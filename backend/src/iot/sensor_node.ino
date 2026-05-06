@@ -78,6 +78,12 @@ void processSensors() {
   String currentFireStatus = (t > 50 || smoke > 1500) ? "alerting" : "normal";
   unsigned long fireInterval = (currentFireStatus == "alerting") ? INT_ALERT : INT_NORMAL;
 
+  if (currentFireStatus == "alerting") {
+    digitalWrite(PIN_LED, HIGH);
+  } else {
+    digitalWrite(PIN_LED, LOW);
+  }
+  
   if (currentFireStatus != lastFireStatus || (now - lastFireLog >= fireInterval)) {
     String fireData = "{";
     fireData += "\"temperature\":" + String(t) + ",";
