@@ -57,8 +57,6 @@ export const useCourseDetails=(id)=>{
                 prerequisite_groups: course.prerequisite_groups || []
             };
 
-            console.log("FULL PAYLOAD:", payload);
-
             await courseService.update(id, payload);
 
             setCourse(prev => ({

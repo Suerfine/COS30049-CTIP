@@ -74,21 +74,46 @@ export const useUserCourse=()=>{
     
     // Called after confirm enroll
     // has already validated prerequisites so sets enrollment to IN_REVIEW (admin approves)
+    // const handleEnrollment = useCallback(async (courseId) => {
+    //     try {
+    //         await enrollmentService.enroll(courseId, currentUser.id);
+    //         await loadMyEnrollments();
+    //     } catch (err) {
+    //         const message =
+    //             typeof err === 'string' ? err : err?.message || 'Failed to enroll. Please try again.';
+ 
+    //         if (Platform.OS === 'web') {
+    //             window.alert(message);
+    //         } else {
+    //             Alert.alert('Enrollment Failed', message);
+    //         }
+    //     }
+    // }, [currentUser, loadMyEnrollments]);
+
     const handleEnrollment = useCallback(async (courseId) => {
         try {
-            await enrollmentService.enroll(courseId, currentUser.id);
-            await loadMyEnrollments();
-        } catch (err) {
-            const message =
-                typeof err === 'string' ? err : err?.message || 'Failed to enroll. Please try again.';
- 
-            if (Platform.OS === 'web') {
-                window.alert(message);
+            const existingEnrollment = myEnrollments.find(
+                (e) => Number(e.course_id) === Number(courseId)
+            );
+
+            if (existingEnrollment && (existingEnrollment.status === 'dropped' || existingEnrollment.deleted_at)) {
+                await enrollmentService.updateStatus(existingEnrollment.id, 'in_review'); 
             } else {
-                Alert.alert('Enrollment Failed', message);
+                await enrollmentService.enroll(courseId, currentUser.id);
             }
+
+            await loadMyEnrollments();
+            
+            if (Platform.OS === 'web') {
+                window.alert("Enrollment request sent for approval.");
+            } else {
+                Alert.alert('Success', "Enrollment request sent for approval.");
+            }
+        } catch (err) {
+            const message = typeof err === 'string' ? err : err?.message || 'Failed to enroll.';
+            Platform.OS === 'web' ? window.alert(message) : Alert.alert('Enrollment Failed', message);
         }
-    }, [currentUser, loadMyEnrollments]);
+    }, [currentUser, myEnrollments, loadMyEnrollments]);
  
     // drop courses
     // finds the enrollment record for that specific course and deletes it
@@ -103,7 +128,7 @@ export const useUserCourse=()=>{
                 return;
             }
  
-            await enrollmentService.delete(enrollment.id);
+            await enrollmentService.updateStatus(enrollment.id);  
             await loadMyEnrollments();
         } catch (err) {
             const message =
@@ -131,6 +156,7 @@ export const useUserCourse=()=>{
                 progress,
                 enrollmentStatus: enrollment?.status ?? null,
                 enrollmentId: enrollment?.id ?? null,
+                isDropped: enrollment?.deleted_at ?? null,
             };
         });
     }, [courses, myEnrollments, progressData]);
