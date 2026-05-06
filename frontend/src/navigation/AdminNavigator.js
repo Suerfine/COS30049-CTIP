@@ -11,6 +11,7 @@ import EnrollmentManagement from "../screens/EnrollmentManagement";
 import UserProfile from "../screens/UserProfile";
 import AdminDashboard from "../screens/AdminDashboard";
 import AnomalyDetection from "../screens/AnomalyDetection";
+import AdminArModels from "../screens/AdminArModels";
 
 // Import components
 import SideBar from "../components/SideBar";
@@ -51,6 +52,10 @@ export default function AdminNavigator() {
             <Stack.Screen
               name="Anomaly Detection"
               component={AnomalyDetection}
+            />
+            <Stack.Screen
+              name="AR Models"
+              component={AdminArModels}
             />
             <Stack.Screen name="User Profile" component={UserProfile} />
           </Stack.Navigator>

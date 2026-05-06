@@ -1,6 +1,6 @@
 import React, { useState, useEffect} from 'react';
 import { View, Text, StyleSheet, Pressable, Image} from 'react-native';
-import {LayoutDashboard, Book, ClipboardList, Flag, CreditCard,Bell, LogOut, UserPlus, User2} from 'lucide-react-native'
+import {LayoutDashboard, Book, ClipboardList, Flag, QrCode, Bell, LogOut, UserPlus, User2} from 'lucide-react-native'
 import { CommonActions } from '@react-navigation/native';
 import { useNavigationState, useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
@@ -28,6 +28,7 @@ const SideBar = () => {
         {name: 'Enrollment', icon: ClipboardList, route:'Enrollment Management'},
         // {name:'Payment', icon: CreditCard},
         {name:'Anomalies', icon: Flag, route:'Anomaly Detection'},
+        {name:'AR Models', icon: QrCode, route:'AR Models'},
     ];
     
 

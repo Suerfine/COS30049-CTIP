@@ -6,6 +6,7 @@ import moduleRouter from "./ModuleRoute";
 import pageRouter from "./PageRoute";
 import messageRouter from "./MessageRoute";
 import anomalyEventRouter from "./AnomalyEventRoute";
+import arModelRouter from "./ArModelRoute";
 import * as AuthController from "../controllers/AuthController";
 const router = Router();
 
@@ -74,6 +75,11 @@ router.use("/registrations", registrationRouter);
 =   Anomaly EVENT ROUTES     =
 ===============================*/
 router.use("/Anomaly-events", anomalyEventRouter);
+
+/*===============================
+=          AR MODELS            =
+===============================*/
+router.use("/ar-models", arModelRouter);
 
 /*===============================
 =        COURSE ROUTES         =
