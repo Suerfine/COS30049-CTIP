@@ -4,7 +4,7 @@ import { Plus, ChevronRight, ChevronDown, Search, Trash2, Lock, CheckCircle2 } f
 import { useOutline } from '../hooks/useOutline';
 import * as Progress from 'react-native-progress';
 
-const OutlineBar = ({ course, progressMap, onSelectPage, editable, isCollapsed, isLocked }) => {
+const OutlineBar = ({ course, progressMap = {}, onSelectPage, editable, isCollapsed, isLocked }) => {
     const {
         allModules,
         expandedModule,
@@ -26,8 +26,7 @@ const OutlineBar = ({ course, progressMap, onSelectPage, editable, isCollapsed, 
     if (!course) return null;
 
     const handleSelect = (item) => {
-        // Hard Lock: Prevent access to modules if the user is not enrolled
-        if (isLocked && item.type !== 'overview') return; 
+        if (isLocked && item.type !== 'overview') return;
         setSelectedItem(item);
         onSelectPage(item);
     };
@@ -37,7 +36,7 @@ const OutlineBar = ({ course, progressMap, onSelectPage, editable, isCollapsed, 
         const parts = text.split(new RegExp(`(${query})`, 'gi'));
         return (
             <Text>
-                {parts.map((part, i) => 
+                {parts.map((part, i) =>
                     part.toLowerCase() === query.toLowerCase() ? (
                         <Text key={i} style={styles.highlight}>{part}</Text>
                     ) : (
@@ -51,7 +50,7 @@ const OutlineBar = ({ course, progressMap, onSelectPage, editable, isCollapsed, 
     useEffect(() => {
         if (localSearch.length > 0) {
             allModules.forEach(module => {
-                const hasMatch = module.pages?.some(p => 
+                const hasMatch = module.pages?.some(p =>
                     p.title.toLowerCase().includes(localSearch.toLowerCase())
                 );
                 if (hasMatch && expandedModule !== module.id) {
@@ -62,71 +61,90 @@ const OutlineBar = ({ course, progressMap, onSelectPage, editable, isCollapsed, 
     }, [localSearch, allModules]);
 
     return (
-        <View style={[styles.outlinebar, isCollapsed ? styles.collapsed : null]}>
+        <View style={[styles.outlinebar, isCollapsed && styles.collapsed]}>
+
+            {/* SEARCH */}
             {!isCollapsed && (
                 <View style={styles.search}>
                     <Search size={18} color="#8f8f8f" />
-                    <TextInput 
-                        style={styles.input} 
-                        placeholder='Search...' 
-                        placeholderTextColor="#8f8f8f"
+                    <TextInput
+                        style={styles.input}
+                        placeholder='Search...'
                         value={localSearch}
                         onChangeText={setLocalSearch}
                     />
                 </View>
             )}
-            
+
+            {/* OVERVIEW */}
             {!isCollapsed && (
-                <Pressable 
-                    style={[styles.item, selectedItem?.type === 'overview' && styles.selected]} 
-                    onPress={() => handleSelect({ type: 'overview', course })} 
+                <Pressable
+                    style={[styles.item, selectedItem?.type === 'overview' && styles.selected]}
+                    onPress={() => handleSelect({ type: 'overview', course })}
+                    onMouseEnter={() => setHoveredItem({ type: 'overview' })}
+                    onMouseLeave={() => setHoveredItem(null)}
                 >
                     <Text style={styles.overview}>Course Overview</Text>
+
+                    {editable && hoveredItem?.type === 'overview' && (
+                        <Pressable onPress={addModule}>
+                            <Plus size={16} />
+                        </Pressable>
+                    )}
                 </Pressable>
             )}
 
+            {/* MODULES */}
             <FlatList
                 data={[...allModules].sort((a, b) => (a.order || 0) - (b.order || 0))}
-                keyExtractor={module => module.id.toString()}
-                renderItem={({ item: module, index: moduleIndex }) => {
+                keyExtractor={(m) => m.id.toString()}
+                renderItem={({ item: module, index }) => {
                     const mid = module.id;
-                    const displayModuleNum = moduleIndex + 1;
+                    const displayModuleNum = index + 1;
+
+                    const isSelected =
+                        selectedItem?.module?.id === mid;
+
+                    const isEditingModule =
+                        editingItem?.type === 'module' && editingItem.id === mid;
+
+                    const isNewModule =
+                        editable && module.title === "";
+
+                    const isEditing = isEditingModule || isNewModule;
+
                     const modStatus = progressMap[`module_${mid}`] || { percent: 0 };
-                    const isSelected = (selectedItem?.type === "module" && selectedItem?.module?.id === mid) || 
-                                       (selectedItem?.type === "page" && selectedItem?.module?.id === mid);
-                    
-                    const isEditingModule = editingItem?.type === "module" && editingItem.id === mid;
-                    const isNewModule = editable && module.title === "";
 
                     return (
-                        <View style={[isSelected ? styles.selectedModule : null]}>
-                            <View style={styles.moduleWrapper}>
-                                {/* Module-level Progress Bar*/}
+                        <View style={isSelected && styles.selectedModule}>
+
+                            {/* MODULE */}
+                            <View
+                                onMouseEnter={() => setHoveredItem({ type: 'module', id: mid })}
+                                onMouseLeave={() => setHoveredItem(null)}
+                            >
                                 {!editable && !isLocked && (
-                                    <View style={[styles.moduleProgressBar, { width: `${modStatus.percent}%` }]} />
+                                    <View style={[styles.progressBar, { width: `${modStatus.percent}%` }]} />
                                 )}
-                                
-                                <Pressable 
-                                    style={[styles.moduleBlock, isSelected ? styles.selected : null, isLocked && styles.lockedItem]} 
+
+                                <Pressable
+                                    style={[styles.moduleBlock, isSelected && styles.selected, isLocked && styles.lockedItem]}
                                     onPress={() => {
-                                        if (isLocked || isEditingModule || isNewModule) return;
-                                        handleSelect({ type: 'module', module }); 
+                                        if (isLocked || isEditing) return;
+                                        handleSelect({ type: 'module', module });
                                         toggleModule(mid);
-                                        if (editable && expandedModule !== mid && module.title !== "") {
-                                            setEditingItem({ type: 'module', id: mid });
-                                        }
                                     }}
                                 >
                                     <Text style={styles.moduleTitle}>
                                         Module {displayModuleNum}:{" "}
-                                        {(isEditingModule || isNewModule) ? (
+                                        {isEditing ? (
                                             <TextInput
                                                 style={styles.section}
                                                 defaultValue={module.title}
                                                 autoFocus
                                                 onBlur={(e) => {
-                                                    if (isNewModule) saveModule(mid, e.nativeEvent.text);
-                                                    else updateModuleTitle(mid, e.nativeEvent.text);
+                                                    const val = e.nativeEvent.text;
+                                                    isNewModule ? saveModule(mid, val) : updateModuleTitle(mid, val);
                                                     setEditingItem(null);
                                                 }}
                                             />
@@ -134,37 +152,63 @@ const OutlineBar = ({ course, progressMap, onSelectPage, editable, isCollapsed, 
                                             getHighlightedText(module.title, localSearch)
                                         )}
                                     </Text>
-                                    {expandedModule === mid ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
+
+                                    {expandedModule === mid ? <ChevronDown size={15}/> : <ChevronRight size={15}/>}
+
+                                    {editable && !isEditing && hoveredItem?.id === mid && (
+                                        <Pressable onPress={() => deleteModule(mid)}>
+                                            <Trash2 size={16} />
+                                        </Pressable>
+                                    )}
                                 </Pressable>
                             </View>
 
-                            {/* Expanded Pages Block */}
+                            {/* PAGES */}
                             {expandedModule === mid && (
                                 <View>
-                                    {module.pages?.map((page, pageIndex) => {
-                                        const displayPageNum = `${displayModuleNum}.${pageIndex + 1}`;
-                                        const status = progressMap[page.id] || { isLocked: true, percent: 0, isCompleted: false };
+                                    {module.pages?.map((page, i) => {
+                                        const displayPageNum = `${displayModuleNum}.${i + 1}`;
+
+                                        const status = progressMap[page.id] || {
+                                            isLocked: true,
+                                            percent: 0,
+                                            isCompleted: false
+                                        };
+
                                         const isPageLocked = isLocked || (!editable && status.isLocked);
-                                        const isEditingPage = editingItem?.type === 'page' && editingItem.pageId === page.id;
+
+                                        const isEditingPage =
+                                            editingItem?.type === 'page' &&
+                                            editingItem.pageId === page.id;
+
+                                        const isHoveringPage =
+                                            hoveredItem?.type === 'page' &&
+                                            hoveredItem.pageId === page.id;
 
                                         return (
                                             <Pressable
                                                 key={page.id}
                                                 disabled={isPageLocked}
                                                 style={[
-                                                    styles.pageItem, 
-                                                    selectedItem?.page?.id === page.id && styles.selectedPage, 
+                                                    styles.pageItem,
+                                                    selectedItem?.page?.id === page.id && styles.selectedPage,
                                                     isPageLocked && styles.lockedItem
                                                 ]}
                                                 onPress={() => {
                                                     if (isPageLocked) return;
                                                     handleSelect({ type: 'page', module, page });
-                                                    if (editable) setEditingItem({ type: 'page', moduleId: mid, pageId: page.id });
+                                                    if (editable) {
+                                                        setEditingItem({ type: 'page', moduleId: mid, pageId: page.id });
+                                                    }
                                                 }}
+                                                onMouseEnter={() =>
+                                                    setHoveredItem({ type: 'page', moduleId: mid, pageId: page.id })
+                                                }
+                                                onMouseLeave={() => setHoveredItem(null)}
                                             >
                                                 <View style={styles.pageBlock}>
-                                                    <Text style={[styles.pageText, isPageLocked && styles.lockedText]}>
-                                                        {displayPageNum} {" "}
+                                                    <Text>
+                                                        {displayPageNum}{" "}
                                                         {isEditingPage ? (
                                                             <TextInput
                                                                 style={styles.section}
@@ -179,22 +223,19 @@ const OutlineBar = ({ course, progressMap, onSelectPage, editable, isCollapsed, 
                                                             getHighlightedText(page.title, localSearch)
                                                         )}
                                                     </Text>
-                                                    {/* Page Progress Indicator*/}
+
                                                     {!editable && !isLocked && (
-                                                        <View style={styles.statusIconContainer}>
-                                                            {status.isCompleted ? (
-                                                                <CheckCircle2 size={20} color="#0a6340" />
-                                                            ) : status.isLocked ? (
-                                                                <Lock size={14} color="#9ca3af" />
-                                                            ) : (
-                                                                <Progress.Circle 
-                                                                    progress={status.percent / 100} 
-                                                                    size={21} 
-                                                                    color="#0a6340" 
-                                                                    thickness={3} 
-                                                                />
-                                                            )}
-                                                        </View>
+                                                        status.isCompleted
+                                                            ? <CheckCircle2 size={18} color="#0a6340"/>
+                                                            : status.isLocked
+                                                                ? <Lock size={14}/>
+                                                                : <Progress.Circle progress={status.percent/100} size={20}/>
+                                                    )}
+
+                                                    {editable && isHoveringPage && !isEditingPage && (
+                                                        <Pressable onPress={() => deletePage(mid, page.id)}>
+                                                            <Trash2 size={16} color="red"/>
+                                                        </Pressable>
                                                     )}
                                                 </View>
                                             </Pressable>

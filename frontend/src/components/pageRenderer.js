@@ -184,8 +184,9 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
 
     
     const renderElement = (el, index) => {
+        if (!el || !el.id) return null;
         const { type, content, score, id } = el;
-        const earnedScore = userMarks[id] || 0;
+        const earnedScore = userMarks?.[id] ?? 0;
         const isViewed = earnedScore > 0;
         const quiz = quizStates[id] || { 
             selected: null, 
