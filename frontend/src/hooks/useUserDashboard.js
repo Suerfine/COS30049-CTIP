@@ -25,16 +25,16 @@ export const useUserDashboard = () => {
 
     const weekLabels=[t('Fri'), t('Sat'),t('Sun'), t('Mon'), t('Tue'), t('Wed'), t('Thu')];
 
-    const todoTab=[
+    const todoTab= useMemo(() => ([
         {id: 'all', label:t('status.all')},
         {id: 'completed', label:t('status.completed')},
         {id: 'pending', label:t('status.pending')},
-    ];
+    ]), [t]);
 
-    const courseTab=[
-        {id: 'in progress', label:t('status.in progress')},
-        {id: 'completed', label:t('status.completed')}
-    ];
+    const courseTab = useMemo(() => ([
+        { id: "in progress", label: t("status.in progress") },
+        { id: "completed", label: t("status.completed") },
+    ]), [t]);
 
     const fetchDashboardData = async () => {
         if (!currentUser) return;
@@ -50,10 +50,10 @@ export const useUserDashboard = () => {
             ]);
 
             if (progressRes.status === 'fulfilled') setProgressData(progressRes.value);
-            if (coursesRes.status  === 'fulfilled') setCourses(coursesRes.value);
-            if (todosRes.status    === 'fulfilled') setTodos(todosRes.value);
-            if (fullProfileRes.status  === 'fulfilled') setUser(fullProfileRes.value);
-            if (tagsRes.status     === 'fulfilled') setCategories(tagsRes.value?.data || tagsRes.value || []);
+            if (coursesRes.status === 'fulfilled') setCourses(coursesRes.value);
+            if (todosRes.status === 'fulfilled') setTodos(todosRes.value);
+            if (fullProfileRes.status === 'fulfilled') setUser(fullProfileRes.value);
+            if (tagsRes.status === 'fulfilled') setCategories(tagsRes.value?.data || tagsRes.value || []);
 
             // Log any failures for debugging
             [progressRes, coursesRes, todosRes, fullProfileRes, tagsRes].forEach((r, i) => {
@@ -124,28 +124,7 @@ export const useUserDashboard = () => {
         return `${year}-${month}-${day}`;
     };
 
-    // dot indicator for dates with todo item(s)
-    const hasPendingTodoOnDate = (date) => {
-        if (!date) return false;
-            const year = date.getFullYear();
-            const month = String(date.getMonth() + 1).padStart(2, '0');
-            const day = String(date.getDate()).padStart(2, '0');
-            const calendarStr = `${year}-${month}-${day}`;
-        return todos.some(todo => {
-            return todo.date === calendarStr;
-        });
-    };
-    
-    // COURSES LOGIC
-    // get in progress courses
-    const inProgressCourses = Array.isArray(courses) ? courses.filter(course => {
-        const progressObj = progressData.find(p => p.courseId === course.id);
-        const progress = progressObj ? progressObj.progress : null;
-
-        return progress !== null && progress > 0 && progress < 1;
-    }) : [];
-
-     // TODOLIST LOGIC
+    // TODOLIST LOGIC
     // Toggle checkbox
     const toggleTodo = (id) => {
         setTodos(prev =>
@@ -167,6 +146,18 @@ export const useUserDashboard = () => {
         return result;
     }, [todos, selectedDate, filter]);
 
+    // dot indicator for dates with todo item(s)
+    const hasPendingTodoOnDate = (date) => {
+        if (!date) return false;
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const calendarStr = `${year}-${month}-${day}`;
+        return todos.some(todo => {
+            return todo.date === calendarStr;
+        });
+    };
+
     return { 
         courses, 
         todos,  
@@ -179,9 +170,10 @@ export const useUserDashboard = () => {
         courseFilter, setCourseFilter,
         currentDate, setCurrentDate,
         isExpanded, setIsExpanded,
-        weekDates, getDaysInMonth, filteredTodos, inProgressCourses,
+        weekDates, getDaysInMonth, filteredTodos,
         toggleTodo, hasPendingTodoOnDate, refreshData: fetchDashboardData,
-        weekLabels,todoTab, courseTab, categories,formatLocalDate
-
+        weekLabels,todoTab, courseTab, categories,formatLocalDate,  
+        // inProgressCourses,
+        // completedCourses,
     };
 };

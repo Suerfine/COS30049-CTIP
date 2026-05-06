@@ -1,14 +1,13 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { Platform, Alert } from "react-native";
-import { useUserDashboard } from "./useUserDashboard";
+// import { useUserDashboard } from "./useUserDashboard";
 import { useTranslation } from "react-i18next";
 import { courseService } from "../services/courseService";
 import { enrollmentService } from "../services/EnrollmentService";
 import { useAuth } from "../context/AuthContext";
 
-export const useUserCourse = () => {
+export const useUserCourse = ({ progressData = [] } = {}) => {
   const { t, i18n } = useTranslation();
-  const { progressData } = useUserDashboard();
   const { currentUser } = useAuth();
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
@@ -18,26 +17,23 @@ export const useUserCourse = () => {
   const [allTagList, setAllTagList] = useState([]);
   const [allcourseFilter, setAllCourseFilter] = useState("all");
   const [loading, setLoading] = useState(false);
-  const [myEnrollments, setMyEnrollments] = useState([]);
-
-  const [filters, setFilters] = useState({
-    status: "all",
-    category: "all",
-  });
-  const [tempFilters, setTempFilters] = useState(filters);
+  const [myEnrollments, setMyEnrollments] = useState([]);  
   const [searchText, setSearchText] = useState("");
+  const [filters, setFilters] = useState({ status: "all", category: [], location: [] });
+  const [tempFilters, setTempFilters] = useState(filters);
 
-  const statusLabels = {
+  const statusLabels = useMemo(() => ({
     inProgress: t("status.in progress"),
     completed: t("status.completed"),
-    notEnrolled: t("not enrolled"),
-  };
+    notEnrolled: t("status.not enrolled"),
+    inReview: t('status.in review'),
+  }), [t]);
 
-  const tabs = [
+  const tabs = useMemo(() => ([
     { id: "all", label: t("status.all") },
     { id: "basic", label: t("status.basic") },
-    { id: "advanced", label: t("status.advanced") },
-  ];
+    { id: "advanced", label: t("status.advanced") }
+  ]), [t]);
 
   const loadCourses = useCallback(
     async (params = {}) => {
@@ -74,7 +70,7 @@ export const useUserCourse = () => {
     }
   }, []);
 
-  // Called after confirm enroll
+  // called after confirm enroll
   const handleEnrollment = useCallback(
     async (courseId) => {
       try {
@@ -83,35 +79,23 @@ export const useUserCourse = () => {
         );
 
         if (existingEnrollment && existingEnrollment.status === "dropped") {
-          await enrollmentService.updateStatus(
-            existingEnrollment.id,
-            "in_review",
-          );
+          await enrollmentService.updateStatus(existingEnrollment.id, "in_review");
         } else {
           await enrollmentService.enroll(courseId, currentUser.id);
         }
 
         await loadMyEnrollments();
-
         const successMsg = "Enrollment request sent for approval.";
         Platform.OS === "web"
           ? window.alert(successMsg)
           : Alert.alert("Success", successMsg);
       } catch (err) {
-        console.error(
-          "Enrollment error details:",
-          err.response?.data || err.message,
-        );
-
-        const message =
-          err.response?.data?.message || err.message || "Failed to enroll.";
+        const failMsg = err.response?.data?.message || err.message || "Failed to enroll.";
         Platform.OS === "web"
-          ? window.alert(message)
-          : Alert.alert("Enrollment Failed", message);
+          ? window.alert(failMsg)
+          : Alert.alert("Enrollment failed", failMsg);
       }
-    },
-    [currentUser, myEnrollments, loadMyEnrollments],
-  );
+    }, [currentUser, myEnrollments, loadMyEnrollments]);
 
   // drop courses
   // finds the enrollment record for that specific course and deletes it
@@ -129,7 +113,6 @@ export const useUserCourse = () => {
           );
           return;
         }
-
         await enrollmentService.updateStatus(enrollment.id, "dropped");
         await loadMyEnrollments();
       } catch (err) {
@@ -148,6 +131,7 @@ export const useUserCourse = () => {
     [myEnrollments, loadMyEnrollments],
   );
 
+  // use progressData from param
   const coursesWithStatus = useMemo(() => {
     return courses.map((course) => {
       const enrollment = myEnrollments.find(
@@ -159,7 +143,7 @@ export const useUserCourse = () => {
 
       return {
         ...course,
-        progress,
+        progress: progressObj?.progress ?? null,
         enrollmentStatus: enrollment?.status ?? null,
         enrollmentId: enrollment?.id ?? null,
         isDropped: enrollment?.deleted_at ?? null,
@@ -167,7 +151,22 @@ export const useUserCourse = () => {
     });
   }, [courses, myEnrollments, progressData]);
 
-  // marge enrollment status first via courses with status, then apply filters based on tag
+    // filter in progress courses
+    const inProgressCourses = useMemo(() =>
+        coursesWithStatus.filter(c => c.enrollmentStatus === "in_progress"),
+    [coursesWithStatus]);
+
+    // filter in review courses
+    const inReviewCourses = useMemo(() =>
+        coursesWithStatus.filter(c => c.enrollmentStatus === "in_review"),
+    [coursesWithStatus]);
+
+    // filter completed courses
+    const completedCourses = useMemo(() =>
+        coursesWithStatus.filter(c => c.enrollmentStatus === "completed"),
+    [coursesWithStatus]);
+
+  // merge enrollment status first via courses with status, then apply filters based on tag
   const filteredCourses = useMemo(() => {
     return coursesWithStatus.filter((course) => {
       const hasPrerequisites =
@@ -188,15 +187,15 @@ export const useUserCourse = () => {
         filters.status === "all" ||
 
         (filters.status === "inProgress" &&
-            course.enrollmentStatus &&
-            course.enrollmentStatus !== "completed" &&
-            course.enrollmentStatus !== "dropped") ||
-
+            course.enrollmentStatus === "in_progress") ||
+        (filters.status === "inReview" &&
+            course.enrollmentStatus === "in_review") ||
         (filters.status === "completed" &&
             course.enrollmentStatus === "completed") ||
-
         (filters.status === "notEnrolled" &&
-            !course.enrollmentStatus);
+            !course.enrollmentStatus) ||
+        (filters.status === "dropped" &&
+            course.enrollmentStatus === "dropped");
 
       const matchesLocation =
         !filters.location ||
@@ -310,5 +309,8 @@ export const useUserCourse = () => {
     handleApply,
     setSearchText,
     searchText,
+    inProgressCourses,
+    inReviewCourses,
+    completedCourses,
   };
 };
