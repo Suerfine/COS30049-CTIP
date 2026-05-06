@@ -1,4 +1,4 @@
-import {useState, useEffect} from 'react';
+import {useState, useEffect, useMemo} from 'react';
 import { View, Text, StyleSheet, Pressable, ScrollView, Image, ImageBackground, Dimensions } from 'react-native';
 import { ListPlus, ChevronRight, ChevronLeft, ClockFading, Phone, Mail, ChevronsUpDown, ChevronsDownUp} from 'lucide-react-native';
 import Checkbox from 'expo-checkbox';
@@ -8,6 +8,7 @@ import { formatDate } from '../utils/formatDate.js';
 // Import from other hook and components
 import CourseCard from '../components/CourseCard.js';
 import { useUserDashboard } from '../hooks/useUserDashboard';
+import { useUserCourse } from '../hooks/useUserCourse.js';
 import SlidingTabs from '../components/SlidingTabs.js';
 import AddTodo from '../components/AddTodo.js';
 import ModalLayout from '../components/ModalLayout.js';
@@ -28,10 +29,12 @@ const UserDashboard = ({ navigation }) => {
         courseFilter, setCourseFilter,
         currentDate, setCurrentDate,
         isExpanded, setIsExpanded,
-        weekDates, getDaysInMonth, filteredTodos, inProgressCourses,
+        weekDates, getDaysInMonth, filteredTodos,
         toggleTodo, hasPendingTodoOnDate,formatLocalDate,
         weekLabels,todoTab, courseTab, categories
     } = useUserDashboard();
+
+    const { inProgressCourses, completedCourses } = useUserCourse({ progressData });
     const [showModal, setShowModal] = useState(false);
     const [selectedTask, setSelectedTask] = useState(null);
     const openEdit = (todo) => { setSelectedTask(todo); };
@@ -102,7 +105,8 @@ const UserDashboard = ({ navigation }) => {
                             <SlidingTabs tabs={courseTab} activeTab={courseFilter} onTabChange={(id)=>setCourseFilter(id)}/>
                             {/* only display in progress courses */}
                             <View style={styles.cardContainer}>
-                                {courseFilter==='in progress' &&inProgressCourses.map(course => {
+                            {courseFilter === 'in progress' &&
+                                inProgressCourses.map(course => {
                                     const courseProgress = progressData.find(p => p.courseId === course.id);
                                     const numModules = course.modules ? course.modules.length : 0;
 
@@ -120,8 +124,31 @@ const UserDashboard = ({ navigation }) => {
                                             onPress={() => navigation.navigate('User Module', { id: course.id })}
                                         />
                                     );
-                                })}
-                            </View>
+                                })
+                            }
+
+                            {courseFilter === 'completed' &&
+                                completedCourses.map(course => {
+                                    const courseProgress = progressData.find(p => p.courseId === course.id);
+                                    const numModules = course.modules ? course.modules.length : 0;
+
+                                    return (
+                                        <CourseCard
+                                            key={course.id}
+                                            id={course.id}
+                                            imagePath={{ uri: course.image }}
+                                            courseTitle={course.courseTitle}
+                                            numModules={numModules}
+                                            duration={course.duration}
+                                            expiry={course.expiryDate}
+                                            progress={courseProgress?.progress ?? 1}
+                                            userType={userType}
+                                            onPress={() => navigation.navigate('User Module', { id: course.id })}
+                                        />
+                                    );
+                                })
+                            }
+                        </View>
                             {/* Categories */}
                             <Text style={styles.sectionTitle}>{t('explore')} {t('categories')}</Text>
                                 <View style={styles.tagContainer}>

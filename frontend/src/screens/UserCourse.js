@@ -31,8 +31,9 @@ const UserCourse = ({ navigation }) => {
         handleEnrollment, 
         handleDrop,
         handleApply,
-        removeFilter,allTagList, addTag,searchText, setSearchText, handleSearch,
-    }=useUserCourse();
+        removeFilter,allTagList, addTag,
+        searchText, setSearchText, handleSearch,
+    }=useUserCourse({progressData});
 
     // sync parameter with filter from UserDashboard Explore Categories section
     useEffect(() => {
