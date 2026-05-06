@@ -112,11 +112,26 @@ const UserDashboard=({navigation})=>{
                         {t('explore')} {t('categories')}
                     </Text>
                     <View style={styles.tagContainer}>
-                        {categories.map((item)=>(
-                            <Pressable key={item.id} style={styles.categoryTag} >
-                                <Text style={styles.tagText}>{item.name}</Text>
-                            </Pressable>
-                        ))}
+                        {categories.length > 0 ? (
+                            categories
+                                .filter(tag => tag.type === 'category') 
+                                .map((item) => (
+                                    <Pressable 
+                                        key={item.id} 
+                                        style={styles.categoryTag}
+                                        onPress={() => navigation.navigate('ParkGuideStack', {
+                                            screen: 'Courses', 
+                                            params: { 
+                                                filterCategory: item.title
+                                            }
+                                        })}
+                                    >
+                                        <Text style={styles.tagText}>{item.title}</Text>
+                                    </Pressable>
+                                ))
+                        ) : (
+                            <Text style={styles.emptyText}>{t('No categories found.')}</Text>
+                        )}
                     </View>
                 </View>
             </ScrollView>

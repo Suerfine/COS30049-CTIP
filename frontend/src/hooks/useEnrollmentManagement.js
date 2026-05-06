@@ -42,6 +42,8 @@ export const useEnrollmentManagement=()=>{
     const handleUpdateStatus = async (enrollmentId, newStatus) => {
         try {
             await enrollmentService.updateStatus(enrollmentId, newStatus);
+            console.log(enrollmentId);
+            console.log(newStatus);
             await fetchData();
             return { success: true };
         } catch (err) {

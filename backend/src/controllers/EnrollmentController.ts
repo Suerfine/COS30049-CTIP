@@ -57,7 +57,7 @@ export const enrollCourse = async (
     const enrollment = await Enrollment.create({
       user_id: req.user!.id,
       course_id: courseId,
-      status: EnrollmentStatus.IN_PROGRESS,
+      status: EnrollmentStatus.IN_REVIEW,
       enrolled_at: new Date(),
     });
     return res.status(201).json(toEnrollmentResponse(enrollment));

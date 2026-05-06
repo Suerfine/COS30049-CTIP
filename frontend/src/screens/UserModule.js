@@ -13,19 +13,23 @@ import PageRenderer from '../components/pageRenderer.js';
 import { useAuth } from '../context/AuthContext.js';
 import { markdownStyles } from '../components/markdownStyle.js';
 import { useCourses } from '../hooks/useCourses.js';
+import { useCourseProgress } from '../components/useCourseProgress.js';
 
 const UserModule = ({navigation}) => {
     const route=useRoute();
     const {id, enrollmentStatus}=route.params;
+
     const isLocked = enrollmentStatus === null ||
         enrollmentStatus === undefined ||
         enrollmentStatus === 'in_review' ||
         enrollmentStatus === 'dropped' ||
         enrollmentStatus === 'expired';
+
     const {currentUser}=useAuth();
     const {course, loading, error,locationTags, categoryTags}=useCourseDetails(id);
     const {allCourseList}=useCourses();
-
+    const [userMarks, setUserMarks] = useState({});
+    const progressMap = useCourseProgress(course, userMarks);
     const [selectedPage, setSelectedPage]=useState({type:'overview'});
     const [isCollapsed, setIsCollapsed]=useState(false);
     const [activeTab,setActiveTab]=useState('Overview');
@@ -62,9 +66,12 @@ const UserModule = ({navigation}) => {
         </View>
     );
 
-    const saveProgress = async (elementId, score) => {
-        // API Call to update the user's marks for this specific element
-        console.log(`Saving ${score} points for element ${elementId}`);
+    const saveProgress = (elementId, score) => {
+        setUserMarks(prev => ({
+            ...prev,
+            [elementId]: score
+        }));
+        // Note: You would also call your API here to persist this to the database
     };
 
     const renderOverviewContent = () => {
@@ -218,7 +225,9 @@ const UserModule = ({navigation}) => {
     return (
         <View style={styles.rowContainer}>
             {/* Outlinebar */}
-            <OutlineBar course={course} onSelectPage={setSelectedPage} editable={false} isCollapsed={isCollapsed} isLocked={isLocked}/>
+            <OutlineBar course={course} onSelectPage={setSelectedPage}
+            progressMap={progressMap}
+            editable={false} isCollapsed={isCollapsed} isLocked={isLocked}/>
             <ScrollView style={{height:'100vh'}}>
                 <View style={styles.container}>
                     {/* Background Image */}
@@ -278,6 +287,7 @@ const UserModule = ({navigation}) => {
                                 ) : (
                                     <PageRenderer 
                                         elements={elements}
+                                        onProgressUpdate={saveProgress}
                                         role={currentUser.role}
                                         courseId={id}
                                         onProgressUpdate={saveProgress}

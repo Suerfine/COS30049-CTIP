@@ -390,17 +390,25 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
                                                             ]}
                                                             disabled={selectedSessionIdx === undefined || isRegistered || registering}
                                                             onPress={async () => {
-                                                                const result = await onRegisterWorkshop(id, selectedSessionIdx, autoAddTodo);
+                                                                // const result = await onRegisterWorkshop(id, selectedSessionIdx, autoAddTodo);
                                                                 
-                                                                if (result.success) {
-                                                                    // 2. Update local state on success
-                                                                    setWorkshopRegistrations(prev => ({ ...prev, [id]: true }));
-                                                                    markAsComplete(id, score);
+                                                                // if (result.success) {
+                                                                //     // 2. Update local state on success
+                                                                //     setWorkshopRegistrations(prev => ({ ...prev, [id]: true }));
+                                                                //     markAsComplete(id, score);
                                                                     
-                                                                    if (link) Linking.openURL(link);
-                                                                } else {
-                                                                    alert(result.error || "Failed to register for workshop");
+                                                                //     if (link) Linking.openURL(link);
+                                                                // } else {
+                                                                //     alert(result.error || "Failed to register for workshop");
+                                                                // }
+                                                                alert("Registered Successfully!");
+
+                                                                setWorkshopRegistrations(prev => ({ ...prev, [id]: true }));
+
+                                                                if (onProgressUpdate) {
+                                                                    onProgressUpdate(id, 1); 
                                                                 }
+
                                                             }}
                                                         >
                                                             <Text style={styles.joinBtnText}>
