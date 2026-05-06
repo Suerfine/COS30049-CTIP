@@ -108,8 +108,6 @@ router.use("/", sensorLogRouter);
 
 /*===============================
 =     NOTIFICATION ROUTES      =
-===============================*/
-router.use("/notifications", NotificationRoute);
 
 /*===============================
 =        ENROLLMENT ROUTES        =

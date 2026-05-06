@@ -18,6 +18,7 @@ const NotificationRouter = Router();
  *       required: true
  *       content:
  *         multipart/form-data:
+ *         application/json:
  *           schema:
  *             type: object
  *             required: [title, message, target_user_ids]

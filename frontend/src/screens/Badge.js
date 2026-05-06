@@ -4,6 +4,8 @@ import { CircleX, SlidersHorizontal, Search } from 'lucide-react-native';
 import { useBadges } from '../hooks/useBadges';
 import FilterSidebar from '../components/FilterSidebar';
 import { useNavigation } from '@react-navigation/native';
+import { formatDate } from '../utils/formatDate';
+import { useTranslation } from 'react-i18next';
 
 const Badge = ({ navigation }) => {
     const {
@@ -84,10 +86,7 @@ const Badge = ({ navigation }) => {
                             const isEnrolled = !!enrollment;
                             const isCompleted = enrollment?.status === 'COMPLETED';
                             const expiry = enrollment?.badge_expire_at;
-
-                            const formattedDate = expiry
-                            ? new Date(expiry).toLocaleDateString()
-                            : null;
+                            const formattedDate = expiry ? formatDate(new Date(expiry)) : null;
 
                             return (
                                 <View key={course.id} style={styles.badgeCard}>
@@ -108,9 +107,9 @@ const Badge = ({ navigation }) => {
                                         {course.title}
                                     </Text>
                                     
-                                    {isCompleted && expiry && (
+                                    {isCompleted && formattedDate && (
                                         <Text style={styles.expiryText}>
-                                            Expires: {new Date(expiry).toLocaleDateString()}
+                                            Expires: {formattedDate}
                                         </Text>
                                     )}
                                 </View>

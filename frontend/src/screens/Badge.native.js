@@ -7,6 +7,7 @@ import { useBadges } from '../hooks/useBadges';
 import FilterSidebar from '../components/FilterSidebar';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
+import { formatDate } from '../utils/formatDate';
 
 const Badge = ({ navigation }) => {
     const {t, i18n}=useTranslation();
@@ -43,106 +44,93 @@ const Badge = ({ navigation }) => {
 
     return (
         <SafeAreaView style={styles.container} edges={['left', 'right']}>
-            <StatusBar barStyle="dark-content"/>
             <ScrollView showsVerticalScrollIndicator={false}>
-                <View style={styles.courseContainer}>
-                    {/* Background Image */}
-                    <ImageBackground 
-                        source={require('../../assets/forest.png')}
-                        style={styles.backgroundImage}
-                    >
-                        <Pressable onPress={()=>navigation.goBack()} style={styles.backButton}>
-                            <ChevronLeft size={24} color="white"/>
-                        </Pressable>
-                        <View style={styles.courseHeader}>
-                            <View>
-                                <Text style={styles.description}>{t('here you can find all courses')}</Text>
-                                <Text style={styles.title}>{t('all courses')}</Text>
-                            </View>
-                        </View>
-                    </ImageBackground>
-                </View>
-                <View style={styles.filterContainer}>
-                    <SlidingTabs tabs={tabs} activeTab={allcourseFilter} onTabChange={(id)=>setAllCourseFilter(id)}/>
-                </View>
-                <View style={styles.pillContainer}>
-                    {filters.status !== 'all' && (
-                        <View style={styles.pill}>
-                            <Text style={styles.pillText}>{statusLabels[filters.status]}</Text>
-                            <Pressable onPress={() => removeFilter('status')}>
-                                <CircleX size={16} color="white" />
+                <View style={styles.headerSection}>
+                    <View style={styles.titleRow}>
+                        <Text style={styles.headerTitle}>Badges</Text>
+                        
+                        <View style={styles.filterActions}>
+                            <Pressable 
+                                onPress={() => setFilterVisible(true)}
+                                style={styles.filterButton}
+                            >
+                                <SlidersHorizontal size={18} color="#424242" />
                             </Pressable>
                         </View>
-                    )}
+                    </View>
 
-                    {Array.isArray(filters.category) && filters.category.map((catName) => (
-                        <View key={catName} style={styles.pill}>
-                            <Text style={styles.pillText}>{catName}</Text>
-                            <Pressable onPress={() => removeFilter('category', catName)}>
-                                <CircleX size={16} color="white" />
-                            </Pressable>
-                        </View>
-                    ))}
+                    <View style={styles.pillContainer}>
+                        {filters.status !== 'all' && (
+                            <View style={styles.pill}>
+                                <Text style={styles.pillText}>{statusLabels[filters.status]}</Text>
+                                <Pressable onPress={() => removeFilter('status')}>
+                                    <CircleX size={14} color="white" />
+                                </Pressable>
+                            </View>
+                        )}
+                        {filters.tag !== 'all' && (
+                            <View style={styles.pill}>
+                                <Text style={styles.pillText}>{filters.tag}</Text>
+                                <Pressable onPress={() => removeFilter('tag')}>
+                                    <CircleX size={14} color="white" />
+                                </Pressable>
+                            </View>
+                        )}
+                    </View>
                 </View>
-                <View style={styles.cardContainer}>
-                    {filteredCourses.length === 0?(
+
+                <View style={styles.badgeGrid}>
+                    {courses.length === 0 ? (
                         <View style={styles.emptyContainer}>
-                            <Text style={styles.emptyText}>{t('no courses found')}</Text>
+                            <Text style={styles.emptyText}>No badges found</Text>
                         </View>
-                    ) : ( filteredCourses.map(course => {
-                        const numModules = course.modules ? course.modules.length : 0;
-                        return(
-                        <CourseCard
-                            key={course.id}
-                            id={course.id}
-                            imagePath={{ uri: course.image }}
-                            courseTitle={course.title}
-                            numModules={numModules || 16}
-                            duration={course.expected_completion_weeks}
-                            expiry={course.must_complete_in_weeks}
-                            userType={userType}
-                            progress={course.progress}
-                            // enrollment
-                            enrollmentStatus={course.enrollmentStatus}
-                            prerequisiteGroups={course.prerequisiteGroups || []}
-                            myEnrollments={myEnrollments}
-                            onPress={() => navigation.navigate('ParkGuideStack', {
-                                screen: 'UserModule', 
-                                params: { id: course.id }
-                            })}
-                            onEnroll={() => {
-                                Alert.alert(
-                                    "Confirm Enrollment",
-                                    `Are you sure you want to enroll in ${course.title}?`,
-                                    [
-                                        { text: "Cancel", style: "cancel" },
-                                        { 
-                                            text: "Enroll", 
-                                            onPress: () => handleEnrollment(course.id) 
-                                        }
-                                    ]
-                                );
-                            }}
-                            onDrop={() => handleDrop(course.id)}
-                        />)
-                })
-                )}
+                    ) : (
+                        courses.map((course) => {
+                            const enrollment = getEnrollment(course.id);
+                            const isEnrolled = !!enrollment; 
+                            const isCompleted = enrollment?.status === 'COMPLETED';
+                            const expiry = enrollment?.badge_expire_at; 
+                            const formattedDate = expiry ? formatDate(new Date(expiry)) : null;
+
+                            return (
+                                <View key={course.id} style={styles.badgeCard}>
+                                    <View style={styles.imageWrapper}>
+                                        <Image
+                                            source={{ uri: course.badge_img_url || 'https://via.placeholder.com/150' }}
+                                            style={[
+                                                styles.badgeImage,
+                                                !isEnrolled && styles.lockedBadge // if locked make grey
+                                            ]}
+                                        />
+                                        {!isEnrolled && (
+                                            <View style={styles.overlay} />
+                                        )}
+                                    </View>
+                                    
+                                    <Text style={styles.courseTitle} numberOfLines={1}>
+                                        {course.title}
+                                    </Text>
+                                    
+                                    {(isCompleted) && formattedDate && (
+                                        <Text style={styles.expiryText}>
+                                            Expires: {formattedDate}
+                                        </Text>
+                                    )}
+                                </View>
+                            );
+                        })
+                    )}
                 </View>
             </ScrollView>
+
             <FilterSidebar
                 visible={filterVisible}
                 tempFilters={tempFilters}
                 setTempFilters={setTempFilters}
                 onClose={() => setFilterVisible(false)}
-                onApply={() => {
-                    setFilters(tempFilters);
-                    setFilterVisible(false);
-                }}
-                onReset={() => {
-                    const reset = { level: 'all', status: 'all' };
-                    setTempFilters(reset);
-                    setFilters(reset);
-                }}
+                onApply={applyFilters}
+                onReset={resetFilters}
+                tagOptions={tagOptions} 
             />
         </SafeAreaView>
     );
@@ -151,7 +139,7 @@ const Badge = ({ navigation }) => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        paddingHorizontal: 60,
+        backgroundColor: '#fff',
     },
     centered: {
         flex: 1, 
@@ -159,33 +147,22 @@ const styles = StyleSheet.create({
         alignItems: 'center'
     },
     headerSection: {
-        marginTop: 40,
+        marginTop: 20,
+        paddingHorizontal: 16,
     },
     titleRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 15,
+        marginBottom: 12,
     },
     headerTitle: {
-        fontSize: 28,
+        fontSize: 24,
         fontWeight: 'bold',
-    },
-    filterActions: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    filterBar: {
-        flexDirection: 'row',
-        justifyContent: 'flex-end',
-        borderBottomWidth: 1,
-        borderBottomColor: '#eee',
-        paddingBottom: 15,
+        color: '#1a1a1a',
     },
     filterButton: {
-        flexDirection: 'row',
-        paddingHorizontal: 15,
-        paddingVertical: 8,
+        padding: 8,
         borderRadius: 8,
         borderWidth: 1,
         borderColor: '#ddd',
@@ -193,19 +170,20 @@ const styles = StyleSheet.create({
     badgeGrid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        gap: 40,
-        paddingVertical: 20,
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+        justifyContent: 'flex-start',
+        gap: 16, 
     },
     badgeCard: {
-        width: 180,
-        alignItems: 'center',
-        marginBottom: 20,
+        width: '30.5%', 
+        marginBottom: 15,
+        alignItems: 'flex-start',
     },
     imageWrapper: {
-        width: 140,
-        height: 140,
-        marginBottom: 12,
-        position: 'relative',
+        width: '100%',
+        aspectRatio: 1,
+        marginBottom: 6,
     },
     badgeImage: {
         width: '100%',
@@ -217,45 +195,35 @@ const styles = StyleSheet.create({
         opacity: 0.4,
     },
     courseTitle: {
-        fontSize: 16,
+        fontSize: 12,
         fontWeight: '600',
-        textAlign: 'center',
         color: '#333',
+        textAlign: 'left',
+        lineHeight: 14,
     },
     expiryText: {
-        fontSize: 12,
+        fontSize: 10,
         color: '#888',
-        marginTop: 4,
+        marginTop: 2,
     },
     pillContainer: {
         flexDirection: 'row',
         flexWrap: 'wrap',
         gap: 8,
-        paddingBottom: 20,
-        borderBottomWidth: 1,
-        borderBottomColor: '#eee',
+        paddingBottom: 10,
     },
     pill: {
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: '#0a6340',
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 20,
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 15,
     },
     pillText: {
-        fontSize: 13,
+        fontSize: 11,
         color: "white",
-        marginRight: 6,
-    },
-    emptyContainer: {
-        flex: 1,
-        alignItems: 'center',
-        marginTop: 50,
-    },
-    emptyText: {
-        color: '#999',
-        fontSize: 16,
+        marginRight: 4,
     }
 });
 

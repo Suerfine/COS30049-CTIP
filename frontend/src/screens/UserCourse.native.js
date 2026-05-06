@@ -1,6 +1,6 @@
-import { View, Text, StyleSheet, ScrollView, Pressable, ImageBackground, StatusBar } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, ImageBackground, StatusBar, TextInput } from 'react-native';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { CircleX, ListFilter, SignalZero, ChevronLeft} from 'lucide-react-native'
+import { CircleX, ListFilter, SignalZero, ChevronLeft, SlidersHorizontal, Search} from 'lucide-react-native'
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 
 // Import other hook and component
@@ -26,21 +26,11 @@ const UserCourse=({navigation})=>{
         myEnrollments,
         coursesWithStatus,
         filteredCourses, courses,
-        removeFilter,
         handleEnrollment, 
         handleDrop,
+        handleApply,
+        removeFilter,allTagList, addTag,searchText, setSearchText, handleSearch,
     }=useUserCourse();
-
-    const handleFilterPass=useCallback(()=>{
-        setTempFilters(filters);
-        setFilterVisible(true);
-    },[filters]);
-
-    useEffect(()=>{
-        navigation.setParams({
-            openFilters:handleFilterPass
-        });
-    },[navigation, handleFilterPass]);
 
     return (
         <SafeAreaView style={styles.container} edges={['left', 'right']}>
@@ -65,6 +55,31 @@ const UserCourse=({navigation})=>{
                 </View>
                 <View style={styles.filterContainer}>
                     <SlidingTabs tabs={tabs} activeTab={allcourseFilter} onTabChange={(id)=>setAllCourseFilter(id)}/>
+                    <Pressable 
+                        onPress={() => {
+                            setTempFilters(filters);
+                            setFilterVisible(true);
+                        }}
+                        style={({ hovered }) => [
+                            styles.filter,
+                            hovered && styles.filterHover, 
+                        ]}
+                    >
+                        <SlidersHorizontal/>
+                    </Pressable>
+                </View>
+                {/* Search and Filter */}
+                <View style={styles.toolbar}>
+                    <View style={styles.search}>
+                    <Search size={18} />
+                    <TextInput
+                        style={styles.input}
+                        value={searchText}
+                        onChangeText={handleSearch}
+                        placeholder="Search..."
+                        placeholderTextColor="#8f8f8f"
+                    />
+                    </View>
                 </View>
                 <View style={styles.pillContainer}>
                     {filters.status !== 'all' && (
@@ -75,6 +90,14 @@ const UserCourse=({navigation})=>{
                             </Pressable>
                         </View>
                     )}
+                    {Array.isArray(filters.location) && filters.location.map((locName) => (
+                        <View key={locName} style={[styles.pill, { backgroundColor: '#18704d' }]}>
+                            <Text style={styles.pillText}>{locName}</Text>
+                            <Pressable onPress={() => removeFilter('location', locName)}>
+                                <CircleX size={16} color="white" />
+                            </Pressable>
+                        </View>
+                    ))}
 
                     {Array.isArray(filters.category) && filters.category.map((catName) => (
                         <View key={catName} style={styles.pill}>
@@ -96,7 +119,7 @@ const UserCourse=({navigation})=>{
                         <CourseCard
                             key={course.id}
                             id={course.id}
-                            imagePath={{ uri: course.image }}
+                            coverImgUrl={course.cover_img_url}
                             courseTitle={course.title}
                             numModules={numModules || 16}
                             duration={course.expected_completion_weeks}
@@ -109,7 +132,8 @@ const UserCourse=({navigation})=>{
                             myEnrollments={myEnrollments}
                             onPress={() => navigation.navigate('ParkGuideStack', {
                                 screen: 'UserModule', 
-                                params: { id: course.id }
+                                params: { id: course.id,
+                                        enrollmentStatus: course.enrollmentStatus ?? null }
                             })}
                             onEnroll={() => {
                                 Alert.alert(
@@ -132,15 +156,13 @@ const UserCourse=({navigation})=>{
             </ScrollView>
             <FilterSidebar
                 visible={filterVisible}
+                allTagList={allTagList}
                 tempFilters={tempFilters}
                 setTempFilters={setTempFilters}
                 onClose={() => setFilterVisible(false)}
-                onApply={() => {
-                    setFilters(tempFilters);
-                    setFilterVisible(false);
-                }}
+                onApply={handleApply}
                 onReset={() => {
-                    const reset = { level: 'all', status: 'all' };
+                    const reset = { status: 'all', category: [], location: []};
                     setTempFilters(reset);
                     setFilters(reset);
                 }}
@@ -201,12 +223,39 @@ const styles=StyleSheet.create({
         justifyContent:'flex-start',
         gap:11,
     },
+    filterContainer:{
+        flexDirection:'row',
+        marginBottom:10,
+        justifyContent:'space-between',
+        borderBottomColor:'#42424255',
+        borderBottomWidth:1,
+    },
+    filter:{
+        flexDirection:'row',
+        paddingVertical:5,
+        paddingRight:10,
+        borderRadius:5,
+    },
+    filterHover:{
+        color:'#efab21'
+    },
+    emptyContainer:{
+        width: '100%',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginTop: 100,
+    },
+    emptyText:{
+        fontSize: 20,
+        color: '#666',
+    },
     pillContainer:{
         flexDirection:'row',
         flexWrap:'wrap',
         gap:8,
         marginBottom:15,
-        marginTop:5
+        marginTop:5,
+        marginHorizontal:60
     },
     pill:{
         flexDirection:'row',
@@ -214,8 +263,7 @@ const styles=StyleSheet.create({
         backgroundColor: '#0a6340',
         paddingHorizontal:12,
         paddingVertical:8,
-        borderRadius:30,
-        marginTop:10
+        borderRadius:20,
     },
     pillText:{
         fontSize:14,
@@ -223,10 +271,28 @@ const styles=StyleSheet.create({
         marginRight:6,
         fontWeight:'500'
     },
-    filterContainer:{
-        borderBottomColor:'#42424255',
-        borderBottomWidth:1
-    }
+    search: {
+        flexDirection: "row",
+        gap: 7,
+        borderWidth: 1,
+        borderColor: "#8f8f8f",
+        minWidth: 300,
+        padding: 5,
+        backgroundColor: "white",
+        borderRadius: 15,
+        alignItems: "center",
+    },
+    input: {
+        flex: 1,
+        paddingVertical: 2,
+        outlineStyle: "none",
+  },
+  toolbar: {
+    justifyContent: "space-between",
+    flexDirection: "row",
+    marginHorizontal:60,
+    marginBottom:10
+  },
 });
 
 export default UserCourse;
