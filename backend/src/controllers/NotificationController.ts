@@ -295,11 +295,9 @@ export const dismissNotification = async (
 ) => {
   const transaction = await sequelize.transaction();
   try {
-    // Only the notification owner may dismiss their own notification
+    // Check if the user is authenticated
     if (!req.user) {
-    // Only admin can dismiss notifications
-    if (!req.user || req.user.role !== UserRoles.ADMIN) {
-      throw new HttpError(403, "Forbidden");
+      throw new HttpError(401, "Unauthorized");
     }
 
     // Find the notification to dismiss
