@@ -7,6 +7,7 @@ import pageRouter from "./PageRoute";
 import messageRouter from "./MessageRoute";
 import enrollmentRouter from "./EnrollmentRoute";
 import submissionRouter from "./SubmissionRoute";
+import NotificationRoute from "./NotificationRoute";
 import tagRouter from "./TagRoute";
 import * as AuthController from "../controllers/AuthController";
 import elementRouter from "./ElementRoute";
@@ -104,6 +105,11 @@ router.use("/notifications", notificationRouter);
 ===============================*/
 router.use("/sensors", sensorRouter);
 router.use("/", sensorLogRouter);
+
+/*===============================
+=     NOTIFICATION ROUTES      =
+===============================*/
+router.use("/notifications", NotificationRoute);
 
 /*===============================
 =        ENROLLMENT ROUTES        =

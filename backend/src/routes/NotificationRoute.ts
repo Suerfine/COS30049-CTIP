@@ -17,7 +17,7 @@ const NotificationRouter = Router();
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         multipart/form-data:
  *           schema:
  *             type: object
  *             required: [title, message, target_user_ids]
@@ -65,6 +65,28 @@ NotificationRouter.post(
  *     tags: [Notifications]
  *     security:
  *       - OAuth2: ["all"]
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           example: 1
+ *       - in: query
+ *         name: size
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           example: 10
+ *       - in: query
+ *         name: orderBy
+ *         schema:
+ *           type: string
+ *           example: created_at desc
+ *       - in: query
+ *         name: filter
+ *         schema:
+ *           type: string
  *     responses:
  *       200:
  *         description: Notifications retrieved successfully
@@ -79,11 +101,43 @@ NotificationRouter.get("/", auth, NotificationController.getAllNotifications);
  *     tags: [Notifications]
  *     security:
  *       - OAuth2: ["all"]
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           example: 1
+ *       - in: query
+ *         name: size
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           example: 10
+ *       - in: query
+ *         name: orderBy
+ *         schema:
+ *           type: string
+ *           example: created_at desc
+ *       - in: query
+ *         name: filter
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: includeDismissed
+ *         schema:
+ *           type: boolean
+ *           example: false
+ *         description: Include dismissed notifications when set to true
  *     responses:
  *       200:
  *         description: My notifications retrieved successfully
  */
-NotificationRouter.get("/me", auth, NotificationController.getAllMyNotifications);
+NotificationRouter.get(
+  "/me",
+  auth,
+  NotificationController.getAllMyNotifications,
+);
 
 /**
  * @swagger
@@ -99,6 +153,21 @@ NotificationRouter.get("/me", auth, NotificationController.getAllMyNotifications
  *         required: true
  *         schema:
  *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               title:
+ *                 type: string
+ *               message:
+ *                 type: string
+ *               url:
+ *                 type: string
+ *               dismissed_at:
+ *                 type: string
  *     responses:
  *       200:
  *         description: Notification updated successfully
@@ -123,6 +192,10 @@ NotificationRouter.put("/:id", auth, NotificationController.updateNotification);
  *       200:
  *         description: Notification deleted successfully
  */
-NotificationRouter.delete("/:id", auth, NotificationController.deleteNotification);
+NotificationRouter.delete(
+  "/:id",
+  auth,
+  NotificationController.deleteNotification,
+);
 
 export default NotificationRouter;
