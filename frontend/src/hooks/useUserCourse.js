@@ -96,7 +96,10 @@ export const useUserCourse=()=>{
                 (e) => Number(e.course_id) === Number(courseId)
             );
 
-            if (existingEnrollment && (existingEnrollment.status === 'dropped' || existingEnrollment.deleted_at)) {
+            console.log("Checking enrollment for Course:", courseId, "Found:", existingEnrollment);
+
+            if (existingEnrollment && (existingEnrollment.status === 'dropped')) {
+                console.log("Re-activating existing enrollment ID:", existingEnrollment.id);
                 await enrollmentService.updateStatus(existingEnrollment.id, 'in_review'); 
             } else {
                 await enrollmentService.enroll(courseId, currentUser.id);
@@ -104,13 +107,13 @@ export const useUserCourse=()=>{
 
             await loadMyEnrollments();
             
-            if (Platform.OS === 'web') {
-                window.alert("Enrollment request sent for approval.");
-            } else {
-                Alert.alert('Success', "Enrollment request sent for approval.");
-            }
+            const successMsg = "Enrollment request sent for approval.";
+            Platform.OS === 'web' ? window.alert(successMsg) : Alert.alert('Success', successMsg);
+
         } catch (err) {
-            const message = typeof err === 'string' ? err : err?.message || 'Failed to enroll.';
+            console.error("Enrollment error details:", err.response?.data || err.message);
+            
+            const message = err.response?.data?.message || err.message || 'Failed to enroll.';
             Platform.OS === 'web' ? window.alert(message) : Alert.alert('Enrollment Failed', message);
         }
     }, [currentUser, myEnrollments, loadMyEnrollments]);
@@ -128,7 +131,7 @@ export const useUserCourse=()=>{
                 return;
             }
  
-            await enrollmentService.updateStatus(enrollment.id);  
+            await enrollmentService.updateStatus(enrollment.id, 'dropped');  
             await loadMyEnrollments();
         } catch (err) {
             const message =

@@ -36,7 +36,6 @@ const EnrollmentManagement = () => {
         enrollment:['All', 'in_progress','in_review', 'completed', 'failed', 'dropped', 'expired'],
         submission:['All', 'Approved', 'Pending', 'Rejected']
     };
-
     const displayData=activeTab === 'enrollment' ? enrollments : submissions;
 
     const itemsPerPage = 10; 
