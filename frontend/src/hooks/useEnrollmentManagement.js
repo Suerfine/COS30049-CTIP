@@ -22,7 +22,7 @@ export const useEnrollmentManagement=()=>{
         try {
             const [enrollData, submissionData] = await Promise.all([
                 enrollmentService.getAll(currentPage, 10, searchQuery, sortConfig, currentStatus),
-                submissionService.getAll()
+                // submissionService.getAll()
             ]);
 
             setEnrollments(enrollData.data || []); 

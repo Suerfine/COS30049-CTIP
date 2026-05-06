@@ -91,7 +91,7 @@ const OutlineBar = ({ course, progressMap, onSelectPage, editable, isCollapsed, 
                 renderItem={({ item: module, index: moduleIndex }) => {
                     const mid = module.id;
                     const displayModuleNum = moduleIndex + 1;
-                    const modStatus = progressMap[`module_${mid}`] || { percent: 0 };
+                    const modStatus = (progressMap && progressMap[`module_${mid}`]) ? progressMap[`module_${mid}`] : { percent: 0 };
                     const isSelected = (selectedItem?.type === "module" && selectedItem?.module?.id === mid) || 
                                        (selectedItem?.type === "page" && selectedItem?.module?.id === mid);
                     
@@ -142,10 +142,25 @@ const OutlineBar = ({ course, progressMap, onSelectPage, editable, isCollapsed, 
                             {expandedModule === mid && (
                                 <View>
                                     {module.pages?.map((page, pageIndex) => {
-                                        const displayPageNum = `${displayModuleNum}.${pageIndex + 1}`;
-                                        const status = progressMap[page.id] || { isLocked: true, percent: 0, isCompleted: false };
+                                        // 1. Generate display numbers safely
+                                        const modNum = displayModuleNum ?? 0;
+                                        const pNum = (pageIndex ?? 0) + 1;
+                                        const displayPageNum = `${modNum}.${pNum}`;
+
+                                        // 2. Defensive check for progressMap to prevent the "Cannot read properties of undefined" crash
+                                        // We default to a safe 'locked' object if the map doesn't have this page ID yet
+                                        const status = progressMap?.[page?.id] ?? { 
+                                            isLocked: true, 
+                                            percent: 0, 
+                                            isCompleted: false 
+                                        };
+
+                                        // 3. Determine lock status based on global props and individual page status
                                         const isPageLocked = isLocked || (!editable && status.isLocked);
-                                        const isEditingPage = editingItem?.type === 'page' && editingItem.pageId === page.id;
+                                        const isEditingPage = editingItem?.type === 'page' && editingItem.pageId === page?.id;
+
+                                        // Safety return if page object is missing for any reason
+                                        if (!page) return null;
 
                                         return (
                                             <Pressable
@@ -179,7 +194,8 @@ const OutlineBar = ({ course, progressMap, onSelectPage, editable, isCollapsed, 
                                                             getHighlightedText(page.title, localSearch)
                                                         )}
                                                     </Text>
-                                                    {/* Page Progress Indicator*/}
+
+                                                    {/* Page Progress Indicator - Hidden in edit mode or if course is locked */}
                                                     {!editable && !isLocked && (
                                                         <View style={styles.statusIconContainer}>
                                                             {status.isCompleted ? (
@@ -188,7 +204,8 @@ const OutlineBar = ({ course, progressMap, onSelectPage, editable, isCollapsed, 
                                                                 <Lock size={14} color="#9ca3af" />
                                                             ) : (
                                                                 <Progress.Circle 
-                                                                    progress={status.percent / 100} 
+                                                                    // Divide by 100 because the progress library expects a value between 0 and 1
+                                                                    progress={(status.percent ?? 0) / 100} 
                                                                     size={21} 
                                                                     color="#0a6340" 
                                                                     thickness={3} 
@@ -200,7 +217,6 @@ const OutlineBar = ({ course, progressMap, onSelectPage, editable, isCollapsed, 
                                             </Pressable>
                                         );
                                     })}
-
                                     {editable && (
                                         <Pressable onPress={() => addPage(mid)} style={styles.pageItem}>
                                             <Text style={styles.addPage}>+ Add New Page</Text>
