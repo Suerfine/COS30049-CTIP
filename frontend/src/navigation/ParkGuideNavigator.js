@@ -16,12 +16,14 @@ import Settings from "../screens/Settings.native";
 import UserAnomaly from "../screens/UserAnomaly";
 import Badge from "../screens/Badge";
 import Notifications from "../screens/NotificationScreen";
+import Payment from "../screens/Payment";
 
 // Import components
 import MobileTopBar from "../components/MobileTopBar";
 import MobileSideBar from "../components/MobileSideBar";
 import NavBar from "../components/NavBar";
 import ProfileStack from "./ProfileStack";
+import PaymentReview from "../screens/PaymentReview";
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -176,6 +178,8 @@ export default function ParkGuideNavigator() {
           <Stack.Screen name="UserAnomaly" component={UserAnomaly}/>
           <Stack.Screen name="Badge" component={Badge}/>
           <Stack.Screen name="Notifications" component={Notifications}/>
+          <Stack.Screen name="Payment" component={Payment}/>
+          <Stack.Screen name="PaymentReview" component={PaymentReview}/>
 
           {/* UserProfile, Preferences and Security screens */}
           <Stack.Screen name="ProfileStack" component={ProfileStack} />
