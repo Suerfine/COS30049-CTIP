@@ -65,11 +65,12 @@ const CourseCard = ({
   const isWeb = Platform.OS === "web";
 
   const isAdmin = userType === "admin";
-  const isNotEnrolled = enrollmentStatus === null || enrollmentStatus === undefined;
+  const isNotEnrolled = !enrollmentStatus;
   const isInProgress = enrollmentStatus === EnrollmentStatus.IN_PROGRESS;
   const isInReview = enrollmentStatus === EnrollmentStatus.IN_REVIEW;
   const isCompleted = enrollmentStatus === EnrollmentStatus.COMPLETED;
   const isFailed = enrollmentStatus === EnrollmentStatus.FAILED;
+  const isDropped = enrollmentStatus === EnrollmentStatus.DROPPED
 
   const cardPressable = isInProgress;
 
@@ -132,7 +133,7 @@ const CourseCard = ({
     if (isInReview) {
       return (
         <View style={[styles.statusBadge, styles.badgeInReview]}>
-          <Text style={styles.statusBadgeText}>In Review</Text>
+          <Text style={styles.statusBadgeText}>{t("in review")}</Text>
         </View>
       );
     }
@@ -140,7 +141,7 @@ const CourseCard = ({
     if (isCompleted) {
       return (
         <View style={[styles.statusBadge, styles.badgeCompleted]}>
-          <Text style={styles.statusBadgeText}>Completed</Text>
+          <Text style={styles.statusBadgeText}>{t("completed")}</Text>
         </View>
       );
     }
@@ -148,8 +149,16 @@ const CourseCard = ({
     if (isFailed) {
       return (
         <View style={[styles.statusBadge, styles.badgeFailed]}>
-          <Text style={styles.statusBadgeText}>Completed</Text>
+          <Text style={styles.statusBadgeText}>{t("failed")}</Text>
         </View>
+      );
+    }
+
+    if (isDropped) {
+      return (
+        <Pressable style={styles.enrollBtn} onPress={handleEnrollPress}>
+          <Text style={styles.enrollText}>{t("enroll") || "Enroll"}</Text>
+        </Pressable>
       );
     }
 
