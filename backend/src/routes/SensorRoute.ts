@@ -35,7 +35,7 @@ const sensorRouter = Router();
  *         description: Invalid request data
  */
 sensorRouter.post(
-  "/sensors/:sensor_id",
+  "/",
   [
     body("name").isString().notEmpty(),
     body("type").isString().notEmpty(),
@@ -91,7 +91,7 @@ sensorRouter.post(
  *             schema:
  *               $ref: '#/components/schemas/PaginatedSensorResponse'
  */
-sensorRouter.get("/sensors", SensorController.getAllSensors);
+sensorRouter.get("/", SensorController.getAllSensors);
 
 /**
  * @swagger
@@ -117,7 +117,7 @@ sensorRouter.get("/sensors", SensorController.getAllSensors);
  *       404:
  *         description: Sensor not found
  */
-sensorRouter.get("/sensors/:id", SensorController.getSensorById);
+sensorRouter.get("/:id", SensorController.getSensorById);
 
 /**
  * @swagger
@@ -152,7 +152,7 @@ sensorRouter.get("/sensors/:id", SensorController.getSensorById);
  *         description: Sensor not found
  */
 sensorRouter.put(
-  "/sensors/:id",
+  "/:id",
   [
     body("name").optional().isString(),
     body("type").optional().isString(),
@@ -192,6 +192,6 @@ sensorRouter.put(
  *       404:
  *         description: Sensor not found
  */
-sensorRouter.delete("/sensors/:id", SensorController.deleteSensor);
+sensorRouter.delete("/:id", SensorController.deleteSensor);
 
 export default sensorRouter;
