@@ -3,11 +3,13 @@ import { courseService } from '../services/courseService';
 import { moduleService } from '../services/moduleService';
 import { pageService } from '../services/pageService';
 import {ElementService } from '../services/ElementService';
+import { submissionService } from '../services/SubmissionService';
 
-export const useCourseDetails=(id)=>{
+export const useCourseDetails=(id, enrollmentId)=>{
     const [course,setCourse]=useState(null);
     const [loading,setLoading]=useState(true);
     const [error, setError]=useState(null);
+    const [userMarks, setUserMarks] = useState({});
 
     const fetchCourse = useCallback(async () => {
         if (!id) return;
@@ -72,6 +74,25 @@ export const useCourseDetails=(id)=>{
         }
     };
 
+    const saveProgress = useCallback(async (elementId, score, content = {}) => {
+        setUserMarks(prev => ({
+            ...prev,
+            [elementId]: score
+        }));
+
+        try {
+            await submissionService.create({
+                enrollment_id: Number(enrollmentId),
+                element_id: Number(elementId),
+                content: { ...content, auto_marked: true },
+                earned_grade: score,
+                marking_remark: "System: Automated marking triggered."
+            });
+        } catch (err) {
+            console.error("Sync failed:", err);
+        }
+    }, [enrollmentId]);
+
     useEffect(()=>{
         fetchCourse();
     },[fetchCourse]);
@@ -82,6 +103,7 @@ export const useCourseDetails=(id)=>{
         error,
         refresh:fetchCourse,
         updateDescription,
-        locationTags, categoryTags
+        locationTags, categoryTags,
+        saveProgress
     };
 }

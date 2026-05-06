@@ -158,6 +158,7 @@ export const createSubmission = async (
     const enrollmentId = parseNumberField(req.body.enrollment_id);
     const elementId = parseNumberField(req.body.element_id);
     const submissionIdField = req.body.submission_id;
+    const earnedGrade = req.body.earned_grade !== undefined ? Number(req.body.earned_grade) : 0;
     if (
       enrollmentId === null ||
       !Number.isInteger(enrollmentId) ||
@@ -220,7 +221,7 @@ export const createSubmission = async (
       element_id: elementId,
       submission_id: parentSubmissionId,
       content,
-      earned_grade: 0,
+      earned_grade: earnedGrade,
       marking_remark: null,
     });
 

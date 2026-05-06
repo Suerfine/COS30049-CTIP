@@ -16,6 +16,7 @@ export interface CreateSubmissionRequest {
   element_id?: unknown;
   submission_id?: unknown;
   content?: unknown;
+  earned_grade?: number;
 }
 
 export interface UpdateSubmissionRequest {

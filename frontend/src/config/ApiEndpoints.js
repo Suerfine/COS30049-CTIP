@@ -38,5 +38,12 @@ export const API_ENDPOINTS={
     TAGS: {
         LIST: '/tags',
         CREATE:'/tags'
-    }
+    },
+    SUBMISSION: {
+        BASE: '/submission',
+        BY_ID: (id) => `/submission/${id}`,
+        SUBMIT_ATTEMPT: (id) => `/submission/${id}/submit`,
+        MARK: (id) => `/submission/${id}/mark`,
+        GET_BY_ELEMENT: (elId) => `/element/${elId}/submissions`,
+    },
 };
