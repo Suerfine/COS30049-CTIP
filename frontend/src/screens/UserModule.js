@@ -1,7 +1,7 @@
 import React,{useEffect,useState} from 'react';
-import { View, Text, StyleSheet, ScrollView, ImageBackground, Pressable, ActivityIndicator, Image} from 'react-native';
+import { View, Text, StyleSheet, ScrollView, ImageBackground, Pressable, ActivityIndicator, Image, TouchableOpacity} from 'react-native';
 import {useRoute} from '@react-navigation/native';
-import { Award, Calendar, Clock, Menu, ChevronLeft } from 'lucide-react-native';
+import { Award, Calendar, Clock, Menu, ChevronLeft, Bot } from 'lucide-react-native';
 import Markdown from 'react-native-markdown-display';
 
 // Import Components
@@ -14,6 +14,7 @@ import { useAuth } from '../context/AuthContext.js';
 import { markdownStyles } from '../components/markdownStyle.js';
 import { useCourses } from '../hooks/useCourses.js';
 import { useCourseProgress } from '../components/useCourseProgress.js';
+import AIChatBot from '../components/AIChatbot.js';
 
 const UserModule = ({navigation}) => {
     const route=useRoute();
@@ -28,6 +29,7 @@ const UserModule = ({navigation}) => {
     const {currentUser}=useAuth();
     const {course, loading, error,locationTags, categoryTags, saveProgress, userMarks}=useCourseDetails(id, enrollmentId);
     const {allCourseList}=useCourses();
+    const [chatOpen, setChatOpen] = useState(false);
     
     const progressMap = useCourseProgress(course, userMarks);
     const [selectedPage, setSelectedPage]=useState({type:'overview'});
@@ -330,6 +332,17 @@ const UserModule = ({navigation}) => {
                     </View>
                 </View>
             </ScrollView>
+            {/* AIChatbot Section */}
+            <AIChatBot isOpen={chatOpen} onClose={() => setChatOpen(false)} />
+            {!chatOpen && (
+                <TouchableOpacity 
+                    style={styles.floatingChatBtn} 
+                    onPress={() => setChatOpen(true)}
+                >
+                    <Bot color="white" size={24} />
+                    <Text style={styles.chatBtnText}>Assistant</Text>
+                </TouchableOpacity>
+            )}
         </View>
 
     );
@@ -663,6 +676,24 @@ const styles = StyleSheet.create({
         borderTopColor: '#f3f4f6',
         paddingTop: 12,
         marginTop: 4,
+    },
+    floatingChatBtn: {
+        position: 'absolute',
+        bottom: 30,
+        right: 30,
+        backgroundColor: '#0a6340', 
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 20,
+        paddingVertical: 12,
+        borderRadius: 30,
+        gap: 8,
+        zIndex: 1000, 
+    },
+    chatBtnText: {
+        color: 'white',
+        fontWeight: 'bold',
+        fontSize: 14,
     }
 });
 
