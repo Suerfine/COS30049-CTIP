@@ -86,5 +86,21 @@
     "save":"Simpan",
     "current password": "Kata Laluan Semasa",
     "new password":"Kata Laluan Baharu",
-    "confirm":"Sahkan"
+    "confirm":"Sahkan",
+    "manage notifications":"Urus Notifikasi",
+    "all notifications":"Semua Notifikasi",
+    "dismissal status":"Status Penolakan",
+    "confirm delete":"Sahkan Padam",
+    "are you sure you want to delete this notification?":"Adakah anda pasti ingin memadam notifikasi ini?",
+    "cancel":"Batal",
+    "delete":"Padam",
+    "dismissed":"Ditolak",
+    "pending":"Menunggu",
+    "error":"Ralat",
+    "retry":"Cuba Lagi",
+    "loading":"Memuatkan",
+    "no notifications":"Tiada Notifikasi",
+    "dismiss":"Tolak",
+    "todo notifications":"Notifikasi Tugasan",
+    "no todos":"Tiada Tugasan"
 }
