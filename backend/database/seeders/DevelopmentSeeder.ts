@@ -12,6 +12,7 @@ import Module from "../../src/models/Module";
 import Page from "../../src/models/Page";
 import Element from "../../src/models/Element";
 import Sensor from "../../src/models/Sensor";
+import Notification from "../../src/models/Notification";
 import { SensorStatus } from "../../src/enum/SensorStatus";
 import {
   buildUser,
@@ -19,6 +20,7 @@ import {
   UserFactoryAttributes,
 } from "../factories/UserFactory";
 import { buildCourseGraph } from "../factories/CourseFactory";
+import { buildNotifications } from "../factories/NotificationFactory";
 import { buildTags, TagFactoryAttributes } from "../factories/TagFactory";
 import {
   buildEnrollment,
@@ -88,6 +90,24 @@ export async function runSeeders(
       id: createdUser.id,
       created_at: createdUser.created_at,
     });
+  }
+
+  // Create dummy notifications for admin and park guide users
+  const notificationTargets = [
+    createdAdminUser.id,
+    ...createdAdminUsers.map((user) => user.id),
+    ...createdParkGuideUsers.map((user) => user.id),
+  ];
+
+  for (const userId of notificationTargets) {
+    const notifications = buildNotifications(
+      faker.number.int({ min: 1, max: 3 }),
+      userId,
+    );
+
+    for (const notification of notifications) {
+      await Notification.create(notification);
+    }
   }
 
   for (const parkGuideUser of createdParkGuideUsers) {

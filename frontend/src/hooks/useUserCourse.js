@@ -213,7 +213,7 @@ export const useUserCourse = () => {
         (Array.isArray(filters.category) && filters.category.length === 0) ||
         course.tags?.some(
           (tag) =>
-            tag.type === "category" && filters.category.includes(tag.title),
+            tag.type?.toLowerCase() === "category" && filters.category.includes(tag.title),
         );
 
       return (

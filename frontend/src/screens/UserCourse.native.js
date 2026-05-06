@@ -2,6 +2,7 @@ import { View, Text, StyleSheet, ScrollView, Pressable, ImageBackground, StatusB
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { CircleX, ListFilter, SignalZero, ChevronLeft, SlidersHorizontal, Search} from 'lucide-react-native'
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
+import { useFocusEffect, useRoute } from '@react-navigation/native';
 
 // Import other hook and component
 import { useUserDashboard } from '../hooks/useUserDashboard';
@@ -14,6 +15,8 @@ import { useTranslation } from 'react-i18next';
 
 const UserCourse=({navigation})=>{
     const {t, i18n}=useTranslation();
+    const route = useRoute();
+    const filterCategory = route.params?.filterCategory;
     const { progressData, userType  } = useUserDashboard();
     const {selectedCourse, setSelectedCourse,
         modalVisible, setModalVisible,
@@ -31,6 +34,23 @@ const UserCourse=({navigation})=>{
         handleApply,
         removeFilter,allTagList, addTag,searchText, setSearchText, handleSearch,
     }=useUserCourse();
+    
+    // sync parameter with filter from UserDashboard Explore Categories section
+    useFocusEffect(
+        useCallback(() => {
+            if (filterCategory) {
+                setFilters(prev => ({
+                    ...prev,
+                    category: [filterCategory]
+                }));
+
+                setTempFilters(prev => ({
+                    ...prev,
+                    category: [filterCategory]
+                }));
+            }
+        }, [filterCategory])
+    );
 
     return (
         <SafeAreaView style={styles.container} edges={['left', 'right']}>
@@ -182,12 +202,12 @@ const styles=StyleSheet.create({
     },
     backgroundImage:{
         width:'100%',
-        borderRadius:15,
+        borderRadius:20,
         overflow:'hidden',
-        resizeMode:'fill',
+        resizeMode:'cover',
         marginTop:10,
-        flexDirection:'row',
-        alignItems:'center',
+        borderTopLeftRadius: 15,
+        borderTopRightRadius: 15,
     },
     courseHeader:{
         paddingHorizontal:15,
@@ -222,6 +242,7 @@ const styles=StyleSheet.create({
         flexWrap:'wrap',
         justifyContent:'flex-start',
         gap:11,
+        paddingTop: 5,
     },
     filterContainer:{
         flexDirection:'row',
@@ -255,7 +276,6 @@ const styles=StyleSheet.create({
         gap:8,
         marginBottom:15,
         marginTop:5,
-        marginHorizontal:60
     },
     pill:{
         flexDirection:'row',
@@ -281,18 +301,18 @@ const styles=StyleSheet.create({
         backgroundColor: "white",
         borderRadius: 15,
         alignItems: "center",
+        minWidth: 180,
     },
     input: {
         flex: 1,
         paddingVertical: 2,
         outlineStyle: "none",
-  },
-  toolbar: {
-    justifyContent: "space-between",
-    flexDirection: "row",
-    marginHorizontal:60,
-    marginBottom:10
-  },
+    },
+    toolbar: {
+        justifyContent: "space-between",
+        flexDirection: "row",
+        marginBottom:10,
+    },
 });
 
 export default UserCourse;

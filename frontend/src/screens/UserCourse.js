@@ -1,6 +1,7 @@
 import { View, Text, StyleSheet, ScrollView, Pressable, ImageBackground, TextInput} from 'react-native';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { CircleX, ListFilter, SignalZero, SlidersHorizontal, Search } from 'lucide-react-native'
+import { useRoute } from '@react-navigation/native';
 
 // Import other hook and component
 import { useUserDashboard } from '../hooks/useUserDashboard';
@@ -12,8 +13,10 @@ import CourseCard from '../components/CourseCard';
 import { useTranslation } from 'react-i18next';
 
 const UserCourse = ({ navigation }) => {
-    const { progressData, userType } = useUserDashboard();
-    const {t, i18n}=useTranslation();
+    const { progressData, userType  } = useUserDashboard();
+    const { t, i18n }=useTranslation();
+    const route = useRoute();
+    const filterCategory = route.params?.filterCategory;
     const {selectedCourse, setSelectedCourse,
         modalVisible, setModalVisible,
         filterVisible, setFilterVisible,
@@ -30,6 +33,19 @@ const UserCourse = ({ navigation }) => {
         handleApply,
         removeFilter,allTagList, addTag,searchText, setSearchText, handleSearch,
     }=useUserCourse();
+
+    // sync parameter with filter from UserDashboard Explore Categories section
+    useEffect(() => {
+        if (filterCategory) {
+            const newFilter = {
+                ...filters,
+                category: [filterCategory]
+            };
+
+            setFilters(newFilter);
+            setTempFilters(newFilter);
+        }
+    }, [filterCategory]);
 
     return (
         <View style={{ flex: 1 }}>

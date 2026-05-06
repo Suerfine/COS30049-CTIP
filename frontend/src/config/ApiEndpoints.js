@@ -39,11 +39,12 @@ export const API_ENDPOINTS={
         LIST: '/tags',
         CREATE:'/tags'
     },
-    SUBMISSION: {
-        BASE: '/submission',
-        BY_ID: (id) => `/submission/${id}`,
-        SUBMIT_ATTEMPT: (id) => `/submission/${id}/submit`,
-        MARK: (id) => `/submission/${id}/mark`,
-        GET_BY_ELEMENT: (elId) => `/element/${elId}/submissions`,
-    },
+    NOTIFICATION: {
+        LIST: '/notifications',
+        MY_NOTIFICATIONS: '/notifications/me',
+        DETAIL: (id) => `/notifications/${id}`,
+        UPDATE: (id) => `/notifications/${id}`,
+        DISMISS: (id) => `/notifications/${id}/dismiss`,
+        DELETE: (id) => `/notifications/${id}`,
+    }
 };
