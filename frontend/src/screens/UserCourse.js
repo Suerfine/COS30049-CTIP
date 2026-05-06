@@ -9,9 +9,11 @@ import NavBar from '../components/NavBar';
 import SlidingTabs from '../components/SlidingTabs';
 import FilterSidebar from '../components/FilterSidebar';
 import CourseCard from '../components/CourseCard';
+import { useTranslation } from 'react-i18next';
 
 const UserCourse = ({ navigation }) => {
-    const { progressData, userType  } = useUserDashboard();
+    const { progressData, userType } = useUserDashboard();
+    const {t, i18n}=useTranslation();
     const {selectedCourse, setSelectedCourse,
         modalVisible, setModalVisible,
         filterVisible, setFilterVisible,

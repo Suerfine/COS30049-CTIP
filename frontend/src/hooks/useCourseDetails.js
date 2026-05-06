@@ -5,11 +5,12 @@ import { pageService } from '../services/pageService';
 import {ElementService } from '../services/ElementService';
 import { submissionService } from '../services/SubmissionService';
 
-export const useCourseDetails=(id, enrollmentId)=>{
+export const useCourseDetails=(id, enrollmentId, initialMarks = {})=>{
     const [course,setCourse]=useState(null);
     const [loading,setLoading]=useState(true);
     const [error, setError]=useState(null);
-    const [userMarks, setUserMarks] = useState({});
+    const [userMarks, setUserMarks] = useState(initialMarks || {});
+    
 
     const fetchCourse = useCallback(async () => {
         if (!id) return;
@@ -18,31 +19,46 @@ export const useCourseDetails=(id, enrollmentId)=>{
             const courseData = await courseService.getById(id);
             const modulesData = await moduleService.getAll(id);
 
+            const marksMap = {};
+            let previousPageCompleted = true;
+
             const modulesWithFullData = await Promise.all(
                 modulesData.map(async (module) => {
                     const pagesData = await pageService.getAll(id, module.id);
-
                     const pagesWithElements = await Promise.all(
                         pagesData.map(async (page) => {
                             const elementsData = await ElementService.getAll(id, module.id, page.id);
-                            return { 
-                                ...page, 
-                                elements: elementsData || []
-                            };
+                            
+                            // Fetch submissions for each element individually using the SUBMISSION endpoint
+                            await Promise.all(elementsData.map(async (el) => {
+                                try {
+                                    const subs = await submissionService.getByElement(el.id);
+                                    // Take the highest grade or the most recent one
+                                    marksMap[el.id] = subs.length > 0 ? subs[0].earned_grade : 0;
+                                } catch (e) {
+                                    marksMap[el.id] = 0;
+                                }
+                            }));
+
+                            const isPageComplete = elementsData?.every(el => (marksMap[el.id] || 0) > 0);
+                            const isLocked = !previousPageCompleted;
+                            previousPageCompleted = isPageComplete;
+
+                            return { ...page, elements: elementsData, isLocked, isCompleted: isPageComplete };
                         })
                     );
-
                     return { ...module, pages: pagesWithElements };
                 })
             );
 
+            setUserMarks(marksMap); 
             setCourse({ ...courseData, modules: modulesWithFullData });
         } catch (err) {
-            console.error("Hydration Error:", err);
+            setError("Failed to load course.");
         } finally {
             setLoading(false);
         }
-    }, [id]);
+    }, [id, enrollmentId]);
         
     const locationTags = course?.tags?.filter(tag => tag.type === 'location') || [];
     const categoryTags = course?.tags?.filter(tag => tag.type === 'category') || [];
@@ -75,11 +91,6 @@ export const useCourseDetails=(id, enrollmentId)=>{
     };
 
     const saveProgress = useCallback(async (elementId, score, content = {}) => {
-        setUserMarks(prev => ({
-            ...prev,
-            [elementId]: score
-        }));
-
         try {
             await submissionService.create({
                 enrollment_id: Number(enrollmentId),
@@ -88,14 +99,23 @@ export const useCourseDetails=(id, enrollmentId)=>{
                 earned_grade: score,
                 marking_remark: "System: Automated marking triggered."
             });
+
+            setUserMarks(prev => ({
+                ...prev,
+                [elementId]: score
+            }));
+            
+            return { success: true };
         } catch (err) {
             console.error("Sync failed:", err);
+            return { success: false, error: err };
         }
     }, [enrollmentId]);
 
-    useEffect(()=>{
+    useEffect(() => {
         fetchCourse();
-    },[fetchCourse]);
+    }, [fetchCourse]);
+
 
     return {
         course, 
@@ -104,6 +124,7 @@ export const useCourseDetails=(id, enrollmentId)=>{
         refresh:fetchCourse,
         updateDescription,
         locationTags, categoryTags,
-        saveProgress
+        saveProgress,
+        userMarks
     };
 }

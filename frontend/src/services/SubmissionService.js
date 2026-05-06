@@ -91,5 +91,15 @@ export const submissionService = {
       console.error("Marking Submission Error:", error.response?.data || error.message);
       throw error;
     }
-  }
+  },
+  getByElement: async (elementId) => {
+    try {
+      const url = API_ENDPOINTS.SUBMISSION.GET_BY_ELEMENT(elementId);
+      const res = await apiClient.get(url);
+      return res.data; 
+    } catch (error) {
+      console.error("Fetch Element Submissions Error:", error.response?.data || error.message);
+      throw error;
+    }
+  },
 };

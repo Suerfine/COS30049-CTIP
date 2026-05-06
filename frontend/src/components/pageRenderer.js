@@ -10,7 +10,7 @@ import WebView from 'react-native-webview';
 import { markdownStyles } from './markdownStyle';
 import { UserRoles } from '../enum/UserRoles';
 
-const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement, onMoveElement, onProgressUpdate, onRegisterWorkshop, registering}) => {
+const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement, onMoveElement, onProgressUpdate, onRegisterWorkshop, registering, userMarks,pageMetadata,currentAttempts,isPageFinished, isFinalQuiz }) => {
     const isAdmin = role === UserRoles.ADMIN;
     const [videoProgress, setVideoProgress]=useState({});
     const [quizStates, setQuizStates]=useState({});
@@ -185,15 +185,20 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
     
     const renderElement = (el, index) => {
         const { type, content, score, id } = el;
-        const quiz = quizStates[id] || { selected: null, isCorrect: null, submitted: false };
-        const isViewed = viewedElements[id] || false;
+        const earnedScore = userMarks[id] || 0;
+        const isViewed = earnedScore > 0;
+        const quiz = quizStates[id] || { 
+            selected: null, 
+            isCorrect: isViewed,
+            submitted: isViewed 
+        };
 
         return (
             <IntersectionWrapper key={id} id={id} score={score} type={type}>
                 <View style={styles.masterWrapper}>
                     <View style={styles.userScoreHeader}>
                         <Text style={styles.userScoreText}>
-                            {isAdmin ? "" : (isViewed || quiz.isCorrect ? `${score}/${score} pts` : `0/${score} pts`)}
+                            {isAdmin ? "" : (isViewed || quiz.isCorrect ? `${score}/${score} pts` : `${earnedScore}/${score} pts`)}
                         </Text>
                         {!isAdmin && (isViewed || quiz.isCorrect) && <CheckCircle2 size={14} color="#0a6340" />}
                     </View>
@@ -294,12 +299,17 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
                                                         <>
                                                             <View style={styles.feedbackRow}>
                                                                 <AlertCircle size={16} color="#dc2626" />
-                                                                <Text style={styles.errorText}>Incorrect. The correct answer is: {content.answer}</Text>
+                                                                <Text style={styles.errorText}>
+                                                                    Incorrect. {isFinalQuiz ? "Check your final score at the end." : `The correct answer is: ${content.answer}`}
+                                                                </Text>
                                                             </View>
-                                                            <TouchableOpacity style={styles.redoBtn} onPress={() => resetQuiz(id)}>
-                                                                <RotateCcw size={14} color="#0a6340" />
-                                                                <Text style={styles.redoText}>Try Again</Text>
-                                                            </TouchableOpacity>
+                                                            {/* Hide Try Again if it is a Final Quiz */}
+                                                            {!isFinalQuiz && (
+                                                                <TouchableOpacity style={styles.redoBtn} onPress={() => resetQuiz(id)}>
+                                                                    <RotateCcw size={14} color="#0a6340" />
+                                                                    <Text style={styles.redoText}>Try Again</Text>
+                                                                </TouchableOpacity>
+                                                            )}
                                                         </>
                                                     ) : (
                                                         <Text style={styles.successText}>Correct! Well done.</Text>

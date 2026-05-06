@@ -26,9 +26,9 @@ const UserModule = ({navigation}) => {
         enrollmentStatus === 'expired';
 
     const {currentUser}=useAuth();
-    const {course, loading, error,locationTags, categoryTags, saveProgress}=useCourseDetails(id, enrollmentId);
+    const {course, loading, error,locationTags, categoryTags, saveProgress, userMarks}=useCourseDetails(id, enrollmentId);
     const {allCourseList}=useCourses();
-    const [userMarks, setUserMarks] = useState({});
+    
     const progressMap = useCourseProgress(course, userMarks);
     const [selectedPage, setSelectedPage]=useState({type:'overview'});
     const [isCollapsed, setIsCollapsed]=useState(false);
@@ -204,6 +204,7 @@ const UserModule = ({navigation}) => {
                                 courseId={id} 
                                 onRegisterWorkshop={registerWorkshop}
                                 registering={registering}
+                                userMarks={userMarks}
                             />
                         )}
                     </View>
@@ -285,6 +286,7 @@ const UserModule = ({navigation}) => {
                                         onRegisterWorkshop=
                                         {registerWorkshop}
                                         registering={registering}
+                                        userMarks={userMarks}
                                     />
                                 )}
                             </View>
