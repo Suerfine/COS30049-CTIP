@@ -134,7 +134,8 @@ const UserCourse = ({ navigation }) => {
                                     screen: 'UserModule', 
                                     params: { 
                                         id: course.id,
-                                        enrollmentStatus: course.enrollmentStatus ?? null
+                                        enrollmentStatus: course.enrollmentStatus ?? null,
+                                        enrollmentId: course.enrollmentId
                                     }
                                 })}
                                onEnroll={() => {

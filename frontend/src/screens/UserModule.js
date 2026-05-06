@@ -17,7 +17,7 @@ import { useCourseProgress } from '../components/useCourseProgress.js';
 
 const UserModule = ({navigation}) => {
     const route=useRoute();
-    const {id, enrollmentStatus}=route.params;
+    const {id, enrollmentStatus, enrollmentId}=route.params;
 
     const isLocked = enrollmentStatus === null ||
         enrollmentStatus === undefined ||
@@ -26,7 +26,7 @@ const UserModule = ({navigation}) => {
         enrollmentStatus === 'expired';
 
     const {currentUser}=useAuth();
-    const {course, loading, error,locationTags, categoryTags}=useCourseDetails(id);
+    const {course, loading, error,locationTags, categoryTags, saveProgress}=useCourseDetails(id, enrollmentId);
     const {allCourseList}=useCourses();
     const [userMarks, setUserMarks] = useState({});
     const progressMap = useCourseProgress(course, userMarks);
@@ -65,14 +65,6 @@ const UserModule = ({navigation}) => {
             <Text style={{ color: 'red' }}>{error || "Course not found"}</Text>
         </View>
     );
-
-    const saveProgress = (elementId, score) => {
-        setUserMarks(prev => ({
-            ...prev,
-            [elementId]: score
-        }));
-        // Note: You would also call your API here to persist this to the database
-    };
 
     const renderOverviewContent = () => {
         switch (activeTab) {
@@ -287,7 +279,6 @@ const UserModule = ({navigation}) => {
                                 ) : (
                                     <PageRenderer 
                                         elements={elements}
-                                        onProgressUpdate={saveProgress}
                                         role={currentUser.role}
                                         courseId={id}
                                         onProgressUpdate={saveProgress}

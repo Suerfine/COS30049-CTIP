@@ -18,7 +18,7 @@ export const useUserCourse = () => {
   const [allTagList, setAllTagList] = useState([]);
   const [allcourseFilter, setAllCourseFilter] = useState("all");
   const [loading, setLoading] = useState(false);
-  const [myEnrollments, setMyEnrollments] = useState([]); // current user enrollments
+  const [myEnrollments, setMyEnrollments] = useState([]);
 
   const [filters, setFilters] = useState({
     status: "all",
