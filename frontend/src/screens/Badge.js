@@ -22,6 +22,7 @@ const Badge = ({ navigation }) => {
         removeFilter,
         tagOptions
     } = useBadges();
+    const { t, i18n }=useTranslation();
 
     const statusLabels = {
         all: 'All Status',

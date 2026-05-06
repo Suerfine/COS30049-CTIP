@@ -40,7 +40,7 @@ const UserDashboard=({navigation})=>{
                     source={require('../../assets/darkgreen_bg.jpeg')}
                     style={styles.infoCard}
                 >
-                    <LinearGradient colors={['transparent', 'rgba(242, 242, 242, 0.2)', '#f2f2f2']} 
+                    <LinearGradient pointerEvents="none" colors={['transparent', 'rgba(242, 242, 242, 0.2)', '#f2f2f2']} 
                     style={StyleSheet.absoluteFillObject}/>
                     <View style={styles.infoTop}>
                         <View style={styles.pfpWrapper}>
@@ -230,6 +230,8 @@ const styles=StyleSheet.create({
         flexWrap: 'wrap',
         gap: 10,
         marginTop: 12,
+        zIndex: 10,
+        elevation: 10,
     },
     categoryTag: {
         flexDirection: 'row',
