@@ -7,6 +7,7 @@ import { useBadges } from '../hooks/useBadges';
 import FilterSidebar from '../components/FilterSidebar';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
+import { formatDate } from '../utils/formatDate';
 
 const Badge = ({ navigation }) => {
     const {t, i18n}=useTranslation();
@@ -86,13 +87,10 @@ const Badge = ({ navigation }) => {
                     ) : (
                         courses.map((course) => {
                             const enrollment = getEnrollment(course.id);
-                            const isEnrolled = !!enrollment;
+                            const isEnrolled = !!enrollment; 
                             const isCompleted = enrollment?.status === 'COMPLETED';
-                            const expiry = enrollment?.badge_expire_at;
-
-                            const formattedDate = expiry
-                            ? new Date(expiry).toLocaleDateString()
-                            : null;
+                            const expiry = enrollment?.badge_expire_at; 
+                            const formattedDate = expiry ? formatDate(new Date(expiry)) : null;
 
                             return (
                                 <View key={course.id} style={styles.badgeCard}>
@@ -113,9 +111,9 @@ const Badge = ({ navigation }) => {
                                         {course.title}
                                     </Text>
                                     
-                                    {isCompleted && formattedDate && (
+                                    {(isCompleted) && formattedDate && (
                                         <Text style={styles.expiryText}>
-                                            Expires: {new Date(expiry).toLocaleDateString()}
+                                            Expires: {formattedDate}
                                         </Text>
                                     )}
                                 </View>
