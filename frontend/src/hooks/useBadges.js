@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { courseService } from '../services/courseService';
 import { enrollmentService } from '../services/EnrollmentService';
+import React from 'react';
 
 export const useBadges = () => {
     const [allCourses, setAllCourses] = useState([]);
@@ -31,7 +32,17 @@ export const useBadges = () => {
             console.log("ENROLLMENT SAMPLE:", enrollments[0]);
 
             const map = {};
-            enrollments.forEach((e) => { map[e.course_id] = e; });
+            // enrollments.forEach((e) => { map[e.course_id] = e; });
+
+            // dummy
+            enrollments.forEach((e) => {
+                const enrollmentData = { ...e };
+                
+                enrollmentData.status = 'COMPLETED'; 
+                enrollmentData.badge_expire_at = "2027-12-31T23:59:59.000Z";
+                
+                map[String(enrollmentData.course_id)] = enrollmentData;
+            });
 
             setAllCourses(courses);
             setEnrollmentMap(map);
@@ -44,49 +55,66 @@ export const useBadges = () => {
 
     useEffect(() => { loadBadgeData(); }, [loadBadgeData]);
 
-    const getEnrollment = (courseId) => enrollmentMap[courseId] ?? null;
+    // const getEnrollment = (courseId) => enrollmentMap[courseId] ?? null;
+    const getEnrollment = (courseId) => enrollmentMap[String(courseId)] ?? null;
 
-    const tagOptions = [
-        ...new Set(allCourses.flatMap((c) => (c.tags ?? []).map((t) => t.title))),
-    ];
+    const tagOptions = React.useMemo(() => {
+        return [...new Set(allCourses.flatMap((c) => (c.tags ?? []).map((t) => t.title)))];
+    }, [allCourses]);
 
-    const filteredCourses = allCourses.filter((course) => {
-        const title = (course.title ?? '').toLowerCase();
-        const enrollment = enrollmentMap[course.id];
+    const filteredCourses = React.useMemo(() => {
+        return allCourses.filter((course) => {
+            const enrollment = enrollmentMap[String(course.id)];
+            const title = (course.title ?? '').toLowerCase();
+            
+            if (filters.status !== 'all') {
+                switch (filters.status) {
+                    case 'COMPLETED':
+                        if (enrollment?.status !== 'COMPLETED') return false;
+                        break;
+                    case 'IN_PROGRESS':
+                        if (enrollment?.status !== 'IN_PROGRESS') return false;
+                        break;
+                    case 'not_enrolled':
+                        if (enrollment) return false;
+                        break;
+                }
+            }
 
-        if (searchQuery && !title.includes(searchQuery.toLowerCase())) return false;
+            if (filters.tag && filters.tag !== 'all') {
+                const courseTags = (course.tags ?? []).map(t => t.title);
+                
+                if (Array.isArray(filters.tag)) {
+                    // if filter tag is array then fetched courses must have at least one of the tags
+                    if (filters.tag.length > 0 && !courseTags.some(t => filters.tag.includes(t))) {
+                        return false;
+                    }
+                } else {
+                    if (!courseTags.includes(filters.tag)) {
+                        return false;
+                    }
+                }
+            }
 
-        switch (filters.status) {
-            case 'COMPLETED':
-                if (enrollment?.status !== 'COMPLETED') return false;
-                break;
-            case 'IN_PROGRESS':
-                if (enrollment?.status !== 'IN_PROGRESS') return false;
-                break;
-            case 'not_enrolled':
-                if (enrollment) return false;
-                break;
-            default:
-                // all
-                break;
-        }
+            return true;
+        });
+    }, [allCourses, enrollmentMap, searchQuery, filters]);
 
-        if (filters.tag !== 'all') {
-            const hasTag = (course.tags ?? []).some((t) => t.title === filters.tag);
-            if (!hasTag) return false;
-        }
+    const removeFilter = (key, value) => {
+        const updater = (prev) => {
+            if (key === 'status' || !Array.isArray(prev[key])) {
+                return { ...prev, [key]: 'all' };
+            }
 
-        return true;
-    });
+            const newList = prev[key].filter(item => item !== value);
+            return { 
+                ...prev, 
+                [key]: newList.length === 0 ? 'all' : newList 
+            };
+        };
 
-    const removeFilter = (key) => {
-        setFilters((prev) => ({ ...prev, [key]: 'all' }));
-        setTempFilters((prev) => ({ ...prev, [key]: 'all' }));
-    };
-
-    const applyFilters = () => {
-        setFilters(tempFilters);
-        setFilterVisible(false);
+        setFilters(updater);
+        setTempFilters(updater);
     };
 
     const resetFilters = () => {
@@ -96,16 +124,16 @@ export const useBadges = () => {
         setFilterVisible(false);
     };
 
-    const completedCount  = allCourses.filter((c) => enrollmentMap[c.id]?.status === 'COMPLETED').length;
-    const inProgressCount = allCourses.filter((c) => enrollmentMap[c.id]?.status === 'IN_PROGRESS').length;
+    // const completedCount  = allCourses.filter((c) => enrollmentMap[c.id]?.status === 'COMPLETED').length;
+    // const inProgressCount = allCourses.filter((c) => enrollmentMap[c.id]?.status === 'IN_PROGRESS').length;
 
     return {
         courses: filteredCourses,
         allCourses,
         loading,
         getEnrollment,
-        completedCount,
-        inProgressCount,
+        // completedCount,
+        // inProgressCount,
         searchQuery,
         setSearchQuery,
         filterVisible,
@@ -113,7 +141,6 @@ export const useBadges = () => {
         filters,
         tempFilters,
         setTempFilters,
-        applyFilters,
         resetFilters,
         removeFilter,
         tagOptions,

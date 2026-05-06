@@ -3,8 +3,8 @@
 #include <DHT.h>
 
 // --- WIFI & MQTT ---
-const char* ssid = "Hello"; // Change wifi name
-const char* password = "12345677"; // change password
+const char* ssid = "Elleyxx"; // Change wifi name
+const char* password = "Ellie0909"; // change password
 const char* mqtt_server = "broker.hivemq.com"; 
 
 WiFiClient espClient;
@@ -18,8 +18,6 @@ PubSubClient client(espClient);
 #define PIN_TEMP 27
 #define PIN_ACOUSTIC 35
 #define PIN_MICROWAVE 25
-#define PIN_TRIG 18
-#define PIN_ECHO 5
 #define PIN_BUZZER 32
 #define PIN_LED 2
 
@@ -29,7 +27,6 @@ DHT dht(PIN_TEMP, DHT11);
 unsigned long lastFireLog = 0;
 unsigned long lastMicrowaveLog = 0;
 unsigned long lastAcousticLog = 0;
-unsigned long lastFloodLog = 0;
 
 // --- Intervals ---
 const unsigned long INT_NORMAL = 1800000; // 30 mins
@@ -42,30 +39,16 @@ float avgSound = 1900.0;
 String microwaveStatus = "normal";
 String fireStatus = "normal";
 String acousticStatus = "normal";
-String floodStatus = "normal";
 
 String lastFireStatus = "normal";
 String lastMicroStatus = "normal";
 String lastSoundStatus = "normal";
-String lastFloodStatus = "normal";
-
-float getDistance() {
-  digitalWrite(PIN_TRIG, LOW); 
-  delayMicroseconds(2);
-  digitalWrite(PIN_TRIG, HIGH); 
-  delayMicroseconds(10);
-  digitalWrite(PIN_TRIG, LOW);
-  long duration = pulseIn(PIN_ECHO, HIGH, 20000);
-  return duration * 0.034 / 2;
-}
 
 void setup() {
   Serial.begin(115200);
   dht.begin();
   pinMode(PIN_MICROWAVE, INPUT);
   pinMode(PIN_ACOUSTIC, INPUT);
-  pinMode(PIN_TRIG, OUTPUT);
-  pinMode(PIN_ECHO, INPUT);
   pinMode(PIN_BUZZER, OUTPUT);
   pinMode(PIN_LED, OUTPUT);
   
@@ -95,6 +78,12 @@ void processSensors() {
   String currentFireStatus = (t > 50 || smoke > 1500) ? "alerting" : "normal";
   unsigned long fireInterval = (currentFireStatus == "alerting") ? INT_ALERT : INT_NORMAL;
 
+  if (currentFireStatus == "alerting") {
+    digitalWrite(PIN_LED, HIGH);
+  } else {
+    digitalWrite(PIN_LED, LOW);
+  }
+  
   if (currentFireStatus != lastFireStatus || (now - lastFireLog >= fireInterval)) {
     String fireData = "{";
     fireData += "\"temperature\":" + String(t) + ",";
@@ -124,37 +113,19 @@ void processSensors() {
   }
 
   // 3. ACOUSTIC SENSOR
-  int sound = analogRead(PIN_ACOUSTIC);
-  avgSound = (avgSound * 0.9) + (sound * 0.1);
-  String currentSoundStatus = (abs(sound - avgSound) > 800) ? "alerting" : "normal";
+  bool soundDetected = digitalRead(PIN_ACOUSTIC) == LOW; 
+  String currentSoundStatus = soundDetected ? "alerting" : "normal";
   unsigned long soundInterval = (currentSoundStatus == "alerting") ? INT_ALERT : INT_NORMAL;
 
   if (currentSoundStatus != lastSoundStatus || (now - lastAcousticLog >= soundInterval)) {
     String soundData = "{";
-    soundData += "\"level\":" + String(sound);
+    soundData += "\"sound_detected\":" + String(soundDetected ? "true" : "false");
     soundData += "}";
     
     sendLog(3, currentSoundStatus, soundData);
     
     lastAcousticLog = now;
     lastSoundStatus = currentSoundStatus;
-  }
-
-  // 4. ULTRASONIC SENSOR
-  // (Insert your Trigger/Echo logic here to get 'dist')
-  int dist = getDistance(); 
-  String currentFloodStatus = (dist > 0 && dist < 15) ? "alerting" : "normal";
-  unsigned long floodInterval = (currentFloodStatus == "alerting") ? INT_ALERT : INT_NORMAL;
-
-  if (currentFloodStatus != lastFloodStatus || (now - lastFloodLog >= floodInterval)) {
-    String floodData = "{";
-    floodData += "\"distance\":" + String(dist);
-    floodData += "}";
-    
-    sendLog(4, currentFloodStatus, floodData);
-    
-    lastFloodLog = now;
-    lastFloodStatus = currentFloodStatus;
   }
 
   if (currentMicroStatus == "alerting") {
@@ -167,8 +138,7 @@ void processSensors() {
   Serial.print("Temp: " + String(t));
   Serial.print(" | Smoke: " + String(smoke));
   Serial.print(" | Motion: " + String(motion));
-  Serial.print(" | Sound: " + String(sound));
-  Serial.println(" | Dist: " + String(dist));
+  Serial.println(" | Sound: " + String(soundDetected ? "DETECTED" : "NORMAL"));
 }
 
 void loop() {
