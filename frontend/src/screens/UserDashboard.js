@@ -101,25 +101,24 @@ const UserDashboard = ({ navigation }) => {
                                 </ImageBackground>
                             </View>
                             <Text style={styles.sectionTitle}>My Courses</Text>
-                            {/* Haven't done for filter */}
                             <SlidingTabs tabs={courseTab} activeTab={courseFilter} onTabChange={(id)=>setCourseFilter(id)}/>
-                            {/* only display in progress courses */}
+                            {/* in progress courses */}
                             <View style={styles.cardContainer}>
                             {courseFilter === 'in progress' &&
                                 inProgressCourses.map(course => {
-                                    const courseProgress = progressData.find(p => p.courseId === course.id);
-                                    const numModules = course.modules ? course.modules.length : 0;
-
+                                    const numModules = course.modules?.length ?? 0;
+                                    console.log('inProgressCourses sample:', JSON.stringify(inProgressCourses[0], null, 2));
                                     return (
                                         <CourseCard
                                             key={course.id}
                                             id={course.id}
-                                            imagePath={{ uri: course.image }}
-                                            courseTitle={course.courseTitle}
+                                            coverImgUrl={course.cover_img_url}
+                                            courseTitle={course.title}
                                             numModules={numModules}
-                                            duration={course.duration}
-                                            expiry={course.expiryDate}
-                                            progress={courseProgress?.progress}
+                                            duration={course.expected_completion_weeks}
+                                            expiry={course.must_complete_in_weeks}
+                                            progress={course.progress}
+                                            enrollmentStatus={course.enrollmentStatus}
                                             userType={userType}
                                             onPress={() => navigation.navigate('User Module', { id: course.id })}
                                         />
@@ -127,21 +126,22 @@ const UserDashboard = ({ navigation }) => {
                                 })
                             }
 
+                            {/* completed courses */}
                             {courseFilter === 'completed' &&
                                 completedCourses.map(course => {
-                                    const courseProgress = progressData.find(p => p.courseId === course.id);
-                                    const numModules = course.modules ? course.modules.length : 0;
+                                    const numModules = course.modules?.length ?? 0;
 
                                     return (
                                         <CourseCard
                                             key={course.id}
                                             id={course.id}
-                                            imagePath={{ uri: course.image }}
-                                            courseTitle={course.courseTitle}
+                                            coverImgUrl={course.cover_img_url}
+                                            courseTitle={course.title}
                                             numModules={numModules}
-                                            duration={course.duration}
-                                            expiry={course.expiryDate}
-                                            progress={courseProgress?.progress ?? 1}
+                                            duration={course.expected_completion_weeks}
+                                            expiry={course.must_complete_in_weeks}
+                                            progress={course.progress}
+                                            enrollmentStatus={course.enrollmentStatus}
                                             userType={userType}
                                             onPress={() => navigation.navigate('User Module', { id: course.id })}
                                         />

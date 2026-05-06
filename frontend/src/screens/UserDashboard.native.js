@@ -8,12 +8,12 @@ import {LinearGradient} from 'expo-linear-gradient';
 // Import from other hook and components
 import CourseCard from '../components/CourseCard.js';
 import { useUserDashboard } from '../hooks/useUserDashboard';
+import { useUserCourse } from '../hooks/useUserCourse.js';
 import SlidingTabs from '../components/SlidingTabs.js';
 import { formatDate } from '../utils/formatDate.js';
 import { useTranslation } from 'react-i18next';
 
 const UserDashboard=({navigation})=>{
-    const {t, i18n}=useTranslation();
     const {
         courses, 
         todos, 
@@ -27,10 +27,13 @@ const UserDashboard=({navigation})=>{
         courseFilter, setCourseFilter,
         currentDate, setCurrentDate,
         isExpanded, setIsExpanded,
-        weekDates, getDaysInMonth, filteredTodos, inProgressCourses,
+        weekDates, getDaysInMonth, filteredTodos,
         toggleTodo, hasPendingTodoOnDate,formatLocalDate,
         weekLabels,todoTab, courseTab, categories
     } = useUserDashboard();
+
+    const { inProgressCourses, completedCourses } = useUserCourse({ progressData });
+    const {t, i18n}=useTranslation();
 
     return(
         <SafeAreaView style={styles.container} edges={['left','right']}>
@@ -85,26 +88,52 @@ const UserDashboard=({navigation})=>{
 
                     <SlidingTabs tabs={courseTab} activeTab={courseFilter} onTabChange={(id)=>setCourseFilter(id)}/>
 
+                    {/* in progress courses */}
                     <View style={styles.cardContainer}>
-                        {courseFilter==='in progress' &&inProgressCourses.map(course => {
-                            const courseProgress = progressData.find(p => p.courseId === course.id);
-                            const numModules = course.modules ? course.modules.length : 0;
+                        {courseFilter === 'in progress' &&
+                            inProgressCourses.map(course => {
+                                const courseProgress = progressData.find(p => p.courseId === course.id);
+                                const numModules = course.modules ? course.modules.length : 0;
 
-                            return (
-                                <CourseCard
-                                    key={course.id}
-                                    id={course.id}
-                                    imagePath={{ uri: course.image }}
-                                    courseTitle={course.courseTitle}
-                                    numModules={numModules}
-                                    duration={course.duration}
-                                    expiry={course.expiryDate}
-                                    progress={courseProgress?.progress}
-                                    userType={userType}
-                                    onPress={() => navigation.navigate('User Module', { id: course.id })}
-                                />
-                            );
-                        })}
+                                return (
+                                    <CourseCard
+                                        key={course.id}
+                                        id={course.id}
+                                        imagePath={{ uri: course.image }}
+                                        courseTitle={course.courseTitle}
+                                        numModules={numModules}
+                                        duration={course.duration}
+                                        expiry={course.expiryDate}
+                                        progress={courseProgress?.progress}
+                                        userType={userType}
+                                        onPress={() => navigation.navigate('User Module', { id: course.id })}
+                                    />
+                                );
+                            })
+                        }
+
+                        {/* completed courses */}
+                        {courseFilter === 'completed' &&
+                            completedCourses.map(course => {
+                                const courseProgress = progressData.find(p => p.courseId === course.id);
+                                const numModules = course.modules ? course.modules.length : 0;
+
+                                return (
+                                    <CourseCard
+                                        key={course.id}
+                                        id={course.id}
+                                        imagePath={{ uri: course.image }}
+                                        courseTitle={course.courseTitle}
+                                        numModules={numModules}
+                                        duration={course.duration}
+                                        expiry={course.expiryDate}
+                                        progress={courseProgress?.progress ?? 1}
+                                        userType={userType}
+                                        onPress={() => navigation.navigate('User Module', { id: course.id })}
+                                    />
+                                );
+                            })
+                        }
                     </View>
                 </View>
                 <View style={styles.sectionHeader}>
