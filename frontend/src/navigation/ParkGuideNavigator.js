@@ -15,6 +15,7 @@ import TaskDetails from "../screens/TaskDetails.native";
 import Settings from "../screens/Settings.native";
 import UserAnomaly from "../screens/UserAnomaly";
 import Badge from "../screens/Badge";
+import Notifications from "../screens/NotificationScreen";
 
 // Import components
 import MobileTopBar from "../components/MobileTopBar";
@@ -174,6 +175,7 @@ export default function ParkGuideNavigator() {
           <Stack.Screen name="UserModule" component={UserModule} />
           <Stack.Screen name="UserAnomaly" component={UserAnomaly}/>
           <Stack.Screen name="Badge" component={Badge}/>
+          <Stack.Screen name="Notifications" component={Notifications}/>
 
           {/* UserProfile, Preferences and Security screens */}
           <Stack.Screen name="ProfileStack" component={ProfileStack} />

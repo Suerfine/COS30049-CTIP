@@ -165,7 +165,12 @@ const NavBar = () => {
           />
         </View>
 
-        <Pressable style={styles.notificationBtn}>
+        <Pressable style={styles.notificationBtn}
+        onPress={()=>navigation.navigate(
+          'ParkGuideStack',{
+            screen:'Notifications'
+          }
+        )}>
           <Bell size={20} />
         </Pressable>
 
