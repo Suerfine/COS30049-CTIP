@@ -38,5 +38,12 @@ export const API_ENDPOINTS={
     TAGS: {
         LIST: '/tags',
         CREATE:'/tags'
+    },
+    NOTIFICATION: {
+        LIST: '/notifications',
+        MY_NOTIFICATIONS: '/notifications/me',
+        DETAIL: (id) => `/notifications/${id}`,
+        UPDATE: (id) => `/notifications/${id}`,
+        DELETE: (id) => `/notifications/${id}`,
     }
 };
