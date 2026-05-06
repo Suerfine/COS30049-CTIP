@@ -16,7 +16,7 @@ class Notification extends Model<
   declare title: string;
   declare message: string;
   declare url: CreationOptional<string | null>;
-  declare is_dismissed: CreationOptional<boolean>;
+  declare dismissed_at: CreationOptional<Date | null>;
   declare created_at: CreationOptional<Date>;
   declare updated_at: CreationOptional<Date>;
   declare deleted_at: CreationOptional<Date | null>;
@@ -51,10 +51,9 @@ Notification.init(
       type: DataTypes.STRING,
       allowNull: true,
     },
-    is_dismissed: {
-      type: DataTypes.BOOLEAN,
-      allowNull: false,
-      defaultValue: false,
+    dismissed_at: {
+      type: DataTypes.DATE,
+      allowNull: true,
     },
     created_at: {
       type: DataTypes.DATE,
