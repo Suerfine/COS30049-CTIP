@@ -13,6 +13,7 @@ import elementRouter from "./ElementRoute";
 import progressRouter from "./ProgressRoute";
 // import sensorRouter from "./SensorRoute";
 import sensorLogRouter from "./SensorLogRoute";
+import notificationRouter from "./NotificationRoute";
 import * as ElementController from "../controllers/ElementController";
 import { auth } from "../middelware/Auth";
 import sensorRouter from "./SensorRoute";
@@ -95,6 +96,9 @@ router.use("/", messageRouter);
 router.use("/", enrollmentRouter);
 router.use("/", submissionRouter);
 router.use("/progress", progressRouter);
+
+router.use("/notifications", notificationRouter);
+
 /*===============================
 =        SENSOR ROUTES         =
 ===============================*/

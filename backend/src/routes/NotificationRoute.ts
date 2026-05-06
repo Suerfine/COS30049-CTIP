@@ -1,6 +1,5 @@
 import { Router } from "express";
 import * as NotificationController from "../controllers/NotificationController";
-import router from ".";
 import { auth } from "../middelware/Auth";
 import { body } from "express-validator";
 import { validate } from "../middelware/Validate";
@@ -39,7 +38,7 @@ const NotificationRouter = Router();
  *       201:
  *         description: Notification created successfully
  */
-router.post(
+NotificationRouter.post(
   "/",
   auth,
   [
@@ -70,7 +69,7 @@ router.post(
  *       200:
  *         description: Notifications retrieved successfully
  */
-router.get("/", auth, NotificationController.getAllNotifications);
+NotificationRouter.get("/", auth, NotificationController.getAllNotifications);
 
 /**
  * @swagger
@@ -84,7 +83,7 @@ router.get("/", auth, NotificationController.getAllNotifications);
  *       200:
  *         description: My notifications retrieved successfully
  */
-router.get("/me", auth, NotificationController.getAllMyNotifications);
+NotificationRouter.get("/me", auth, NotificationController.getAllMyNotifications);
 
 /**
  * @swagger
@@ -104,7 +103,7 @@ router.get("/me", auth, NotificationController.getAllMyNotifications);
  *       200:
  *         description: Notification updated successfully
  */
-router.put("/:id", auth, NotificationController.updateNotification);
+NotificationRouter.put("/:id", auth, NotificationController.updateNotification);
 
 /**
  * @swagger
@@ -124,6 +123,6 @@ router.put("/:id", auth, NotificationController.updateNotification);
  *       200:
  *         description: Notification deleted successfully
  */
-router.delete("/:id", auth, NotificationController.deleteNotification);
+NotificationRouter.delete("/:id", auth, NotificationController.deleteNotification);
 
 export default NotificationRouter;
