@@ -41,19 +41,19 @@ const NotificationRouter = Router();
 NotificationRouter.post(
   "/",
   auth,
-  [
-    body("title").isString().notEmpty(),
-    body("message").isString().notEmpty(),
-    body("url").optional().isString(),
-    body("for_all_park_guides").optional().isBoolean(),
-    body("target_user_ids")
-      .isArray({ min: 1 })
-      .withMessage("target_user_ids must be a non-empty array of user IDs"),
-    body("target_user_ids.*")
-      .isInt()
-      .withMessage("Each user ID in target_user_ids must be an integer"),
-  ],
-  validate,
+  // [
+  //   body("title").isString().notEmpty(),
+  //   body("message").isString().notEmpty(),
+  //   body("url").optional().isString(),
+  //   body("for_all_park_guides").optional().isBoolean(),
+  //   body("target_user_ids")
+  //     .isArray({ min: 1 })
+  //     .withMessage("target_user_ids must be a non-empty array of user IDs"),
+  //   body("target_user_ids.*")
+  //     .isInt()
+  //     .withMessage("Each user ID in target_user_ids must be an integer"),
+  // ],
+  // validate,
   NotificationController.createNotification,
 );
 
@@ -173,6 +173,40 @@ NotificationRouter.get(
  *         description: Notification updated successfully
  */
 NotificationRouter.put("/:id", auth, NotificationController.updateNotification);
+
+/**
+ * @swagger
+ * /api/notifications/{id}/dismiss:
+ *   put:
+ *     summary: Dismiss a notification
+ *     tags: [Notifications]
+ *     security:
+ *       - OAuth2: ["all"]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               dismissed_at:
+ *                 type: string
+ *                 format: date-time
+ *     responses:
+ *       200:
+ *         description: Notification dismissed successfully
+ */
+NotificationRouter.put(
+  "/:id/dismiss",
+  auth,
+  NotificationController.dismissNotification,
+);
 
 /**
  * @swagger

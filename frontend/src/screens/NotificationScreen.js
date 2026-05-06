@@ -9,7 +9,7 @@ import {
     SafeAreaView,
     StatusBar
 } from 'react-native';
-import { Bell, Trash2, ArrowLeft } from 'lucide-react-native';
+import { Bell, ArrowLeft } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 
 import notificationService from '../services/NotificationService';
@@ -41,26 +41,14 @@ const NotificationScreen = ({ navigation }) => {
     const handleDismiss = async (notificationId) => {
         try {
             const now = new Date();
-            await notificationService.update(notificationId, {
-                dismissed_at: now,
+            await notificationService.dismissNotification(notificationId, {
+                dismissed_at: now.toISOString(),
             });
-            // Remove from list
             setNotifications(prev =>
                 prev.filter(n => n.id !== notificationId)
             );
         } catch (err) {
             console.error('Error dismissing notification:', err);
-        }
-    };
-
-    const handleDelete = async (notificationId) => {
-        try {
-            await notificationService.delete(notificationId);
-            setNotifications(prev =>
-                prev.filter(n => n.id !== notificationId)
-            );
-        } catch (err) {
-            console.error('Error deleting notification:', err);
         }
     };
 
@@ -84,13 +72,7 @@ const NotificationScreen = ({ navigation }) => {
                     onPress={() => handleDismiss(notification.id)}
                     style={styles.actionBtn}
                 >
-                    <Text style={styles.actionBtnText}>{t('dismiss')}</Text>
-                </Pressable>
-                <Pressable
-                    onPress={() => handleDelete(notification.id)}
-                    style={styles.actionBtnDelete}
-                >
-                    <Trash2 size={16} color="#d9534f" />
+                    <Text style={styles.actionBtnText}>{t('Dismiss')}</Text>
                 </Pressable>
             </View>
         </View>

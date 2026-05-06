@@ -44,6 +44,7 @@ export const API_ENDPOINTS={
         MY_NOTIFICATIONS: '/notifications/me',
         DETAIL: (id) => `/notifications/${id}`,
         UPDATE: (id) => `/notifications/${id}`,
+        DISMISS: (id) => `/notifications/${id}/dismiss`,
         DELETE: (id) => `/notifications/${id}`,
     }
 };

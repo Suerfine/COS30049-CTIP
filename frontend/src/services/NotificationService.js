@@ -50,7 +50,7 @@ export const notificationService = {
     }
   },
 
-  // Update notification (e.g., mark as dismissed)
+  // Update notification (e.g., edit content)
   update: async (id, data) => {
     try {
       const response = await apiClient.put(
@@ -61,6 +61,21 @@ export const notificationService = {
     } catch (err) {
       console.error('Update Notification Error: ', err);
       const errorMessage = err.response?.data?.message || 'Failed to update notification.';
+      return Promise.reject(errorMessage);
+    }
+  },
+
+  // Dismiss a notification
+  dismissNotification: async (id, data = {}) => {
+    try {
+      const response = await apiClient.put(
+        API_ENDPOINTS.NOTIFICATION.DISMISS(id),
+        data
+      );
+      return response.data;
+    } catch (err) {
+      console.error('Dismiss Notification Error: ', err);
+      const errorMessage = err.response?.data?.message || 'Failed to dismiss notification.';
       return Promise.reject(errorMessage);
     }
   },

@@ -295,8 +295,8 @@ export const dismissNotification = async (
 ) => {
   const transaction = await sequelize.transaction();
   try {
-    // Only admin can dismiss notifications
-    if (!req.user || req.user.role !== UserRoles.ADMIN) {
+    // Only the notification owner may dismiss their own notification
+    if (!req.user) {
       throw new HttpError(403, "Forbidden");
     }
 
