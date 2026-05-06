@@ -41,8 +41,7 @@ const router = Router({ mergeParams: true });
  *         description: Sensor not found
  */
 router.post(
-  "/sensors/:sensor_id/logs",
-  auth,
+  "/sensors/:sensor_id/logs", // no auth on this route as it will be called by sensors which cannot authenticate
   [
     param("sensor_id").isInt(),
     body("status").isString().notEmpty(),
@@ -98,7 +97,7 @@ router.post(
  *             schema:
  *               $ref: '#/components/schemas/PaginatedSensorLogResponse'
  */
-router.get("/sensors/logs", SensorLogController.getAllLogs);
+router.get("/sensors/logs", auth, SensorLogController.getAllLogs);
 
 /**
  * @swagger
@@ -145,7 +144,11 @@ router.get("/sensors/logs", SensorLogController.getAllLogs);
  *             schema:
  *               $ref: '#/components/schemas/PaginatedSensorLogResponse'
  */
-router.get("/sensors/:sensor_id/logs", SensorLogController.getAllSensorLogs);
+router.get(
+  "/sensors/:sensor_id/logs",
+  auth,
+  SensorLogController.getAllSensorLogs,
+);
 
 /**
  * @swagger
