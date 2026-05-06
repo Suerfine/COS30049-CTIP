@@ -71,9 +71,14 @@ const SideBar = () => {
                 })}
             </View>
             <View style={styles.linkbtn}>
-                <Pressable style={styles.menuItem}>
-                        <Bell style={styles.navIcon} />
-                        <Text style={styles.navText}>Notification</Text>
+                <Pressable
+                    style={styles.menuItem}
+                    onPress={() => navigation.navigate('AdminStack', {
+                        screen: 'Notification Management'
+                    })}
+                >
+                    <Bell style={styles.navIcon} />
+                    <Text style={styles.navText}>Notification</Text>
                 </Pressable>
             </View>
             <View style={styles.admin}>

@@ -86,5 +86,21 @@
     "save":"Save",
     "current password": "Current Password",
     "new password":"New Password",
-    "confirm":"Confirm"
+    "confirm":"Confirm",
+    "manage notifications":"Manage Notifications",
+    "all notifications":"All Notifications",
+    "dismissal status":"Dismissal Status",
+    "confirm delete":"Confirm Delete",
+    "are you sure you want to delete this notification?":"Are you sure you want to delete this notification?",
+    "cancel":"Cancel",
+    "delete":"Delete",
+    "dismissed":"Dismissed",
+    "pending":"Pending",
+    "error":"Error",
+    "retry":"Retry",
+    "loading":"Loading",
+    "no notifications":"No Notifications",
+    "dismiss":"Dismiss",
+    "todo notifications":"Todo Notifications",
+    "no todos":"No Todos"
 }
