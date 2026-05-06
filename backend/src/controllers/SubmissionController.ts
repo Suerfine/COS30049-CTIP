@@ -14,6 +14,7 @@ import {
   UpdateSubmissionRequest,
   MarkSubmissionRequest,
 } from "../types/Submission";
+import { logger } from "sequelize/lib/utils/logger";
 
 class HttpError extends Error {
   status: number;
@@ -158,7 +159,8 @@ export const createSubmission = async (
     const enrollmentId = parseNumberField(req.body.enrollment_id);
     const elementId = parseNumberField(req.body.element_id);
     const submissionIdField = req.body.submission_id;
-    const earnedGrade = req.body.earned_grade !== undefined ? Number(req.body.earned_grade) : 0;
+    const earnedGrade =
+      req.body.earned_grade !== undefined ? Number(req.body.earned_grade) : 0;
     if (
       enrollmentId === null ||
       !Number.isInteger(enrollmentId) ||
@@ -169,6 +171,8 @@ export const createSubmission = async (
         "enrollment_id is required and must be a positive integer",
       );
     }
+
+    logger.warn("NEw score" + earnedGrade);
 
     if (elementId === null || !Number.isInteger(elementId) || elementId <= 0) {
       throw new HttpError(
