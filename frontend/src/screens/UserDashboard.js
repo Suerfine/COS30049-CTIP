@@ -121,7 +121,7 @@ const UserDashboard = ({ navigation }) => {
                                 })}
                             </View>
                             {/* Categories */}
-                            <Text style={styles.sectionTitle}>Explore Categories</Text>
+                            <Text style={styles.sectionTitle}>{t('explore')} {t('categories')}</Text>
                                 <View style={styles.tagContainer}>
                                     {categories.length > 0 ? (
                                         categories
@@ -141,7 +141,7 @@ const UserDashboard = ({ navigation }) => {
                                                 </Pressable>
                                             ))
                                     ) : (
-                                        <Text style={styles.emptyText}>No categories found.</Text>
+                                        <Text style={styles.emptyText}>{t('No categories found.')}</Text>
                                     )}
                                 </View>
                         </View> 
