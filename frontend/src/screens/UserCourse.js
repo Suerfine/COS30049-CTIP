@@ -25,6 +25,7 @@ const UserCourse = ({ navigation }) => {
         filteredCourses, courses,
         handleEnrollment, 
         handleDrop,
+        handleApply,
         removeFilter,allTagList, addTag,searchText, setSearchText, handleSearch,
     }=useUserCourse();
 
@@ -109,7 +110,7 @@ const UserCourse = ({ navigation }) => {
                         {filteredCourses.length === 0?(
                             
                             <View style={styles.emptyContainer}>
-                                <Text style={styles.emptyText}>No courses found</Text>
+                                <Text style={styles.emptyText}>{t('No courses found')}</Text>
                             </View>
                         ) : ( filteredCourses.map(course => {
                             const numModules = course.modules ? course.modules.length : 0;
@@ -156,10 +157,7 @@ const UserCourse = ({ navigation }) => {
                 tempFilters={tempFilters}
                 setTempFilters={setTempFilters}
                 onClose={() => setFilterVisible(false)}
-                onApply={() => {
-                    setFilters(tempFilters);
-                    setFilterVisible(false);
-                }}
+                onApply={handleApply}
                 onReset={() => {
                     const reset = { status: 'all', category: [], location: [] };
                     setTempFilters(reset);
@@ -235,7 +233,6 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginTop: 100,
     },
-
     emptyText:{
         fontSize: 20,
         color: '#666',

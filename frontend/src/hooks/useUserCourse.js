@@ -184,6 +184,20 @@ export const useUserCourse = () => {
         .toLowerCase()
         .includes(searchText.toLowerCase());
 
+        const matchesStatus =
+        filters.status === "all" ||
+
+        (filters.status === "inProgress" &&
+            course.enrollmentStatus &&
+            course.enrollmentStatus !== "completed" &&
+            course.enrollmentStatus !== "dropped") ||
+
+        (filters.status === "completed" &&
+            course.enrollmentStatus === "completed") ||
+
+        (filters.status === "notEnrolled" &&
+            !course.enrollmentStatus);
+
       const matchesLocation =
         !filters.location ||
         filters.location === "all" ||
@@ -202,7 +216,13 @@ export const useUserCourse = () => {
             tag.type === "category" && filters.category.includes(tag.title),
         );
 
-      return matchesTab && matchesSearch && matchesLocation && matchesCategory;
+      return (
+        matchesTab &&
+        matchesSearch &&
+        matchesLocation &&
+        matchesCategory &&
+        matchesStatus
+        );
     });
   }, [coursesWithStatus, searchText, filters, allcourseFilter]);
 
@@ -226,6 +246,11 @@ export const useUserCourse = () => {
       return { ...prev, [key]: newList };
     });
   };
+
+  const handleApply = () => {
+    setFilters(tempFilters);
+    setFilterVisible(false);
+    };
 
   const addTag = async (tagData) => {
     const isDuplicate = allTagList.some(
@@ -282,6 +307,7 @@ export const useUserCourse = () => {
     addTag,
     filteredCourses,
     handleSearch,
+    handleApply,
     setSearchText,
     searchText,
   };
