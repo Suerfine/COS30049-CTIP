@@ -8,13 +8,14 @@ export const useCourseProgress = (course, userMarks) => {
         const map = {};
         let previousPageCompleted = true; 
 
-        course?.modules.forEach((module, mIdx) => {
+        course.modules.forEach((module, mIdx) => {
             let moduleTotalPoints = 0;
             let moduleEarnedPoints = 0;
             
             const pages = module.pages || [];
+            console.log(module);
 
-            pages.forEach((page)=>{
+            pages.forEach((page, pIdx) => {
                 const pageElements = page.elements || []; 
                 const totalPageScore = pageElements.reduce((sum, el) => sum + el.score, 0);
                 
@@ -24,7 +25,8 @@ export const useCourseProgress = (course, userMarks) => {
 
                 const percent = totalPageScore > 0 ? (earnedPageScore / totalPageScore) * 100 : 0;
                 
-                const isUnlocked = previousPageCompleted;
+                const isFirstPage = mIdx === 0 && pIdx === 1;
+                const isUnlocked = isFirstPage || previousPageCompleted;
                 
                 const passingThreshold = page.passing_score || 100;
                 const isCompleted = percent >= passingThreshold;
