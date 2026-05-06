@@ -12,6 +12,7 @@ import SlidingTabs from '../components/SlidingTabs.js';
 import AddTodo from '../components/AddTodo.js';
 import ModalLayout from '../components/ModalLayout.js';
 import TaskDetail from '../components/TaskDetail.js';
+import { useTranslation } from 'react-i18next';
 
 const UserDashboard = ({ navigation }) => {
     const {
@@ -34,6 +35,7 @@ const UserDashboard = ({ navigation }) => {
     const [showModal, setShowModal] = useState(false);
     const [selectedTask, setSelectedTask] = useState(null);
     const openEdit = (todo) => { setSelectedTask(todo); };
+    const {t, i18n}=useTranslation();
 
     return(
         <ScrollView style={{ flex: 1 }}>
