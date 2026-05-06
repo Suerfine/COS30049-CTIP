@@ -1,40 +1,50 @@
 import {useState, useEffect, useCallback} from 'react';
 import { courseService } from '../services/courseService';
 import { moduleService } from '../services/moduleService';
+import { pageService } from '../services/pageService';
+import {ElementService } from '../services/ElementService';
 
 export const useCourseDetails=(id)=>{
     const [course,setCourse]=useState(null);
     const [loading,setLoading]=useState(true);
     const [error, setError]=useState(null);
 
-    const fetchCourse=useCallback(async()=>{
-        if(!id){
-            return;
-        }
-        try{
+    const fetchCourse = useCallback(async () => {
+        if (!id) return;
+        try {
             setLoading(true);
-            setError(null);
-            const courseData=await courseService.getById(id);
-            const modulesData=await moduleService.getAll(id);
-            if (!courseData.description) {
-                courseData.description = "# Course Description\n\n# What you'll learn\n* ";
-            }
-            setCourse({
-                ...courseData, modules:modulesData
-            });
-            
-        }catch(err){
-            console.error("Course Fetch Error: ", err);
-            setError(err.message || "Failed to load course details.");
-        }finally{
+            const courseData = await courseService.getById(id);
+            const modulesData = await moduleService.getAll(id);
+
+            const modulesWithFullData = await Promise.all(
+                modulesData.map(async (module) => {
+                    const pagesData = await pageService.getAll(id, module.id);
+
+                    const pagesWithElements = await Promise.all(
+                        pagesData.map(async (page) => {
+                            const elementsData = await ElementService.getAll(id, module.id, page.id);
+                            return { 
+                                ...page, 
+                                elements: elementsData || []
+                            };
+                        })
+                    );
+
+                    return { ...module, pages: pagesWithElements };
+                })
+            );
+
+            setCourse({ ...courseData, modules: modulesWithFullData });
+        } catch (err) {
+            console.error("Hydration Error:", err);
+        } finally {
             setLoading(false);
         }
-    },[id]);
-    
+    }, [id]);
+        
     const locationTags = course?.tags?.filter(tag => tag.type === 'location') || [];
     const categoryTags = course?.tags?.filter(tag => tag.type === 'category') || [];
 
-    // Update only for description
     const updateDescription = async (newDescription) => {
     try {
             const payload = {

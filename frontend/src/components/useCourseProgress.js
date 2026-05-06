@@ -29,7 +29,7 @@ export const useCourseProgress = (course, userMarks) => {
                 const isUnlocked = isFirstPage || previousPageCompleted;
                 
                 const passingThreshold = page.passing_score || 100;
-                const isCompleted = percent >= passingThreshold;
+                const isCompleted = earnedPageScore >= passingThreshold;
 
                 map[page.id] = {
                     percent,

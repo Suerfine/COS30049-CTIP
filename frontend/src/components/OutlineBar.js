@@ -101,7 +101,7 @@ const OutlineBar = ({ course, progressMap, onSelectPage, editable, isCollapsed, 
                     return (
                         <View style={[isSelected ? styles.selectedModule : null]}>
                             <View style={styles.moduleWrapper}>
-                                {/* Module-level Progress Bar (Guide View Only) */}
+                                {/* Module-level Progress Bar*/}
                                 {!editable && !isLocked && (
                                     <View style={[styles.moduleProgressBar, { width: `${modStatus.percent}%` }]} />
                                 )}
@@ -179,20 +179,19 @@ const OutlineBar = ({ course, progressMap, onSelectPage, editable, isCollapsed, 
                                                             getHighlightedText(page.title, localSearch)
                                                         )}
                                                     </Text>
-
-                                                    {/* Page Progress Indicator (Guide View Only) */}
+                                                    {/* Page Progress Indicator*/}
                                                     {!editable && !isLocked && (
                                                         <View style={styles.statusIconContainer}>
                                                             {status.isCompleted ? (
-                                                                <CheckCircle2 size={16} color="#0a6340" />
+                                                                <CheckCircle2 size={20} color="#0a6340" />
                                                             ) : status.isLocked ? (
                                                                 <Lock size={14} color="#9ca3af" />
                                                             ) : (
                                                                 <Progress.Circle 
                                                                     progress={status.percent / 100} 
-                                                                    size={16} 
+                                                                    size={21} 
                                                                     color="#0a6340" 
-                                                                    thickness={2} 
+                                                                    thickness={3} 
                                                                 />
                                                             )}
                                                         </View>
