@@ -229,7 +229,7 @@ const OutlineBar = ({ course, progressMap = {}, onSelectPage, editable, isCollap
                                                             ? <CheckCircle2 size={18} color="#0a6340"/>
                                                             : status.isLocked
                                                                 ? <Lock size={14}/>
-                                                                : <Progress.Circle progress={status.percent/100} size={20}/>
+                                                                : <Progress.Circle color="#0a6340" progress={status.percent/100} size={20} thickness={2}/>
                                                     )}
 
                                                     {editable && isHoveringPage && !isEditingPage && (
