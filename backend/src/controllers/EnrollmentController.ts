@@ -291,12 +291,21 @@ export const getSubmissionSummaries = async (
   try {
     const customQuery: any = {
       ...req.query,
-      orderBy: req.query.orderBy || "completed_at ASC, created_at ASC" 
+      orderBy: req.query.orderBy || "id ASC" 
     };
+
     const summaries = await paginateModel(Enrollment, customQuery, {
       include: [
-        { model: User, attributes: ["fullname"] },
-        { model: Course, attributes: ["course_code", "title", "badge_img_url"] }
+        { 
+          model: User, 
+          as: "user", 
+          attributes: ["firstname", "lastname"] 
+        },
+        { 
+          model: Course, 
+          as: "course", 
+          attributes: ["id", "title", "badge_img_path"] 
+        }
       ],
       paranoid: true,
     });
@@ -304,11 +313,18 @@ export const getSubmissionSummaries = async (
     const baseUrl = `${req.protocol}://${req.get("host")}${req.baseUrl}${req.path}`;
     
     const formattedResponse = formatPaginateResponse(
-      summaries.data.map((enrollment: any) => ({
-        ...toEnrollmentResponse(enrollment),
-        user_fullname: enrollment.User?.fullname,
-        course_details: enrollment.Course,
-      })),
+      summaries.data.map((enrollment: any) => {
+        const user = enrollment.user; 
+        const course = enrollment.course;
+
+        return {
+          ...toEnrollmentResponse(enrollment),
+          user_fullname: user 
+            ? `${user.firstname} ${user.lastname}` 
+            : "Unknown User",
+          course_details: course || null,
+        };
+      }),
       customQuery,
       true,
       {
@@ -322,6 +338,7 @@ export const getSubmissionSummaries = async (
 
     return res.status(200).json(formattedResponse);
   } catch (err) {
+    console.error("Summaries Fetch Error:", err);
     return res.status(500).json({ message: "Internal server error\n" + err });
   }
 };
