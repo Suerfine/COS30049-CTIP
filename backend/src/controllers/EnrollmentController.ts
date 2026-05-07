@@ -4,7 +4,7 @@ import {
   EnrollmentResponse,
   MyEnrollmentRequestParams,
 } from "../types/Enrollment";
-import { Course, Enrollment } from "../models";
+import { Course, Enrollment, User, Module, Page, Submission, Element } from "../models";
 import { formatPaginateResponse, paginateModel } from "../utils/paginate";
 import { EnrollmentStatus } from "../enum/EnrollmentStatus";
 import sequelize from "../config/Database";
@@ -276,6 +276,169 @@ export const deleteEnrollment = async (
     await enrollment.destroy();
     return res.status(200).json({ message: "Enrollment deleted successfully" });
   } catch (err) {
+    if (err instanceof HttpError) {
+      res.status(err.status).json({ message: err.message });
+    } else {
+      res.status(500).json({ message: "Internal server error\n" + err });
+    }
+  }
+};
+
+export const getSubmissionSummaries = async (
+  req: Request,
+  res: Response<PaginateResponse<any> | { message: string }>,
+) => {
+  try {
+    const customQuery: any = {
+      ...req.query,
+      orderBy: req.query.orderBy || "completed_at ASC, created_at ASC" 
+    };
+    const summaries = await paginateModel(Enrollment, customQuery, {
+      include: [
+        { model: User, attributes: ["fullname"] },
+        { model: Course, attributes: ["course_code", "title", "badge_img_url"] }
+      ],
+      paranoid: true,
+    });
+
+    const baseUrl = `${req.protocol}://${req.get("host")}${req.baseUrl}${req.path}`;
+    
+    const formattedResponse = formatPaginateResponse(
+      summaries.data.map((enrollment: any) => ({
+        ...toEnrollmentResponse(enrollment),
+        user_fullname: enrollment.User?.fullname,
+        course_details: enrollment.Course,
+      })),
+      customQuery,
+      true,
+      {
+        page: summaries.page,
+        size: summaries.size,
+        totalElements: summaries.totalElements,
+        totalPages: summaries.totalPages,
+        baseUrl,
+      },
+    );
+
+    return res.status(200).json(formattedResponse);
+  } catch (err) {
+    return res.status(500).json({ message: "Internal server error\n" + err });
+  }
+};
+
+export const getEnrollmentAudit = async (
+  req: Request<{ id: string }>,
+  res: Response<any | { message: string }>,
+) => {
+  try {
+    const enrollmentId = Number(req.params.id);
+
+    if (isNaN(enrollmentId)) {
+      throw new HttpError(400, "Invalid enrollment ID");
+    }
+
+    const audit = await Enrollment.findByPk(enrollmentId, {
+      include: [
+        {
+          model: Course,
+          include: [{
+            model: Module,
+            include: [{
+              model: Page,
+              include: [{
+                model: Element,
+                include: [{
+                  model: Submission,
+                  where: { enrollment_id: enrollmentId },
+                  required: false 
+                }]
+              }]
+            }]
+          }]
+        }
+      ] as any[] 
+    });
+
+    if (!audit) throw new HttpError(404, "Enrollment not found");
+
+    return res.status(200).json(audit);
+  } catch (err) {
+    if (err instanceof HttpError) {
+      return res.status(err.status).json({ message: err.message });
+    }
+    return res.status(500).json({ message: "Internal server error\n" + err });
+  }
+};
+
+export const approveBadge = async (
+  req: Request<{ id: string }>,
+  res: Response<EnrollmentResponse | { message: string }>,
+) => {
+  const transaction = await sequelize.transaction();
+  
+  try {
+    const enrollmentId = Number(req.params.id);
+    if (Number.isNaN(enrollmentId)) throw new HttpError(400, "Invalid enrollment id");
+
+    const enrollment = await Enrollment.findByPk(enrollmentId, { 
+      include: [{ model: Course }],
+      transaction 
+    }) as (Enrollment & { Course: Course; course_id: number }) | null; 
+
+    if (!enrollment) throw new HttpError(404, "Enrollment not found");
+
+    if (enrollment.status !== EnrollmentStatus.IN_REVIEW) {
+      throw new HttpError(400, "Only enrollments 'In Review' can be approved.");
+    }
+
+    const finalQuizPages = await Page.findAll({
+      where: { 
+        course_id: enrollment.course_id, 
+        final_quiz: true 
+      } as any, 
+      include: [{ model: Element }],
+      transaction
+    }) as any[];
+
+    for (const page of finalQuizPages) {
+      for (const element of page.Elements || []) {
+        const submission = await Submission.findOne({
+          where: { 
+            enrollment_id: enrollmentId,
+            element_id: element.id
+          },
+          transaction
+        });
+
+        const requiredScore = (page as any).passing_score || 80;
+        if (!submission || (submission as any).earned_grade < requiredScore) {
+          throw new HttpError(
+            400, 
+            `Verification failed: Final Quiz on page "${page.title}" not passed.`
+          );
+        }
+      }
+    }
+
+    const courseData = (enrollment as any).Course; 
+    
+    enrollment.status = EnrollmentStatus.COMPLETED;
+    enrollment.completed_at = new Date();
+    enrollment.reviewed_at = new Date();
+    enrollment.reviewed_by_user_id = req.user?.id || null;
+    
+    if (courseData && (courseData as any).badge_expire_in_months) {
+      const expireDate = new Date();
+      expireDate.setMonth(expireDate.getMonth() + (courseData as any).badge_expire_in_months);
+      enrollment.badge_expire_at = expireDate;
+    }
+
+    await enrollment.save({ transaction });
+    await transaction.commit();
+
+    return res.status(200).json(toEnrollmentResponse(enrollment));
+  } catch (err) {
+    if (transaction) await transaction.rollback();
     if (err instanceof HttpError) {
       res.status(err.status).json({ message: err.message });
     } else {

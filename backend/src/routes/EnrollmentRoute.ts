@@ -187,4 +187,91 @@ enrollmentRouter.patch(
  */
 enrollmentRouter.delete("/:id", auth, EnrollmentController.deleteEnrollment);
 
+/**
+ * @swagger
+ * /api/enrollments/submissions/summaries:
+ *   get:
+ *     summary: Get all enrollment submission summaries (Admin)
+ *     description: Returns all submissions with user and course details
+ *     tags:
+ *       - Enrollments
+ *     security:
+ *       - OAuth2: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: size
+ *         schema:
+ *           type: integer
+ *           default: 20
+ *     responses:
+ *       200:
+ *         description: Successfully retrieved submission summaries
+ */
+enrollmentRouter.get(
+  "/submissions/summaries",
+  auth,
+  EnrollmentController.getSubmissionSummaries,
+);
+
+/**
+ * @swagger
+ * /api/enrollments/{id}/audit:
+ *   get:
+ *     summary: Get enrollment audit details
+ *     description: Returns nested modules, pages, elements, and submissions
+ *     tags:
+ *       - Enrollments
+ *     security:
+ *       - OAuth2: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Successfully retrieved audit data
+ *       404:
+ *         description: Enrollment not found
+ */
+enrollmentRouter.get(
+  "/:id/audit",
+  auth,
+  EnrollmentController.getEnrollmentAudit,
+);
+
+/**
+ * @swagger
+ * /api/enrollments/{id}/approve:
+ *   patch:
+ *     summary: Approve enrollment and issue badge
+ *     description: Validates completion and issues badge if eligible
+ *     tags:
+ *       - Enrollments
+ *     security:
+ *       - OAuth2: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Enrollment approved and badge issued
+ *       400:
+ *         description: Final quiz verification failed
+ */
+enrollmentRouter.patch(
+  "/:id/approve",
+  auth,
+  EnrollmentController.approveBadge,
+);
+
 export default enrollmentRouter;
