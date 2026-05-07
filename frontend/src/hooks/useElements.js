@@ -101,7 +101,6 @@ export const useElements=(courseId, moduleId, pageId)=>{
         try {
             const data = await ElementService.getWorkshops(courseId);
             setWorkshops(data);
-            console.log(workshops);
         } catch (err) {
             console.error("useElements Workshop Error: ", err);
         } finally {

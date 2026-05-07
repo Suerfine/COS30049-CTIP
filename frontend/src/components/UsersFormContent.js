@@ -56,7 +56,6 @@ const UsersFormContent=({onSubmit, onCancel, isLoading})=>{
     const handleSubmit=async()=>{
         if(validateForm()){
             const result=await onSubmit(form);
-            iz
         }
     }
     
@@ -225,4 +224,3 @@ const localStyles=StyleSheet.create({
 
 export default UsersFormContent;
 
-// Havent do the validation message, edit user function, delete user function

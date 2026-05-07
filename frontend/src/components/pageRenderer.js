@@ -213,7 +213,6 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
     
     const renderElement = (el, index) => {
         if (!el || !el.id) return null;
-        console.log(el.content)
         const { type, content, score, id } = el;
         const earnedScore = typeof userMarks?.[id] === 'object' 
         ? (userMarks[id]?.earned_grade ?? 0) 
