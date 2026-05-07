@@ -84,7 +84,6 @@ const AddTodo = ({ visible, setIsModalVisible, onCreated, initialEvent = null })
                 title: title.trim(),
                 description: description.trim(),
                 type: isPhysical ? "workshop" : "normal",
-                status: initialEvent?.status || "pending",
                 event_start_at: startDate.toISOString(),
                 event_end_at: endDate.toISOString(),
                 is_all_day: isAllDay,
@@ -93,7 +92,10 @@ const AddTodo = ({ visible, setIsModalVisible, onCreated, initialEvent = null })
             if (initialEvent?.id) {
                 await eventService.updateEvent(initialEvent.id, payload);
             } else {
-                await eventService.createEvent(payload);
+                await eventService.createEvent({
+                    ...payload,
+                    status: "pending",
+                });           
             }
 
             if (onCreated) {

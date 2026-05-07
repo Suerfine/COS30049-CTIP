@@ -42,7 +42,11 @@ export const useUserDashboard = () => {
         try {
             await eventService.updateStatus(id, nextStatus);
 
-            setEvents(prev => prev.map(event => event.id === id ? {...event, status: nextStatus} : event));
+            setEvents((prev) =>
+                prev.map((event) =>
+                    event.id === id ? { ...event, status: nextStatus } : event
+                )
+            );        
         } catch (err) {
             console.error("Toggle event status error:", err);
         }
@@ -192,6 +196,7 @@ export const useUserDashboard = () => {
         currentDate, setCurrentDate,
         isExpanded, setIsExpanded,
         weekDates, getDaysInMonth, filteredEvents,
+        toggleEvent,
         hasPendingEventOnDate, refreshData: fetchDashboardData,
         weekLabels, eventTab, courseTab, categories, formatLocalDate,  
         // inProgressCourses,
