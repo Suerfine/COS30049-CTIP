@@ -15,6 +15,7 @@ import { markdownStyles } from '../components/markdownStyle.js';
 import { useCourses } from '../hooks/useCourses.js';
 import { useCourseProgress } from '../components/useCourseProgress.js';
 import AIChatBot from '../components/AIChatbot.js';
+import { useTranslation } from 'react-i18next';
 
 const UserModule = ({navigation}) => {
     const route=useRoute();
@@ -222,7 +223,8 @@ const UserModule = ({navigation}) => {
             {/* Outlinebar */}
             <OutlineBar course={course} onSelectPage={setSelectedPage}
             progressMap={progressMap}
-            editable={false} isCollapsed={isCollapsed} isLocked={isLocked}/>
+            editable={false} isCollapsed={isCollapsed} isLocked={isLocked}
+            userMarks={userMarks}/>
             <ScrollView style={{height:'100vh'}}>
                 <View style={styles.container}>
                     {/* Background Image */}
