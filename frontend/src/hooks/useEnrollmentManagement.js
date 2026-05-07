@@ -12,17 +12,34 @@ export const useEnrollmentManagement=()=>{
         key:null,
         direction:'asc'
     });
+    const [sortSubmissionConfig, setSortSubmissionConfig]=useState({
+        key:null,
+        direction:'asc'
+    });
     const [currentPage, setCurrentPage]=useState(1);
+    const [currentSubmissionPage, setSubmissionCurrentPage]=useState(1);
     const [currentStatus, setCurrentStatus]=useState('All');
+    const [currentSubmissionStatus, setCurrentSubmissionStatus]=useState('All');
     const [totalElements, setTotalElements] = useState(0);
     const [courses, setCourses] = useState([]);
+    const [submissionTotalPages, setSubmissionTotalPages]=useState(1);
+    const [submissionTotalElements, setSubmissionTotalElements]=useState(0);
+    const [auditData, setAuditData] = useState(null);
+    const [auditLoading, setAuditLoading] = useState(false);
+
 
     const fetchData = useCallback(async () => {
         setLoading(true);
         try {
             const [enrollData, submissionData] = await Promise.all([
                 enrollmentService.getAll(currentPage, 10, searchQuery, sortConfig, currentStatus),
-                // submissionService.getAll()
+                submissionService.getSummaries(
+                    currentSubmissionPage,
+                    10,
+                    searchQuery,
+                    currentSubmissionStatus,
+                    sortSubmissionConfig
+                )
             ]);
 
             setEnrollments(enrollData.data || []); 
@@ -30,14 +47,16 @@ export const useEnrollmentManagement=()=>{
             setTotalPages(enrollData.totalPages || 1);
             setTotalElements(enrollData.totalElements || 0);
             
-            setSubmissions(submissionData);
+            setSubmissions(submissionData.data || []);
+            setSubmissionTotalPages(submissionData.totalPages || 1);
+            setSubmissionTotalElements(submissionData.totalElements || 0);
         } catch (err) {
             console.error("Fetch Error:", err);
             setEnrollments([]);
         } finally {
             setLoading(false);
         }
-    }, [currentPage, searchQuery, sortConfig, currentStatus]);
+    }, [currentPage, searchQuery, sortConfig, currentStatus, currentSubmissionPage, sortSubmissionConfig, currentSubmissionStatus]);
 
     const handleUpdateStatus = async (enrollmentId, newStatus) => {
         try {
@@ -83,6 +102,18 @@ export const useEnrollmentManagement=()=>{
         }
     };
 
+    const fetchEnrollmentAudit = async (id) => {
+        setAuditLoading(true);
+        try {
+            const data = await submissionService.getEnrollmentAudit(id);
+            setAuditData(data);
+        } catch (err) {
+            window.alert("Failed to fetch enrollment audit details.");
+        } finally {
+            setAuditLoading(false);
+        }
+    };
+
 
     useEffect(()=>{
         fetchData();
@@ -102,6 +133,9 @@ export const useEnrollmentManagement=()=>{
         requestSort,resetSort,
         handleUpdateStatus,
         deleteRecord,
-        courses
+        courses,
+        submissionTotalPages, submissionTotalElements,
+        currentSubmissionPage, setSubmissionCurrentPage,
+        auditData, auditLoading, fetchEnrollmentAudit
     };
 };

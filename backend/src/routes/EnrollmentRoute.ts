@@ -234,17 +234,23 @@ enrollmentRouter.delete("/:id", auth, EnrollmentController.deleteEnrollment);
  *                         example: Fam Sin Mim
  *                       course_code:
  *                         type: string
- *                         example: ICT30001
  *                       course_name:
  *                         type: string
- *                         example: SFC Digital Park Guide Training
  *                       badge_url:
+ *                         type: string
+ *                         nullable: true
+ *                       pfp_url:
  *                         type: string
  *                         nullable: true
  *                       completed_at:
  *                         type: string
  *                         format: date-time
  *                         nullable: true
+ *                       badge_expiry_on:
+ *                         type: string
+ *                         format: date-time
+ *                         nullable: true
+ *                         description: The date the guide's badge will expire based on course duration
  *                       created_at:
  *                         type: string
  *                         format: date-time
@@ -254,11 +260,13 @@ enrollmentRouter.delete("/:id", auth, EnrollmentController.deleteEnrollment);
  *                   user_id: 10
  *                   course_id: 5
  *                   status: in_review
- *                   user_fullname: Fam Sin Mim
+ *                   user_fullname: Jenny
  *                   course_code: ICT30001
  *                   course_name: SFC Digital Park Guide Training
  *                   badge_url: https://api.sigmamed.com/badges/park-guide.png
- *                   completed_at: null
+ *                   pfp_url: null
+ *                   completed_at: 2026-05-07T10:00:00Z
+ *                   badge_expiry_on: 2026-11-07T10:00:00Z
  *                   created_at: 2026-05-07T10:00:00Z
  */
 enrollmentRouter.get(

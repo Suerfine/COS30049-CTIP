@@ -100,24 +100,44 @@ export const submissionService = {
   /**
      * GET: Fetch submission summaries
      */
-    getSummaries: async (page = 1, size = 10, searchQuery = '', status = 'All') => {
+    getSummaries: async (page = 1, size = 10, searchQuery = '', status = 'All', sortConfig = null) => {
       try {
           const params = { 
-              page, 
-              size 
+              page: Number(page), 
+              size: Number(size) 
           };
 
+          if (searchQuery && typeof searchQuery === 'string' && searchQuery.trim() !== '') {
+              params.search = searchQuery.trim();
+          }
           if (status && status !== 'All' && typeof status === 'string') {
-              params.status = status;
+              params.status = status; 
+              params.filter = `status eq "${status}"`;
+          }
+          if (sortConfig && typeof sortConfig === 'object' && sortConfig.key) {
+              const direction = sortConfig.direction?.toUpperCase() === 'DESC' ? 'DESC' : 'ASC';
+              params.orderBy = `${sortConfig.key} ${direction}`;
+          } else {
+              params.orderBy = "id ASC";
           }
 
-          if (searchQuery) {
-              params.search = searchQuery;
-          }
           const res = await apiClient.get(API_ENDPOINTS.ENROLLMENT.SUMARRIES, { params });
           return res.data;
+
       } catch (error) {
+          console.error("Service: getSummaries failed", error);
           throw error;
       }
-  }
+  },
+
+// GET: Audit
+  getEnrollmentAudit: async (id) => {
+      try {
+          const res = await apiClient.get(`/enrollments/${id}/audit`);
+          return res.data;
+      } catch (error) {
+          console.error("Fetch Audit Error:", error);
+          throw error;
+      }
+  },
 };

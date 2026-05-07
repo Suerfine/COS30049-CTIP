@@ -299,12 +299,12 @@ export const getSubmissionSummaries = async (
         { 
           model: User, 
           as: "user", 
-          attributes: ["firstname", "lastname"] 
+          attributes: ["firstname", "lastname", "pfp_url"] 
         },
         { 
           model: Course, 
           as: "course", 
-          attributes: ["id", "title", "badge_img_path"] 
+          attributes: ["id", "title", "badge_img_path", "badge_expire_in_months"] 
         }
       ],
       paranoid: true,
@@ -317,12 +317,20 @@ export const getSubmissionSummaries = async (
         const user = enrollment.user; 
         const course = enrollment.course;
 
+        let badgeExpiryOn=null;
+        if (enrollment.completed_at && course?.badge_expire_in_months) {
+          const completionDate = new Date(enrollment.completed_at);
+          completionDate.setMonth(completionDate.getMonth() + Number(course.badge_expire_in_months));
+          badgeExpiryOn = completionDate.toISOString();
+        }
+
         return {
           ...toEnrollmentResponse(enrollment),
           user_fullname: user 
             ? `${user.firstname} ${user.lastname}` 
             : "Unknown User",
           course_details: course || null,
+          badge_expire_at: badgeExpiryOn
         };
       }),
       customQuery,
@@ -358,32 +366,49 @@ export const getEnrollmentAudit = async (
       include: [
         {
           model: Course,
-          include: [{
-            model: Module,
-            include: [{
-              model: Page,
-              include: [{
-                model: Element,
-                include: [{
-                  model: Submission,
-                  where: { enrollment_id: enrollmentId },
-                  required: false 
-                }]
-              }]
-            }]
-          }]
-        }
-      ] as any[] 
+          as: "course",
+          include: [
+            {
+              model: Module,
+              as: "modules",
+              include: [
+                {
+                  model: Page,
+                  as: "pages",
+                  include: [
+                    {
+                      model: Element,
+                      as: "elements",
+                      include: [
+                        {
+                          model: Submission,
+                          as: "submissions",
+                          where: { enrollment_id: enrollmentId },
+                          required: false,
+                        },
+                      ],
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ] as any[],
     });
-
-    if (!audit) throw new HttpError(404, "Enrollment not found");
+    if (!audit) {
+      throw new HttpError(404, "Enrollment not found");
+    }
 
     return res.status(200).json(audit);
   } catch (err) {
     if (err instanceof HttpError) {
       return res.status(err.status).json({ message: err.message });
     }
-    return res.status(500).json({ message: "Internal server error\n" + err });
+
+    return res
+      .status(500)
+      .json({ message: "Internal server error\n" + err });
   }
 };
 

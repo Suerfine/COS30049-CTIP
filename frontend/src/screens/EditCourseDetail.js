@@ -453,6 +453,7 @@ const EditCourseDetail = () => {
                             </View>
                             
                             <View style={styles.badgePreviewContainer}>
+                                {/* : picture is hardcode  */}
                                 <Image 
                                     source={course.badge_img_url ? { uri: course.badge_img_url } : require('../../assets/course_badge.png')} 
                                     style={styles.largeAchievementBadge}
