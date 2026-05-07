@@ -99,14 +99,23 @@ const UserDashboard=({navigation})=>{
                                     <CourseCard
                                         key={course.id}
                                         id={course.id}
-                                        imagePath={{ uri: course.image }}
-                                        courseTitle={course.courseTitle}
+                                        coverImgUrl={course.cover_img_url}
+                                        courseTitle={course.title}
                                         numModules={numModules}
-                                        duration={course.duration}
-                                        expiry={course.expiryDate}
-                                        progress={courseProgress?.progress}
+                                        duration={course.expected_completion_weeks}
+                                        expiry={course.must_complete_in_weeks}
+                                        progress={course.progress}
+                                        enrollmentStatus={course.enrollmentStatus}
                                         userType={userType}
-                                        onPress={() => navigation.navigate('User Module', { id: course.id })}
+                                        // handlers
+                                        onPress={() => navigation.navigate('ParkGuideStack', {
+                                            screen: 'UserModule', 
+                                            params: { 
+                                                id: course.id,
+                                                enrollmentStatus: course.enrollmentStatus ?? null,
+                                                enrollmentId: course.enrollmentId
+                                            }
+                                        })}
                                     />
                                 );
                             })
@@ -129,7 +138,15 @@ const UserDashboard=({navigation})=>{
                                         expiry={course.expiryDate}
                                         progress={courseProgress?.progress ?? 1}
                                         userType={userType}
-                                        onPress={() => navigation.navigate('User Module', { id: course.id })}
+                                        // handlers
+                                        onPress={() => navigation.navigate('ParkGuideStack', {
+                                            screen: 'UserModule', 
+                                            params: { 
+                                                id: course.id,
+                                                enrollmentStatus: course.enrollmentStatus ?? null,
+                                                enrollmentId: course.enrollmentId
+                                            }
+                                        })}
                                     />
                                 );
                             })

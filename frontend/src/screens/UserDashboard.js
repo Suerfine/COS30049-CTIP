@@ -120,7 +120,15 @@ const UserDashboard = ({ navigation }) => {
                                             progress={course.progress}
                                             enrollmentStatus={course.enrollmentStatus}
                                             userType={userType}
-                                            onPress={() => navigation.navigate('User Module', { id: course.id })}
+                                            // handlers
+                                            onPress={() => navigation.navigate('ParkGuideStack', {
+                                                screen: 'UserModule', 
+                                                params: { 
+                                                    id: course.id,
+                                                    enrollmentStatus: course.enrollmentStatus ?? null,
+                                                    enrollmentId: course.enrollmentId
+                                                }
+                                            })}
                                         />
                                     );
                                 })
@@ -129,21 +137,29 @@ const UserDashboard = ({ navigation }) => {
                             {/* completed courses */}
                             {courseFilter === 'completed' &&
                                 completedCourses.map(course => {
-                                    const numModules = course.modules?.length ?? 0;
+                                    const courseProgress = progressData.find(p => p.courseId === course.id);
+                                    const numModules = course.modules ? course.modules.length : 0;
 
                                     return (
                                         <CourseCard
                                             key={course.id}
                                             id={course.id}
-                                            coverImgUrl={course.cover_img_url}
-                                            courseTitle={course.title}
+                                            imagePath={{ uri: course.image }}
+                                            courseTitle={course.courseTitle}
                                             numModules={numModules}
-                                            duration={course.expected_completion_weeks}
-                                            expiry={course.must_complete_in_weeks}
-                                            progress={course.progress}
-                                            enrollmentStatus={course.enrollmentStatus}
+                                            duration={course.duration}
+                                            expiry={course.expiryDate}
+                                            progress={courseProgress?.progress ?? 1}
                                             userType={userType}
-                                            onPress={() => navigation.navigate('User Module', { id: course.id })}
+                                            // handlers
+                                            onPress={() => navigation.navigate('ParkGuideStack', {
+                                                screen: 'UserModule', 
+                                                params: { 
+                                                    id: course.id,
+                                                    enrollmentStatus: course.enrollmentStatus ?? null,
+                                                    enrollmentId: course.enrollmentId
+                                                }
+                                            })}
                                         />
                                     );
                                 })
@@ -414,7 +430,7 @@ const styles = StyleSheet.create({
     infoRow1:{
         flexDirection: 'row',
         gap: 50,
-    },
+    },  
     row:{
         flexDirection: 'row',
     },
