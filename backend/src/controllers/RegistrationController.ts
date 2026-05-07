@@ -1,8 +1,6 @@
 import { NextFunction, Request, Response } from "express";
-import fs from "fs";
-import path from "path";
 import { Registration } from "../models";
-import { DatabaseError, Op, ValidationError } from "sequelize";
+import { Op } from "sequelize";
 import { PaginateRequestParams, PaginateResponse } from "../types/common";
 import {
   CreateRegistrationRequest,
@@ -19,10 +17,8 @@ import {
   ApproveRegistrationResponse,
 } from "../types/Registration";
 import { hashPassword } from "../utils/password";
-import { PRIVATE_UPLOAD_STORAGE_PATH } from "../middelware/PrivateDocumentUpload";
 import { UserResponse } from "../types/User";
 import { getStorage } from "../services/storage";
-import { th } from "@faker-js/faker";
 
 class HttpError extends Error {
   status: number;
