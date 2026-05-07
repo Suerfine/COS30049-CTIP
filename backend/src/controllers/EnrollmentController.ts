@@ -230,15 +230,16 @@ export const updateEnrollmentStatus = async (
         break;
       case EnrollmentStatus.IN_REVIEW:
         // XXX: Remove this route. The status should only be set to IN_REVIEW by code.
-        if (enrollment.status !== EnrollmentStatus.IN_PROGRESS && enrollment.status !== EnrollmentStatus.DROPPED) {
+        if (
+          enrollment.status !== EnrollmentStatus.IN_PROGRESS &&
+          enrollment.status !== EnrollmentStatus.DROPPED
+        ) {
           throw new HttpError(400, "Invalid enrollment status transition");
         }
         enrollment.status = newStatus;
         break;
       case EnrollmentStatus.IN_PROGRESS:
-        if (
-          enrollment.status !== EnrollmentStatus.IN_REVIEW
-        ) {
+        if (enrollment.status !== EnrollmentStatus.IN_REVIEW) {
           throw new HttpError(400, "Invalid enrollment status transition");
         }
         enrollment.status = newStatus;
