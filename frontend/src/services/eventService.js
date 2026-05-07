@@ -1,9 +1,10 @@
 import apiClient from "../config/apiConfig";
+import { API_ENDPOINTS } from "../config/ApiEndpoints";
 
 export const eventService = {
     getEvents: async () => {
         try {
-            const response = await apiClient.get('/events');
+            const response = await apiClient.get(API_ENDPOINTS.EVENTS.BASE);
             return response.data;
         } catch (err) {
             console.error("Fetch Events Error:", err);
@@ -13,7 +14,7 @@ export const eventService = {
     },
     createEvent: async (payload) => {
         try {
-            const response = await apiClient.post('evnets', payload);
+            const response = await apiClient.post(API_ENDPOINTS.EVENTS.BASE, payload);
             return response.data;
         } catch (err) {
             console.error("Create Event Error:", err);

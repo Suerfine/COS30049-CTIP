@@ -54,4 +54,7 @@ export const API_ENDPOINTS={
         MARK: (id) => `/submission/${id}/mark`,
         GET_BY_ELEMENT: (enrolId,elId) => `/enrollment/${enrolId}/element/${elId}`,
     },
+    EVENTS:{
+        BASE:'/events',
+    }
 };

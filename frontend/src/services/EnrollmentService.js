@@ -107,8 +107,6 @@ export const enrollmentService = {
      * PATCH: Update enrollment status (Approval Logic)
      */
     updateStatus: async (enrollmentId, status) => {
-        console.log(enrollmentId);
-        console.log(status);
         try {
             const res = await apiClient.patch(
                 API_ENDPOINTS.ENROLLMENT.UPDATE_STATUS(enrollmentId, status,{})

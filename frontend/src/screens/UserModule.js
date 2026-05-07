@@ -38,8 +38,7 @@ const UserModule = ({navigation}) => {
     const [activeTab,setActiveTab]=useState('Overview');
     const [forumType, setForumType]=useState('Public');
 
-    const { elements, loading: elementsLoading,registerWorkshop, 
-    registering,workshopsLoading,loadWorkshops, workshops } = useElements(
+    const { elements, loading: elementsLoading, workshopsLoading,loadWorkshops, workshops } = useElements(
         id,
         selectedPage?.page?.module_id || selectedPage?.module?.id,
         selectedPage?.page?.id
@@ -205,8 +204,6 @@ const UserModule = ({navigation}) => {
                                 elements={workshops}
                                 role={currentUser.role}
                                 courseId={id} 
-                                onRegisterWorkshop={registerWorkshop}
-                                registering={registering}
                                 userMarks={userMarks}
                             />
                         )}
@@ -287,9 +284,6 @@ const UserModule = ({navigation}) => {
                                         role={currentUser.role}
                                         courseId={id}
                                         onProgressUpdate={saveProgress}
-                                        onRegisterWorkshop=
-                                        {registerWorkshop}
-                                        registering={registering}
                                         userMarks={userMarks}
                                     />
                                 )}

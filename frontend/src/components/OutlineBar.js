@@ -133,6 +133,12 @@ const OutlineBar = ({ course, progressMap = {}, onSelectPage, editable, isCollap
                                         if (isLocked || isEditing) return;
                                         handleSelect({ type: 'module', module });
                                         toggleModule(mid);
+                                        if (editable && expandedModule !== mid) {
+                                            setEditingItem({
+                                                type: 'module',
+                                                id: mid
+                                            });
+                                        }
                                     }}
                                 >
                                     <Text style={styles.moduleTitle}>
