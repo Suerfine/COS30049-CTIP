@@ -192,7 +192,7 @@ enrollmentRouter.delete("/:id", auth, EnrollmentController.deleteEnrollment);
  * /api/enrollments/submissions/summaries:
  *   get:
  *     summary: Get all enrollment submission summaries (Admin)
- *     description: Returns all submissions with user and course details
+ *     description: Returns a paginated list of enrollments with user and course details
  *     tags:
  *       - Enrollments
  *     security:
@@ -202,15 +202,64 @@ enrollmentRouter.delete("/:id", auth, EnrollmentController.deleteEnrollment);
  *         name: page
  *         schema:
  *           type: integer
- *           default: 1
+ *           example: 1
  *       - in: query
  *         name: size
  *         schema:
  *           type: integer
- *           default: 20
+ *           example: 20
  *     responses:
  *       200:
  *         description: Successfully retrieved submission summaries
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: integer
+ *                       user_id:
+ *                         type: integer
+ *                       course_id:
+ *                         type: integer
+ *                       status:
+ *                         type: string
+ *                       user_fullname:
+ *                         type: string
+ *                         example: Fam Sin Mim
+ *                       course_code:
+ *                         type: string
+ *                         example: ICT30001
+ *                       course_name:
+ *                         type: string
+ *                         example: SFC Digital Park Guide Training
+ *                       badge_url:
+ *                         type: string
+ *                         nullable: true
+ *                       completed_at:
+ *                         type: string
+ *                         format: date-time
+ *                         nullable: true
+ *                       created_at:
+ *                         type: string
+ *                         format: date-time
+ *             example:
+ *               data:
+ *                 - id: 1
+ *                   user_id: 10
+ *                   course_id: 5
+ *                   status: in_review
+ *                   user_fullname: Fam Sin Mim
+ *                   course_code: ICT30001
+ *                   course_name: SFC Digital Park Guide Training
+ *                   badge_url: https://api.sigmamed.com/badges/park-guide.png
+ *                   completed_at: null
+ *                   created_at: 2026-05-07T10:00:00Z
  */
 enrollmentRouter.get(
   "/submissions/summaries",
@@ -223,7 +272,7 @@ enrollmentRouter.get(
  * /api/enrollments/{id}/audit:
  *   get:
  *     summary: Get enrollment audit details
- *     description: Returns nested modules, pages, elements, and submissions
+ *     description: Returns a deeply nested structure containing modules, pages, elements, and submissions
  *     tags:
  *       - Enrollments
  *     security:
@@ -234,9 +283,72 @@ enrollmentRouter.get(
  *         required: true
  *         schema:
  *           type: integer
+ *         description: Enrollment ID to audit
  *     responses:
  *       200:
  *         description: Successfully retrieved audit data
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: integer
+ *                 status:
+ *                   type: string
+ *                 Course:
+ *                   type: object
+ *                   properties:
+ *                     title:
+ *                       type: string
+ *                 Modules:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       title:
+ *                         type: string
+ *                       Pages:
+ *                         type: array
+ *                         items:
+ *                           type: object
+ *                           properties:
+ *                             title:
+ *                               type: string
+ *                             final_quiz:
+ *                               type: boolean
+ *                 Elements:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: integer
+ *                       Submissions:
+ *                         type: array
+ *                         items:
+ *                           type: object
+ *                           properties:
+ *                             earned_grade:
+ *                               type: number
+ *                             created_at:
+ *                               type: string
+ *                               format: date-time
+ *             example:
+ *               id: 1
+ *               status: in_review
+ *               Course:
+ *                 title: SFC Digital Park Guide Training
+ *               Modules:
+ *                 - title: Safety Protocol
+ *                   Pages:
+ *                     - title: Emergency Procedures
+ *                       final_quiz: true
+ *               Elements:
+ *                 - id: 101
+ *                   Submissions:
+ *                     - earned_grade: 95
+ *                       created_at: 2026-05-07T11:00:00Z
  *       404:
  *         description: Enrollment not found
  */
@@ -251,7 +363,7 @@ enrollmentRouter.get(
  * /api/enrollments/{id}/approve:
  *   patch:
  *     summary: Approve enrollment and issue badge
- *     description: Validates completion and issues badge if eligible
+ *     description: Verifies all final_quiz pages before completing enrollment and issuing badge
  *     tags:
  *       - Enrollments
  *     security:
@@ -265,8 +377,27 @@ enrollmentRouter.get(
  *     responses:
  *       200:
  *         description: Enrollment approved and badge issued
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Enrollment'
+ *             example:
+ *               id: 1
+ *               status: completed
+ *               completed_at: 2026-05-07T12:00:00Z
+ *               reviewed_by_user_id: 2
+ *               badge_expire_at: 2027-05-07T12:00:00Z
  *       400:
  *         description: Final quiz verification failed
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *             example:
+ *               message: Verification failed: Final Quiz not passed
  */
 enrollmentRouter.patch(
   "/:id/approve",
