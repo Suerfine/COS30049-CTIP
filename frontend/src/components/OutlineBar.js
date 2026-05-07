@@ -4,7 +4,7 @@ import { Plus, ChevronRight, ChevronDown, Search, Trash2, Lock, CheckCircle2 } f
 import { useOutline } from '../hooks/useOutline';
 import * as Progress from 'react-native-progress';
 
-const OutlineBar = ({ course, progressMap = {}, onSelectPage, editable, isCollapsed, isLocked }) => {
+const OutlineBar = ({ course, progressMap = {}, onSelectPage, editable, isCollapsed, isLocked, userMarks }) => {
     const {
         allModules,
         expandedModule,
@@ -167,15 +167,18 @@ const OutlineBar = ({ course, progressMap = {}, onSelectPage, editable, isCollap
                             {expandedModule === mid && (
                                 <View>
                                     {module.pages?.map((page, i) => {
+                                        const marksForThisPage = page.elements?.map(el => userMarks[el.id] || 0) || [];
+                                        const isActuallyCompleted = marksForThisPage.length > 0 && marksForThisPage.every(m => m > 0);
                                         const displayPageNum = `${displayModuleNum}.${i + 1}`;
 
                                         const status = progressMap[page.id] || {
-                                            isLocked: true,
+                                            isLocked: page.isLocked,
                                             percent: 0,
-                                            isCompleted: false
+                                            isCompleted: isActuallyCompleted
                                         };
 
-                                        const isPageLocked = isLocked || (!editable && status.isLocked);
+                                        const isPageLocked = isLocked || (!editable && page.isLocked);
+                                        const isCompleted = !editable && isActuallyCompleted;
 
                                         const isEditingPage =
                                             editingItem?.type === 'page' &&

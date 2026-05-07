@@ -10,7 +10,7 @@ import WebView from 'react-native-webview';
 import { markdownStyles } from './markdownStyle';
 import { UserRoles } from '../enum/UserRoles';
 
-const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement, onMoveElement, onProgressUpdate, onRegisterWorkshop, registering, userMarks,pageMetadata,currentAttempts,isPageFinished, isFinalQuiz }) => {
+const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement, onMoveElement, onProgressUpdate, onRegisterWorkshop, registering, userMarks,pageMetadata,currentAttempts,isPageFinished, isFinalQuiz, isRegistered }) => {
     const isAdmin = role === UserRoles.ADMIN;
     const [videoProgress, setVideoProgress]=useState({});
     const [quizStates, setQuizStates]=useState({});
@@ -181,6 +181,31 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
             </View>
         );
     }
+
+    const handleRegisterWorkshop = async (elementId, sessions, selectedIdx, autoAdd, location, link) => {
+        if (selectedIdx === undefined) {
+            alert("Please select a session before registering.");
+            return;
+        }
+        const session = sessions[selectedIdx];
+
+        const submissionContent = {
+            session_date: session.date,
+            session_time: `${session.startTime} — ${session.endTime}`,
+            location: location || "TBA",
+            auto_add_todo: autoAdd
+        };
+
+        const result = await onProgressUpdate(elementId, 1, submissionContent);
+
+        if (result.success) {
+            window.alert("Registered Successfully!");
+            
+            setWorkshopRegistrations(prev => ({ ...prev, [elementId]: true }));
+        } else {
+            alert(result.error || "Failed to register for workshop. Please try again.");
+        }
+    };
 
     
     const renderElement = (el, index) => {
@@ -399,27 +424,17 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
                                                                 styles.joinBtn, 
                                                                 (selectedSessionIdx === undefined || isRegistered || registering) && styles.joinBtnDisabled
                                                             ]}
+                                                            // TODO
                                                             disabled={selectedSessionIdx === undefined || isRegistered || registering}
                                                             onPress={async () => {
-                                                                // const result = await onRegisterWorkshop(id, selectedSessionIdx, autoAddTodo);
-                                                                
-                                                                // if (result.success) {
-                                                                //     // 2. Update local state on success
-                                                                //     setWorkshopRegistrations(prev => ({ ...prev, [id]: true }));
-                                                                //     markAsComplete(id, score);
-                                                                    
-                                                                //     if (link) Linking.openURL(link);
-                                                                // } else {
-                                                                //     alert(result.error || "Failed to register for workshop");
-                                                                // }
-                                                                alert("Registered Successfully!");
-
-                                                                setWorkshopRegistrations(prev => ({ ...prev, [id]: true }));
-
-                                                                if (onProgressUpdate) {
-                                                                    onProgressUpdate(id, 1); 
-                                                                }
-
+                                                                handleRegisterWorkshop(
+                                                                    id, 
+                                                                    sessions, 
+                                                                    selectedSessionIdx, 
+                                                                    autoAddTodo, 
+                                                                    location, 
+                                                                    link
+                                                                )
                                                             }}
                                                         >
                                                             <Text style={styles.joinBtnText}>

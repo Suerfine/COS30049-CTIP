@@ -222,7 +222,9 @@ const UserModule = ({navigation}) => {
             {/* Outlinebar */}
             <OutlineBar course={course} onSelectPage={setSelectedPage}
             progressMap={progressMap}
-            editable={false} isCollapsed={isCollapsed} isLocked={isLocked}/>
+            editable={false} isCollapsed={isCollapsed} isLocked={isLocked}
+            userMarks={userMarks}/>
+            {console.log(userMarks)}
             <ScrollView style={{height:'100vh'}}>
                 <View style={styles.container}>
                     {/* Background Image */}

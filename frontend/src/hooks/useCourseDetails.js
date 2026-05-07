@@ -10,55 +10,91 @@ export const useCourseDetails=(id, enrollmentId, initialMarks = {})=>{
     const [loading,setLoading]=useState(true);
     const [error, setError]=useState(null);
     const [userMarks, setUserMarks] = useState(initialMarks || {});
-    
 
     const fetchCourse = useCallback(async () => {
-        if (!id || !enrollmentId) return;
-        try {
-            setLoading(true);
-            const courseData = await courseService.getById(id);
-            const modulesData = await moduleService.getAll(id);
+    if (!id || !enrollmentId) return;
+    try {
+        setLoading(true);
+        setError(null); // Clear previous errors
 
-            const marksMap = {};
-            let previousPageCompleted = true;
+        const courseData = await courseService.getById(id);
+        const modulesData = await moduleService.getAll(id);
 
-            const modulesWithFullData = await Promise.all(
-                modulesData.map(async (module) => {
-                    const pagesData = await pageService.getAll(id, module.id);
-                    const pagesWithElements = await Promise.all(
-                        pagesData.map(async (page) => {
-                            const elementsData = await ElementService.getAll(id, module.id, page.id);
-                            
-                            // Fetch submissions for each element individually using the SUBMISSION endpoint
-                            await Promise.all(elementsData.map(async (el) => {
-                                try {
-                                    const subs = await submissionService.getSubmissionByElement(enrollmentId, el.id);
-                                    // Just for safety
-                                    marksMap[el.id] = subs.length > 0 ? subs[0].earned_grade : 0;
-                                } catch (e) {
-                                    marksMap[el.id] = 0;
-                                }
-                            }));
+        const marksMap = {};
 
-                            const isPageComplete = elementsData?.every(el => (marksMap[el.id] || 0) > 0);
-                            const isLocked = !previousPageCompleted;
-                            previousPageCompleted = isPageComplete;
+        const modulesWithFullData = await Promise.all(
+            modulesData.map(async (module) => {
+                const pagesData = await pageService.getAll(id, module.id);
+                
+                const pagesWithElements = await Promise.all(
+                    pagesData.map(async (page) => {
+                        const elementsData = await ElementService.getAll(id, module.id, page.id);
+                        
+                        await Promise.all((elementsData || []).map(async (el) => {
+                            if (!el || !el.id) return;
 
-                            return { ...page, elements: elementsData, isLocked, isCompleted: isPageComplete };
-                        })
-                    );
-                    return { ...module, pages: pagesWithElements };
-                })
-            );
+                            try {
+                                const subs = await submissionService.getByElement(
+                                    Number(enrollmentId), 
+                                    Number(el.id)
+                                );
+                                marksMap[el.id] = (subs && subs.length > 0) ? subs[0].earned_grade : 0;
+                            } catch (e) {
+                                console.warn(`Failed to fetch sub for element ${el.id}`, e.message);
+                                marksMap[el.id] = 0;
+                            }
+                        }));
 
-            setUserMarks(marksMap); 
-            setCourse({ ...courseData, modules: modulesWithFullData });
-        } catch (err) {
-            setError("Failed to load course.");
-        } finally {
-            setLoading(false);
-        }
-    }, [id, enrollmentId]);
+                        return { ...page, elements: elementsData };
+                    })
+                );
+                return { ...module, pages: pagesWithElements };
+            })
+        );
+
+        // Calculate progress logic...
+        let previousPageCompleted = true;
+        const finalizedModules = modulesWithFullData.map(module => ({
+            ...module,
+            pages: module.pages.map(page => {
+                const isPageComplete = page.elements?.length > 0 && 
+                                       page.elements.every(el => (marksMap[el.id] || 0) > 0);
+                const isLocked = !previousPageCompleted;
+                previousPageCompleted = isPageComplete;
+                return { ...page, isLocked, isCompleted: isPageComplete };
+            })
+        }));
+
+        setUserMarks({ ...marksMap });
+        setCourse({ ...courseData, modules: finalizedModules });
+        
+    } catch (err) {
+        console.error("GLOBAL FETCH ERROR:", err);
+        setError("Failed to load course. Please check your connection or IDs.");
+    } finally {
+        setLoading(false);
+    }
+}, [id, enrollmentId]);
+
+    const overallProgress = (() => {
+        if (!course || !course.modules) return 0;
+        
+        let totalElements = 0;
+        let completedElements = 0;
+
+        course.modules.forEach(module => {
+            module.pages?.forEach(page => {
+                page.elements?.forEach(el => {
+                    totalElements++;
+                    if ((userMarks[el.id] || 0) > 0) {
+                        completedElements++;
+                    }
+                });
+            });
+        });
+
+        return totalElements > 0 ? Math.round((completedElements / totalElements) * 100) : 0;
+    })();
         
     const locationTags = course?.tags?.filter(tag => tag.type === 'location') || [];
     const categoryTags = course?.tags?.filter(tag => tag.type === 'category') || [];
