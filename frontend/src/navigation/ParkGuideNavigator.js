@@ -15,7 +15,7 @@ import TaskDetails from "../screens/TaskDetails.native";
 import Settings from "../screens/Settings.native";
 import UserAnomaly from "../screens/UserAnomaly";
 import Badge from "../screens/Badge";
-import Notifications from "../screens/NotificationScreen";
+import Notification from "../screens/Notification";
 import Payment from "../screens/Payment";
 
 // Import components
@@ -177,7 +177,7 @@ export default function ParkGuideNavigator() {
           <Stack.Screen name="UserModule" component={UserModule} />
           <Stack.Screen name="UserAnomaly" component={UserAnomaly}/>
           <Stack.Screen name="Badge" component={Badge}/>
-          <Stack.Screen name="Notifications" component={Notifications}/>
+          <Stack.Screen name="Notification" component={Notification}/>
           <Stack.Screen name="Payment" component={Payment}/>
           <Stack.Screen name="PaymentReview" component={PaymentReview}/>
 

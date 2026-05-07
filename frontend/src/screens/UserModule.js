@@ -15,6 +15,7 @@ import { markdownStyles } from '../components/markdownStyle.js';
 import { useCourses } from '../hooks/useCourses.js';
 import { useCourseProgress } from '../components/useCourseProgress.js';
 import AIChatBot from '../components/AIChatbot.js';
+import { useTranslation } from 'react-i18next';
 
 const UserModule = ({navigation}) => {
     const route=useRoute();
