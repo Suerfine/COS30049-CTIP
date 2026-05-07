@@ -23,7 +23,6 @@ const AddTodo = ({ visible, setIsModalVisible, onCreated}) => {
     const [title, setTitle] = useState("");
     const [isPhysical, setIsPhysical] = useState(false);
     const [isAllDay, setIsAllDay] = useState(false);
-    const [isPhysical, setIsPhysical] = useState(false);
     const [startDateText, setStartDateText] = useState(formatDateInput(today));
     const [endDateText, setEndDateText] = useState(formatDateInput(today));
     const [description, setDescription] = useState("");
