@@ -25,6 +25,8 @@ const styles=StyleSheet.create({
     modalContent: {
         width: '100%',
         maxWidth: 800,
+        maxHeight: '90%', 
+        display: 'flex',
         backgroundColor: 'white',
         borderRadius: 20,
         overflow: 'hidden'
