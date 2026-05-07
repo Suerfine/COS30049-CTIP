@@ -153,7 +153,8 @@ const UserCourse=({navigation})=>{
                             onPress={() => navigation.navigate('ParkGuideStack', {
                                 screen: 'UserModule', 
                                 params: { id: course.id,
-                                        enrollmentStatus: course.enrollmentStatus ?? null }
+                                        enrollmentStatus: course.enrollmentStatus ?? null,
+                                        enrollmentId: course.enrollmentId ?? null}
                             })}
                             onEnroll={() => {
                                 Alert.alert(
