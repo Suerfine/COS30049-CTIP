@@ -9,6 +9,7 @@ import WebView from 'react-native-webview';
 // Import other hooks and component
 import { markdownStyles } from './markdownStyle';
 import { UserRoles } from '../enum/UserRoles';
+import { useAuth } from '../context/AuthContext';
 
 const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement, onMoveElement, onProgressUpdate, onRegisterWorkshop, registering, userMarks,pageMetadata,currentAttempts,isPageFinished, isFinalQuiz, isRegistered }) => {
     const isAdmin = role === UserRoles.ADMIN;
@@ -18,6 +19,7 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
     const [workshopRegistrations, setWorkshopRegistrations] = useState({});
     const [selectedSessions, setSelectedSessions] = useState({});
     const [autoAddTodo, setAutoAddTodo] = useState(true);
+    const {currentUser}=useAuth();
 
     const IntersectionWrapper = ({ children, id, score, type }) => {
         const elementRef = useRef(null);
@@ -182,7 +184,7 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
         );
     }
 
-    const handleRegisterWorkshop = async (elementId, sessions, selectedIdx, autoAdd, location, link) => {
+    const handleRegisterWorkshop = async (elementId, sessions, selectedIdx, autoAdd, location, link, userId) => {
         if (selectedIdx === undefined) {
             alert("Please select a session before registering.");
             return;
@@ -190,6 +192,7 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
         const session = sessions[selectedIdx];
 
         const submissionContent = {
+            user_id: userId,
             session_date: session.date,
             session_time: `${session.startTime} — ${session.endTime}`,
             location: location || "TBA",
@@ -424,7 +427,7 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
                                                                 styles.joinBtn, 
                                                                 (selectedSessionIdx === undefined || isRegistered || registering) && styles.joinBtnDisabled
                                                             ]}
-                                                            // TODO
+                                                            
                                                             disabled={selectedSessionIdx === undefined || isRegistered || registering}
                                                             onPress={async () => {
                                                                 handleRegisterWorkshop(
@@ -433,7 +436,8 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
                                                                     selectedSessionIdx, 
                                                                     autoAddTodo, 
                                                                     location, 
-                                                                    link
+                                                                    link,
+                                                                    currentUser.id
                                                                 )
                                                             }}
                                                         >

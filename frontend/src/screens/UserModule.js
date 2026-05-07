@@ -224,7 +224,6 @@ const UserModule = ({navigation}) => {
             progressMap={progressMap}
             editable={false} isCollapsed={isCollapsed} isLocked={isLocked}
             userMarks={userMarks}/>
-            {console.log(userMarks)}
             <ScrollView style={{height:'100vh'}}>
                 <View style={styles.container}>
                     {/* Background Image */}
