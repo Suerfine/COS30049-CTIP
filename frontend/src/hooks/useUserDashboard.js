@@ -3,11 +3,12 @@ import { userDashboardService } from '../services/userDashboardService';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { courseService } from '../services/courseService';
+import { eventService } from '../services/eventService';
 
 export const useUserDashboard = () => {
     const {t, i18n}=useTranslation();
     const [courses, setCourses] = useState([]);
-    const [todos, setTodos] = useState([]);
+    const [events, setEvents] = useState([]);
     const [userType, setUserType] = useState('');
     const [progressData, setProgressData] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -18,18 +19,34 @@ export const useUserDashboard = () => {
 
     // Share between Mobile and Web
     const [selectedDate, setSelectedDate] = useState(null);
-    const [filter, setFilter] = useState("all");
+    const [filter, setFilter] = useState("upcoming");
     const [courseFilter, setCourseFilter]=useState('in progress');
     const [currentDate, setCurrentDate] = useState(new Date());
     const [isExpanded, setIsExpanded]=useState(false);
 
     const weekLabels=[t('Fri'), t('Sat'),t('Sun'), t('Mon'), t('Tue'), t('Wed'), t('Thu')];
 
-    const todoTab= useMemo(() => ([
-        {id: 'all', label:t('status.all')},
+    // Upcoming (normal, pending), Completed (normal, completed), workshop (workshop) 
+    const eventTab= useMemo(() => ([
+        {id: 'upcoming', label:t('upcoming')},
         {id: 'completed', label:t('status.completed')},
-        {id: 'pending', label:t('status.pending')},
+        {id: 'workshop', label:t('workshop')},
     ]), [t]);
+
+    const toggleEvent = async (id) => {
+        const targetEvent = events.find(event => EventTypes.id === id);
+        if (!targetEvent) return;
+
+        const nextStatus = targetEvent.status === 'completed' ? 'pending' : 'completed';
+
+        try {
+            await eventService.updateStatus(id, nextStatus);
+
+            setEvents(prev => prev.map(event => event.id === id ? {...event, status: nextStatus} : event));
+        } catch (err) {
+            console.error("Toggle event status error:", err);
+        }
+    }
 
     const courseTab = useMemo(() => ([
         { id: "in progress", label: t("status.in progress") },
@@ -41,22 +58,22 @@ export const useUserDashboard = () => {
         
         setLoading(true);
         try {
-            const [progressRes, coursesRes, todosRes, fullProfileRes, tagsRes] = await Promise.allSettled([
+            const [progressRes, coursesRes, eventsRes, fullProfileRes, tagsRes] = await Promise.allSettled([
                 userDashboardService.getProgress(),
                 userDashboardService.getCourses(),
-                userDashboardService.getTodos(),
+                eventService.getEvents(),
                 userDashboardService.getUserProfile(),
                 courseService.getAllTags() 
             ]);
 
             if (progressRes.status === 'fulfilled') setProgressData(progressRes.value);
             if (coursesRes.status === 'fulfilled') setCourses(coursesRes.value);
-            if (todosRes.status === 'fulfilled') setTodos(todosRes.value);
+            if (eventsRes.status === 'fulfilled') setEvents(eventsRes.value);
             if (fullProfileRes.status === 'fulfilled') setUser(fullProfileRes.value);
             if (tagsRes.status === 'fulfilled') setCategories(tagsRes.value?.data || tagsRes.value || []);
 
             // Log any failures for debugging
-            [progressRes, coursesRes, todosRes, fullProfileRes, tagsRes].forEach((r, i) => {
+            [progressRes, coursesRes, eventsRes, fullProfileRes, tagsRes].forEach((r, i) => {
                 if (r.status === 'rejected') console.error(`Fetch #${i} failed:`, r.reason);
             });
 
@@ -124,55 +141,59 @@ export const useUserDashboard = () => {
         return `${year}-${month}-${day}`;
     };
 
-    // TODOLIST LOGIC
-    // Toggle checkbox
-    const toggleTodo = (id) => {
-        setTodos(prev =>
-            prev.map(todo =>
-                todo.id === id ? { ...todo, completed: !todo.completed } : todo
-            )
-        );
-    };
-
-    const filteredTodos = useMemo(() => {
-        let result = todos;
+    const filteredEvents = useMemo(() => {
+        let result = events;
         if (selectedDate) {
-            result = result.filter(t => 
-                new Date(t.date).toDateString() === new Date(selectedDate).toDateString()
+            result = result.filter(event => {
+                const eventDate = new Date(event.event_start_at).toDateString();
+                const selected = new Date(selectedDate).toDateString();
+                return eventDate === selected;
+            });
+        }
+        if (filter === "upcoming") {
+            return result.filter(event =>
+                event.type === "normal" && event.status === "pending"
             );
         }
-        if (filter === "completed") return result.filter(t => t.completed);
-        if (filter === "pending") return result.filter(t => !t.completed);
+        if (filter === "completed") {
+            return result.filter(event =>
+                event.type === "normal" && event.status === "completed"
+            );
+        }
+        if (filter === "workshop") {
+            return result.filter(event => 
+                event.type === "workshop");
+        }
         return result;
-    }, [todos, selectedDate, filter]);
+    }, [events, selectedDate, filter]);
 
     // dot indicator for dates with todo item(s)
-    const hasPendingTodoOnDate = (date) => {
+    const hasPendingEventOnDate = (date) => {
         if (!date) return false;
-            const year = date.getFullYear();
-            const month = String(date.getMonth() + 1).padStart(2, '0');
-            const day = String(date.getDate()).padStart(2, '0');
-            const calendarStr = `${year}-${month}-${day}`;
-        return todos.some(todo => {
-            return todo.date === calendarStr;
+
+        const calendarStr = formatLocalDate(date);
+
+        return events.some(event => {
+            const eventDate = formatLocalDate(new Date(event.event_start_at));
+            return eventDate === calendarStr;
         });
     };
 
     return { 
         courses, 
-        todos,  
+        events,  
         progressData, 
         loading, 
-        setTodos, 
+        setEvents, 
         user, 
         selectedDate, setSelectedDate,
         filter, setFilter,
         courseFilter, setCourseFilter,
         currentDate, setCurrentDate,
         isExpanded, setIsExpanded,
-        weekDates, getDaysInMonth, filteredTodos,
-        toggleTodo, hasPendingTodoOnDate, refreshData: fetchDashboardData,
-        weekLabels,todoTab, courseTab, categories,formatLocalDate,  
+        weekDates, getDaysInMonth, filteredEvents,
+        hasPendingEventOnDate, refreshData: fetchDashboardData,
+        weekLabels, eventTab, courseTab, categories, formatLocalDate,  
         // inProgressCourses,
         // completedCourses,
     };
