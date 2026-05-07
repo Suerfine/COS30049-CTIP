@@ -585,7 +585,6 @@ const EditCourseDetail = () => {
                                         onEditElement={handleOpenEdit}
                                         onDeleteElement={handleDelete}
                                         onMoveElement={moveElement}
-                                        userMarks={userMarks}
                                     />
                                 )}
                             </View>
