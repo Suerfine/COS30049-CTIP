@@ -12,11 +12,26 @@ import { useTranslation } from 'react-i18next';
 import { useUserDashboard } from '../hooks/useUserDashboard';
 import SlidingTabs from '../components/SlidingTabs.js';
 
+const toDateKey = (value) => {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "";
+    return date.toISOString().split("T")[0];
+};
+
+
 const Calendar=({route,navigation})=>{
     const {t, i18n}=useTranslation();
     const layout=route.params?.layout ?? 'list';
     const [currentLayout, setCurrentLayout]=useState(layout);
-    const {currentDate, events, hasPendingTodoOnDate, filteredEvents, eventTab, setFilter, filter, toggleEvent} =useUserDashboard();
+    const {
+        currentDate,
+        events,
+        filteredEvents,
+        eventTab,
+        setFilter,
+        filter,
+        toggleEvent,
+    } = useUserDashboard();
     const [selectedDate, setSelectedDate]=useState('');
     const [isModalVisible, setIsModalVisible]=useState(false);
     const [isAllDay, setIsAllDay]=useState(false);
@@ -51,18 +66,22 @@ const Calendar=({route,navigation})=>{
             };
         }
         events.forEach(event=>{
-            const dateStr=event.date;
-            marks[dateStr]={
+            const dateStr = toDateKey(event.event_start_at);
+            if (!dateStr) return;
+
+            marks[dateStr] = {
                 ...marks[dateStr],
-                marked:true,
-                dotColor:'#32750e'
+                marked: true,
+                dotColor: '#32750e',
             };
         });
         return marks;
     };
 
     const RenderTodo=()=>{
-        const displayEvents=selectedDate ? filteredEvents.filter(event=>event.date === selectedDate) : filteredEvents;
+    const displayEvents = selectedDate
+        ? filteredEvents.filter((event) => toDateKey(event.event_start_at) === selectedDate)
+        : filteredEvents;
         return (
             <>
             <RNCalendar
@@ -133,17 +152,17 @@ const Calendar=({route,navigation})=>{
                                 <Pressable key={event.id} style={styles.todoItem} onPress={()=>navigation.navigate('TaskDetails',{task:event})}>
                                     <View style={styles.todoRow}>
                                         <Checkbox
-                                            value={event.completed}
-                                            onValueChange={() => toggleTodo(event.id)}
+                                            value={event.status === 'completed'}
+                                            onValueChange={() => toggleEvent(event.id)}
                                         />
-                                        <View style={{flex: 1}}>
+                                        <View style={{ flex: 1 }}>
                                             <Text style={styles.todoTitle}>{event.title}</Text>
-                                            <Text style={styles.todoCourse}>{event.course} - {event.date}</Text>
+                                            <Text style={styles.todoCourse}>
+                                                {event.type} - {toDateKey(event.event_start_at)}
+                                            </Text>
                                         </View>
 
-                                        <Pressable onPress={() => openEdit(event)}>
-                                            <ChevronRight size={20} />
-                                        </Pressable>
+                                        <ChevronRight size={20} />
                                     </View>
                                 </Pressable>
                             ))
@@ -163,7 +182,9 @@ const Calendar=({route,navigation})=>{
                 )}
                 style={styles.fullScreenCalendar}
                 dayComponent={({date,state})=>{
-                    const dayTodos=events.filter(t=>t.date===date.dateString);
+                    const dayTodos = events.filter(
+                        (event) => toDateKey(event.event_start_at) === date.dateString
+                    );
 
                     return (
                         <Pressable
@@ -180,7 +201,7 @@ const Calendar=({route,navigation})=>{
                             {/* Tasks */}
                             <View style={styles.taskPreviewContainer}>
                                 {dayTodos.slice(0,3).map((event)=>(
-                                    <Pressable key={event.id} styles={[styles.taskTinyLabel, {backgroundColor: event.completed ? '#e2e8f0' : '#dcfce7'}]} onPress={()=>navigation.navigate('TaskDetails',{task:event})}>
+                                    <Pressable key={event.id} style={[styles.taskTinyLabel, { backgroundColor: event.status === 'completed' ? '#e2e8f0' : '#dcfce7' }]} onPress={()=>navigation.navigate('TaskDetails',{task:event})}>
                                         <Text numberOfLines={1} style={styles.tinyTaskText}>{event.title}</Text>
                                     </Pressable>
                                 ))}

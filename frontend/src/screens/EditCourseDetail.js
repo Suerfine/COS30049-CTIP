@@ -1,9 +1,8 @@
 import React,{useEffect,useState} from 'react';
 import { View, Text, StyleSheet, ScrollView, ImageBackground, Pressable, ActivityIndicator, Image, Modal, TextInput, TouchableOpacity} from 'react-native';
 import {useRoute} from '@react-navigation/native';
-import { Award, Calendar, Clock, Menu, MessageSquare, User,Edit,X,Save, Heading1, Heading2, List, Bold, Italic, Type, AlignLeft, AlignCenter, AlignRight,ListOrdered, CopyPlus, Image as ImageIcon, Video as VideoIcon, HelpCircle as QuizIcon, CirclePlus, CircleMinus, Settings } from 'lucide-react-native';
+import { Award, Calendar, Clock, Menu, MessageSquare, User,Edit,X,Save, Heading1, Heading2, List, Bold, Italic, Type, AlignLeft, AlignCenter, AlignRight,ListOrdered, CopyPlus, Image as ImageIcon, Video as VideoIcon, HelpCircle as QuizIcon, CirclePlus, CircleMinus, Settings, Lock, ShieldCheck } from 'lucide-react-native';
 import Markdown from 'react-native-markdown-display';
-
 
 // Import Components
 import OutlineBar from '../components/OutlineBar.js';
@@ -12,6 +11,7 @@ import SlidingTabs from '../components/SlidingTabs.js';
 import { useElements } from '../hooks/useElements.js';
 import PageRenderer from '../components/pageRenderer.js';
 import { useDiscussions } from '../hooks/useDiscussion.js';
+import { discussionService } from '../services/discussionService.js';
 import { markdownStyles } from '../components/markdownStyle.js';
 import { useAuth } from '../context/AuthContext.js';
 import { useCourses } from '../hooks/useCourses.js';
@@ -19,15 +19,16 @@ import { useCourses } from '../hooks/useCourses.js';
 const EditCourseDetail = () => {
     const route=useRoute();
     const {id}=route.params;
-    const {course, loading, error, updateDescription,locationTags, categoryTags}=useCourseDetails(id);
+    const {course, loading, error, updateDescription, locationTags, categoryTags}=useCourseDetails(id);
     const auth = useAuth();
     const currentUser = auth?.currentUser;
     const {allCourseList}=useCourses();
 
     const [selectedPage, setSelectedPage]=useState({type:'overview'});
     const [isCollapsed, setIsCollapsed]=useState(false);
-    const [activeTab,setActiveTab]=useState('Overview');
     const [forumType, setForumType]=useState('Public');
+    const [newDiscussionTitle, setNewDiscussionTitle] = useState('');
+    const [isCreatingDiscussion, setIsCreatingDiscussion] = useState(false);
     const [activeStyles, setActiveStyles] = useState([]);
     const [editingElementId, setEditingElementId] = useState(null);
 
@@ -61,10 +62,27 @@ const EditCourseDetail = () => {
 
     const tabs=[
         {id: 'Overview', label:'Overview'},
-        {id: 'Forum', label:'Forum'},
     ];
 
-    const{discussions, loading: discussionsLoading}=useDiscussions(id, forumType);
+    const{discussions, loading: discussionsLoading, refreshDiscussions}=useDiscussions(id, forumType);
+
+    const handleCreateDiscussion = async () => {
+        if (!newDiscussionTitle.trim()) return;
+
+        setIsCreatingDiscussion(true);
+        try {
+            await discussionService.createDiscussion(id, {
+                title: newDiscussionTitle.trim(),
+                is_public: forumType === 'Public',
+            });
+            setNewDiscussionTitle('');
+            refreshDiscussions();
+        } catch (err) {
+            console.error('Unable to create discussion', err);
+        } finally {
+            setIsCreatingDiscussion(false);
+        }
+    };
 
     const [quizConfig, setQuizConfig] = useState({
         max_attempts: 0,
@@ -326,15 +344,10 @@ const EditCourseDetail = () => {
         }
         return discussions.map((item) => (
             <View key={item.id} style={styles.messageContainer}>
-                <Text>{item.content}</Text>
-                
-                {item.attachment_type === 'image' && (
-                    <Image source={{ uri: item.attachment_url }} style={styles.attachmentImage} />
-                )}
-                
-                {item.attachment_type === 'video' && (
-                    <VideoComponent url={item.attachment_url} />
-                )}
+                <Text style={styles.messageTitle}>{item.title || 'Untitled discussion'}</Text>
+                <Text style={styles.messageMeta}>
+                    {item.is_public ? 'Public' : 'Private'} · Started {item.created_at ? new Date(item.created_at).toLocaleDateString() : 'recently'}
+                </Text>
             </View>
         ));
     };
@@ -379,123 +392,90 @@ const EditCourseDetail = () => {
     };
 
     const renderOverviewContent = () => {
-        switch (activeTab) {
-            case 'Overview':
-                const prerequisiteTitles = course.prerequisite_groups?.flatMap(group => 
-                    group.prerequisites?.map(p => {
-                        const match = allCourseList.find(c => c.id === p.course_id);
-                        return match ? match.title : `Course #${p.course_id}`;
-                    })
-                ) || [];
-                return (
-                    <View style={styles.tabSection}>
-                        {/* Prerequisite Section */}
-                        {prerequisiteTitles.length > 0 && (
-                            <View style={styles.prereqSection}>
-                                <Text style={styles.sectionTitle}>Required Prerequisite Courses</Text>
-                                <View>
-                                    {prerequisiteTitles.map((title, index) => (
-                                        <View key={index} style={styles.prereqItem}>
-                                            <View style={styles.prereqDot} />
-                                            <Text style={styles.prereqText}>{title}</Text>
+        const prerequisiteTitles = course.prerequisite_groups?.flatMap(group => 
+            group.prerequisites?.map(p => {
+                const match = allCourseList.find(c => c.id === p.course_id);
+                return match ? match.title : `Course #${p.course_id}`;
+            })
+        ) || [];
+        return (
+            <View>
+                {/* Prerequisite Section */}
+                {prerequisiteTitles.length > 0 && (
+                    <View style={styles.prereqSection}>
+                        <Text style={styles.sectionTitle}>Required Prerequisite Courses</Text>
+                        <View>
+                            {prerequisiteTitles.map((title, index) => (
+                                <View key={index} style={styles.prereqItem}>
+                                    <View style={styles.prereqDot} />
+                                    <Text style={styles.prereqText}>{title}</Text>
+                                </View>
+                            ))}
+                        </View>
+                    </View>
+                )}
+                {/* Tag Sections */}
+                    <View style={styles.tagSectionContainer}>
+                        {/* Render Location Tags */}
+                        {locationTags.length > 0 && (
+                            <View style={styles.tagGroup}>
+                                <Text style={styles.tagLabel}>Locations</Text>
+                                <View style={styles.tagList}>
+                                    {locationTags.map(tag => (
+                                        <View key={tag.id} style={[styles.tagPill, styles.locationPill]}>
+                                            <Text style={styles.tagPillText}>{tag.title}</Text>
                                         </View>
                                     ))}
                                 </View>
                             </View>
                         )}
-                        {/* Tag Sections */}
-                            <View style={styles.tagSectionContainer}>
-                                {/* Render Location Tags */}
-                                {locationTags.length > 0 && (
-                                    <View style={styles.tagGroup}>
-                                        <Text style={styles.tagLabel}>Locations</Text>
-                                        <View style={styles.tagList}>
-                                            {locationTags.map(tag => (
-                                                <View key={tag.id} style={[styles.tagPill, styles.locationPill]}>
-                                                    <Text style={styles.tagPillText}>{tag.title}</Text>
-                                                </View>
-                                            ))}
-                                        </View>
-                                    </View>
-                                )}
 
-                                {/* Render Category Tags */}
-                                {categoryTags.length > 0 && (
-                                    <View style={styles.tagGroup}>
-                                        <Text style={styles.tagLabel}>Categories</Text>
-                                        <View style={styles.tagList}>
-                                            {categoryTags.map(tag => (
-                                                <View key={tag.id} style={[styles.tagPill, styles.categoryPill]}>
-                                                    <Text style={styles.tagPillText}>{tag.title}</Text>
-                                                </View>
-                                            ))}
+                        {/* Render Category Tags */}
+                        {categoryTags.length > 0 && (
+                            <View style={styles.tagGroup}>
+                                <Text style={styles.tagLabel}>Categories</Text>
+                                <View style={styles.tagList}>
+                                    {categoryTags.map(tag => (
+                                        <View key={tag.id} style={[styles.tagPill, styles.categoryPill]}>
+                                            <Text style={styles.tagPillText}>{tag.title}</Text>
                                         </View>
-                                    </View>
-                                )}
-                            </View>
-                        {/* Render the dynamic content */}
-                        <View style={styles.markdownContainer}>
-                            <Markdown style={markdownStyles}>
-                                {course?.description || "_No content provided yet. Click edit to start._"}
-                            </Markdown>
-                        </View>
-
-                        {/* Badge Achievement Section */}
-                        <View>
-                        <Text style={styles.sectionTitle}>Completion Reward</Text>
-                        <View style={styles.badgeAchievementCard}>
-                            <View style={styles.badgeTextContent}>
-                                <Text style={styles.badgeSubtitle}>Official Certification</Text>
-                                <Text style={styles.badgeDescription}>
-                                    Complete all modules and pass the final assessment to earn your 
-                                    <Text style={{fontWeight: '700'}}> {course.title} Professional Badge.</Text>
-                                </Text>
-                            </View>
-                            
-                            <View style={styles.badgePreviewContainer}>
-                                {/* : picture is hardcode  */}
-                                <Image 
-                                    source={course.badge_img_url ? { uri: course.badge_img_url } : require('../../assets/course_badge.png')} 
-                                    style={styles.largeAchievementBadge}
-                                />
-                                <View style={styles.verifiedBadge}>
-                                    <Text style={styles.verifiedText}>VERIFIED</Text>
+                                    ))}
                                 </View>
                             </View>
-                        </View>
-                        </View>
+                        )}
                     </View>
-                );
-            case 'Forum':
-                case 'Forum':
-                return (
-                    <View style={styles.tabSection}>
-                        <Text style={styles.sectionTitle}>Course Forum</Text>
+                {/* Render the dynamic content */}
+                <View style={styles.markdownContainer}>
+                    <Markdown style={markdownStyles}>
+                        {course?.description || "_No content provided yet. Click edit to start._"}
+                    </Markdown>
+                </View>
+
+                {/* Badge Achievement Section */}
+                <View>
+                    <Text style={styles.sectionTitle}>Completion Reward</Text>
+                    <View style={styles.badgeAchievementCard}>
+                        <View style={styles.badgeTextContent}>
+                            <Text style={styles.badgeSubtitle}>Official Certification</Text>
+                            <Text style={styles.badgeDescription}>
+                                Complete all modules and pass the final assessment to earn your 
+                                <Text style={{fontWeight: '700'}}> {course.title} Professional Badge.</Text>
+                            </Text>
+                        </View>
                         
-                        <View style={styles.pillContainer}>
-                            <Pressable 
-                                style={[styles.pill, forumType === 'Public' && styles.activePill]}
-                                onPress={() => setForumType('Public')}
-                            >
-                                <Text style={[styles.pillText, forumType === 'Public' && styles.activePillText]}>Public</Text>
-                            </Pressable>
-                            <Pressable 
-                                style={[styles.pill, forumType === 'Private' && styles.activePill]}
-                                onPress={() => setForumType('Private')}
-                            >
-                                <Text style={[styles.pillText, forumType === 'Private' && styles.activePillText]}>Private</Text>
-                            </Pressable>
-                        </View>
-
-                        <View style={styles.forumListContainer}>
-                            {renderForumList()}
+                        <View style={styles.badgePreviewContainer}>
+                            <Image 
+                                source={course.badge_img_url ? { uri: course.badge_img_url } : require('../../assets/course_badge.png')} 
+                                style={styles.largeAchievementBadge}
+                            />
+                            <View style={styles.verifiedBadge}>
+                                <Text style={styles.verifiedText}>VERIFIED</Text>
+                            </View>
                         </View>
                     </View>
-                );
-
-            default:
-                return null;
-        }
+                </View>
+            </View>
+        );
     };
 
     return (
@@ -516,7 +496,13 @@ const EditCourseDetail = () => {
                                 </Pressable>
                                 <View>
                                     <Text style={styles.description}>Start your learning journey</Text>
-                                    <Text style={styles.title}>Course Details</Text>
+                                    <Text style={styles.title}>
+                                        {selectedPage?.type === 'page' 
+                                            ? "Course Editor" 
+                                            : selectedPage?.type === 'forum' 
+                                                ? "Course Forum" 
+                                                : "Course Details"}
+                                    </Text>
                                 </View>
                             </View>
                             {selectedPage?.type==='page' && (
@@ -528,9 +514,7 @@ const EditCourseDetail = () => {
                                     <Text style={styles.btnText}>Add Section</Text>
                                 </Pressable>
                             )}
-                            
                         </View>
-                        
                     </ImageBackground>
                     {/* Content */}
                     <View style={styles.contentWrapper}>
@@ -589,6 +573,66 @@ const EditCourseDetail = () => {
                                     />
                                 )}
                             </View>
+                        ) : selectedPage?.type === 'forum' ? (
+                            <View style={styles.forumWrapper}>
+                                <View style={styles.tabNav}>
+                                    <Pressable
+                                        style={[styles.tab, forumType === 'Public' && styles.tabActive]}
+                                        onPress={() => setForumType('Public')}
+                                    >
+                                        <Text style={[styles.tabText, forumType === 'Public' && styles.tabTextActive]}>
+                                            Public Forum
+                                        </Text>
+                                    </Pressable>
+
+                                    <Pressable
+                                        style={[styles.tab, forumType === 'Private' && styles.tabActive]}
+                                        onPress={() => setForumType('Private')}
+                                    >
+                                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                                            <Lock size={14} color={forumType === 'Private' ? '#2f6618fe' : '#999'} />
+                                            <Text style={[styles.tabText, forumType === 'Private' && styles.tabTextActive]}>
+                                                Private Support
+                                            </Text>
+                                        </View>
+                                    </Pressable>
+                                </View>
+
+                                {forumType === 'Private' && (
+                                    <View style={styles.privacyBanner}>
+                                        <ShieldCheck size={16} color="#065f46" />
+                                        <Text style={styles.privacyText}>
+                                            Topics in this section are visible only to you and the administrators.
+                                        </Text>
+                                    </View>
+                                )}
+
+                                <View style={styles.newDiscussionForm}>
+                                    <Text style={styles.newDiscussionLabel}>
+                                        Ask a question or start a new topic
+                                    </Text>
+                                    <TextInput
+                                        style={styles.newDiscussionInput}
+                                        placeholder={`New ${forumType.toLowerCase()} discussion title`}
+                                        value={newDiscussionTitle}
+                                        onChangeText={setNewDiscussionTitle}
+                                        editable={!isCreatingDiscussion}
+                                    />
+                                    <Pressable
+                                        style={[styles.btn, { marginTop: 12, alignSelf: 'flex-start' }, isCreatingDiscussion && { opacity: 0.6 }]}
+                                        onPress={handleCreateDiscussion}
+                                        disabled={!newDiscussionTitle.trim() || isCreatingDiscussion}
+                                    >
+                                        <Text style={styles.btnText}>
+                                            {isCreatingDiscussion ? 'Posting...' : 'Post Question'}
+                                        </Text>
+                                    </Pressable>
+                                </View>
+
+                                <View>
+                                    {renderForumList()}
+                                </View>
+                            </View>
                         ) : (
                             // Course Overview
                             <View>
@@ -610,28 +654,18 @@ const EditCourseDetail = () => {
                                             </View>
                                         </View>
                                     </View>
-                                    
+
+                                    <Pressable style={styles.editButton} onPress={() => setEditModalVisible(true)}>
+                                        <Edit size={16} color="#0a6340" />
+                                        <Text style={styles.editButtonText}> Edit Section</Text>
+                                    </Pressable>
                                 </View>
                                 
                                 <Image 
                                     source={course.cover_img_url ? { uri: course.cover_img_url } : require('../../assets/first_aid.png')} style={styles.course_cover}
                                 />
-                                <View style={styles.tabSection}>
-                                {/* Sliding Tab */}
-                                    <SlidingTabs tabs={tabs} activeTab={activeTab} onTabChange={(tab) => setActiveTab(tab)} />
-                                    {activeTab==='Overview' && (
-                                        <Pressable style={styles.editButton} onPress={() => setEditModalVisible(true)}>
-                                            <Edit size={16} color="#0a6340" />
-                                            <Text style={styles.editButtonText}>Edit Section</Text>
-                                        </Pressable>
-                                    )}
-                                    
-                                </View>
 
-                                {/* Tab Content */}
-                                <View style={styles.dynamicContent}>
-                                    {renderOverviewContent()}
-                                </View>
+                                {renderOverviewContent()}
                             </View>
                         )}
                     </View>
@@ -1017,22 +1051,16 @@ const styles = StyleSheet.create({
     statLabel:{
         color:'#363636'
     },
-    content:{
-        marginTop:20
+    headerRow: {
+        flexDirection: 'row',        
+        justifyContent: 'space-between', 
+        alignItems: 'center',    
+        paddingVertical: 10,
+        paddingHorizontal: 15,
     },
-    headerRow:{
-        flexDirection:'row',
-        justifyContent:'space-between',
-        alignItems:'center',
-        marginBottom:20,
-        paddingRight:20
-    },
-    dynamicContent: {
-        paddingBottom: 40,
-    },
-    tabSection: {
-        paddingTop: 10,
-        gap:20
+    content: {
+        flex: 1,                    
+        marginRight: 20,            
     },
     sectionTitle: {
         fontSize: 18,
@@ -1070,14 +1098,6 @@ const styles = StyleSheet.create({
     },
     activePillText: {
         color: '#fff',
-    },
-    forumContent: {
-        padding: 15,
-        backgroundColor: '#fff',
-        borderRadius: 12,
-        minHeight: 100,
-        borderWidth: 1,
-        borderColor: '#eee',
     },
     badgeAchievementCard: {
         backgroundColor: '#f8fdfb',
@@ -1180,12 +1200,10 @@ const styles = StyleSheet.create({
     editButton: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 6,
         backgroundColor: '#ffffff',
         paddingHorizontal: 12,
         paddingVertical: 6,
-        borderRadius: 8,
-        alignSelf:'flex-end'
+        borderRadius: 8
     },
     editButtonText: {
         color: '#0a6340',
@@ -1614,7 +1632,99 @@ const styles = StyleSheet.create({
         fontStyle: 'italic',
         marginTop: 15,
         textAlign: 'center',
-    }
+    },
+    forumWrapper: {
+        flex: 1,
+        backgroundColor: '#f5f5f5', 
+    },
+    tabNav: {
+        flexDirection: 'row',
+        backgroundColor: 'white',
+        borderBottomWidth: 1,
+        borderBottomColor: '#e0e0e0',
+    },
+    tab: {
+        flex: 1, // This makes tabs equal width
+        paddingVertical: 12,
+        paddingHorizontal: 16,
+        alignItems: 'center',
+        borderBottomWidth: 3,
+        borderBottomColor: 'transparent',
+    },
+    tabActive: {
+        borderBottomColor: '#2f6618fe', // The active underline
+    },
+    tabText: {
+        fontSize: 14,
+        fontWeight: '500',
+        color: '#999',
+    },
+    tabTextActive: {
+        color: '#2f6618fe',
+        fontWeight: '600',
+    },
+    newDiscussionForm: {
+        marginVertical: 16,
+        padding: 16,
+        backgroundColor: '#ffffff',
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: '#e5e7eb',
+    },
+    newDiscussionLabel: {
+        fontSize: 14,
+        fontWeight: '700',
+        color: '#0f5132',
+        marginBottom: 10,
+    },
+    newDiscussionInput: {
+        backgroundColor: '#f9fafb',
+        borderWidth: 1,
+        borderColor: '#d1d5db',
+        borderRadius: 12,
+        padding: 12,
+        color: '#111827',
+        fontSize: 14,
+    },
+    messageTitle: {
+        fontSize: 16,
+        fontWeight: '700',
+        color: '#111827',
+        marginBottom: 4,
+    },
+    messageMeta: {
+        fontSize: 12,
+        color: '#6b7280',
+    },
+    privacyBanner: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+        backgroundColor: '#ecfdf5',
+        padding: 12,
+        borderRadius: 12,
+        marginTop: 12,
+        marginHorizontal: 16,
+    },
+    privacyText: {
+        color: '#065f46',
+        fontSize: 13,
+        flex: 1,
+        lineHeight: 18,
+    },
+    emptyForum: {
+        padding: 24,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#ffffff',
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: '#e5e7eb',
+    },
+    emptyText: {
+        color: '#6b7280',
+        fontSize: 14,
+    },
 });
 
 export default EditCourseDetail;

@@ -10,7 +10,7 @@ import AccountsManagement from "../screens/AccountsManagement";
 import EnrollmentManagement from "../screens/EnrollmentManagement";
 import UserProfile from "../screens/UserProfile";
 import AdminDashboard from "../screens/AdminDashboard";
-import NotificationScreen from "../screens/NotificationScreen";
+import Notification from "../screens/Notification";
 
 // Import components
 import SideBar from "../components/SideBar";
@@ -51,7 +51,7 @@ export default function AdminNavigator() {
             <Stack.Screen name="User Profile" component={UserProfile} />
             <Stack.Screen
               name="Notification Management"
-              component={NotificationScreen}
+              component={Notification}
             />
           </Stack.Navigator>
         </View>

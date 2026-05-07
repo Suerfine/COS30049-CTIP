@@ -10,20 +10,14 @@ export const useDiscussions = (courseId, forumType) => {
         setLoading(true);
         try {
             const response = await discussionService.getDiscussions(courseId);
-            
-            const allData = Array.isArray(response) ? response : [response];
-            console.log(allData);
-            
-            const filtered = allData.filter(d => {
+            const filtered = (response || []).filter(d => {
                 const isPublic = d.is_public === true;
                 return forumType === 'Public' ? isPublic : !isPublic;
             });
-            console.log(filtered);
-            
             setDiscussions(filtered);
         } catch (err) {
             console.error("Discussion Hook Error:", err);
-            setDiscussions([]); 
+            setDiscussions([]);
         } finally {
             setLoading(false);
         }

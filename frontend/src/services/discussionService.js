@@ -4,6 +4,11 @@ import { API_ENDPOINTS } from "../config/ApiEndpoints";
 export const discussionService={
     getDiscussions:async(courseId)=>{
         const response=await apiClient.get(API_ENDPOINTS.DISCUSSION.LIST(courseId));
+        const payload = response.data;
+        return Array.isArray(payload) ? payload : payload?.data ?? [];
+    },
+    createDiscussion: async (courseId, discussionData) => {
+        const response = await apiClient.post(API_ENDPOINTS.DISCUSSION.LIST(courseId), discussionData);
         return response.data;
     },
     getMessages:async(discussionId)=>{

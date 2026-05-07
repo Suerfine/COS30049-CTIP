@@ -26,7 +26,7 @@ const OutlineBar = ({ course, progressMap = {}, onSelectPage, editable, isCollap
     if (!course) return null;
 
     const handleSelect = (item) => {
-        if (isLocked && item.type !== 'overview') return;
+        if (isLocked && item.type !== 'overview' && item.type !== 'forum') return;
         setSelectedItem(item);
         onSelectPage(item);
     };
@@ -91,6 +91,17 @@ const OutlineBar = ({ course, progressMap = {}, onSelectPage, editable, isCollap
                             <Plus size={16} />
                         </Pressable>
                     )}
+                </Pressable>
+            )}
+
+            {!isCollapsed && (
+                <Pressable
+                    style={[styles.item, selectedItem?.type === 'forum' && styles.selected]}
+                    onPress={() => handleSelect({ type: 'forum', course })}
+                    onMouseEnter={() => setHoveredItem({ type: 'forum' })}
+                    onMouseLeave={() => setHoveredItem(null)}
+                >
+                    <Text style={styles.forum}>Discussion Forum</Text>
                 </Pressable>
             )}
 
@@ -321,6 +332,13 @@ const styles=StyleSheet.create({
     },
     selectedPage:{
         backgroundColor:'#9ee5a375'
+    },
+    forum: {
+        fontSize:16,
+        fontWeight:'600',
+        paddingLeft:20,
+        paddingVertical:5,
+        paddingRight:50
     },
     item:{
         paddingVertical:10,
