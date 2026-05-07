@@ -27,6 +27,7 @@ DHT dht(PIN_TEMP, DHT11);
 unsigned long lastFireLog = 0;
 unsigned long lastMicrowaveLog = 0;
 unsigned long lastAcousticLog = 0;
+unsigned long lastSmokingLog = 0;
 
 // --- Intervals ---
 const unsigned long INT_NORMAL = 1800000; // 30 mins
@@ -36,13 +37,10 @@ unsigned long lastLogTime = 0;
 float avgSound = 1900.0;
 
 // Sensor States
-String microwaveStatus = "normal";
-String fireStatus = "normal";
-String acousticStatus = "normal";
-
 String lastFireStatus = "normal";
 String lastMicroStatus = "normal";
 String lastSoundStatus = "normal";
+String lastSmokingStatus = "normal";
 
 void setup() {
   Serial.begin(115200);
@@ -96,7 +94,23 @@ void processSensors() {
     lastFireStatus = currentFireStatus;
   }
 
-  // 2. MICROWAVE SENSOR
+  // 2. SMOKING SENSOR
+  String currentSmokingStatus = (smoke > 800 && smoke <= 2500 && t <= 50) ? "alerting" : "normal";
+  unsigned long smokeInterval = (currentSmokingStatus == "alerting") ? INT_ALERT : INT_NORMAL;
+
+  if (currentSmokingStatus != lastSmokingStatus || (now - lastSmokingLog >= smokeInterval)) {
+    String smokeData = "{";
+    smokeData += "\"smoke_level\":" + String(smoke) + ",";
+    smokeData += "\"context\":\"possible_smoking\"";
+    smokeData += "}";
+    
+    sendLog(1, currentSmokingStatus, smokeData); 
+    
+    lastSmokingLog = now;
+    lastSmokingStatus = currentSmokingStatus;
+  }
+
+  // 3. MICROWAVE SENSOR
   bool motion = digitalRead(PIN_MICROWAVE);
   String currentMicroStatus = motion ? "alerting" : "normal";
   unsigned long microInterval = (currentMicroStatus == "alerting") ? INT_ALERT : INT_NORMAL;
@@ -112,7 +126,7 @@ void processSensors() {
     lastMicroStatus = currentMicroStatus;
   }
 
-  // 3. ACOUSTIC SENSOR
+  // 4. ACOUSTIC SENSOR
   bool soundDetected = digitalRead(PIN_ACOUSTIC) == LOW; 
   String currentSoundStatus = soundDetected ? "alerting" : "normal";
   unsigned long soundInterval = (currentSoundStatus == "alerting") ? INT_ALERT : INT_NORMAL;
