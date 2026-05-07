@@ -6,6 +6,8 @@ import {
   Model,
 } from "sequelize";
 import sequelize from "../config/Database";
+import { EventType } from "../enum/EventType";
+import { EventStatus } from "../enum/EventStatus";
 
 class Event extends Model<
   InferAttributes<Event>,
@@ -19,6 +21,8 @@ class Event extends Model<
   declare event_end_at: CreationOptional<Date | null>;
   declare period_frequency: number;
   declare period_unit: "day" | "week" | "month";
+  declare type: EventType;
+  declare status: EventStatus;
   declare created_at: CreationOptional<Date>;
   declare updated_at: CreationOptional<Date>;
   declare deleted_at: CreationOptional<Date | null>;
@@ -56,6 +60,16 @@ Event.init(
     event_end_at: {
       type: DataTypes.DATE,
       allowNull: true,
+    },
+    type: {
+      type: DataTypes.ENUM(...Object.values(EventType)),
+      allowNull: false,
+      defaultValue: EventType.NORMAL,
+    },
+    status: {
+      type: DataTypes.ENUM(...Object.values(EventStatus)),
+      allowNull: false,
+      defaultValue: EventStatus.PENDING,
     },
     period_frequency: {
       type: DataTypes.INTEGER,
