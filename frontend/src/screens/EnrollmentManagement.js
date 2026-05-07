@@ -23,7 +23,7 @@ const EnrollmentManagement = () => {
         requestSort,resetSort,
         handleUpdateStatus,
         deleteRecord,
-        courses
+        courses, submissionTotalPages, submissionTotalElements
     }=useEnrollmentManagement();
     const [activeTab, setActiveTab]=useState('enrollment');
     const enrollFields=['fullName', 'courseName', 'status'];
