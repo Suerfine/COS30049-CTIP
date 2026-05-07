@@ -153,6 +153,10 @@ Notification.belongsTo(User, { foreignKey: "user_id", as: "user" });
 Sensor.hasMany(SensorLog, { foreignKey: "sensor_id", as: "logs" });
 SensorLog.belongsTo(Sensor, { foreignKey: "sensor_id", as: "sensor" });
 
+Enrollment.belongsTo(Course, { foreignKey: 'course_id' });
+Course.hasMany(Enrollment, { foreignKey: 'course_id' });
+Page.hasMany(Element, { foreignKey: 'page_id' });
+
 export {
   User,
   Course,
