@@ -21,11 +21,11 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
     const [autoAddTodo, setAutoAddTodo] = useState(true);
     const {currentUser}=useAuth();
 
-    const IntersectionWrapper = ({ children, id, score, type }) => {
+    const IntersectionWrapper = ({ children, id, score, type, isAlreadyComplete }) => {
         const elementRef = useRef(null);
 
         useEffect(() => {
-            if (isAdmin || type === 'quiz_objective' || type==='workshop' || viewedElements[id]) return;
+            if (isAdmin || type === 'quiz_objective' || type==='workshop' || viewedElements[id] || isAlreadyComplete) return;
 
             const observer = new IntersectionObserver(
                 ([entry]) => {
@@ -218,6 +218,7 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
         const earnedScore = typeof userMarks?.[id] === 'object' 
         ? (userMarks[id]?.earned_grade ?? 0) 
         : (userMarks?.[id] ?? 0);
+        const isAlreadyComplete = earnedScore > 0;
         const isViewed = earnedScore > 0;
         const quiz = quizStates[id] || { 
             selected: null, 
@@ -226,7 +227,7 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
         };
 
         return (
-            <IntersectionWrapper key={id} id={id} score={score} type={type}>
+            <IntersectionWrapper key={id} id={id} score={score} type={type} isAlreadyComplete={isAlreadyComplete}>
                 <View style={styles.masterWrapper}>
                     <View style={styles.userScoreHeader}>
                         <Text style={styles.userScoreText}>
