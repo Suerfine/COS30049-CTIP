@@ -31,4 +31,14 @@ export const eventService = {
             return Promise.reject(err.response?.data?.message || "Failed to update event status.");
         }
     },
+    updateEvent: async (id, payload) => {
+        try {
+            const response = await apiClient.put(`${API_ENDPOINTS.EVENTS.BASE}/${id}`, payload);
+            return response.data;
+        } catch (err) {
+            console.error("Update Event Error:", err);
+            const errorMessage = err.response?.data?.message || "Failed to update event.";
+            return Promise.reject(errorMessage);
+        }
+    },
 };

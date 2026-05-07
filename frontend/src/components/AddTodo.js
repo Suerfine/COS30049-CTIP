@@ -24,16 +24,23 @@ const formatTimeInput = (date) => {
     return `${hours}:${minutes}`;
 }
 
-const AddTodo = ({ visible, setIsModalVisible, onCreated}) => {
-    const today = new Date();
-    const [title, setTitle] = useState("");
-    const [isPhysical, setIsPhysical] = useState(false);
-    const [isAllDay, setIsAllDay] = useState(false);
-    const [startDateText, setStartDateText] = useState(formatDateInput(today));
+const toDateOrNow = (value) => {
+    const parsed = value ? new Date(value) : new Date();
+    return Number.isNaN(parsed.getTime()) ? new Date() : parsed;
+};
+
+
+const AddTodo = ({ visible, setIsModalVisible, onCreated, initialEvent = null }) => {
+    const baseDate = toDateOrNow(initialEvent?.event_start_at);
+    
+    const [title, setTitle] = useState(initialEvent?.title || "");
+    const [isPhysical, setIsPhysical] = useState(initialEvent?.type === "workshop");
+    const [isAllDay, setIsAllDay] = useState(initialEvent?.is_all_day || false);
+    const [startDateText, setStartDateText] = useState(formatDateInput(toDateOrNow(initialEvent?.event_end_at || initialEvent?.event_start_at)));
     const [endDateText, setEndDateText] = useState(formatDateInput(today));
     const [startTimeText, setStartTimeText] = useState(formatTimeInput(today));
-    const [endTimeText, setEndTimeText] = useState(formatTimeInput(today));
-    const [description, setDescription] = useState("");
+    const [endTimeText, setEndTimeText] = useState(formatTimeInput(toDateOrNow(initialEvent?.event_end_at || initialEvent?.event_start_at)));
+    const [description, setDescription] = useState(initialEvent?.description || "");
 
     useEffect(() => {
         if (isAllDay) {
@@ -41,7 +48,26 @@ const AddTodo = ({ visible, setIsModalVisible, onCreated}) => {
         }
     }, [isAllDay, startDateText]);
 
+    useEffect(() => {
+        const start = toDateOrNow(initialEvent?.event_start_at);
+        const end = toDateOrNow(initialEvent?.event_end_at || initialEvent?.event_start_at);
+
+        setTitle(initialEvent?.title || "");
+        setIsPhysical(initialEvent?.type === "workshop");
+        setIsAllDay(initialEvent?.is_all_day || false);
+        setStartDateText(formatDateInput(start));
+        setEndDateText(formatDateInput(end));
+        setStartTimeText(formatTimeInput(start));
+        setEndTimeText(formatTimeInput(end));
+        setDescription(initialEvent?.description || "");
+    }, [initialEvent, visible]);
+
     const handleSave = async () => {
+        if (!title.trim()) {
+            window.alert("Title is required.");
+            return;
+        }
+        
         try {
             const startDate = new Date(
                 isAllDay
@@ -59,11 +85,21 @@ const AddTodo = ({ visible, setIsModalVisible, onCreated}) => {
                 title,
                 description,
                 type: isPhysical ? "workshop" : "normal",
-                status: "pending",
+                status: initialEvent?.status || "pending",
                 event_start_at: startDate.toISOString(),
+                event_end_at: endDate.toISOString(),
+                is_all_day: isAllDay,
             };
 
-            await eventService.createEvent(payload);
+            if (initialEvent?.id) {
+                await eventService.updateEvent(initialEvent.id, payload);
+            } else {
+                await eventService.createEvent(payload);
+            }
+
+            if (onCreated) {
+                await onCreated();
+            }
             setIsModalVisible(false);
         } catch (err) {
             console.error("Save event failed:", err);

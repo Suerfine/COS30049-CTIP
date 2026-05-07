@@ -329,7 +329,7 @@ const UserDashboard = ({ navigation }) => {
             </View>
 
             {/* call add todo component */}
-            <AddTodo visible={showModal} setIsModalVisible={setShowModal} onCreated={refreshData} />
+            <AddTodo visible={showModal} setIsModalVisible={setShowModal} onCreated={refreshData} initialEvent={selectedTask} />
 
             {/* task detail modal */}
             {selectedTask && (
