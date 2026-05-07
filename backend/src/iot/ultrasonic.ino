@@ -1,5 +1,11 @@
 #include <WiFi.h>
 #include <PubSubClient.h>
+#include <time.h>
+
+// --- TIME ---
+const char* ntpServer = "pool.ntp.org";
+const long  gmtOffset_sec = 28800; // For Malaysia (UTC+8): 8 * 3600
+const int   daylightOffset_sec = 0; // No daylight savings in Malaysia
 
 // --- WIFI & MQTT ---
 const char* ssid = "Elleyxx"; // Change wifi name
@@ -72,6 +78,18 @@ void setup() {
   
   client.setServer(mqtt_server, 1883);
   client.setBufferSize(1024);
+
+  // Sync time from NTP server
+  configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+  Serial.println("Waiting for NTP time sync...");
+  
+  // Wait a few seconds for time to sync
+  struct tm timeinfo;
+  if(!getLocalTime(&timeinfo)){
+    Serial.println("Failed to obtain time");
+  } else {
+    Serial.println("Time synced!");
+  }
 }
 
 void reconnectWiFi() {
@@ -124,10 +142,20 @@ void enqueueMessage(String payload) {
 }
 
 void sendLog(int sensor_id, String status, String dataJson) {
+  // Get current time
+  struct tm timeinfo;
+  char timeString[20];
+  if(!getLocalTime(&timeinfo)){
+    sprintf(timeString, "0000-00-00 00:00:00");
+  } else {
+    strftime(timeString, sizeof(timeString), "%Y-%m-%d %H:%M:%S", &timeinfo);
+  }
+  
   String payload = "{";
   payload += "\"sensor_id\":" + String(sensor_id) + ",";
   payload += "\"status\":\"" + status + "\",";
-  payload += "\"data\":" + dataJson;  // <-- NO QUOTES
+  payload += "\"data\":" + dataJson + ",";      
+  payload += "\"created_at\":\"" + String(timeString) + "\""; 
   payload += "}";
 
   // Store first
@@ -175,7 +203,7 @@ void processSensors() {
   }
 
   Serial.print("DEBUG: ");
-  Serial.println(" | Dist: " + String(dist));
+  Serial.println("Dist: " + String(dist));
 }
 
 void loop() {

@@ -7,6 +7,7 @@ interface SensorData {
   sensor_id: number;
   status: SensorStatus;
   data: Record<string, any>;
+  created_at: string | number | Date;
 }
 
 class MqttService {
@@ -93,12 +94,18 @@ class MqttService {
       // Extract status and data
       const status = payload.status || SensorStatus.NORMAL;
       const data = payload.data || payload; // Use entire payload if no data field
+      let createdAt = payload.created_at ? new Date(payload.created_at) : new Date();
+      if (payload.created_at && isNaN(createdAt.getTime())) {
+        console.warn(`Invalid created_at timestamp received, using now: ${payload.created_at}`);
+        createdAt = new Date();
+      }
 
       // Create sensor log entry
       const logEntry = await SensorLog.create({
         sensor_id: sensorId,
         status: status as SensorStatus,
         data: data,
+        created_at: createdAt,
       });
 
       // Update sensor's current status

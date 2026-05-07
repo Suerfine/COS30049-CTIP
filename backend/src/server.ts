@@ -73,12 +73,18 @@ const startServer = async (): Promise<void> => {
     console.log("Database connection has been established successfully.");
 
     // Initialize MQTT service
-    try {
-      await mqttService.connect();
-      console.log("MQTT service initialized successfully.");
-    } catch (mqttError) {
-      console.error("Failed to initialize MQTT service:", mqttError);
-      // Don't exit the server if MQTT fails, just log the error
+    const isMqttEnabled = process.env.ENABLE_MQTT === "true";
+
+    if (isMqttEnabled) {
+      try {
+        await mqttService.connect();
+        console.log("MQTT service initialized successfully.");
+      } catch (mqttError) {
+        console.error("Failed to initialize MQTT service:", mqttError);
+        // We don't crash the server if MQTT fails
+      }
+    } else {
+      console.log("MQTT service is DISABLED (ENABLE_MQTT is not true).");
     }
 
     // Register cron schedules

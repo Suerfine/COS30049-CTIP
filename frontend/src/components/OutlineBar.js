@@ -358,3 +358,5 @@ const styles=StyleSheet.create({
 });
 
 export default OutlineBar;
+
+// Edit outline bar edit module name
