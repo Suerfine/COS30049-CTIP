@@ -15,7 +15,7 @@ const eventRouter = Router();
  * /api/events:
  *   post:
  *     summary: Create a new event or task
- *     description: Creates a new event record (normal task or workshop).
+ *     description: Creates a new event (normal task or workshop)
  *     tags:
  *       - Events
  *     security:
@@ -36,11 +36,11 @@ const eventRouter = Router();
  *                 example: First Aid Workshop
  *               description:
  *                 type: string
- *                 example: Mandatory training for SIGMAmed certification.
+ *                 example: Mandatory training session
  *               type:
  *                 type: string
  *                 enum: [normal, workshop]
- *                 default: normal
+ *                 example: normal
  *               event_start_at:
  *                 type: string
  *                 format: date-time
@@ -52,8 +52,25 @@ const eventRouter = Router();
  *     responses:
  *       201:
  *         description: Event created successfully
- *       400:
- *         description: Invalid request data
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: integer
+ *                 title:
+ *                   type: string
+ *                 description:
+ *                   type: string
+ *                 type:
+ *                   type: string
+ *                 event_start_at:
+ *                   type: string
+ *                 event_end_at:
+ *                   type: string
+ *                 status:
+ *                   type: string
  */
 eventRouter.post(
   "/",
@@ -77,14 +94,33 @@ eventRouter.post(
  * /api/events:
  *   get:
  *     summary: Get all events
- *     description: Returns all events for the authenticated user.
+ *     description: Returns all events for authenticated user
  *     tags:
  *       - Events
  *     security:
  *       - OAuth2: []
  *     responses:
  *       200:
- *         description: Events retrieved successfully
+ *         description: List of events retrieved
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: integer
+ *                   title:
+ *                     type: string
+ *                   description:
+ *                     type: string
+ *                   type:
+ *                     type: string
+ *                   status:
+ *                     type: string
+ *                   event_start_at:
+ *                     type: string
  */
 eventRouter.get("/", auth, EventController.getAllEvents);
 
@@ -107,9 +143,25 @@ eventRouter.get("/", auth, EventController.getAllEvents);
  *         required: true
  *         schema:
  *           type: integer
+ *         description: Event ID
  *     responses:
  *       200:
- *         description: Event details retrieved
+ *         description: Event found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: integer
+ *                 title:
+ *                   type: string
+ *                 description:
+ *                   type: string
+ *                 type:
+ *                   type: string
+ *                 status:
+ *                   type: string
  *       404:
  *         description: Event not found
  */
@@ -147,7 +199,7 @@ eventRouter.get("/:id", auth, EventController.getEventById);
  *                 type: string
  *     responses:
  *       200:
- *         description: Event updated
+ *         description: Event updated successfully
  */
 eventRouter.put(
   "/:id",
@@ -169,7 +221,7 @@ eventRouter.put(
  * /api/events/{id}/status:
  *   patch:
  *     summary: Update event status
- *     description: Updates event status (e.g. pending/completed)
+ *     description: Change event status (pending/completed/etc)
  *     tags:
  *       - Events
  *     security:
@@ -196,11 +248,7 @@ eventRouter.put(
  *       200:
  *         description: Status updated successfully
  */
-eventRouter.patch(
-  "/:id/status",
-  auth,
-  EventController.updateEventStatus,
-);
+eventRouter.patch("/:id/status", auth, EventController.updateEventStatus);
 
 /*===============================
 =        DELETE EVENT           =
@@ -210,7 +258,7 @@ eventRouter.patch(
  * @swagger
  * /api/events/{id}:
  *   delete:
- *     summary: Delete an event
+ *     summary: Delete event
  *     tags:
  *       - Events
  *     security:
@@ -223,7 +271,7 @@ eventRouter.patch(
  *           type: integer
  *     responses:
  *       200:
- *         description: Event deleted
+ *         description: Event deleted successfully
  *       404:
  *         description: Event not found
  */
