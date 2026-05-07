@@ -113,7 +113,7 @@ const UserDashboard=({navigation})=>{
                                             params: { 
                                                 id: course.id,
                                                 enrollmentStatus: course.enrollmentStatus ?? null,
-                                                enrollmentId: course.enrollmentId
+                                                enrollmentId: course.enrollmentId ?? null,
                                             }
                                         })}
                                     />

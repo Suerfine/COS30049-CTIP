@@ -1,22 +1,17 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { TextInput, 
     Switch, 
     View, 
     Text, 
     StyleSheet, 
     Pressable, 
-    Platform
+    SafeAreaView 
 } from "react-native";
-import { X, Check, AlignCenter } from "lucide-react-native";
+import { X, Check } from "lucide-react-native";
 import ModalLayout from "./ModalLayout";
 import { eventService } from "../services/eventService";
 
-const formatDateInput = (date) => {
-    const year =date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
-    return `${year}-${month}-${day}`;
-}
+// FIND ALTERNATIVE FOR DATETIMEPICKER AND REPLACE PICK DATE AND TIME!
 
 const formatTimeInput = (date) => {
     const hours = String(date.getHours()).padStart(2, "0");
@@ -69,18 +64,6 @@ const AddTodo = ({ visible, setIsModalVisible, onCreated, initialEvent = null })
         }
         
         try {
-            const startDate = new Date(
-                isAllDay
-                    ? `${startDateText}T00:00:00`
-                    : `${startDateText}T${startTimeText}:00`
-                );
-
-            const endDate = new Date(
-                isAllDay
-                    ? `${endDateText}T00:00:00`
-                    : `${endDateText}T${endTimeText}:00`
-                );
-
             const payload = {
                 title,
                 description,
@@ -161,64 +144,21 @@ const AddTodo = ({ visible, setIsModalVisible, onCreated, initialEvent = null })
                         </View>
 
                         {/* Dates */}
-                        <View style={styles.scheduleSection}>
-                            <View style={styles.scheduleHeaderRow}>
-                                <Text style={styles.scheduleHeader}>Starts</Text>
-                                <Text style={styles.scheduleHeader}>Ends</Text>
+                        <View style={styles.dateTimeContainer}>
+                            <View style={styles.dateBox}>
+                                <Text style={styles.dateLabel}>START</Text>
+                                <Pressable style={styles.valueBadge}>
+                                    <Text style={styles.dateText}>{startDate.toDateString()}</Text>
+                                </Pressable>
                             </View>
 
-                            <View style={styles.scheduleInputRow}>
-                                <View style={styles.scheduleColumn}>
-                                    <View style={styles.inputGroup}>
-                                        <TextInput
-                                            style={[styles.valueInput, styles.dateInput]}
-                                            value={startDateText}
-                                            onChangeText={setStartDateText}
-                                            placeholder="YYYY-MM-DD"
-                                            placeholderTextColor="grey"
-                                            {...(Platform.OS === "web" ? { type: "date" } : {})}
-                                        />
-
-                                        {!isAllDay && (
-                                            <TextInput
-                                                style={[styles.valueInput, styles.timeInput]}
-                                                value={startTimeText}
-                                                onChangeText={setStartTimeText}
-                                                placeholder="HH:mm"
-                                                placeholderTextColor="grey"
-                                                {...(Platform.OS === "web" ? { type: "time" } : {})}
-                                            />
-                                        )}
-                                    </View>
-                                </View>
-
-                                <View style={styles.scheduleColumn}>
-                                    <View style={styles.inputGroup}>
-                                        <TextInput
-                                            style={[styles.valueInput, styles.dateInput]}
-                                            value={endDateText}
-                                            onChangeText={setEndDateText}
-                                            placeholder="YYYY-MM-DD"
-                                            placeholderTextColor="grey"
-                                            editable={!isAllDay}
-                                            {...(Platform.OS === "web" ? { type: "date" } : {})}
-                                        />
-
-                                        {!isAllDay && (
-                                            <TextInput
-                                                style={[styles.valueInput, styles.timeInput]}
-                                                value={endTimeText}
-                                                onChangeText={setEndTimeText}
-                                                placeholder="HH:mm"
-                                                placeholderTextColor="grey"
-                                                {...(Platform.OS === "web" ? { type: "time" } : {})}
-                                            />
-                                        )}
-                                    </View>
-                                </View>
+                            <View style={styles.dateBox}>
+                                <Text style={styles.dateLabel}>END</Text>
+                                <Pressable style={styles.valueBadge}>
+                                    <Text style={styles.dateText}>{endDate.toDateString()}</Text>
+                                </Pressable>
                             </View>
                         </View>
-
 
                         {/* Description */}
                         <Text style={[styles.label, { marginTop: 20 }]}>Description</Text>
@@ -299,45 +239,30 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: "bold",
     },
-    scheduleSection: {
+    dateTimeContainer: {
+        flexDirection: "row",
+        gap: 15,
         marginTop: 15,
-        gap: 8,
     },
-    scheduleHeaderRow: {
-        flexDirection: "row",
-        gap: 15,
-    },
-    scheduleHeader: {
+    dateBox: {
         flex: 1,
-        fontSize: 16,
-        color: "#000",
+    },
+    dateLabel: {
+        fontSize: 10,
+        color: "#999",
         fontWeight: "bold",
+        marginBottom: 5,
     },
-    scheduleInputRow: {
-        flexDirection: "row",
-        gap: 15,
-    },
-    scheduleColumn: {
-        flex: 1,
-    },
-    inputGroup: {
-        flexDirection: "row",
-        gap: 10,
-    },
-    valueInput: {
+    valueBadge: {
         backgroundColor: "#f9f9f9",
         padding: 12,
         borderRadius: 10,
         borderWidth: 1,
         borderColor: "#eee",
+    },
+    dateText: {
         fontSize: 14,
-    },
-    dateInput: {
-        flex: 1,
-    },
-    timeInput: {
-        width: 80,
-        flexShrink: 0,
+        fontWeight: "bold",
     },
     descriptionInput: {
         backgroundColor: "#f9f9f9",
