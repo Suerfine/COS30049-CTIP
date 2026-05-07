@@ -30,6 +30,8 @@ const UserDashboard = ({ navigation }) => {
         currentDate, setCurrentDate,
         isExpanded, setIsExpanded,
         weekDates, getDaysInMonth, filteredEvents,
+        refreshData,
+        toggleEvent,
         hasPendingEventOnDate,formatLocalDate,
         weekLabels,eventTab, courseTab, categories
     } = useUserDashboard();
@@ -312,7 +314,7 @@ const UserDashboard = ({ navigation }) => {
                                                         <Text style={styles.todoCourse}>{event.type} - {formatDate(event.event_start_at, false)}</Text>
                                                     </View>
 
-                                                    <Pressable onPress={() => openEdit(todo)}>
+                                                    <Pressable onPress={() => openEdit(event)}>
                                                         <ChevronRight size={20} />
                                                     </Pressable>
                                                 </View>
@@ -327,7 +329,7 @@ const UserDashboard = ({ navigation }) => {
             </View>
 
             {/* call add todo component */}
-            <AddTodo visible={showModal} setIsModalVisible={setShowModal}/>
+            <AddTodo visible={showModal} setIsModalVisible={setShowModal} onCreated={refreshData} />
 
             {/* task detail modal */}
             {selectedTask && (
