@@ -13,7 +13,7 @@ import { eventService } from "../services/eventService";
 
 // FIND ALTERNATIVE FOR DATETIMEPICKER AND REPLACE PICK DATE AND TIME!
 
-const AddTodo = ({ visible, setIsModalVisible, onCreated}) => {
+const AddTodo = ({ visible, setIsModalVisible }) => {
     const [isAllDay, setIsAllDay] = useState(false);
     const [isPhysical, setIsPhysical] = useState(false);
     const [startDate, setStartDate] = useState(new Date());
@@ -32,14 +32,12 @@ const AddTodo = ({ visible, setIsModalVisible, onCreated}) => {
             };
 
             await eventService.createEvent(payload);
-            if (onCreated) {
-                await onCreated();
-            }
             setIsModalVisible(false);
         } catch (err) {
             console.error("Save event failed:", err);
         }
     };
+
 
     return (
         <ModalLayout visible={visible} onClose={() => setIsModalVisible(false)}>
