@@ -236,9 +236,15 @@ export async function runSeeders(
     },
     {
       id: 4,
-      name: "Ultrasonic Level Sensor - Park A Zone 1",
+      name: "Ultrasonic Level Sensor - Park A Zone 2",
       type: "ultrasonic",
-      location: "3.1390,101.6869",
+      location: "1.5324, 110.3566",
+      current_status: SensorStatus.NORMAL,
+    },{
+      id: 5,
+      name: "Smoking Detector - Park A Zone 1",
+      type: "gas_temp",
+      location: "3.1390,101.6869", 
       current_status: SensorStatus.NORMAL,
     },
   ];
