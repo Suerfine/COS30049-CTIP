@@ -8,30 +8,21 @@ export const useEnrollmentManagement=()=>{
     const [loading, setLoading]=useState(false);
     const [totalPages, setTotalPages]=useState(1);
     const [searchQuery, setSearchQuery]=useState('');
-    const [searchSubmissionQuery, setSearchSubmissionQuery]=useState('');
     const [sortConfig, setSortConfig]=useState({
         key:null,
         direction:'asc'
     });
-    const [sortSubmissionConfig, setSortSubmissionConfig]=useState({
-        key:null,
-        direction:'asc'
-    });
     const [currentPage, setCurrentPage]=useState(1);
-    const [currentSubmissionPage, setSubmissionCurrentPage]=useState(1);
     const [currentStatus, setCurrentStatus]=useState('All');
-    const [currentSubmissionStatus, setCurrentSubmissionStatus]=useState('All');
     const [totalElements, setTotalElements] = useState(0);
     const [courses, setCourses] = useState([]);
-    const [submissionTotalPages, setSubmissionTotalPages]=useState(1);
-    const [submissionTotalElements, setSubmissionTotalElements]=useState(0);
 
     const fetchData = useCallback(async () => {
         setLoading(true);
         try {
             const [enrollData, submissionData] = await Promise.all([
                 enrollmentService.getAll(currentPage, 10, searchQuery, sortConfig, currentStatus),
-                submissionService.getSummaries(currentSubmissionPage, 10, searchSubmissionQuery, sortSubmissionConfig, currentSubmissionStatus)
+                // submissionService.getAll()
             ]);
 
             setEnrollments(enrollData.data || []); 
@@ -39,9 +30,7 @@ export const useEnrollmentManagement=()=>{
             setTotalPages(enrollData.totalPages || 1);
             setTotalElements(enrollData.totalElements || 0);
             
-            setSubmissions(submissionData.data || []);
-            setSubmissionTotalPages(submissionData.totalPages || 1);
-            setSubmissionTotalElements(submissionData.totalElements || 0);
+            setSubmissions(submissionData);
         } catch (err) {
             console.error("Fetch Error:", err);
             setEnrollments([]);
@@ -113,7 +102,6 @@ export const useEnrollmentManagement=()=>{
         requestSort,resetSort,
         handleUpdateStatus,
         deleteRecord,
-        courses,
-        submissionTotalPages, submissionTotalElements
+        courses
     };
 };

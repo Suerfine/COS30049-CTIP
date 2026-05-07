@@ -29,9 +29,6 @@ export const API_ENDPOINTS={
         UPDATE_STATUS: (id, status) => `/enrollments/${id}/status/${status}`,
         MY_ENROLLMENTS:`/enrollments/my-enrollments`,
         DETAIL:(id)=>`/enrollments/${id}`,
-        SUMARRIES:'/enrollments/submissions/summaries',
-        AUDIT:(id)=>`/enrollments/${id}/audit`,
-        PATCH:(id)=>`/enrollments/${id}/approve`,
     },
     WORKSHOP:{
         JOIN_WORKSHOP: (courseId, elementId) => 
