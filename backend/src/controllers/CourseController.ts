@@ -3,7 +3,6 @@ import { Op } from "sequelize";
 import {
   Course,
   CourseTag,
-  Enrollment,
   Prerequisite,
   PrerequisiteGroup,
   Tag,
@@ -19,7 +18,6 @@ import {
   PrerequisiteGroupResponse,
   PrerequisiteResponse,
   UpdateCourseRequest,
-  UserCourseEnrollmentResponse,
 } from "../types/Course";
 import { ErrorResponse } from "../types/common";
 import { getStorage } from "../services/storage";
@@ -531,83 +529,6 @@ export const getAllCourses = async (
     return res.json(formattedResponse);
   } catch (err) {
     next(err);
-  }
-};
-
-/**
- * Retrieves the courses that the user is able to join or is already enrolled in. Alongside shows the courses which they cannot join
- * due to prerequisite requirements.
- */
-export const getAllUserCourses = async (
-  req: Request<PaginateRequestParams & { tags?: number | number[] }>,
-  res: Response<
-    PaginateResponse<UserCourseEnrollmentResponse> | { message: string }
-  >,
-  next: NextFunction,
-) => {
-  try {
-    // Check if the user is authenticated
-    if (!req.user) {
-      throw new HttpError(401, "Unauthorized");
-    }
-
-    // Retrieve courses with pagination and filtering. Also look for tags if provided in the query parameters
-    const courses = await paginateModel(Course, req.query, {
-      include: {
-        model: Tag,
-        as: "tags",
-        through: { attributes: [] },
-        where: req.query.tags
-          ? {
-              id: Array.isArray(req.query.tags)
-                ? req.query.tags.map((id) => Number(id))
-                : [Number(req.query.tags)],
-            }
-          : undefined,
-      },
-    });
-
-    // Format the courses into the expected response format, including the enrollment status for each course for the user
-    const UserCourseEnrollmentResponses: UserCourseEnrollmentResponse[] =
-      await Promise.all(
-        courses.data.map(async (course) => {
-          // Get the latest enrollment for the user in this course, if any
-          const enrollment = await Enrollment.findOne({
-            where: { user_id: req.user!.id, course_id: course.id },
-            order: [["created_at", "DESC"]],
-            limit: 1,
-          });
-          return {
-            ...toCourseResponse(course, req),
-            status: enrollment?.status ?? null,
-            enrolled_at: enrollment?.enrolled_at ?? null,
-            completed_at: enrollment?.completed_at ?? null,
-            reviewed_at: enrollment?.reviewed_at ?? null,
-            badge_expire_at: enrollment?.badge_expire_at ?? null,
-          };
-        }),
-      );
-
-    const baseUrl = `${req.protocol}://${req.get("host")}${req.originalUrl}`;
-    const formattedResponse = formatPaginateResponse(
-      UserCourseEnrollmentResponses,
-      req.query,
-      true,
-      {
-        page: courses.page,
-        size: courses.size,
-        totalElements: courses.totalElements,
-        totalPages: courses.totalPages,
-        baseUrl,
-      },
-    );
-    return res.status(200).json(formattedResponse);
-  } catch (err) {
-    if (err instanceof HttpError) {
-      res.status(err.status).json({ message: err.message });
-    } else {
-      res.status(500).json({ message: "Internal server error\n" + err });
-    }
   }
 };
 

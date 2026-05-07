@@ -5,12 +5,9 @@ import {
   UpdateDiscussionRequest,
   DiscussionPaginateRequest,
 } from "../types/Discussion";
-import { Discussion, Enrollment, User } from "../models";
+import { Discussion } from "../models";
 import { formatPaginateResponse, paginateModel } from "../utils/paginate";
 import { PaginateRequestParams, PaginateResponse } from "../types/common";
-import { EnrollmentStatus } from "../enum/EnrollmentStatus";
-import { Op } from "sequelize";
-import { sendNotification } from "../utils/sendNotification";
 
 class HttpError extends Error {
   status: number;
@@ -45,35 +42,6 @@ export const createDiscussion = async (
       title,
       is_public,
     });
-
-    if (is_public) {
-      // Inform all course members about the new discussion
-      const courseMembers = await Enrollment.findAll({
-        where: {
-          course_id: course_id,
-          status: {
-            [Op.in]: [EnrollmentStatus.IN_PROGRESS, EnrollmentStatus.IN_REVIEW],
-          },
-        },
-      });
-      for (const member of courseMembers) {
-        if (member.user_id !== req.user.id) {
-          await sendNotification(
-            "single",
-            `A new discussion has been created in the course "${discussion.title}"`,
-            `A new discussion titled "${discussion.title}" has been created in the course you are enrolled in. Check it out!`,
-            member.user_id,
-          );
-        }
-      }
-    } else {
-      // Inform only admins about the new discussion
-      await sendNotification(
-        "admin",
-        `A new private discussion has been created in the course "${discussion.title}"`,
-        `A new private discussion titled "${discussion.title}" has been created in the course. Admin review is required.`,
-      );
-    }
 
     //Return the created discussion
     res.status(201).json({

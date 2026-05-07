@@ -19,64 +19,6 @@ const courseRouter = Router();
 courseRouter.use("/:course_Id/modules", moduleRouter);
 courseRouter.use("/:id/discussion", discussionRouter);
 
-/**
- * @swagger
- * /api/courses/user:
- *   get:
- *     summary: Get courses for the authenticated user
- *     description: Retrieves a paginated list of courses, including the user's enrollment status for each.
- *     tags: [Courses]
- *     security:
- *       - OAuth2: ["all"]
- *     parameters:
- *       - in: query
- *         name: page
- *         schema:
- *           type: integer
- *           default: 1
- *         description: The page number to retrieve.
- *       - in: query
- *         name: size
- *         schema:
- *           type: integer
- *           default: 10
- *         description: The number of items per page.
- *       - in: query
- *         name: tags
- *         schema:
- *           type: array
- *           items:
- *             type: integer
- *         style: form
- *         explode: true
- *         description: An array of tag IDs to filter courses by.
- *     responses:
- *       200:
- *         description: A paginated list of the user's courses with enrollment status.
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data:
- *                   type: array
- *                   items:
- *                     $ref: '#/components/schemas/UserCourseEnrollmentResponse'
- *                 page:
- *                   type: integer
- *                 size:
- *                   type: integer
- *                 totalElements:
- *                   type: integer
- *                 totalPages:
- *                   type: integer
- *                 first:
- *                   type: boolean
- *                 last:
- *                   type: boolean
- */
-courseRouter.get("/user", auth, CourseController.getAllUserCourses);
-
 function parseNumericIdArray(value: unknown): number[] {
   if (value === undefined || value === null || value === "") {
     return [];

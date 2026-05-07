@@ -1,5 +1,4 @@
 import { CourseStatus } from "../enum/CourseStatus";
-import { EnrollmentStatus } from "../enum/EnrollmentStatus";
 
 export interface PrerequisiteResponse {
   id: number;
@@ -64,15 +63,4 @@ export interface UpdateCourseRequest {
   badge_expire_in_months?: number;
   tag_ids?: number[];
   prerequisite_course_ids?: number[];
-}
-
-export interface UserCourseEnrollmentResponse extends Omit<
-  CourseResponse,
-  "status"
-> {
-  status: EnrollmentStatus | null;
-  enrolled_at: Date | null;
-  completed_at: Date | null;
-  reviewed_at: Date | null;
-  badge_expire_at: Date | null;
 }

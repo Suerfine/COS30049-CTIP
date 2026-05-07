@@ -4,7 +4,6 @@ import { CourseStatus } from "../enum/CourseStatus";
 import { UserRoles } from "../enum/UserRoles";
 import { RegistrationStatus } from "../enum/RegistrationStatus";
 import { auth } from "../middelware/Auth";
-import { EnrollmentStatus } from "../enum/EnrollmentStatus";
 
 const options: swaggerJSDoc.Options = {
   definition: {
@@ -375,116 +374,6 @@ const options: swaggerJSDoc.Options = {
               example: "2026-04-24T08:00:00.000Z",
             },
           },
-        },
-        CourseResponse: {
-          type: "object",
-          properties: {
-            id: { type: "integer", example: 1 },
-            title: { type: "string", example: "Wildlife Safety Basics" },
-            description: {
-              type: "string",
-              nullable: true,
-              example: "Introduction to wildlife safety procedures.",
-            },
-            released_at: {
-              type: "string",
-              format: "date-time",
-              nullable: true,
-              example: null,
-            },
-            expected_completion_weeks: {
-              type: "integer",
-              nullable: true,
-              example: 6,
-            },
-            must_complete_in_weeks: {
-              type: "integer",
-              nullable: true,
-              example: 8,
-            },
-            badge_expire_in_months: {
-              type: "integer",
-              example: 24,
-            },
-            badge_path_id: {
-              type: "string",
-              nullable: true,
-              example:
-                "C:/Users/User/Documents/COS30049-CTIP/backend/storage/uploads/private/courses/badges/8b89f43a-9bb4-47ca-a269-f0554e651067.png",
-            },
-            prerequisite_groups: {
-              type: "array",
-              items: {
-                $ref: "#/components/schemas/PrerequisiteGroup",
-              },
-            },
-            tags: {
-              type: "array",
-              items: {
-                $ref: "#/components/schemas/CourseTag",
-              },
-            },
-            created_at: {
-              type: "string",
-              format: "date-time",
-              example: "2026-04-24T08:00:00.000Z",
-            },
-            updated_at: {
-              type: "string",
-              format: "date-time",
-              example: "2026-04-24T08:00:00.000Z",
-            },
-          },
-        },
-        CourseStatusResponse: {
-          allOf: [
-            { $ref: "#/components/schemas/CourseResponse" },
-            {
-              type: "object",
-              properties: {
-                status: {
-                  type: "string",
-                  enum: Object.values(CourseStatus),
-                  example: CourseStatus.UNRELEASED,
-                },
-              },
-            },
-          ],
-        },
-        UserCourseEnrollmentResponse: {
-          allOf: [
-            { $ref: "#/components/schemas/CourseResponse" },
-            {
-              type: "object",
-              properties: {
-                status: {
-                  type: "string",
-                  enum: Object.values(EnrollmentStatus),
-                  example: EnrollmentStatus.COMPLETED,
-                },
-                enrolled_at: {
-                  type: "string",
-                  format: "date-time",
-                  nullable: true,
-                },
-                completed_at: {
-                  type: "string",
-                  format: "date-time",
-                  nullable: true,
-                },
-                reviewed_at: {
-                  type: "string",
-                  format: "date-time",
-                  nullable: true,
-                },
-                badge_expire_at: {
-                  type: "string",
-                  format: "date-time",
-                  nullable: true,
-                },
-              },
-            },
-          ],
         },
         Prerequisite: {
           type: "object",
