@@ -4,6 +4,7 @@ import { moduleService } from '../services/moduleService';
 import { pageService } from '../services/pageService';
 import {ElementService } from '../services/ElementService';
 import { submissionService } from '../services/SubmissionService';
+import { eventService } from '../services/eventService';
 
 export const useCourseDetails=(id, enrollmentId, initialMarks = {})=>{
     const [course,setCourse]=useState(null);
@@ -126,23 +127,43 @@ export const useCourseDetails=(id, enrollmentId, initialMarks = {})=>{
 
     const saveProgress = useCallback(async (elementId, score, content = {}) => {
         try {
-            await submissionService.create({
+            const result = await submissionService.create({
                 enrollment_id: Number(enrollmentId),
                 element_id: Number(elementId),
-                content: { ...content, auto_marked: true },
                 earned_grade: score,
-                marking_remark: "System: Automated marking triggered."
+                content: content,
             });
+
+            if (content.auto_add_todo) {
+                const formatISO = (dateStr, timeStr) => {
+                    const [time, modifier] = timeStr.split(' ');
+                    let [hours, minutes] = time.split(':');
+                    if (hours === '12') hours = '00';
+                    if (modifier === 'PM') hours = parseInt(hours, 10) + 12;
+                    return `${dateStr}T${hours.toString().padStart(2, '0')}:${minutes}:00Z`;
+                }
+
+                const startTime = content.session_time.split(' — ')[0];
+                const endTime = content.session_time.split(' — ')[1];
+
+                await eventService.createEvent({
+                    title: `Workshop Session`,
+                    description: `Registered via training platform. Location: ${content.location}`,
+                    type: "workshop",
+                    event_start_at: formatISO(content.session_date, startTime),
+                    event_end_at: formatISO(content.session_date, endTime)
+                });
+            }
 
             setUserMarks(prev => ({
                 ...prev,
-                [elementId]: score
+                [elementId]: { earned_grade: score, content: content }
             }));
-            
+
             return { success: true };
         } catch (err) {
-            console.error("Sync failed:", err);
-            return { success: false, error: err };
+            console.error("Save Progress/Event Error:", err);
+            return { success: false, error: err.message };
         }
     }, [enrollmentId]);
 
