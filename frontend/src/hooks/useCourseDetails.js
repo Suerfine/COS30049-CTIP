@@ -15,62 +15,60 @@ export const useCourseDetails=(id, enrollmentId, initialMarks = {})=>{
     if (!id || !enrollmentId) return;
     try {
         setLoading(true);
-        setError(null); // Clear previous errors
-
         const courseData = await courseService.getById(id);
         const modulesData = await moduleService.getAll(id);
-
-        const marksMap = {};
 
         const modulesWithFullData = await Promise.all(
             modulesData.map(async (module) => {
                 const pagesData = await pageService.getAll(id, module.id);
-                
                 const pagesWithElements = await Promise.all(
                     pagesData.map(async (page) => {
                         const elementsData = await ElementService.getAll(id, module.id, page.id);
                         
-                        await Promise.all((elementsData || []).map(async (el) => {
-                            if (!el || !el.id) return;
-
-                            try {
-                                const subs = await submissionService.getByElement(
-                                    Number(enrollmentId), 
-                                    Number(el.id)
-                                );
-                                marksMap[el.id] = (subs && subs.length > 0) ? subs[0].earned_grade : 0;
-                            } catch (e) {
-                                console.warn(`Failed to fetch sub for element ${el.id}`, e.message);
-                                marksMap[el.id] = 0;
-                            }
+                        const elementsWithSubs = await Promise.all((elementsData || []).map(async (el) => {
+                            const subs = await submissionService.getByElement(Number(enrollmentId), Number(el.id));
+                            return {
+                                ...el,
+                                submission: subs && subs.length > 0 ? subs[0] : null
+                            };
                         }));
 
-                        return { ...page, elements: elementsData };
+                        return { ...page, elements: elementsWithSubs };
                     })
                 );
                 return { ...module, pages: pagesWithElements };
             })
         );
 
-        // Calculate progress logic...
+        const marksMap = {};
+        modulesWithFullData.forEach(module => {
+            module.pages.forEach(page => {
+                page.elements.forEach(el => {
+                    marksMap[el.id] = el.submission 
+                        ? { earned_grade: el.submission.earned_grade, content: el.submission.content }
+                        : { earned_grade: 0, content: null };
+                });
+            });
+        });
+
         let previousPageCompleted = true;
         const finalizedModules = modulesWithFullData.map(module => ({
             ...module,
             pages: module.pages.map(page => {
                 const isPageComplete = page.elements?.length > 0 && 
-                                       page.elements.every(el => (marksMap[el.id] || 0) > 0);
+                                       page.elements.every(el => (marksMap[el.id]?.earned_grade || 0) > 0);
                 const isLocked = !previousPageCompleted;
                 previousPageCompleted = isPageComplete;
                 return { ...page, isLocked, isCompleted: isPageComplete };
             })
         }));
 
-        setUserMarks({ ...marksMap });
+        setUserMarks(marksMap);
         setCourse({ ...courseData, modules: finalizedModules });
-        
+
     } catch (err) {
         console.error("GLOBAL FETCH ERROR:", err);
-        setError("Failed to load course. Please check your connection or IDs.");
+        setError("Failed to load course.");
     } finally {
         setLoading(false);
     }

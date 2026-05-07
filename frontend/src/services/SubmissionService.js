@@ -78,6 +78,7 @@ export const submissionService = {
       throw error;
     }
   },
+  
   getByElement: async (enrollmentId, elementId) => {
     if(elementId===undefined){
       return [];

@@ -6,7 +6,6 @@ export const useElements=(courseId, moduleId, pageId)=>{
     const [elements, setElements]=useState([]);
     const [loading, setLoading]=useState(false);
     const [error, setError]=useState(null);
-    const [registering, setRegistering] = useState(false);
     const [workshops, setWorkshops] = useState([]);
     const [workshopsLoading, setWorkshopsLoading] = useState(false);
 
@@ -96,18 +95,6 @@ export const useElements=(courseId, moduleId, pageId)=>{
         }
     };
 
-    const registerWorkshop = async (elementId, sessionIndex, addToTodo) => {
-        setRegistering(true);
-        const result = await ElementService.joinWorkshop(
-            courseId, 
-            elementId, 
-            sessionIndex, 
-            addToTodo
-        );
-        setRegistering(false);
-        return result;
-    };
-
     const loadWorkshops = useCallback(async () => {
         if (!courseId) return;
         setWorkshopsLoading(true);
@@ -139,5 +126,5 @@ export const useElements=(courseId, moduleId, pageId)=>{
         loadElements();
     },[loadElements]);
 
-    return {elements, loading, error, refresh: loadElements, createNewElement, updateExistingElement, deleteElement, moveElement, registerWorkshop, registering, workshopsLoading,loadWorkshops, workshops, updatePageSettings};
+    return {elements, loading, error, refresh: loadElements, createNewElement, updateExistingElement, deleteElement, moveElement, workshopsLoading,loadWorkshops, workshops, updatePageSettings};
 }

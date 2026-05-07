@@ -11,7 +11,7 @@ import { markdownStyles } from './markdownStyle';
 import { UserRoles } from '../enum/UserRoles';
 import { useAuth } from '../context/AuthContext';
 
-const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement, onMoveElement, onProgressUpdate, onRegisterWorkshop, registering, userMarks,pageMetadata,currentAttempts,isPageFinished, isFinalQuiz, isRegistered }) => {
+const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement, onMoveElement, onProgressUpdate, onRegisterWorkshop, userMarks,pageMetadata,currentAttempts,isPageFinished, isFinalQuiz}) => {
     const isAdmin = role === UserRoles.ADMIN;
     const [videoProgress, setVideoProgress]=useState({});
     const [quizStates, setQuizStates]=useState({});
@@ -213,8 +213,11 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
     
     const renderElement = (el, index) => {
         if (!el || !el.id) return null;
+        console.log(el.content)
         const { type, content, score, id } = el;
-        const earnedScore = userMarks?.[id] ?? 0;
+        const earnedScore = typeof userMarks?.[id] === 'object' 
+        ? (userMarks[id]?.earned_grade ?? 0) 
+        : (userMarks?.[id] ?? 0);
         const isViewed = earnedScore > 0;
         const quiz = quizStates[id] || { 
             selected: null, 
@@ -234,7 +237,6 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
 
                     {isAdmin && (
                         <View style={styles.adminHeader}>
-                            {/* ... Admin Buttons remain exactly the same ... */}
                             <View style={styles.orderGroup}>
                                 <TouchableOpacity 
                                     onPress={() => onMoveElement(id, 'up')}
@@ -349,9 +351,21 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
                                     );
                                 case 'workshop':
                                     const { title, description, sessions, location, link } = content;
+                                    const submissionData = userMarks?.[id];
                                     const selectedSessionIdx = selectedSessions[id];
-                                    const isRegistered = workshopRegistrations[id];
-
+                                    const savedContent = submissionData?.content;
+                                    const isRegisteredInDB = (userMarks?.[id].earned_grade ?? 0) > 0;
+                                    const isRegistered = workshopRegistrations[id] || isRegisteredInDB;
+                                    let activeSessionIdx = selectedSessions[id];
+                                    if (isRegistered && savedContent) {
+                                        const foundIdx = sessions?.findIndex(s => 
+                                            s.date === savedContent.session_date && 
+                                            `${s.startTime} — ${s.endTime}` === savedContent.session_time
+                                        );
+                                        if (foundIdx !== -1) {
+                                            activeSessionIdx = foundIdx;
+                                        }
+                                    }
                                     return (
                                         <View style={styles.workshopCard}>
                                             <View style={[styles.workshopDateTag, isRegistered && { backgroundColor: '#0a6340' }]}>
@@ -369,29 +383,40 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
                                                 <Text style={styles.workshopTitle}>{title}</Text>
                                                 <Text style={styles.workshopDesc}>{description}</Text>
                                                 
-                                                <Text style={styles.miniLabel}>Available Sessions (Select One):</Text>
+                                                <Text style={styles.miniLabel}>{isRegistered ? "Your Registered Session:" : "Available Sessions (Select One):"}</Text>
                                                 <View style={styles.sessionList}>
                                                     {sessions && sessions.map((item, idx) => {
-                                                        const isSelected = selectedSessionIdx === idx;
+                                                        const isSelected = activeSessionIdx === idx;
+                                                        if (isRegistered && !isSelected) return null;
                                                         return (
                                                             <TouchableOpacity 
                                                                 key={idx} 
-                                                                disabled={isAdmin || isRegistered}
+                                                                disabled={isAdmin || isRegistered} 
                                                                 onPress={() => setSelectedSessions(prev => ({ ...prev, [id]: idx }))}
                                                                 style={[
                                                                     styles.sessionItem, 
                                                                     isSelected && styles.sessionItemSelected,
-                                                                    idx === sessions.length - 1 && { borderBottomWidth: 0 }
+                                                                    isRegistered && { borderColor: '#0a6340', backgroundColor: '#f0f9f4' }
                                                                 ]}
                                                             >
                                                                 <View style={styles.sessionDateRow}>
-                                                                    <View style={[styles.radioOutline, isSelected && styles.correctRadio]}>
-                                                                        {isSelected && <View style={styles.radioInner} />}
-                                                                    </View>
-                                                                    <Text style={[styles.sessionDateText, isSelected && { color: '#0a6340' }]}>
-                                                                        {item.date}
-                                                                    </Text>
+                                                                <View style={[
+                                                                    styles.radioOutline, 
+                                                                    isSelected && styles.correctRadio,
+                                                                    isRegistered && { borderColor: '#0a6340' }
+                                                                ]}>
+                                                                    {isSelected && <View style={[styles.radioInner, isRegistered && { backgroundColor: '#0a6340' }]} />}
                                                                 </View>
+                                                                <Text style={[styles.sessionDateText, isSelected && { color: '#0a6340' }]}>
+                                                                    {item.date}
+                                                                </Text>
+                                                            </View>
+                                                            <View style={styles.sessionTimeRow}>
+                                                                <Clock size={14} color={isSelected ? "#0a6340" : "#666"} />
+                                                                <Text style={[styles.sessionTimeText, isSelected && { color: '#0a6340', fontWeight: '600' }]}>
+                                                                    {item.startTime} — {item.endTime}
+                                                                </Text>
+                                                            </View>
                                                                 <View style={styles.sessionTimeRow}>
                                                                     <Clock size={14} color={isSelected ? "#0a6340" : "#666"} />
                                                                     <Text style={[styles.sessionTimeText, isSelected && { color: '#0a6340', fontWeight: '600' }]}>
@@ -425,10 +450,10 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
                                                         <TouchableOpacity 
                                                             style={[
                                                                 styles.joinBtn, 
-                                                                (selectedSessionIdx === undefined || isRegistered || registering) && styles.joinBtnDisabled
+                                                                (selectedSessionIdx === undefined || isRegistered) && styles.joinBtnDisabled
                                                             ]}
                                                             
-                                                            disabled={selectedSessionIdx === undefined || isRegistered || registering}
+                                                            disabled={selectedSessionIdx === undefined || isRegistered}
                                                             onPress={async () => {
                                                                 handleRegisterWorkshop(
                                                                     id, 
@@ -442,7 +467,7 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
                                                             }}
                                                         >
                                                             <Text style={styles.joinBtnText}>
-                                                                {registering ? "Processing..." : isRegistered ? "Registered" : "Register"}
+                                                                {isRegistered ? "Registered" : "Register"}
                                                             </Text>
                                                             {isRegistered ? <CheckCircle2 size={14} color="white" /> : <ExternalLink size={14} color="white" />}
                                                         </TouchableOpacity>
