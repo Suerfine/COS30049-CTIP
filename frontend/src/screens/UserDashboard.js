@@ -107,7 +107,6 @@ const UserDashboard = ({ navigation }) => {
                             {courseFilter === 'in progress' &&
                                 inProgressCourses.map(course => {
                                     const numModules = course.modules?.length ?? 0;
-                                    console.log('inProgressCourses sample:', JSON.stringify(inProgressCourses[0], null, 2));
                                     return (
                                         <CourseCard
                                             key={course.id}
@@ -137,19 +136,17 @@ const UserDashboard = ({ navigation }) => {
                             {/* completed courses */}
                             {courseFilter === 'completed' &&
                                 completedCourses.map(course => {
-                                    const courseProgress = progressData.find(p => p.courseId === course.id);
                                     const numModules = course.modules ? course.modules.length : 0;
-
                                     return (
                                         <CourseCard
                                             key={course.id}
                                             id={course.id}
-                                            imagePath={{ uri: course.image }}
-                                            courseTitle={course.courseTitle}
+                                            coverImgUrl={course.cover_img_url}
+                                            courseTitle={course.title}
                                             numModules={numModules}
-                                            duration={course.duration}
-                                            expiry={course.expiryDate}
-                                            progress={courseProgress?.progress ?? 1}
+                                            duration={course.expected_completion_weeks}
+                                            expiry={course.must_complete_in_weeks}
+                                            progress={course.progress}
                                             userType={userType}
                                             // handlers
                                             onPress={() => navigation.navigate('ParkGuideStack', {
