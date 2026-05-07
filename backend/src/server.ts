@@ -15,6 +15,7 @@ import mqttService from "./iot/MqttService";
 
 // Issue with augmeneted Express Request type not being recognized in middleware, so we need to redeclare it here
 import { User } from "../src/models";
+import { registerJobs } from "./jobs";
 declare global {
   namespace Express {
     export interface Request {
@@ -79,6 +80,10 @@ const startServer = async (): Promise<void> => {
       console.error("Failed to initialize MQTT service:", mqttError);
       // Don't exit the server if MQTT fails, just log the error
     }
+
+    // Register cron schedules
+    console.log("Registering scheduled jobs...");
+    registerJobs();
 
     app.listen(port, () => {
       console.log(`Server is running on http://localhost:${port}`);
