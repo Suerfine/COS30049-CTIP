@@ -4,51 +4,56 @@ import { auth } from "../middelware/Auth";
 import { validate } from "../middelware/Validate";
 import { body } from "express-validator";
 
-const eventRouter = Router({ mergeParams: true });
+const eventRouter = Router();
+
+/*===============================
+=         CREATE EVENT          =
+===============================*/
 
 /**
  * @swagger
  * /api/events:
- * post:
- * summary: Create a new event or task
- * description: Creates a new event record (normal task or workshop).
- * tags: [Events]
- * security:
- * - OAuth2: ["all"]
- * requestBody:
- * required: true
- * content:
- * application/json:
- * schema:
- * type: object
- * required:
- * - title
- * - description
- * - event_start_at
- * properties:
- * title:
- * type: string
- * example: "First Aid Workshop"
- * description:
- * type: string
- * example: "Mandatory training for SIGMAmed certification."
- * type:
- * type: string
- * enum: [normal, workshop]
- * default: normal
- * event_start_at:
- * type: string
- * format: date-time
- * example: "2026-05-20T09:00:00Z"
- * event_end_at:
- * type: string
- * format: date-time
- * example: "2026-05-20T11:00:00Z"
- * responses:
- * 201:
- * description: Event created successfully
- * 400:
- * description: Invalid request data
+ *   post:
+ *     summary: Create a new event or task
+ *     description: Creates a new event record (normal task or workshop).
+ *     tags:
+ *       - Events
+ *     security:
+ *       - OAuth2: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - title
+ *               - description
+ *               - event_start_at
+ *             properties:
+ *               title:
+ *                 type: string
+ *                 example: First Aid Workshop
+ *               description:
+ *                 type: string
+ *                 example: Mandatory training for SIGMAmed certification.
+ *               type:
+ *                 type: string
+ *                 enum: [normal, workshop]
+ *                 default: normal
+ *               event_start_at:
+ *                 type: string
+ *                 format: date-time
+ *                 example: 2026-05-20T09:00:00Z
+ *               event_end_at:
+ *                 type: string
+ *                 format: date-time
+ *                 example: 2026-05-20T11:00:00Z
+ *     responses:
+ *       201:
+ *         description: Event created successfully
+ *       400:
+ *         description: Invalid request data
  */
 eventRouter.post(
   "/",
@@ -63,66 +68,86 @@ eventRouter.post(
   EventController.createEvent,
 );
 
+/*===============================
+=        GET ALL EVENTS         =
+===============================*/
+
 /**
  * @swagger
  * /api/events:
- * get:
- * summary: Get all events
- * description: Returns a list of events belonging to the authenticated user.
- * tags: [Events]
- * security:
- * - OAuth2: ["all"]
- * responses:
- * 200:
- * description: Events retrieved successfully
+ *   get:
+ *     summary: Get all events
+ *     description: Returns all events for the authenticated user.
+ *     tags:
+ *       - Events
+ *     security:
+ *       - OAuth2: []
+ *     responses:
+ *       200:
+ *         description: Events retrieved successfully
  */
 eventRouter.get("/", auth, EventController.getAllEvents);
 
-/**
- * @swagger
- * /api/events/{id}:
- * get:
- * summary: Get event by ID
- * tags: [Events]
- * parameters:
- * - in: path
- * name: id
- * required: true
- * schema:
- * type: string
- * responses:
- * 200:
- * description: Event details retrieved
- * 404:
- * description: Event not found
- */
-eventRouter.get("/:id", auth, EventController.getEventById);
+/*===============================
+=        GET EVENT BY ID        =
+===============================*/
 
 /**
  * @swagger
  * /api/events/{id}:
- * put:
- * summary: Update event details
- * tags: [Events]
- * parameters:
- * - in: path
- * name: id
- * required: true
- * schema:
- * type: string
- * requestBody:
- * content:
- * application/json:
- * schema:
- * type: object
- * properties:
- * title:
- * type: string
- * description:
- * type: string
- * responses:
- * 200:
- * description: Event updated
+ *   get:
+ *     summary: Get event by ID
+ *     tags:
+ *       - Events
+ *     security:
+ *       - OAuth2: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Event details retrieved
+ *       404:
+ *         description: Event not found
+ */
+eventRouter.get("/:id", auth, EventController.getEventById);
+
+/*===============================
+=        UPDATE EVENT           =
+===============================*/
+
+/**
+ * @swagger
+ * /api/events/{id}:
+ *   put:
+ *     summary: Update event details
+ *     tags:
+ *       - Events
+ *     security:
+ *       - OAuth2: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               title:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Event updated
  */
 eventRouter.put(
   "/:id",
@@ -135,40 +160,72 @@ eventRouter.put(
   EventController.updateEvent,
 );
 
+/*===============================
+=     UPDATE EVENT STATUS       =
+===============================*/
+
 /**
  * @swagger
  * /api/events/{id}/status:
- * patch:
- * summary: Toggle event status (Interswitch)
- * description: Automatically toggles between pending and completed.
- * tags: [Events]
- * parameters:
- * - in: path
- * name: id
- * required: true
- * schema:
- * type: string
- * responses:
- * 200:
- * description: Status updated successfully
+ *   patch:
+ *     summary: Update event status
+ *     description: Updates event status (e.g. pending/completed)
+ *     tags:
+ *       - Events
+ *     security:
+ *       - OAuth2: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - status
+ *             properties:
+ *               status:
+ *                 type: string
+ *                 example: completed
+ *     responses:
+ *       200:
+ *         description: Status updated successfully
  */
-eventRouter.patch("/:id/status", auth, EventController.updateEventStatus);
+eventRouter.patch(
+  "/:id/status",
+  auth,
+  EventController.updateEventStatus,
+);
+
+/*===============================
+=        DELETE EVENT           =
+===============================*/
 
 /**
  * @swagger
  * /api/events/{id}:
- * delete:
- * summary: Delete an event
- * tags: [Events]
- * parameters:
- * - in: path
- * name: id
- * required: true
- * schema:
- * type: string
- * responses:
- * 200:
- * description: Event deleted
+ *   delete:
+ *     summary: Delete an event
+ *     tags:
+ *       - Events
+ *     security:
+ *       - OAuth2: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Event deleted
+ *       404:
+ *         description: Event not found
  */
 eventRouter.delete("/:id", auth, EventController.deleteEvent);
 
