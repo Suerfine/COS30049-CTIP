@@ -12,7 +12,9 @@ export const useCourseDetails=(id, enrollmentId, initialMarks = {})=>{
     const [userMarks, setUserMarks] = useState(initialMarks || {});
 
     const fetchCourse = useCallback(async () => {
-    if (!id || !enrollmentId) return;
+    // if (!id || !enrollmentId) return;
+    if (!id ) return;
+
     try {
         setLoading(true);
         setError(null); // Clear previous errors

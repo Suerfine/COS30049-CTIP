@@ -22,7 +22,6 @@ const EnrollmentStatus = {
   IN_REVIEW: "in_review",
   COMPLETED: "completed",
   FAILED: "failed",
-  DROPPED: "dropped",
   EXPIRED: "expired",
 };
 
@@ -59,7 +58,7 @@ const CourseCard = ({
   onEdit,
   onDelete,
   onEnroll,
-  onDrop, // drop courses
+  // onDrop,
 }) => {
   const { t, i18n } = useTranslation();
   const isWeb = Platform.OS === "web";
@@ -70,7 +69,6 @@ const CourseCard = ({
   const isInReview = enrollmentStatus === EnrollmentStatus.IN_REVIEW;
   const isCompleted = enrollmentStatus === EnrollmentStatus.COMPLETED;
   const isFailed = enrollmentStatus === EnrollmentStatus.FAILED;
-  const isDropped = enrollmentStatus === EnrollmentStatus.DROPPED
 
   const cardPressable = isInProgress;
 
@@ -93,27 +91,6 @@ const CourseCard = ({
  
     // if prerequisites satisfied or no prerequisites then set status = in review
     onEnroll?.();
-  };
-  
-  // handle drop courses
-  const handleDropPress = () => {
-    if (Platform.OS === "web") {
-      const confirmed = window.confirm("Are you sure you want to drop the course?");
-      if (confirmed) onDrop?.();
-      } else {
-        Alert.alert(
-          "Drop Course",
-          "Are you sure you want to drop the course?",
-          [
-            { text: "Cancel", style: "cancel" },
-            {
-              text: "Confirm",
-              style: "destructive",
-              onPress: () => onDrop?.(),
-            },
-          ]
-        );
-      }
   };
 
   // show status (enroll, progress bar, in review, completed)
@@ -154,35 +131,7 @@ const CourseCard = ({
       );
     }
 
-    if (isDropped) {
-      return (
-        <Pressable style={styles.enrollBtn} onPress={handleEnrollPress}>
-          <Text style={styles.enrollText}>{t("enroll") || "Enroll"}</Text>
-        </Pressable>
-      );
-    }
-
     return null;
-  };
-
-  // render drop course toolbar
-  const renderDropToolbar = () => {
-    if (isAdmin || !isInProgress) return null;
- 
-    return (
-      <View style={styles.dropToolbarContainer}>
-        <Pressable
-          style={({ hovered, pressed }) => [
-            styles.dropBtn,
-            (isWeb && hovered) || pressed ? styles.dropBtnActive : null,
-          ]}
-          onPress={handleDropPress}
-          accessibilityLabel="Drop course"
-        >
-          <Trash2 size={16} color="#fff"/>
-        </Pressable>
-      </View>
-    );
   };
 
   return (
@@ -202,7 +151,6 @@ const CourseCard = ({
           style={styles.courseImg}
           accessibilityLabel="Cover Photo of Course"
         />
-        {renderDropToolbar()}
       </View>
 
       <View style={styles.details}>

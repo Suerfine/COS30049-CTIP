@@ -35,6 +35,7 @@ export const useUserCourse = ({ progressData = [] } = {}) => {
     { id: "advanced", label: t("status.advanced") }
   ]), [t]);
 
+  // use GET /api/courses
   const loadCourses = useCallback(
     async (params = {}) => {
       setLoading(true);
@@ -61,6 +62,7 @@ export const useUserCourse = ({ progressData = [] } = {}) => {
     [allCourseList.length, allTagList.length],
   );
 
+  // GET /api/enrollments/my-enrollments
   const loadMyEnrollments = useCallback(async () => {
     try {
       const data = await enrollmentService.getMyEnrollments();
@@ -78,12 +80,6 @@ export const useUserCourse = ({ progressData = [] } = {}) => {
           (e) => Number(e.course_id) === Number(courseId),
         );
 
-        if (existingEnrollment && existingEnrollment.status === "dropped") {
-          await enrollmentService.updateStatus(existingEnrollment.id, "in_review");
-        } else {
-          await enrollmentService.enroll(courseId, currentUser.id);
-        }
-
         await loadMyEnrollments();
         const successMsg = "Enrollment request sent for approval.";
         Platform.OS === "web"
@@ -99,37 +95,37 @@ export const useUserCourse = ({ progressData = [] } = {}) => {
 
   // drop courses
   // finds the enrollment record for that specific course and deletes it
-  const handleDrop = useCallback(
-    async (courseId) => {
-      try {
-        const enrollment = myEnrollments.find(
-          (e) => Number(e.course_id) === Number(courseId),
-        );
+  // const handleDrop = useCallback(
+  //   async (courseId) => {
+  //     try {
+  //       const enrollment = myEnrollments.find(
+  //         (e) => Number(e.course_id) === Number(courseId),
+  //       );
 
-        if (!enrollment) {
-          console.warn(
-            "No enrollment record found to drop for course",
-            courseId,
-          );
-          return;
-        }
-        await enrollmentService.updateStatus(enrollment.id, "dropped");
-        await loadMyEnrollments();
-      } catch (err) {
-        const message =
-          typeof err === "string"
-            ? err
-            : err?.message || "Failed to drop course. Please try again.";
+  //       if (!enrollment) {
+  //         console.warn(
+  //           "No enrollment record found to drop for course",
+  //           courseId,
+  //         );
+  //         return;
+  //       }
+  //       await enrollmentService.updateStatus(enrollment.id, "dropped");
+  //       await loadMyEnrollments();
+  //     } catch (err) {
+  //       const message =
+  //         typeof err === "string"
+  //           ? err
+  //           : err?.message || "Failed to drop course. Please try again.";
 
-        if (Platform.OS === "web") {
-          window.alert(message);
-        } else {
-          Alert.alert("Drop Failed", message);
-        }
-      }
-    },
-    [myEnrollments, loadMyEnrollments],
-  );
+  //       if (Platform.OS === "web") {
+  //         window.alert(message);
+  //       } else {
+  //         Alert.alert("Drop Failed", message);
+  //       }
+  //     }
+  //   },
+  //   [myEnrollments, loadMyEnrollments],
+  // );
 
   // use progressData from param
   const coursesWithStatus = useMemo(() => {
@@ -146,7 +142,6 @@ export const useUserCourse = ({ progressData = [] } = {}) => {
         progress: progressObj?.progress ?? null,
         enrollmentStatus: enrollment?.status ?? null,
         enrollmentId: enrollment?.id ?? null,
-        isDropped: enrollment?.deleted_at ?? null,
       };
     });
   }, [courses, myEnrollments, progressData]);
@@ -193,9 +188,9 @@ export const useUserCourse = ({ progressData = [] } = {}) => {
         (filters.status === "completed" &&
             course.enrollmentStatus === "completed") ||
         (filters.status === "notEnrolled" &&
-            !course.enrollmentStatus) ||
-        (filters.status === "dropped" &&
-            course.enrollmentStatus === "dropped");
+            !course.enrollmentStatus);
+        // (filters.status === "dropped" &&
+        //     course.enrollmentStatus === "dropped");
 
       const matchesLocation =
         !filters.location ||
@@ -299,7 +294,7 @@ export const useUserCourse = ({ progressData = [] } = {}) => {
     filteredCourses,
     myEnrollments,
     handleEnrollment,
-    handleDrop,
+    // handleDrop,
     removeFilter,
     courses,
     allTagList,
