@@ -363,7 +363,7 @@ enrollmentRouter.get(
  * /api/enrollments/{id}/approve:
  *   patch:
  *     summary: Approve enrollment and issue badge
- *     description: Verifies all final_quiz pages before completing enrollment and issuing badge
+ *     description: Validates completion and issues badge if eligible
  *     tags:
  *       - Enrollments
  *     security:
@@ -377,27 +377,8 @@ enrollmentRouter.get(
  *     responses:
  *       200:
  *         description: Enrollment approved and badge issued
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Enrollment'
- *             example:
- *               id: 1
- *               status: completed
- *               completed_at: 2026-05-07T12:00:00Z
- *               reviewed_by_user_id: 2
- *               badge_expire_at: 2027-05-07T12:00:00Z
  *       400:
  *         description: Final quiz verification failed
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *             example:
- *               message: Verification failed: Final Quiz not passed
  */
 enrollmentRouter.patch(
   "/:id/approve",
