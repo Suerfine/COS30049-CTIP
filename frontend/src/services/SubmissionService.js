@@ -78,7 +78,7 @@ export const submissionService = {
       throw error;
     }
   },
-  
+
   getByElement: async (enrollmentId, elementId) => {
     if(elementId===undefined){
       return [];
@@ -96,4 +96,28 @@ export const submissionService = {
       throw error;
     }
   },
+
+  /**
+     * GET: Fetch submission summaries
+     */
+    getSummaries: async (page = 1, size = 10, searchQuery = '', status = 'All') => {
+      try {
+          const params = { 
+              page, 
+              size 
+          };
+
+          if (status && status !== 'All' && typeof status === 'string') {
+              params.status = status;
+          }
+
+          if (searchQuery) {
+              params.search = searchQuery;
+          }
+          const res = await apiClient.get(API_ENDPOINTS.ENROLLMENT.SUMARRIES, { params });
+          return res.data;
+      } catch (error) {
+          throw error;
+      }
+  }
 };

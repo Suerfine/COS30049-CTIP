@@ -79,7 +79,7 @@ export const useUserCourse = ({ progressData = [] } = {}) => {
         const existingEnrollment = myEnrollments.find(
           (e) => Number(e.course_id) === Number(courseId),
         );
-
+        await enrollmentService.enroll(courseId); 
         await loadMyEnrollments();
         const successMsg = "Enrollment request sent for approval.";
         Platform.OS === "web"

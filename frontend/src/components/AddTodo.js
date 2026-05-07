@@ -48,14 +48,12 @@ const AddTodo = ({ visible, setIsModalVisible, onCreated}) => {
             };
 
             await eventService.createEvent(payload);
-            if (onCreated) {
-                await onCreated();
-            }
             setIsModalVisible(false);
         } catch (err) {
             console.error("Save event failed:", err);
         }
     };
+
 
     return (
         <ModalLayout visible={visible} onClose={() => setIsModalVisible(false)}>
