@@ -7,7 +7,7 @@ import { TextInput,
     Pressable, 
     Platform
 } from "react-native";
-import { X, Check } from "lucide-react-native";
+import { X, Check, AlignCenter } from "lucide-react-native";
 import ModalLayout from "./ModalLayout";
 import { eventService } from "../services/eventService";
 
@@ -18,6 +18,12 @@ const formatDateInput = (date) => {
     return `${year}-${month}-${day}`;
 }
 
+const formatTimeInput = (date) => {
+    const hours = String(date.getHours()).padStart(2, "0");
+    const minutes = String(date.getMinutes()).padStart(2, "0");
+    return `${hours}:${minutes}`;
+}
+
 const AddTodo = ({ visible, setIsModalVisible, onCreated}) => {
     const today = new Date();
     const [title, setTitle] = useState("");
@@ -25,6 +31,8 @@ const AddTodo = ({ visible, setIsModalVisible, onCreated}) => {
     const [isAllDay, setIsAllDay] = useState(false);
     const [startDateText, setStartDateText] = useState(formatDateInput(today));
     const [endDateText, setEndDateText] = useState(formatDateInput(today));
+    const [startTimeText, setStartTimeText] = useState(formatTimeInput(today));
+    const [endTimeText, setEndTimeText] = useState(formatTimeInput(today));
     const [description, setDescription] = useState("");
 
     useEffect(() => {
@@ -35,8 +43,17 @@ const AddTodo = ({ visible, setIsModalVisible, onCreated}) => {
 
     const handleSave = async () => {
         try {
-            const startDate = new Date(`${startDateText}T00:00:00`);
-            const endDate = new Date(`${endDateText}T00:00:00`);
+            const startDate = new Date(
+                isAllDay
+                    ? `${startDateText}T00:00:00`
+                    : `${startDateText}T${startTimeText}:00`
+                );
+
+            const endDate = new Date(
+                isAllDay
+                    ? `${endDateText}T00:00:00`
+                    : `${endDateText}T${endTimeText}:00`
+                );
 
             const payload = {
                 title,
@@ -108,31 +125,64 @@ const AddTodo = ({ visible, setIsModalVisible, onCreated}) => {
                         </View>
 
                         {/* Dates */}
-                        <View style={styles.dateTimeContainer}>
-                            <View style={styles.dateBox}>
-                                <Text style={styles.dateLabel}>START</Text>
-                                <TextInput
-                                    style={styles.valueInput}
-                                    value={startDateText}
-                                    onChangeText={setStartDateText}
-                                    placeholder="YYYY-MM-DD"
-                                    placeholderTextColor="grey"
-                                    {...(Platform.OS === "web" ? {type: "date"} : {})}
-                                />
+                        <View style={styles.scheduleSection}>
+                            <View style={styles.scheduleHeaderRow}>
+                                <Text style={styles.scheduleHeader}>Starts</Text>
+                                <Text style={styles.scheduleHeader}>Ends</Text>
                             </View>
 
-                            <View style={styles.dateBox}>
-                                <Text style={styles.dateLabel}>END</Text>
-                                <TextInput
-                                    style={styles.valueInput}
-                                    value={endDateText}
-                                    onChangeText={setEndDateText}
-                                    placeholder="YYYY-MM-DD"
-                                    placeholderTextColor="grey"
-                                    {...(Platform.OS === "web" ? {type: "date"} : {})}
-                                />
+                            <View style={styles.scheduleInputRow}>
+                                <View style={styles.scheduleColumn}>
+                                    <View style={styles.inputGroup}>
+                                        <TextInput
+                                            style={[styles.valueInput, styles.dateInput]}
+                                            value={startDateText}
+                                            onChangeText={setStartDateText}
+                                            placeholder="YYYY-MM-DD"
+                                            placeholderTextColor="grey"
+                                            {...(Platform.OS === "web" ? { type: "date" } : {})}
+                                        />
+
+                                        {!isAllDay && (
+                                            <TextInput
+                                                style={[styles.valueInput, styles.timeInput]}
+                                                value={startTimeText}
+                                                onChangeText={setStartTimeText}
+                                                placeholder="HH:mm"
+                                                placeholderTextColor="grey"
+                                                {...(Platform.OS === "web" ? { type: "time" } : {})}
+                                            />
+                                        )}
+                                    </View>
+                                </View>
+
+                                <View style={styles.scheduleColumn}>
+                                    <View style={styles.inputGroup}>
+                                        <TextInput
+                                            style={[styles.valueInput, styles.dateInput]}
+                                            value={endDateText}
+                                            onChangeText={setEndDateText}
+                                            placeholder="YYYY-MM-DD"
+                                            placeholderTextColor="grey"
+                                            editable={!isAllDay}
+                                            {...(Platform.OS === "web" ? { type: "date" } : {})}
+                                        />
+
+                                        {!isAllDay && (
+                                            <TextInput
+                                                style={[styles.valueInput, styles.timeInput]}
+                                                value={endTimeText}
+                                                onChangeText={setEndTimeText}
+                                                placeholder="HH:mm"
+                                                placeholderTextColor="grey"
+                                                {...(Platform.OS === "web" ? { type: "time" } : {})}
+                                            />
+                                        )}
+                                    </View>
+                                </View>
                             </View>
                         </View>
+
 
                         {/* Description */}
                         <Text style={[styles.label, { marginTop: 20 }]}>Description</Text>
@@ -213,30 +263,45 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: "bold",
     },
-    dateTimeContainer: {
+    scheduleSection: {
+        marginTop: 15,
+        gap: 8,
+    },
+    scheduleHeaderRow: {
         flexDirection: "row",
         gap: 15,
-        marginTop: 15,
     },
-    dateBox: {
+    scheduleHeader: {
+        flex: 1,
+        fontSize: 16,
+        color: "#000",
+        fontWeight: "bold",
+    },
+    scheduleInputRow: {
+        flexDirection: "row",
+        gap: 15,
+    },
+    scheduleColumn: {
         flex: 1,
     },
-    dateLabel: {
-        fontSize: 10,
-        color: "#999",
-        fontWeight: "bold",
-        marginBottom: 5,
+    inputGroup: {
+        flexDirection: "row",
+        gap: 10,
     },
-    valueBadge: {
+    valueInput: {
         backgroundColor: "#f9f9f9",
         padding: 12,
         borderRadius: 10,
         borderWidth: 1,
         borderColor: "#eee",
-    },
-    dateText: {
         fontSize: 14,
-        fontWeight: "bold",
+    },
+    dateInput: {
+        flex: 1,
+    },
+    timeInput: {
+        width: 80,
+        flexShrink: 0,
     },
     descriptionInput: {
         backgroundColor: "#f9f9f9",
