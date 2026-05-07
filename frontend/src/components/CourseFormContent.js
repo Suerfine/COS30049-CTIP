@@ -120,6 +120,7 @@ const CourseFormContent=({onSubmit, onCancel, isLoading, initialData,allCourseLi
             badgeExpiry: parseInt(form.badgeExpiry, 10) || 0,
         };
         onSubmit(finalPayload);
+        console.log(finalPayload);
     };
 
     const handlePublish = () => {

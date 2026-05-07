@@ -88,24 +88,31 @@ const resolveSubmissionContent = (
 };
 
 export const getAllSubmissions = async (
-  req: Request<{ element_id: string }>,
+  req: Request<{ enrollment_id: string; element_id: string }>,
   res: Response<SubmissionResponse[] | { message: string }>,
   next: NextFunction,
 ) => {
   try {
     const elementId = parseId(req.params.element_id);
+    const enrollmentId = parseId(req.params.enrollment_id);
 
-    if (elementId === null) {
-      throw new HttpError(400, "Invalid element_id");
+    if (elementId === null || enrollmentId === null) {
+      throw new HttpError(400, "Invalid IDs provided");
     }
 
-    const element = await Element.findByPk(elementId);
-    if (!element) {
-      throw new HttpError(404, "Element not found");
+    const enrollment = await Enrollment.findOne({
+      where: { id: enrollmentId, user_id: req.user!.id }
+    });
+
+    if (!enrollment) {
+      throw new HttpError(403, "Unauthorized: You do not own this enrollment.");
     }
 
     const submissions = await Submission.findAll({
-      where: { element_id: elementId },
+      where: { 
+        element_id: elementId,
+        enrollment_id: enrollmentId
+      },
       order: [
         ["created_at", "DESC"],
         ["id", "DESC"],
@@ -117,7 +124,6 @@ export const getAllSubmissions = async (
     if (err instanceof HttpError) {
       return res.status(err.status).json({ message: err.message });
     }
-
     next(err);
   }
 };

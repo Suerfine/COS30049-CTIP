@@ -31,12 +31,6 @@ export const userDashboardService = {
         return response.data;
     },
 
-    getTodos: async () => {
-        const response = await apiClient.get('/todos');
-        return response.data;
-    },
-
-
     // get first name, email, telefon, id, pfp
     getUserProfile: async () => {
         try{

@@ -18,26 +18,26 @@ import { useTranslation } from 'react-i18next';
 const UserDashboard = ({ navigation }) => {
     const {
         courses, 
-        todos, 
+        events, 
         userType, 
         progressData, 
         loading, 
-        setTodos, 
+        setEvents, 
         user, 
         selectedDate, setSelectedDate,
         filter, setFilter,
         courseFilter, setCourseFilter,
         currentDate, setCurrentDate,
         isExpanded, setIsExpanded,
-        weekDates, getDaysInMonth, filteredTodos,
-        toggleTodo, hasPendingTodoOnDate,formatLocalDate,
-        weekLabels,todoTab, courseTab, categories
+        weekDates, getDaysInMonth, filteredEvents,
+        hasPendingEventOnDate,formatLocalDate,
+        weekLabels,eventTab, courseTab, categories
     } = useUserDashboard();
 
     const { inProgressCourses, completedCourses } = useUserCourse({ progressData });
     const [showModal, setShowModal] = useState(false);
     const [selectedTask, setSelectedTask] = useState(null);
-    const openEdit = (todo) => { setSelectedTask(todo); };
+    const openEdit = (event) => { setSelectedTask(event); };
     const {t, i18n}=useTranslation();
 
     return(
@@ -107,7 +107,6 @@ const UserDashboard = ({ navigation }) => {
                             {courseFilter === 'in progress' &&
                                 inProgressCourses.map(course => {
                                     const numModules = course.modules?.length ?? 0;
-                                    console.log('inProgressCourses sample:', JSON.stringify(inProgressCourses[0], null, 2));
                                     return (
                                         <CourseCard
                                             key={course.id}
@@ -137,19 +136,17 @@ const UserDashboard = ({ navigation }) => {
                             {/* completed courses */}
                             {courseFilter === 'completed' &&
                                 completedCourses.map(course => {
-                                    const courseProgress = progressData.find(p => p.courseId === course.id);
                                     const numModules = course.modules ? course.modules.length : 0;
-
                                     return (
                                         <CourseCard
                                             key={course.id}
                                             id={course.id}
-                                            imagePath={{ uri: course.image }}
-                                            courseTitle={course.courseTitle}
+                                            coverImgUrl={course.cover_img_url}
+                                            courseTitle={course.title}
                                             numModules={numModules}
-                                            duration={course.duration}
-                                            expiry={course.expiryDate}
-                                            progress={courseProgress?.progress ?? 1}
+                                            duration={course.expected_completion_weeks}
+                                            expiry={course.must_complete_in_weeks}
+                                            progress={course.progress}
                                             userType={userType}
                                             // handlers
                                             onPress={() => navigation.navigate('ParkGuideStack', {
@@ -241,7 +238,7 @@ const UserDashboard = ({ navigation }) => {
                                             }
                                             const dateString = formatLocalDate(date);
                                             const isSelected = selectedDate === dateString;
-                                            const hasTodo = hasPendingTodoOnDate(date);
+                                            const hasEvent = hasPendingEventOnDate(date);
                                             
                                             return (
                                                 
@@ -268,7 +265,7 @@ const UserDashboard = ({ navigation }) => {
                                                         {date.getDate()}
                                                     </Text>
 
-                                                    {hasTodo && <View style={styles.dot} />}
+                                                    {hasEvent && <View style={styles.dot} />}
                                                 </Pressable>
                                             );
                                         })}
@@ -288,7 +285,7 @@ const UserDashboard = ({ navigation }) => {
                         </View>
 
                         {/* Todo tab for filter (All, Completed, Not completed) */}
-                        <SlidingTabs tabs={todoTab} activeTab={filter} onTabChange={(id)=>setFilter(id)}/>
+                        <SlidingTabs tabs={eventTab} activeTab={filter} onTabChange={(id)=>setFilter(id)}/>
 
                         {/* Todo list */}
                         <View style={{ flex: 1, minHeight: 0 }}>
@@ -300,15 +297,15 @@ const UserDashboard = ({ navigation }) => {
                                     </Pressable>
                                 </View>
                                 <ScrollView showsVerticalScrollIndicator={true} indicatorStyle='white'>
-                                    {filteredTodos.length === 0 ? (
+                                    {filteredEvents.length === 0 ? (
                                         <Text>No todos</Text>
                                     ) : (
-                                        filteredTodos.map(todo => (
+                                        filteredEvents.map(todo => (
                                             <View key={todo.id} style={styles.todoItem}>
                                                 <View style={styles.todoRow}>
                                                     <Checkbox
-                                                        value={todo.completed}
-                                                        onValueChange={() => toggleTodo(todo.id)}
+                                                        value={event.status === 'completed'}
+                                                        onValueChange={() => toggleEvent(event.id)}
                                                     />
                                                     <View style={{flex: 1}}>
                                                         <Text style={styles.todoTitle}>{todo.title}</Text>

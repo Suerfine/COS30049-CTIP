@@ -82,6 +82,7 @@ export const courseService = {
                 API_ENDPOINTS.COURSE.LIST,
                 data
             );
+            console.log(formData);
 
             return response.data;
 

@@ -9,6 +9,7 @@ import { TextInput,
 } from "react-native";
 import { X, Check } from "lucide-react-native";
 import ModalLayout from "./ModalLayout";
+import { eventService } from "../services/eventService";
 
 // FIND ALTERNATIVE FOR DATETIMEPICKER AND REPLACE PICK DATE AND TIME!
 
@@ -17,6 +18,26 @@ const AddTodo = ({ visible, setIsModalVisible }) => {
     const [isPhysical, setIsPhysical] = useState(false);
     const [startDate, setStartDate] = useState(new Date());
     const [endDate, setEndDate] = useState(new Date());
+    const [title, setTitle] = useState("");
+    const [description, setDescription] = useState("");
+
+    const handleSave = async () => {
+        try {
+            const payload = {
+                title,
+                description,
+                type: isPhysical ? "workshop" : "normal",
+                status: "pending",
+                event_start_at: startDate.toISOString(),
+            };
+
+            await eventService.createEvent(payload);
+            setIsModalVisible(false);
+        } catch (err) {
+            console.error("Save event failed:", err);
+        }
+    };
+
 
     return (
         <ModalLayout visible={visible} onClose={() => setIsModalVisible(false)}>
@@ -32,7 +53,7 @@ const AddTodo = ({ visible, setIsModalVisible }) => {
                         <Text style={styles.modalTitle}>New Task</Text>
 
                         {/* TODO: call api to POST todo */}
-                        <Pressable style={styles.saveBtn}>
+                        <Pressable style={styles.saveBtn} onPress={handleSave}>
                             <Check size={24} color="white"/>
                         </Pressable>
                     </View>
@@ -44,6 +65,8 @@ const AddTodo = ({ visible, setIsModalVisible }) => {
                             style={styles.titleInput}
                             placeholder="Task title goes here.."
                             placeholderTextColor="grey"
+                            value={title}
+                            onChangeText={setTitle}
                         />
 
                         <View style={styles.divider} />
@@ -94,6 +117,8 @@ const AddTodo = ({ visible, setIsModalVisible }) => {
                             style={styles.descriptionInput}
                             placeholder="Add more details here..."
                             placeholderTextColor="grey"
+                            value={description}
+                            onChangeText={setDescription}
                         />
                     </View>
                 </View>

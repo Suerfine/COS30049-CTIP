@@ -2,20 +2,6 @@ import apiClient from "../config/apiConfig";
 import { API_ENDPOINTS } from "../config/ApiEndpoints";
 
 export const submissionService = {
-  /**
-   * GET: Fetch all submissions for a specific element
-   * Path: /api/element/{element_id}/submissions
-   */
-  getSubmissionByElement: async (elementId) => {
-    try {
-      const url = API_ENDPOINTS.SUBMISSION.GET_BY_ELEMENT(elementId);
-      const res = await apiClient.get(url);
-      return res.data;
-    } catch (error) {
-      console.error("Fetch Element Submissions Error:", error.response?.data || error.message);
-      throw error;
-    }
-  },
 
   /**
    * GET: Fetch single submission details
@@ -92,13 +78,20 @@ export const submissionService = {
       throw error;
     }
   },
-  getByElement: async (elementId) => {
+  getByElement: async (enrollmentId, elementId) => {
+    if(elementId===undefined){
+      return [];
+      console.log("Empty");
+    }
     try {
-      const url = API_ENDPOINTS.SUBMISSION.GET_BY_ELEMENT(elementId);
+      const url = API_ENDPOINTS.SUBMISSION.GET_BY_ELEMENT(enrollmentId, elementId);
       const res = await apiClient.get(url);
-      return res.data; 
+      return res.data;
     } catch (error) {
-      console.error("Fetch Element Submissions Error:", error.response?.data || error.message);
+      console.error(
+        "Fetch Element Submissions Error:", 
+        error.response?.data || error.message
+      );
       throw error;
     }
   },
