@@ -39,7 +39,7 @@ const UserDashboard = ({ navigation }) => {
     const { inProgressCourses, completedCourses } = useUserCourse({ progressData });
     const [showModal, setShowModal] = useState(false);
     const [selectedTask, setSelectedTask] = useState(null);
-    const openEdit = (event) => { setSelectedTask(event); };
+    const openEdit = (event) => { setSelectedTask(event); setShowModal(true); };
     const {t, i18n}=useTranslation();
 
     return(
@@ -294,7 +294,12 @@ const UserDashboard = ({ navigation }) => {
                             <View style={styles.todoList}>
                                 <View style={styles.todoHeader}>
                                     <Text style={styles.todoListTitle}>Todo List</Text>
-                                    <Pressable onPress={() => setShowModal(true)}>
+                                    <Pressable 
+                                    onPress={() => {
+                                            setSelectedTask(null);
+                                            setShowModal(true);
+                                        }}
+                                    >
                                         <ListPlus size={20} />
                                     </Pressable>
                                 </View>
@@ -329,20 +334,17 @@ const UserDashboard = ({ navigation }) => {
             </View>
 
             {/* call add todo component */}
-            <AddTodo visible={showModal} setIsModalVisible={setShowModal} onCreated={refreshData} initialEvent={selectedTask} />
-
-            {/* task detail modal */}
-            {selectedTask && (
-                <ModalLayout
-                    visible={true}
-                    onClose={() => setSelectedTask(null)}
-                >
-                    <TaskDetail
-                        task={selectedTask}
-                        onClose={() => setSelectedTask(null)}
-                    />
-                </ModalLayout>
-            )}
+            <AddTodo 
+                visible={showModal} 
+                setIsModalVisible={(visible) => {
+                    setShowModal(visible);
+                    if (!visible) {
+                        setSelectedTask(null);
+                    }
+                }}
+                onCreated={refreshData} 
+                initialEvent={selectedTask} 
+            />
         </ScrollView>
     );
 }

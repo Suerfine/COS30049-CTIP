@@ -26,16 +26,16 @@ const toDateOrNow = (value) => {
 
 
 const AddTodo = ({ visible, setIsModalVisible, onCreated, initialEvent = null }) => {
-    const baseDate = toDateOrNow(initialEvent?.event_start_at);
-    
-    const [title, setTitle] = useState(initialEvent?.title || "");
-    const [isPhysical, setIsPhysical] = useState(initialEvent?.type === "workshop");
-    const [isAllDay, setIsAllDay] = useState(initialEvent?.is_all_day || false);
-    const [startDateText, setStartDateText] = useState(formatDateInput(toDateOrNow(initialEvent?.event_end_at || initialEvent?.event_start_at)));
+    const today = new Date();
+
+    const [title, setTitle] = useState("");
+    const [isPhysical, setIsPhysical] = useState(false);
+    const [isAllDay, setIsAllDay] = useState(false);
+    const [startDateText, setStartDateText] = useState(formatDateInput(today));
     const [endDateText, setEndDateText] = useState(formatDateInput(today));
     const [startTimeText, setStartTimeText] = useState(formatTimeInput(today));
-    const [endTimeText, setEndTimeText] = useState(formatTimeInput(toDateOrNow(initialEvent?.event_end_at || initialEvent?.event_start_at)));
-    const [description, setDescription] = useState(initialEvent?.description || "");
+    const [endTimeText, setEndTimeText] = useState(formatTimeInput(today));
+    const [description, setDescription] = useState("");
 
     useEffect(() => {
         if (isAllDay) {
@@ -64,6 +64,18 @@ const AddTodo = ({ visible, setIsModalVisible, onCreated, initialEvent = null })
         }
         
         try {
+             const startDate = new Date(
+                isAllDay
+                    ? `${startDateText}T00:00:00`
+                    : `${startDateText}T${startTimeText}:00`
+            );
+
+            const endDate = new Date(
+                isAllDay
+                    ? `${endDateText}T00:00:00`
+                    : `${endDateText}T${endTimeText}:00`
+            );
+
             const payload = {
                 title,
                 description,
@@ -101,7 +113,9 @@ const AddTodo = ({ visible, setIsModalVisible, onCreated, initialEvent = null })
                             <X size={24} />
                         </Pressable>
 
-                        <Text style={styles.modalTitle}>New Task</Text>
+                        <Text style={styles.modalTitle}>
+                            {initialEvent ? "Edit Event" : "New Event"}
+                        </Text>
 
                         {/* TODO: call api to POST todo */}
                         <Pressable style={styles.saveBtn} onPress={handleSave}>
