@@ -16,6 +16,14 @@ PubSubClient client(espClient);
 #define PIN_TRIG 18
 #define PIN_ECHO 5
 
+// --- OFFLINE QUEUE ---
+#define MAX_QUEUE 50
+
+String messageQueue[MAX_QUEUE];
+int queueStart = 0;
+int queueEnd = 0;
+
+// --- Individual Timers for each sensor ---
 unsigned long lastFloodLog = 0;
 
 // --- Intervals ---
@@ -25,7 +33,6 @@ const unsigned long INT_ALERT  = 300000;  // 5 mins
 unsigned long lastLogTime = 0;
 
 // Sensor States
-String floodStatus = "normal";
 String lastFloodStatus = "normal";
 
 float getDistance() {
@@ -40,15 +47,82 @@ float getDistance() {
 
 void setup() {
   Serial.begin(115200);
+  delay(1000);
+  Serial.println("\n--- System Initializing ---");
+  
   pinMode(PIN_TRIG, OUTPUT);
   pinMode(PIN_ECHO, INPUT);
   
+  WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
-  while (WiFi.status() != WL_CONNECTED) delay(500);
+  Serial.print("Connecting to WiFi...");
+  
+  // Try for 10 seconds, then move on
+  unsigned long startWait = millis();
+  while (WiFi.status() != WL_CONNECTED && millis() - startWait < 10000) {
+    delay(500);
+    Serial.print(".");
+  }
+
+  if (WiFi.status() == WL_CONNECTED) {
+    Serial.println("\n[SUCCESS] WiFi Connected!");
+  } else {
+    Serial.println("\n[WARNING] WiFi Not Connected. Operating in Offline Mode.");
+  }
+  
   client.setServer(mqtt_server, 1883);
+  client.setBufferSize(1024);
+}
+
+void reconnectWiFi() {
+  if (WiFi.status() == WL_CONNECTED) return;
+  Serial.println("Reconnecting WiFi...");
+
+  WiFi.disconnect();
+  WiFi.begin(ssid, password);
+
+  unsigned long startAttempt = millis();
+  while (WiFi.status() != WL_CONNECTED && millis() - startAttempt < 10000) {
+    delay(500);
+    Serial.print(".");
+  }
+
+  if (WiFi.status() == WL_CONNECTED) {
+    Serial.println("\nWiFi Reconnected");
+  } else {
+    Serial.println("\nWiFi Failed");
+  }
+}
+
+void reconnectMQTT() {
+  if (client.connected()) return;
+  
+  // Use a non-blocking non-looping check instead of a while loop
+  Serial.println("Reconnecting MQTT...");
+  String clientId = "ESP32_" + String(random(1000, 9999));
+
+  if (client.connect(clientId.c_str())) {
+    Serial.println("MQTT Connected");
+  } else {
+    Serial.print("MQTT Failed, rc=");
+    Serial.println(client.state());
+  }
 }
 
 // Function to format and send JSON to sensorlog
+void enqueueMessage(String payload) {
+  int next = (queueEnd + 1) % MAX_QUEUE;
+
+  // Prevent overflow
+  if (next == queueStart) {
+    Serial.println("Queue Full! Oldest message removed.");
+    queueStart = (queueStart + 1) % MAX_QUEUE;
+  }
+
+  messageQueue[queueEnd] = payload;
+  queueEnd = next;
+}
+
 void sendLog(int sensor_id, String status, String dataJson) {
   String payload = "{";
   payload += "\"sensor_id\":" + String(sensor_id) + ",";
@@ -56,8 +130,28 @@ void sendLog(int sensor_id, String status, String dataJson) {
   payload += "\"data\":" + dataJson;  // <-- NO QUOTES
   payload += "}";
 
-  client.publish(TOPIC_LOG, payload.c_str());
-  Serial.println("Log Sent: " + payload);
+  // Store first
+  enqueueMessage(payload);
+  Serial.println("Queued: " + payload);
+}
+
+void processQueue() {
+  if (!client.connected()) return;
+
+  while (queueStart != queueEnd) {
+    String payload = messageQueue[queueStart];
+    bool sent = client.publish(TOPIC_LOG, payload.c_str());
+
+    if (sent) {
+      Serial.println("Synced: " + payload);
+      queueStart = (queueStart + 1) % MAX_QUEUE;
+    } else {
+      Serial.println("Failed to send. Will retry.");
+      break;
+    }
+
+    delay(100);
+  }
 }
 
 void processSensors() {
@@ -85,13 +179,10 @@ void processSensors() {
 }
 
 void loop() {
-  if (!client.connected()) {
-    Serial.println("Reconnecting MQTT...");
-    if (client.connect("ESP32_Forest_Zone1")) {
-      Serial.println("Connected");
-    }
-  }
+  reconnectWiFi();
+  reconnectMQTT();
   client.loop();
   processSensors();
-  delay(10); // Check every second
+  processQueue();
+  delay(1000);
 }
