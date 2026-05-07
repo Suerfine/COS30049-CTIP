@@ -1,28 +1,44 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { TextInput, 
     Switch, 
     View, 
     Text, 
     StyleSheet, 
     Pressable, 
-    SafeAreaView 
+    Platform
 } from "react-native";
 import { X, Check } from "lucide-react-native";
 import ModalLayout from "./ModalLayout";
 import { eventService } from "../services/eventService";
 
-// FIND ALTERNATIVE FOR DATETIMEPICKER AND REPLACE PICK DATE AND TIME!
+const formatDateInput = (date) => {
+    const year =date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+}
 
 const AddTodo = ({ visible, setIsModalVisible, onCreated}) => {
+    const today = new Date();
+    const [title, setTitle] = useState("");
+    const [isPhysical, setIsPhysical] = useState(false);
     const [isAllDay, setIsAllDay] = useState(false);
     const [isPhysical, setIsPhysical] = useState(false);
-    const [startDate, setStartDate] = useState(new Date());
-    const [endDate, setEndDate] = useState(new Date());
-    const [title, setTitle] = useState("");
+    const [startDateText, setStartDateText] = useState(formatDateInput(today));
+    const [endDateText, setEndDateText] = useState(formatDateInput(today));
     const [description, setDescription] = useState("");
+
+    useEffect(() => {
+        if (isAllDay) {
+            setEndDateText(startDateText);
+        }
+    }, [isAllDay, startDateText]);
 
     const handleSave = async () => {
         try {
+            const startDate = new Date(`${startDateText}T00:00:00`);
+            const endDate = new Date(`${endDateText}T00:00:00`);
+
             const payload = {
                 title,
                 description,
@@ -98,16 +114,26 @@ const AddTodo = ({ visible, setIsModalVisible, onCreated}) => {
                         <View style={styles.dateTimeContainer}>
                             <View style={styles.dateBox}>
                                 <Text style={styles.dateLabel}>START</Text>
-                                <Pressable style={styles.valueBadge}>
-                                    <Text style={styles.dateText}>{startDate.toDateString()}</Text>
-                                </Pressable>
+                                <TextInput
+                                    style={styles.valueInput}
+                                    value={startDateText}
+                                    onChangeText={setStartDateText}
+                                    placeholder="YYYY-MM-DD"
+                                    placeholderTextColor="grey"
+                                    {...(Platform.OS === "web" ? {type: "date"} : {})}
+                                />
                             </View>
 
                             <View style={styles.dateBox}>
                                 <Text style={styles.dateLabel}>END</Text>
-                                <Pressable style={styles.valueBadge}>
-                                    <Text style={styles.dateText}>{endDate.toDateString()}</Text>
-                                </Pressable>
+                                <TextInput
+                                    style={styles.valueInput}
+                                    value={endDateText}
+                                    onChangeText={setEndDateText}
+                                    placeholder="YYYY-MM-DD"
+                                    placeholderTextColor="grey"
+                                    {...(Platform.OS === "web" ? {type: "date"} : {})}
+                                />
                             </View>
                         </View>
 
