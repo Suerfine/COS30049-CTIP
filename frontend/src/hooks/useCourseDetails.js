@@ -13,67 +13,128 @@ export const useCourseDetails=(id, enrollmentId, initialMarks = {})=>{
     const [userMarks, setUserMarks] = useState(initialMarks || {});
 
     const fetchCourse = useCallback(async () => {
-    if (!id || !enrollmentId) return;
-    try {
-        setLoading(true);
-        const courseData = await courseService.getById(id);
-        const modulesData = await moduleService.getAll(id);
+        if (!id) return;
 
-        const modulesWithFullData = await Promise.all(
-            modulesData.map(async (module) => {
-                const pagesData = await pageService.getAll(id, module.id);
-                const pagesWithElements = await Promise.all(
-                    pagesData.map(async (page) => {
-                        const elementsData = await ElementService.getAll(id, module.id, page.id);
-                        
-                        const elementsWithSubs = await Promise.all((elementsData || []).map(async (el) => {
-                            const subs = await submissionService.getByElement(Number(enrollmentId), Number(el.id));
+        try {
+            setLoading(true);
+            setError(null);
+            const courseData = await courseService.getById(id);
+            const modulesData = await moduleService.getAll(id);
+            const modulesWithFullData = await Promise.all(
+                modulesData.map(async (module) => {
+                    const pagesData = await pageService.getAll(id, module.id);
+                    const pagesWithElements = await Promise.all(
+                        pagesData.map(async (page) => {
+                            const elementsData = await ElementService.getAll(
+                                id,
+                                module.id,
+                                page.id
+                            );
+                            const elementsWithSubs = await Promise.all(
+                                (elementsData || []).map(async (el) => {
+                                    let submission = null;
+                                    if (enrollmentId) {
+                                        try {
+                                            const subs =
+                                                await submissionService.getByElement(
+                                                    Number(enrollmentId),
+                                                    Number(el.id)
+                                                );
+
+                                            submission =
+                                                subs && subs.length > 0
+                                                    ? subs[0]
+                                                    : null;
+
+                                        } catch (e) {
+                                            console.warn(
+                                                `Failed to fetch submission for element ${el.id}`,
+                                                e.message
+                                            );
+                                        }
+                                    }
+                                    return {
+                                        ...el,
+                                        submission
+                                    };
+                                })
+                            );
+
                             return {
-                                ...el,
-                                submission: subs && subs.length > 0 ? subs[0] : null
+                                ...page,
+                                elements: elementsWithSubs
                             };
-                        }));
+                        })
+                    );
 
-                        return { ...page, elements: elementsWithSubs };
-                    })
-                );
-                return { ...module, pages: pagesWithElements };
-            })
-        );
+                    return {
+                        ...module,
+                        pages: pagesWithElements
+                    };
+                })
+            );
+            const marksMap = {};
 
-        const marksMap = {};
-        modulesWithFullData.forEach(module => {
-            module.pages.forEach(page => {
-                page.elements.forEach(el => {
-                    marksMap[el.id] = el.submission 
-                        ? { earned_grade: el.submission.earned_grade, content: el.submission.content }
-                        : { earned_grade: 0, content: null };
+            modulesWithFullData.forEach(module => {
+                module.pages.forEach(page => {
+                    page.elements.forEach(el => {
+
+                        marksMap[el.id] = el.submission
+                            ? {
+                                earned_grade:
+                                    el.submission.earned_grade || 0,
+                                content:
+                                    el.submission.content || null
+                            }
+                            : {
+                                earned_grade: 0,
+                                content: null
+                            };
+                    });
                 });
             });
-        });
+            const finalizedModules = modulesWithFullData.map(module => {
 
-        let previousPageCompleted = true;
-        const finalizedModules = modulesWithFullData.map(module => ({
-            ...module,
-            pages: module.pages.map(page => {
-                const isPageComplete = page.elements?.length > 0 && 
-                                       page.elements.every(el => (marksMap[el.id]?.earned_grade || 0) > 0);
-                const isLocked = !previousPageCompleted;
-                previousPageCompleted = isPageComplete;
-                return { ...page, isLocked, isCompleted: isPageComplete };
-            })
-        }));
+                let previousPageCompleted = true;
 
-        setUserMarks(marksMap);
-        setCourse({ ...courseData, modules: finalizedModules });
+                return {
+                    ...module,
 
-    } catch (err) {
-        console.error("GLOBAL FETCH ERROR:", err);
-        setError("Failed to load course.");
-    } finally {
-        setLoading(false);
-    }
-}, [id, enrollmentId]);
+                    pages: module.pages.map(page => {
+
+                        const isPageComplete =
+                            page.elements?.length > 0 &&
+                            page.elements.every(
+                                el =>
+                                    (marksMap[el.id]?.earned_grade || 0) > 0
+                            );
+
+                        const isLocked = !previousPageCompleted;
+
+                        previousPageCompleted = isPageComplete;
+
+                        return {
+                            ...page,
+                            isLocked,
+                            isCompleted: isPageComplete
+                        };
+                    })
+                };
+            });
+            setUserMarks(marksMap);
+            setCourse({
+                ...courseData,
+                modules: finalizedModules
+            });
+        } catch (err) {
+            console.error("GLOBAL FETCH ERROR:", err);
+            setError(
+                "Failed to load course. Please check your connection."
+            );
+        } finally {
+            setLoading(false);
+        }
+    }, [id, enrollmentId]);
 
     const overallProgress = (() => {
         if (!course || !course.modules) return 0;
