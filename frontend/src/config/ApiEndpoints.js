@@ -52,6 +52,6 @@ export const API_ENDPOINTS={
         BY_ID: (id) => `/submission/${id}`,
         SUBMIT_ATTEMPT: (id) => `/submission/${id}/submit`,
         MARK: (id) => `/submission/${id}/mark`,
-        GET_BY_ELEMENT: (elId) => `/element/${elId}/submissions`,
+        GET_BY_ELEMENT: (enrolId,elId) => `/enrollment/${enrolId}/element/${elId}`,
     },
 };

@@ -13,7 +13,7 @@ export const useCourseDetails=(id, enrollmentId, initialMarks = {})=>{
     
 
     const fetchCourse = useCallback(async () => {
-        if (!id) return;
+        if (!id || !enrollmentId) return;
         try {
             setLoading(true);
             const courseData = await courseService.getById(id);
@@ -32,8 +32,8 @@ export const useCourseDetails=(id, enrollmentId, initialMarks = {})=>{
                             // Fetch submissions for each element individually using the SUBMISSION endpoint
                             await Promise.all(elementsData.map(async (el) => {
                                 try {
-                                    const subs = await submissionService.getByElement(el.id);
-                                    // Take the highest grade or the most recent one
+                                    const subs = await submissionService.getSubmissionByElement(enrollmentId, el.id);
+                                    // Just for safety
                                     marksMap[el.id] = subs.length > 0 ? subs[0].earned_grade : 0;
                                 } catch (e) {
                                     marksMap[el.id] = 0;

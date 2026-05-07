@@ -6,18 +6,26 @@ const submissionRouter = Router({ mergeParams: true });
 
 /**
  * @swagger
- * /api/element/{element_id}/submissions:
+ * /api/enrollment/{enrollment_id}/element/{element_id}:
  *   get:
- *     summary: Get all submissions for an element
- *     tags: [Submissions]
+ *     summary: Get all submissions for an element in an enrollment
+ *     tags:
+ *       - Submissions
  *     security:
- *       - OAuth2: ["all"]
+ *       - OAuth2: []
  *     parameters:
+ *       - in: path
+ *         name: enrollment_id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Enrollment ID
  *       - in: path
  *         name: element_id
  *         required: true
  *         schema:
  *           type: integer
+ *         description: Element ID
  *     responses:
  *       200:
  *         description: Submissions retrieved successfully
@@ -53,9 +61,21 @@ const submissionRouter = Router({ mergeParams: true });
  *                   updated_at:
  *                     type: string
  *                     format: date-time
+ *             example:
+ *               - id: 1
+ *                 enrollment_id: 5
+ *                 element_id: 10
+ *                 submission_id: null
+ *                 marked_by_user_id: 2
+ *                 content:
+ *                   answer: CPR Procedure
+ *                 marking_remark: Good work
+ *                 earned_grade: 95
+ *                 created_at: 2026-05-07T12:00:00Z
+ *                 updated_at: 2026-05-07T12:10:00Z
  */
 submissionRouter.get(
-  "/element/:element_id/submissions",
+  "/enrollment/:enrollment_id/element/:element_id",
   auth,
   SubmissionController.getAllSubmissions,
 );
