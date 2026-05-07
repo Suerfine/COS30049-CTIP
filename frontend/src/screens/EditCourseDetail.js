@@ -629,7 +629,7 @@ const EditCourseDetail = () => {
                                     </Pressable>
                                 </View>
 
-                                <View style={styles.forumListContainer}>
+                                <View>
                                     {renderForumList()}
                                 </View>
                             </View>
@@ -1662,10 +1662,6 @@ const styles = StyleSheet.create({
     tabTextActive: {
         color: '#2f6618fe',
         fontWeight: '600',
-    },
-    forumListContainer: {
-        flex: 1,
-        padding: 16,
     },
     newDiscussionForm: {
         marginVertical: 16,

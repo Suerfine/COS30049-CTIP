@@ -351,7 +351,7 @@ const UserModule = ({navigation}) => {
                                     </Pressable>
                                 </View>
 
-                                <View style={styles.forumListContainer}>
+                                <View>
                                     {renderForumList()}
                                 </View>
                             </View>
@@ -571,10 +571,12 @@ const styles = StyleSheet.create({
         lineHeight: 18,
     },
     newDiscussionForm: {
-        marginBottom: 16,
-        paddingBottom: 16,
-        borderBottomWidth: 1,
-        borderBottomColor: '#e5e7eb',
+        marginVertical: 16,
+        padding: 16,
+        backgroundColor: '#ffffff',
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: '#e5e7eb',
     },
     newDiscussionLabel: {
         fontSize: 14,
@@ -592,17 +594,23 @@ const styles = StyleSheet.create({
         fontSize: 14,
         marginBottom: 10,
     },
-    postBtn: {
-        backgroundColor: '#0a6340',
-        paddingHorizontal: 16,
-        paddingVertical: 10,
-        borderRadius: 8,
-        alignSelf: 'flex-start',
+    btn: {
+        flexDirection: "row",
+        gap: 8,
+        alignItems: "center",
+        alignSelf: "center",
+        backgroundColor: "#4a8947",
+        borderRadius: 50,
+        color: "white",
+        paddingHorizontal: 23,
+        paddingVertical: 13,
+        marginRight:20
     },
-    postBtnText: {
-        color: 'white',
-        fontWeight: '600',
-        fontSize: 14,
+    btnHover: {
+        backgroundColor: "#2f6618fe",
+    },
+    btnText: {
+        color: "white",
     },
     messageContainer: {
         padding: 15,
