@@ -20,7 +20,9 @@ export const useCourseProgress = (course, userMarks) => {
                 }, 0);
             
                 const earnedPageScore = pageElements.reduce((sum, el) => {
-                    return sum + (Number(userMarks[el.id]) || 0);
+                    const mark = userMarks[el.id];
+                    const score = typeof mark === 'object' ? (mark.earned_grade || 0) : (mark || 0);
+                    return sum + Number(score);
                 }, 0);
                 const percent = totalPageScore > 0 ? (earnedPageScore / totalPageScore) * 100 : 0;
                 

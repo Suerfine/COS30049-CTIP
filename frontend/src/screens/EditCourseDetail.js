@@ -52,8 +52,8 @@ const EditCourseDetail = () => {
         }
     });
 
-    const { elements, loading: elementsLoading, createNewElement,updateExistingElement, deleteElement, moveElement,registerWorkshop, 
-    registering,updatePageSettings } = useElements(
+    const { elements, loading: elementsLoading, createNewElement,updateExistingElement, deleteElement, moveElement, 
+    updatePageSettings } = useElements(
         id,
         selectedPage?.page?.module_id || selectedPage?.module?.id,
         selectedPage?.page?.id
@@ -585,8 +585,6 @@ const EditCourseDetail = () => {
                                         onEditElement={handleOpenEdit}
                                         onDeleteElement={handleDelete}
                                         onMoveElement={moveElement}
-                                        onRegisterWorkshop={registerWorkshop}
-                                        registering={registering}
                                     />
                                 )}
                             </View>

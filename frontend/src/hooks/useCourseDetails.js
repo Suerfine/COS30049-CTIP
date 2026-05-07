@@ -4,6 +4,7 @@ import { moduleService } from '../services/moduleService';
 import { pageService } from '../services/pageService';
 import {ElementService } from '../services/ElementService';
 import { submissionService } from '../services/SubmissionService';
+import { eventService } from '../services/eventService';
 
 export const useCourseDetails=(id, enrollmentId, initialMarks = {})=>{
     const [course,setCourse]=useState(null);
@@ -12,69 +13,128 @@ export const useCourseDetails=(id, enrollmentId, initialMarks = {})=>{
     const [userMarks, setUserMarks] = useState(initialMarks || {});
 
     const fetchCourse = useCallback(async () => {
-    if (!id || !enrollmentId) return;
-    try {
-        setLoading(true);
-        setError(null); // Clear previous errors
+        if (!id) return;
 
-        const courseData = await courseService.getById(id);
-        const modulesData = await moduleService.getAll(id);
+        try {
+            setLoading(true);
+            setError(null);
+            const courseData = await courseService.getById(id);
+            const modulesData = await moduleService.getAll(id);
+            const modulesWithFullData = await Promise.all(
+                modulesData.map(async (module) => {
+                    const pagesData = await pageService.getAll(id, module.id);
+                    const pagesWithElements = await Promise.all(
+                        pagesData.map(async (page) => {
+                            const elementsData = await ElementService.getAll(
+                                id,
+                                module.id,
+                                page.id
+                            );
+                            const elementsWithSubs = await Promise.all(
+                                (elementsData || []).map(async (el) => {
+                                    let submission = null;
+                                    if (enrollmentId) {
+                                        try {
+                                            const subs =
+                                                await submissionService.getByElement(
+                                                    Number(enrollmentId),
+                                                    Number(el.id)
+                                                );
 
-        const marksMap = {};
+                                            submission =
+                                                subs && subs.length > 0
+                                                    ? subs[0]
+                                                    : null;
 
-        const modulesWithFullData = await Promise.all(
-            modulesData.map(async (module) => {
-                const pagesData = await pageService.getAll(id, module.id);
-                
-                const pagesWithElements = await Promise.all(
-                    pagesData.map(async (page) => {
-                        const elementsData = await ElementService.getAll(id, module.id, page.id);
-                        
-                        await Promise.all((elementsData || []).map(async (el) => {
-                            if (!el || !el.id) return;
+                                        } catch (e) {
+                                            console.warn(
+                                                `Failed to fetch submission for element ${el.id}`,
+                                                e.message
+                                            );
+                                        }
+                                    }
+                                    return {
+                                        ...el,
+                                        submission
+                                    };
+                                })
+                            );
 
-                            try {
-                                const subs = await submissionService.getByElement(
-                                    Number(enrollmentId), 
-                                    Number(el.id)
-                                );
-                                marksMap[el.id] = (subs && subs.length > 0) ? subs[0].earned_grade : 0;
-                            } catch (e) {
-                                console.warn(`Failed to fetch sub for element ${el.id}`, e.message);
-                                marksMap[el.id] = 0;
+                            return {
+                                ...page,
+                                elements: elementsWithSubs
+                            };
+                        })
+                    );
+
+                    return {
+                        ...module,
+                        pages: pagesWithElements
+                    };
+                })
+            );
+            const marksMap = {};
+
+            modulesWithFullData.forEach(module => {
+                module.pages.forEach(page => {
+                    page.elements.forEach(el => {
+
+                        marksMap[el.id] = el.submission
+                            ? {
+                                earned_grade:
+                                    el.submission.earned_grade || 0,
+                                content:
+                                    el.submission.content || null
                             }
-                        }));
+                            : {
+                                earned_grade: 0,
+                                content: null
+                            };
+                    });
+                });
+            });
+            const finalizedModules = modulesWithFullData.map(module => {
 
-                        return { ...page, elements: elementsData };
+                let previousPageCompleted = true;
+
+                return {
+                    ...module,
+
+                    pages: module.pages.map(page => {
+
+                        const isPageComplete =
+                            page.elements?.length > 0 &&
+                            page.elements.every(
+                                el =>
+                                    (marksMap[el.id]?.earned_grade || 0) > 0
+                            );
+
+                        const isLocked = !previousPageCompleted;
+
+                        previousPageCompleted = isPageComplete;
+
+                        return {
+                            ...page,
+                            isLocked,
+                            isCompleted: isPageComplete
+                        };
                     })
-                );
-                return { ...module, pages: pagesWithElements };
-            })
-        );
-
-        // Calculate progress logic...
-        let previousPageCompleted = true;
-        const finalizedModules = modulesWithFullData.map(module => ({
-            ...module,
-            pages: module.pages.map(page => {
-                const isPageComplete = page.elements?.length > 0 && 
-                                       page.elements.every(el => (marksMap[el.id] || 0) > 0);
-                const isLocked = !previousPageCompleted;
-                previousPageCompleted = isPageComplete;
-                return { ...page, isLocked, isCompleted: isPageComplete };
-            })
-        }));
-
-        setUserMarks({ ...marksMap });
-        setCourse({ ...courseData, modules: finalizedModules });
-        
-    } catch (err) {
-        console.error("GLOBAL FETCH ERROR:", err);
-        setError("Failed to load course. Please check your connection or IDs.");
-    } finally {
-        setLoading(false);
-    }
-}, [id, enrollmentId]);
+                };
+            });
+            setUserMarks(marksMap);
+            setCourse({
+                ...courseData,
+                modules: finalizedModules
+            });
+        } catch (err) {
+            console.error("GLOBAL FETCH ERROR:", err);
+            setError(
+                "Failed to load course. Please check your connection."
+            );
+        } finally {
+            setLoading(false);
+        }
+    }, [id, enrollmentId]);
 
     const overallProgress = (() => {
         if (!course || !course.modules) return 0;
@@ -128,23 +188,43 @@ export const useCourseDetails=(id, enrollmentId, initialMarks = {})=>{
 
     const saveProgress = useCallback(async (elementId, score, content = {}) => {
         try {
-            await submissionService.create({
+            const result = await submissionService.create({
                 enrollment_id: Number(enrollmentId),
                 element_id: Number(elementId),
-                content: { ...content, auto_marked: true },
                 earned_grade: score,
-                marking_remark: "System: Automated marking triggered."
+                content: content,
             });
+
+            if (content.auto_add_todo) {
+                const formatISO = (dateStr, timeStr) => {
+                    const [time, modifier] = timeStr.split(' ');
+                    let [hours, minutes] = time.split(':');
+                    if (hours === '12') hours = '00';
+                    if (modifier === 'PM') hours = parseInt(hours, 10) + 12;
+                    return `${dateStr}T${hours.toString().padStart(2, '0')}:${minutes}:00Z`;
+                }
+
+                const startTime = content.session_time.split(' — ')[0];
+                const endTime = content.session_time.split(' — ')[1];
+
+                await eventService.createEvent({
+                    title: `Workshop Session`,
+                    description: `Registered via training platform. Location: ${content.location}`,
+                    type: "workshop",
+                    event_start_at: formatISO(content.session_date, startTime),
+                    event_end_at: formatISO(content.session_date, endTime)
+                });
+            }
 
             setUserMarks(prev => ({
                 ...prev,
-                [elementId]: score
+                [elementId]: { earned_grade: score, content: content }
             }));
-            
+
             return { success: true };
         } catch (err) {
-            console.error("Sync failed:", err);
-            return { success: false, error: err };
+            console.error("Save Progress/Event Error:", err);
+            return { success: false, error: err.message };
         }
     }, [enrollmentId]);
 
