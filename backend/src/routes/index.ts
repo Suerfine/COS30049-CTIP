@@ -7,14 +7,14 @@ import pageRouter from "./PageRoute";
 import messageRouter from "./MessageRoute";
 import enrollmentRouter from "./EnrollmentRoute";
 import submissionRouter from "./SubmissionRoute";
-import NotificationRoute from "./NotificationRoute";
+import NotificationRouter from "./NotificationRoute";
+import eventRouter from "./EventRoute";
 import tagRouter from "./TagRoute";
 import * as AuthController from "../controllers/AuthController";
 import elementRouter from "./ElementRoute";
 import progressRouter from "./ProgressRoute";
 // import sensorRouter from "./SensorRoute";
 import sensorLogRouter from "./SensorLogRoute";
-import notificationRouter from "./NotificationRoute";
 import * as ElementController from "../controllers/ElementController";
 import { auth } from "../middelware/Auth";
 import sensorRouter from "./SensorRoute";
@@ -98,8 +98,6 @@ router.use("/", enrollmentRouter);
 router.use("/", submissionRouter);
 router.use("/progress", progressRouter);
 
-router.use("/notifications", notificationRouter);
-
 /*===============================
 =        SENSOR ROUTES         =
 ===============================*/
@@ -108,6 +106,13 @@ router.use("/", sensorLogRouter);
 
 /*===============================
 =     NOTIFICATION ROUTES      =
+===============================*/
+router.use("/notifications", NotificationRouter);
+
+/*===============================
+=     Event ROUTES      =
+===============================*/
+router.use("/events", eventRouter);
 
 /*===============================
 =        ENROLLMENT ROUTES        =
