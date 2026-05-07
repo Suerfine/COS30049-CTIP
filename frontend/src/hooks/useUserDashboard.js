@@ -34,7 +34,7 @@ export const useUserDashboard = () => {
     ]), [t]);
 
     const toggleEvent = async (id) => {
-        const targetEvent = events.find(event => EventTypes.id === id);
+        const targetEvent = events.find(event => event.id === id);
         if (!targetEvent) return;
 
         const nextStatus = targetEvent.status === 'completed' ? 'pending' : 'completed';

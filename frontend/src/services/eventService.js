@@ -22,4 +22,13 @@ export const eventService = {
             return Promise.reject(errorMessage);
         }
     },
+    updateStatus: async (id, status) => {
+        try {
+            const response = await apiClient.patch(`${API_ENDPOINTS.EVENTS.BASE}/${id}`, { status });
+            return response.data;
+        } catch (err) {
+            console.error("Update Event Status Error:", err);
+            return Promise.reject(err.response?.data?.message || "Failed to update event status.");
+        }
+    },
 };

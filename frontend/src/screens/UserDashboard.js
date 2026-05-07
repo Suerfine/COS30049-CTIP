@@ -30,6 +30,8 @@ const UserDashboard = ({ navigation }) => {
         currentDate, setCurrentDate,
         isExpanded, setIsExpanded,
         weekDates, getDaysInMonth, filteredEvents,
+        refreshData,
+        toggleEvent,
         hasPendingEventOnDate,formatLocalDate,
         weekLabels,eventTab, courseTab, categories
     } = useUserDashboard();
@@ -300,19 +302,19 @@ const UserDashboard = ({ navigation }) => {
                                     {filteredEvents.length === 0 ? (
                                         <Text>No todos</Text>
                                     ) : (
-                                        filteredEvents.map(todo => (
-                                            <View key={todo.id} style={styles.todoItem}>
+                                        filteredEvents.map(event => (
+                                            <View key={event.id} style={styles.todoItem}>
                                                 <View style={styles.todoRow}>
                                                     <Checkbox
                                                         value={event.status === 'completed'}
                                                         onValueChange={() => toggleEvent(event.id)}
                                                     />
                                                     <View style={{flex: 1}}>
-                                                        <Text style={styles.todoTitle}>{todo.title}</Text>
-                                                        <Text style={styles.todoCourse}>{todo.course} - {todo.date}</Text>
+                                                        <Text style={styles.todoTitle}>{event.title}</Text>
+                                                        <Text style={styles.todoCourse}>{event.type} - {formatDate(event.event_start_at, false)}</Text>
                                                     </View>
 
-                                                    <Pressable onPress={() => openEdit(todo)}>
+                                                    <Pressable onPress={() => openEdit(event)}>
                                                         <ChevronRight size={20} />
                                                     </Pressable>
                                                 </View>
@@ -327,7 +329,7 @@ const UserDashboard = ({ navigation }) => {
             </View>
 
             {/* call add todo component */}
-            <AddTodo visible={showModal} setIsModalVisible={setShowModal}/>
+            <AddTodo visible={showModal} setIsModalVisible={setShowModal} onCreated={refreshData} />
 
             {/* task detail modal */}
             {selectedTask && (
