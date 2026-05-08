@@ -60,27 +60,46 @@ export const useUserDashboard = () => {
 
     const fetchDashboardData = async () => {
         if (!currentUser) return;
-        
         setLoading(true);
         try {
-            const [progressRes, coursesRes, eventsRes, fullProfileRes, tagsRes] = await Promise.allSettled([
-                progressService.getCourseProgress(),
-                userDashboardService.getCourses(),
-                eventService.getEvents(),
-                userDashboardService.getUserProfile(),
-                courseService.getAllTags() 
-            ]);
+            const [coursesRes, eventsRes, fullProfileRes, tagsRes] =
+                await Promise.allSettled([
+                    userDashboardService.getCourses(),
+                    eventService.getEvents(),
+                    userDashboardService.getUserProfile(),
+                    courseService.getAllTags(),
+                ]);
 
-            if (progressRes.status === 'fulfilled') setProgressData(progressRes.value);
-            if (coursesRes.status === 'fulfilled') setCourses(coursesRes.value);
-            if (eventsRes.status === 'fulfilled') setEvents(eventsRes.value);
-            if (fullProfileRes.status === 'fulfilled') setUser(fullProfileRes.value);
-            if (tagsRes.status === 'fulfilled') setCategories(tagsRes.value?.data || tagsRes.value || []);
+            let fetchedCourses = [];
 
-            // Log any failures for debugging
-            [progressRes, coursesRes, eventsRes, fullProfileRes, tagsRes].forEach((r, i) => {
-                if (r.status === 'rejected') console.error(`Fetch #${i} failed:`, r.reason);
-            });
+            if (coursesRes.status === 'fulfilled') {
+                fetchedCourses = coursesRes.value;
+                setCourses(fetchedCourses);
+            }
+
+            // Fetch progress AFTER courses loaded
+            if (fetchedCourses.length > 0) {
+                const progressPromises = fetchedCourses.map(course =>
+                    progressService.getCourseProgress(course.id)
+                );
+
+                const progressResults = await Promise.allSettled(progressPromises);
+
+                const validProgress = progressResults
+                    .filter(r => r.status === 'fulfilled')
+                    .map(r => r.value);
+
+                setProgressData(validProgress);
+            }
+
+            if (eventsRes.status === 'fulfilled')
+                setEvents(eventsRes.value);
+
+            if (fullProfileRes.status === 'fulfilled')
+                setUser(fullProfileRes.value);
+
+            if (tagsRes.status === 'fulfilled')
+                setCategories(tagsRes.value?.data || tagsRes.value || []);
 
         } catch (err) {
             console.error("Dashboard fetch error:", err);
@@ -93,8 +112,6 @@ export const useUserDashboard = () => {
         fetchDashboardData();
     }, [currentUser]);
 
-    // CALENDAR LOGIC
-    // get start of week (Sunday)
     const getStartOfWeek = (date) => {
         const d = new Date(date);
         d.setHours(12, 0, 0, 0); 
@@ -106,7 +123,6 @@ export const useUserDashboard = () => {
         return d;
     };
 
-    // generate 7 days
     const getWeekDates = (date) => {
         const start = getStartOfWeek(date);
         return Array.from({ length: 7 }).map((_, i) => {
@@ -200,7 +216,5 @@ export const useUserDashboard = () => {
         toggleEvent,
         hasPendingEventOnDate, refreshData: fetchDashboardData,
         weekLabels, eventTab, courseTab, categories, formatLocalDate,  
-        // inProgressCourses,
-        // completedCourses,
     };
 };
