@@ -8,6 +8,7 @@ import { Course, Enrollment, User, Module, Page, Submission, Element } from "../
 import { formatPaginateResponse, paginateModel } from "../utils/paginate";
 import { EnrollmentStatus } from "../enum/EnrollmentStatus";
 import sequelize from "../config/Database";
+import { Op, WhereOptions } from "sequelize";
 
 class HttpError extends Error {
   status: number;
@@ -285,55 +286,96 @@ export const deleteEnrollment = async (
 };
 
 export const getSubmissionSummaries = async (
-  req: Request,
-  res: Response<PaginateResponse<any> | { message: string }>,
-) => {
+  req: Request<PaginateRequestParams>,
+  res: Response<PaginateResponse<any> | { message: string }>
+): Promise<Response> => {
   try {
-    const customQuery: any = {
-      ...req.query,
-      orderBy: req.query.orderBy || "id ASC" 
-    };
+    const search =
+      typeof req.query.search === "string"
+        ? req.query.search.trim()
+        : undefined;
 
-    const summaries = await paginateModel(Enrollment, customQuery, {
-      include: [
-        { 
-          model: User, 
-          as: "user", 
-          attributes: ["firstname", "lastname", "pfp_url"] 
-        },
-        { 
-          model: Course, 
-          as: "course", 
-          attributes: ["id", "title", "badge_img_path", "badge_expire_in_months"] 
-        }
-      ],
-      paranoid: true,
-    });
+    const status =
+      typeof req.query.status === "string"
+        ? req.query.status
+        : "All";
+
+    const orderBy =
+      typeof req.query.orderBy === "string"
+        ? req.query.orderBy
+        : "id ASC";
+
+    // ✅ Build WHERE like getAllEnrollments style
+    const whereClause: any = {};
+
+    if (status !== "All") {
+      whereClause.status = status;
+    }
+
+    if (search) {
+      whereClause[Op.or] = [
+        { "$user.firstname$": { [Op.like]: `%${search}%` } },
+        { "$user.lastname$": { [Op.like]: `%${search}%` } },
+        { "$course.title$": { [Op.like]: `%${search}%` } },
+      ];
+    }
+
+    const summaries = await paginateModel(
+      Enrollment,
+      {
+        ...req.query,
+      },
+      {
+        where: whereClause,
+        include: [
+          {
+            model: User,
+            as: "user",
+          },
+          {
+            model: Course,
+            as: "course",
+          },
+        ],
+        paranoid: true,
+        subQuery: false
+      }
+    );
 
     const baseUrl = `${req.protocol}://${req.get("host")}${req.baseUrl}${req.path}`;
-    
+
     const formattedResponse = formatPaginateResponse(
       summaries.data.map((enrollment: any) => {
-        const user = enrollment.user; 
+        const user = enrollment.user;
         const course = enrollment.course;
 
-        let badgeExpiryOn=null;
+        let badgeExpiryOn: string | null = null;
+
         if (enrollment.completed_at && course?.badge_expire_in_months) {
           const completionDate = new Date(enrollment.completed_at);
-          completionDate.setMonth(completionDate.getMonth() + Number(course.badge_expire_in_months));
+
+          completionDate.setMonth(
+            completionDate.getMonth() +
+              Number(course.badge_expire_in_months)
+          );
+
           badgeExpiryOn = completionDate.toISOString();
         }
 
         return {
           ...toEnrollmentResponse(enrollment),
-          user_fullname: user 
-            ? `${user.firstname} ${user.lastname}` 
+
+          user_fullname: user
+            ? `${user.firstname} ${user.lastname}`
             : "Unknown User",
-          course_details: course || null,
-          badge_expire_at: badgeExpiryOn
+
+          course_details: course ?? null,
+
+          badge_expire_at: badgeExpiryOn,
         };
       }),
-      customQuery,
+
+      req.query, 
       true,
       {
         page: summaries.page,
@@ -341,13 +383,16 @@ export const getSubmissionSummaries = async (
         totalElements: summaries.totalElements,
         totalPages: summaries.totalPages,
         baseUrl,
-      },
+      }
     );
 
     return res.status(200).json(formattedResponse);
-  } catch (err) {
+  } catch (err: any) {
     console.error("Summaries Fetch Error:", err);
-    return res.status(500).json({ message: "Internal server error\n" + err });
+
+    return res.status(500).json({
+      message: "Internal server error\n" + (err?.message || err),
+    });
   }
 };
 
