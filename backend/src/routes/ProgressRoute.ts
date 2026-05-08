@@ -55,6 +55,11 @@ ProgressRouter.get(
  *         required: true
  *         schema:
  *           type: string
+ *       - in: query        
+ *         name: courseId
+ *         required: true
+ *         schema:
+ *           type: string
  *     responses:
  *       200:
  *         description: Module progress retrieved successfully

@@ -5,9 +5,11 @@ import {
   InferAttributes,
   InferCreationAttributes,
   Model,
+  NonAttribute
 } from "sequelize";
 import sequelize from "../config/Database";
 import Module from "./Module";
+import Element from "./Element";
 
 class Page extends Model<InferAttributes<Page>, InferCreationAttributes<Page>> {
   declare id: CreationOptional<number>;
@@ -21,6 +23,7 @@ class Page extends Model<InferAttributes<Page>, InferCreationAttributes<Page>> {
   declare created_at: CreationOptional<Date>;
   declare updated_at: CreationOptional<Date>;
   declare deleted_at: CreationOptional<Date | null>;
+  declare elements?: NonAttribute<Element[]>;
 }
 
 Page.init(

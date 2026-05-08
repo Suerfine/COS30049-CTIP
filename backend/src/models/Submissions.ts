@@ -5,6 +5,7 @@ import {
   InferAttributes,
   InferCreationAttributes,
   Model,
+  NonAttribute
 } from "sequelize";
 import sequelize from "../config/Database";
 import Enrollment from "./Enrollment";
@@ -26,6 +27,7 @@ class Submission extends Model<
   declare created_at: CreationOptional<Date>;
   declare updated_at: CreationOptional<Date>;
   declare deleted_at: CreationOptional<Date | null>;
+  declare enrollment: NonAttribute<Enrollment>;
 }
 
 Submission.init(

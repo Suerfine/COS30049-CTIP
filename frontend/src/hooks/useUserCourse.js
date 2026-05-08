@@ -5,8 +5,10 @@ import { useTranslation } from "react-i18next";
 import { courseService } from "../services/courseService";
 import { enrollmentService } from "../services/EnrollmentService";
 import { useAuth } from "../context/AuthContext";
+import { userDashboardService } from "../services/userDashboardService";
+import { progressService } from "../services/ProgressService";
 
-export const useUserCourse = ({ progressData = [] } = {}) => {
+export const useUserCourse = () => {
   const { t, i18n } = useTranslation();
   const { currentUser } = useAuth();
   const [selectedCourse, setSelectedCourse] = useState(null);
@@ -18,6 +20,7 @@ export const useUserCourse = ({ progressData = [] } = {}) => {
   const [allcourseFilter, setAllCourseFilter] = useState("all");
   const [loading, setLoading] = useState(false);
   const [myEnrollments, setMyEnrollments] = useState([]);  
+  const [coursesWithStatus, setCoursesWithStatus] = useState([]);
   const [searchText, setSearchText] = useState("");
   const [filters, setFilters] = useState({ status: "all", category: [], location: [] });
   const [tempFilters, setTempFilters] = useState(filters);
@@ -36,41 +39,87 @@ export const useUserCourse = ({ progressData = [] } = {}) => {
   ]), [t]);
 
   // use GET /api/courses
-  const loadCourses = useCallback(
-    async (params = {}) => {
-      setLoading(true);
-      try {
-        const response = await courseService.getAll(params);
-        setCourses(response.data ?? response ?? []);
-
-        // load extra metadata only once
-        if (allCourseList.length === 0 || allTagList.length === 0) {
-          const [fullCourseRes, fullTagRes] = await Promise.all([
-            courseService.getAll({ size: 100 }),
-            courseService.getAllTags(),
-          ]);
-
-          setAllCourseList(fullCourseRes.data || []);
-          setAllTagList(fullTagRes.data || fullTagRes || []);
-        }
-      } catch (err) {
-        console.error("Fetch failed", err);
-      } finally {
-        setLoading(false);
-      }
-    },
-    [allCourseList.length, allTagList.length],
-  );
-
-  // GET /api/enrollments/my-enrollments
-  const loadMyEnrollments = useCallback(async () => {
+  const loadInitialData = useCallback(async () => {
+    setLoading(true);
     try {
-      const data = await enrollmentService.getMyEnrollments();
-      setMyEnrollments(Array.isArray(data) ? data : data?.data || []);
+      const [courseRes, tagRes, enrollmentRes] = await Promise.all([
+        courseService.getAll({ size: 100 }),
+        courseService.getAllTags(),
+        enrollmentService.getMyEnrollments()
+      ]);
+      
+      setCourses(courseRes.data || courseRes || []);
+      setAllTagList(tagRes.data || tagRes || []);
+      setMyEnrollments(Array.isArray(enrollmentRes) ? enrollmentRes : enrollmentRes?.data || []);
     } catch (err) {
-      console.error("Fetch my enrollments failed", err);
+      console.error("Initialization failed", err);
+    } finally {
+      setLoading(false);
     }
-  }, []);
+  }, [currentUser]);
+
+  useEffect(() => {
+    loadInitialData();
+  }, [loadInitialData]);
+
+  useEffect(() => {
+  const enrichCourses = async () => {
+    if (courses.length === 0) return;
+
+    const enriched = await Promise.all(
+      courses.map(async (course) => {
+        const enrollment = myEnrollments.find(
+          (e) => Number(e.course_id) === Number(course.id)
+        );
+
+        let progressValue = 0;
+
+        if (enrollment?.status === "in_progress") {
+          try {
+            const res = await progressService.getCourseProgress(course.id);
+            try {
+              const res = await progressService.getCourseProgress(course.id);
+              const earned = Number(res.score) || 0;
+              const total = Number(res.maxScore) || 0;
+
+              // Check if total is 0 to avoid division by zero
+              progressValue = total > 0 ? earned / total : 0;
+              
+              console.log(`Course ${course.id} Progress Calc:`, earned, "/", total, "=", progressValue);
+          } catch (err) {
+              console.error(err);
+              progressValue = 0;
+          }
+          } catch (err) {
+            console.error(`Progress fetch failed for course ${course.id}`, err);
+          }
+        } else if (enrollment?.status === "completed") {
+          progressValue = 1;
+        }
+
+        return {
+          ...course,
+          enrollmentStatus: enrollment?.status ?? null,
+          enrollmentId: enrollment?.id ?? null,
+          progress: progressValue, 
+        };
+      })
+    );
+    setCoursesWithStatus(enriched);
+  };
+
+  enrichCourses();
+}, [courses, myEnrollments]); 
+
+  // // GET /api/enrollments/my-enrollments
+  // const loadMyEnrollments = useCallback(async () => {
+  //   try {
+  //     const data = await enrollmentService.getMyEnrollments();
+  //     setMyEnrollments(Array.isArray(data) ? data : data?.data || []);
+  //   } catch (err) {
+  //     console.error("Fetch my enrollments failed", err);
+  //   }
+  // }, []);
 
   // called after confirm enroll
   const handleEnrollment = useCallback(
@@ -80,7 +129,7 @@ export const useUserCourse = ({ progressData = [] } = {}) => {
           (e) => Number(e.course_id) === Number(courseId),
         );
         await enrollmentService.enroll(courseId); 
-        await loadMyEnrollments();
+        await loadInitialData();
         const successMsg = "Enrollment request sent for approval.";
         Platform.OS === "web"
           ? window.alert(successMsg)
@@ -91,7 +140,7 @@ export const useUserCourse = ({ progressData = [] } = {}) => {
           ? window.alert(failMsg)
           : Alert.alert("Enrollment failed", failMsg);
       }
-    }, [currentUser, myEnrollments, loadMyEnrollments]);
+    }, [currentUser, myEnrollments, loadInitialData]);
 
   // drop courses
   // finds the enrollment record for that specific course and deletes it
@@ -128,23 +177,23 @@ export const useUserCourse = ({ progressData = [] } = {}) => {
   // );
 
   // use progressData from param
-  const coursesWithStatus = useMemo(() => {
-    return courses.map((course) => {
-      const enrollment = myEnrollments.find(
-        (e) => Number(e.course_id) === Number(course.id),
-      );
+  // const coursesWithStatus = useMemo(() => {
+  //   return courses.map((course) => {
+  //     const enrollment = myEnrollments.find(
+  //       (e) => Number(e.course_id) === Number(course.id),
+  //     );
 
-      const progressObj = progressData?.find((p) => p.courseId === course.id);
-      const progress = progressObj ? progressObj.progress : null;
+  //     const progressObj = progressData?.find((p) => p.courseId === course.id);
+  //     const progress = progressObj ? progressObj.progress : null;
 
-      return {
-        ...course,
-        progress: progressObj?.progress ?? null,
-        enrollmentStatus: enrollment?.status ?? null,
-        enrollmentId: enrollment?.id ?? null,
-      };
-    });
-  }, [courses, myEnrollments, progressData]);
+  //     return {
+  //       ...course,
+  //       progress: progressObj?.progress ?? null,
+  //       enrollmentStatus: enrollment?.status ?? null,
+  //       enrollmentId: enrollment?.id ?? null,
+  //     };
+  //   });
+  // }, [courses, myEnrollments, progressData]);
 
     // filter in progress courses
     const inProgressCourses = useMemo(() =>
@@ -220,14 +269,14 @@ export const useUserCourse = ({ progressData = [] } = {}) => {
     });
   }, [coursesWithStatus, searchText, filters, allcourseFilter]);
 
-  const handleSearch = (text) => {
-    setSearchText(text);
-    const filterString = text
-      ? `title like "%${text}%" or description like "%${text}%"`
-      : "";
+  // const handleSearch = (text) => {
+  //   setSearchText(text);
+  //   const filterString = text
+  //     ? `title like "%${text}%" or description like "%${text}%"`
+  //     : "";
 
-    loadCourses({ filter: filterString, page: 1 });
-  };
+  //   loadCourses({ filter: filterString, page: 1 });
+  // };
 
   const removeFilter = (key, value) => {
     setFilters((prev) => {
@@ -270,10 +319,10 @@ export const useUserCourse = ({ progressData = [] } = {}) => {
     }
   };
 
-  useEffect(() => {
-    loadCourses();
-    loadMyEnrollments();
-  }, [loadCourses, loadMyEnrollments]);
+  // useEffect(() => {
+  //   loadCourses();
+  //   loadMyEnrollments();
+  // }, [loadCourses, loadMyEnrollments]);
 
   return {
     selectedCourse,
@@ -300,7 +349,6 @@ export const useUserCourse = ({ progressData = [] } = {}) => {
     allTagList,
     addTag,
     filteredCourses,
-    handleSearch,
     handleApply,
     setSearchText,
     searchText,

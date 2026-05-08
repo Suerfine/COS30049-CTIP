@@ -34,7 +34,7 @@ const UserModule = ({navigation}) => {
     const {allCourseList}=useCourses();
     const [chatOpen, setChatOpen] = useState(false);
     
-    const progressMap = useCourseProgress(course, userMarks);
+    const { progressMap, loading: progressLoading, refreshProgress } = useCourseProgress(course);
     const [selectedPage, setSelectedPage]=useState({type:'overview'});
     const [isCollapsed, setIsCollapsed]=useState(false);
     const [activeTab,setActiveTab]=useState('Overview');
@@ -206,9 +206,13 @@ const UserModule = ({navigation}) => {
                             <ActivityIndicator color="#0a6340" size="large" />
                         ) : (
                             <PageRenderer 
-                                elements={workshops}
+                                elements={elements}
                                 role={currentUser.role}
-                                courseId={id} 
+                                courseId={id}
+                                onProgressUpdate={() => {
+                                    saveProgress();
+                                    refreshProgress(); 
+                                }}
                                 userMarks={userMarks}
                             />
                         )}

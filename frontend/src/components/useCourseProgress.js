@@ -1,55 +1,70 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { progressService } from '../services/progressService';
 
-export const useCourseProgress = (course, userMarks) => {
-    const progressMap = useMemo(() => {
-        if (!course || !course.modules || !userMarks) return {};
+export const useCourseProgress = (course) => {
+    const [progressMap, setProgressMap] = useState({});
+    const [loading, setLoading] = useState(false);
 
-        const map = {};
-        let previousPageCompleted = true; 
+    const refreshProgress = useCallback(async () => {
+        if (!course || !course.modules) return;
 
-        course.modules.forEach((module) => {
-            let moduleTotalPoints = 0;
-            let moduleEarnedPoints = 0;
-            
-            const pages = module.pages || [];
-
-            pages.forEach((page) => {
-                const pageElements = page.elements || []; 
-                const totalPageScore = pageElements.reduce((acc, el) => {
-                    return acc + (Number(el.score) || 0); 
-                }, 0);
-            
-                const earnedPageScore = pageElements.reduce((sum, el) => {
-                    const mark = userMarks[el.id];
-                    const score = typeof mark === 'object' ? (mark.earned_grade || 0) : (mark || 0);
-                    return sum + Number(score);
-                }, 0);
-                const percent = totalPageScore > 0 ? (earnedPageScore / totalPageScore) * 100 : 0;
+        setLoading(true);
+        try {
+            const map = {};
+            let previousPageCompleted = true;
+            for (const module of course.modules) {
+                const modRes = await progressService.getModuleProgress(module.id, course.id);
                 
-                const isUnlocked = previousPageCompleted;
-                
-                const passingThreshold = page.passing_score || 1; 
-                const isCompleted = earnedPageScore >= passingThreshold;
-
-                map[page.id] = {
-                    percent,
-                    isLocked: !isUnlocked,
-                    isCompleted
+                map[`module_${module.id}`] = {
+                    percent: modRes.maxScore > 0 ? (modRes.score / modRes.maxScore) * 100 : 0
                 };
 
-                previousPageCompleted = isCompleted;
-                
-                moduleTotalPoints += totalPageScore;
-                moduleEarnedPoints += earnedPageScore;
-            });
+                const pages = module.pages || [];
 
-            map[`module_${module.id}`] = {
-                percent: moduleTotalPoints > 0 ? (moduleEarnedPoints / moduleTotalPoints) * 100 : 0
-            };
-        });
+                for (const page of pages) {
+                    let totalPageScore = 0;
+                    let earnedPageScore = 0;
 
-        return map;
-    }, [course, userMarks]);
+                    if (page.elements && page.elements.length > 0) {
+                        for (const element of page.elements) {
+                            const elRes = await progressService.getElementProgress(element.id);
+                            totalPageScore += Number(elRes.maxScore) || 0;
+                            earnedPageScore += Number(elRes.score) || 0;
+                        }
+                    }
 
-    return progressMap;
+                    const percent = totalPageScore > 0 ? (earnedPageScore / totalPageScore) * 100 : 0;
+                    
+                    const isLocked = !previousPageCompleted;
+                    
+                    const passingThreshold = page.passing_score || 100;
+                    const isCompleted = percent >= passingThreshold;
+
+                    map[page.id] = {
+                        percent,
+                        isLocked,
+                        isCompleted
+                    };
+
+                    previousPageCompleted = isCompleted;
+                }
+            }
+
+            setProgressMap(map);
+        } catch (error) {
+            console.error("Error syncing weighted progress:", error);
+        } finally {
+            setLoading(false);
+        }
+    }, [course]);
+
+    useEffect(() => {
+        refreshProgress();
+    }, [refreshProgress]);
+
+    return { 
+        progressMap, 
+        loading, 
+        refreshProgress 
+    };
 };
