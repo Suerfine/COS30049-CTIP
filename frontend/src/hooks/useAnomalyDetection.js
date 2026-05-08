@@ -25,6 +25,7 @@ export const useAnomalyDetection = () => {
         10,
         searchQuery,
         sortConfig,
+        { excludeType: "touching" } 
       );
 
       console.log("Anomaly Response:", response);

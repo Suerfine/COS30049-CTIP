@@ -51,20 +51,6 @@ const AnomalyDetection = () => {
   const indexOfFirstItem = (currentPage - 1) * itemsPerPage;
   const indexOfLastItem = indexOfFirstItem + anomalies.length;
 
-  // Get severity badge color
-  const getSeverityColor = (severity) => {
-    switch (severity?.toLowerCase()) {
-      case "high":
-        return "#dc2626";
-      case "medium":
-        return "#f59e0b";
-      case "low":
-        return "#10b981";
-      default:
-        return "#6b7280";
-    }
-  };
-
   // Get event type label
   const getEventTypeLabel = (eventType) => {
     const typeMap = {
@@ -78,21 +64,6 @@ const AnomalyDetection = () => {
       other: "Other",
     };
     return typeMap[eventType?.toLowerCase()] || eventType;
-  };
-
-  // Get event type severity
-  const getEventTypeSeverity = (eventType) => {
-    const severityMap = {
-      touching_plant: "low",
-      touching_animal: "low",
-      plucking_plants: "medium",
-      hitting_animal: "medium",
-      extended_plant_touch: "medium",
-      extended_animal_touch: "medium",
-      forest_fire: "high",
-      other: "medium",
-    };
-    return severityMap[eventType?.toLowerCase()] || "medium";
   };
 
   const renderHeader = () => (

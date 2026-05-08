@@ -259,7 +259,7 @@ const getEventSeverity = (eventType) => {
       "trespassing",
     ].includes(normalizedType)
   ) {
-    return "medium";
+    return "high";
   }
 
   return "low";
@@ -491,15 +491,7 @@ const AdminDashboard = () => {
             <View style={styles.legend}>
               <View style={styles.legendItem}>
                 <View style={[styles.legendDot, { backgroundColor: SEVERITY_CONFIG.high.fillColor }]} />
-                <Text style={styles.legendText}>High {severityCounts.high}</Text>
-              </View>
-              <View style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: SEVERITY_CONFIG.medium.fillColor }]} />
-                <Text style={styles.legendText}>Medium {severityCounts.medium}</Text>
-              </View>
-              <View style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: SEVERITY_CONFIG.low.fillColor }]} />
-                <Text style={styles.legendText}>Low {severityCounts.low}</Text>
+                <Text style={styles.legendText}>Anomaly Live Count: {severityCounts.high}</Text>
               </View>
             </View>
             <Pressable

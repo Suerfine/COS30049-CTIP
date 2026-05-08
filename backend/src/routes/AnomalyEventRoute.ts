@@ -171,6 +171,22 @@ AnomalyEventRouter.get(
   AnomalyEventController.getUserAnomalyStats,
 );
 
+AnomalyEventRouter.patch(
+  "/:eventId/resolve",
+  auth,
+  [param("eventId").isInt({ min: 1 })],
+  validate,
+  AnomalyEventController.resolveAnomalyEvent,
+);
+
+AnomalyEventRouter.post(
+  "/:eventId/resolve",
+  auth,
+  [param("eventId").isInt({ min: 1 })],
+  validate,
+  AnomalyEventController.resolveAnomalyEvent,
+);
+
 /**
  * @swagger
  * /api/anomaly-events/{userId}:

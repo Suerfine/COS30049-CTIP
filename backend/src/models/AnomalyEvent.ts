@@ -27,6 +27,9 @@ class AnomalyEvent extends Model<
   declare metadata: CreationOptional<Record<string, any> | null>;
   declare latitude: CreationOptional<number | null>;
   declare longitude: CreationOptional<number | null>;
+  declare is_resolved: CreationOptional<boolean>;
+  declare resolved_at: CreationOptional<Date | null>;
+  declare annotated_frame_base64: CreationOptional<string | null>;
   declare created_at: CreationOptional<Date>;
   declare updated_at: CreationOptional<Date>;
   declare deleted_at: CreationOptional<Date | null>;
@@ -76,6 +79,20 @@ AnomalyEvent.init(
     longitude: {
       type: DataTypes.FLOAT,
       allowNull: true,
+    },
+    is_resolved: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+    },
+    resolved_at: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+    annotated_frame_base64: {
+      type: DataTypes.TEXT("long"),
+      allowNull: true,
+      comment: "Base64-encoded annotated frame snapshot captured at anomaly time",
     },
     created_at: {
       type: DataTypes.DATE,

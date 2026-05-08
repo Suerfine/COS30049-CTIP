@@ -20,6 +20,7 @@ interface CreateAnomalyEventRequest {
   metadata?: Record<string, any>;
   latitude?: number;
   longitude?: number;
+  annotated_frame_base64?: string;
 }
 
 interface AnomalyEventResponse {
@@ -29,6 +30,9 @@ interface AnomalyEventResponse {
   metadata?: Record<string, any> | null;
   latitude?: number | null;
   longitude?: number | null;
+  is_resolved: boolean;
+  resolved_at?: Date | null;
+  annotated_frame_base64?: string | null;
   created_at: Date;
   updated_at: Date;
 }
@@ -40,6 +44,11 @@ interface AnomalyMapEventResponse extends AnomalyEventResponse {
     firstname?: string | null;
     lastname?: string | null;
   } | null;
+}
+
+interface ResolveAnomalyEventResponse {
+  message: string;
+  data: AnomalyEventResponse;
 }
 
 class HttpError extends Error {
@@ -61,6 +70,9 @@ function toAnomalyEventResponse(
     metadata: event.metadata,
     latitude: event.latitude,
     longitude: event.longitude,
+    is_resolved: event.is_resolved,
+    resolved_at: event.resolved_at,
+    annotated_frame_base64: event.annotated_frame_base64,
     created_at: event.created_at,
     updated_at: event.updated_at,
   };
@@ -88,6 +100,7 @@ export const createAnomalyEvent = async (
       metadata: req.body.metadata || null,
       latitude: req.body.latitude || null,
       longitude: req.body.longitude || null,
+      annotated_frame_base64: req.body.annotated_frame_base64 || null,
     });
 
     res.status(201).json(toAnomalyEventResponse(event));
@@ -115,13 +128,14 @@ export const getAnomalyEvents = async (
   next: NextFunction,
 ) => {
   try {
-    const { page = 1, size = 20, orderBy = "created_at desc" } = req.query;
+    const { page = 1, size = 20, orderBy = "created_at desc", includeResolved = "true" } = req.query as any;
+    const shouldIncludeResolved = String(includeResolved).toLowerCase() === "true";
 
     const result = await paginateModel(AnomalyEvent, {
       page: parseInt(page as string),
       size: parseInt(size as string),
       orderBy: orderBy as string,
-      where: {},
+      where: shouldIncludeResolved ? {} : { is_resolved: false },
       attributes: [
         "id",
         "user_id",
@@ -129,6 +143,9 @@ export const getAnomalyEvents = async (
         "metadata",
         "latitude",
         "longitude",
+        "is_resolved",
+        "resolved_at",
+        "annotated_frame_base64",
         "created_at",
         "updated_at",
       ],
@@ -162,6 +179,7 @@ export const getAnomalyMapEvents = async (
       where: {
         latitude: { [Op.ne]: null },
         longitude: { [Op.ne]: null },
+        is_resolved: false,
       },
       attributes: [
         "id",
@@ -170,6 +188,9 @@ export const getAnomalyMapEvents = async (
         "metadata",
         "latitude",
         "longitude",
+        "is_resolved",
+        "resolved_at",
+        "annotated_frame_base64",
         "created_at",
         "updated_at",
       ],
@@ -193,6 +214,9 @@ export const getAnomalyMapEvents = async (
         metadata: plainEvent.metadata,
         latitude: plainEvent.latitude,
         longitude: plainEvent.longitude,
+        is_resolved: plainEvent.is_resolved,
+        resolved_at: plainEvent.resolved_at,
+        annotated_frame_base64: plainEvent.annotated_frame_base64,
         created_at: plainEvent.created_at,
         updated_at: plainEvent.updated_at,
         user: plainEvent.user ?? null,
@@ -217,7 +241,8 @@ export const getUserAnomalyEvents = async (
 ) => {
   try {
     const userId = parseInt(req.params.userId);
-    const { page = 1, size = 20, orderBy = "created_at desc" } = req.query;
+    const { page = 1, size = 20, orderBy = "created_at desc", includeResolved = "false" } = req.query as any;
+    const shouldIncludeResolved = String(includeResolved).toLowerCase() === "true";
 
     // Validate user exists
     const user = await User.findByPk(userId);
@@ -229,7 +254,9 @@ export const getUserAnomalyEvents = async (
       page: parseInt(page as string),
       size: parseInt(size as string),
       orderBy: orderBy as string,
-      where: { user_id: userId },
+      where: shouldIncludeResolved
+        ? { user_id: userId }
+        : { user_id: userId, is_resolved: false },
       attributes: [
         "id",
         "user_id",
@@ -237,6 +264,9 @@ export const getUserAnomalyEvents = async (
         "metadata",
         "latitude",
         "longitude",
+        "is_resolved",
+        "resolved_at",
+        "annotated_frame_base64",
         "created_at",
         "updated_at",
       ],
@@ -303,6 +333,46 @@ export const getUserAnomalyStats = async (
       user_id: userId,
       total_events: totalEvents,
       by_type: eventTypeCounts,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+/**
+ * PATCH /api/anomaly-events/:eventId/resolve
+ * Mark a user's anomaly event as resolved.
+ */
+export const resolveAnomalyEvent = async (
+  req: Request<{ eventId: string }, {}, {}>,
+  res: Response<ResolveAnomalyEventResponse | { message: string }>,
+) => {
+  try {
+    const eventId = parseInt(req.params.eventId, 10);
+    const authUser = req.user;
+
+    if (!authUser?.id) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const event = await AnomalyEvent.findOne({
+      where: { id: eventId, user_id: authUser.id },
+    });
+
+    if (!event) {
+      return res.status(404).json({ message: "Anomaly event not found" });
+    }
+
+    if (!event.is_resolved) {
+      event.is_resolved = true;
+      event.resolved_at = new Date();
+      await event.save();
+    }
+
+    res.json({
+      message: "Anomaly event marked as resolved",
+      data: toAnomalyEventResponse(event),
     });
   } catch (error) {
     console.error(error);
