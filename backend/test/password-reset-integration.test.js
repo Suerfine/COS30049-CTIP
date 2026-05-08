@@ -20,10 +20,10 @@ const path = require("path");
 process.env.DB_DIALECT = "sqlite";
 process.env.JWT_SECRET = "test-jwt-secret-key";
 process.env.FRONTEND_URL = "http://localhost:8081";
-process.env.SMTP_HOST = "smtp.test.com";
-process.env.SMTP_USER = "test@test.com";
-process.env.SMTP_PASS = "password";
-process.env.SMTP_FROM = "noreply@test.com";
+delete process.env.SMTP_HOST;
+delete process.env.SMTP_USER;
+delete process.env.SMTP_PASS;
+delete process.env.SMTP_FROM;
 
 const testDbPath = path.join(__dirname, "integration-test.sqlite");
 process.env.DB_STORAGE = testDbPath;

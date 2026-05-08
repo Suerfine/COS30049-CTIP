@@ -7,7 +7,9 @@ const BASE_URL=()=>{
     const hostFromExpo=Constants?.expoConfig?.hostUri?.split(':')?.[0];
     const defaultHost=Platform.OS==='android' ? '10.0.2.2': 'localhost';
     const API_HOST=hostFromExpo || defaultHost;
-    return `http://${API_HOST}:5000/api`;
+    const API_PROTOCOL=process.env.EXPO_PUBLIC_API_PROTOCOL || 'https';
+    const API_PORT=process.env.EXPO_PUBLIC_API_PORT || '5000';
+    return `${API_PROTOCOL}://${API_HOST}:${API_PORT}/api`;
 }
 
 const apiClient=axios.create({

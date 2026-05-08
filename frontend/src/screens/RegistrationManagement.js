@@ -29,8 +29,18 @@ const RegistrationManagement=()=>{
 
         setIsCreating(true);
         try {
-            await RegisterService.approve(user.id);
-            notify('Registration approved', 'The account was created and the approval email was sent if SMTP is configured.');
+            const result = await RegisterService.approve(user.id);
+            if (result?.email_sent === false) {
+                const credentials = result.manual_credentials
+                    ? `\n\nAccount email: ${result.manual_credentials.account_email}\nTemporary password: ${result.manual_credentials.temporary_password}`
+                    : '';
+                notify(
+                    'Registration approved',
+                    `The account was created, but the approval email was not sent.\n\nEmail error: ${result.email_error || 'SMTP delivery failed.'}${credentials}`
+                );
+            } else {
+                notify('Registration approved', 'The account was created and the approval email was sent.');
+            }
             setSelectedUser(null);
             await refresh();
         } catch (err) {

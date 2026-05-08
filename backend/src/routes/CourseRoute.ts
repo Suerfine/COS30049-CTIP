@@ -1,6 +1,7 @@
 import { Router } from "express";
 import * as CourseController from "../controllers/CourseController";
 import { auth } from "../middelware/Auth";
+import { isAdmin } from "../middelware/Role";
 import { uploadPrivateDocument } from "../middelware/PrivateDocumentUpload";
 import moduleRouter from "./ModuleRoute";
 
@@ -51,6 +52,7 @@ courseRouter.use("/:course_Id/modules", moduleRouter);
 courseRouter.post(
   "/",
   auth,
+  isAdmin,
   privateCourseBadgeUpload,
   CourseController.createCourse,
 );
@@ -251,6 +253,7 @@ courseRouter.get("/:id/badge", auth, CourseController.getCourseBadge);
 courseRouter.put(
   "/:id",
   auth,
+  isAdmin,
   privateCourseBadgeUpload,
   CourseController.upsertCourse,
 );
@@ -294,6 +297,6 @@ courseRouter.put(
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-courseRouter.delete("/:id", auth, CourseController.deleteCourse);
+courseRouter.delete("/:id", auth, isAdmin, CourseController.deleteCourse);
 
 export default courseRouter;

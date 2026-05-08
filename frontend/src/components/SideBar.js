@@ -9,12 +9,14 @@ const SideBar = () => {
     const {logout} =useAuth();
     const navigation=useNavigation();
     const currentRoute = useNavigationState((state) => {
-        if (!state) return null;
-        let route=state.routes[state.index];
-        while(route.state){
-            route=route.state.routes[route.state.index];
+        if (!state?.routes?.length) return null;
+
+        let route=state.routes[state.index ?? 0];
+        while(route?.state?.routes?.length){
+            route=route.state.routes[route.state.index ?? 0];
         }
-        return route.name;
+
+        return route?.name ?? null;
     });
     const displayRoute = (currentRoute === 'AdminStack' || !currentRoute) 
         ? 'Admin Dashboard' 
@@ -50,6 +52,7 @@ const SideBar = () => {
                                 <Pressable
                                     style={({hovered})=>[styles.menuItem, isActive && styles.activeIcon, !isActive && hovered && styles.hoverStyle]}
                                         onPress={() => {
+                                        if (!item.route) return;
                                         setActivePage(item.name);
                                         navigation.navigate('AdminStack',{
                                             screen:item.route

@@ -368,18 +368,39 @@ export const approveRegistration = async (
       reviewed_at: new Date(),
     });
 
-    await sendRegistrationApprovedEmail({
-      to: registration.personal_email,
-      firstname: registration.firstname,
-      lastname: registration.lastname,
-      accountEmail: sfcEmail,
-      password: temporary_password,
-    });
+    let emailSent = true;
+    let emailErrorMessage: string | undefined;
+
+    try {
+      await sendRegistrationApprovedEmail({
+        to: registration.personal_email,
+        firstname: registration.firstname,
+        lastname: registration.lastname,
+        accountEmail: sfcEmail,
+        password: temporary_password,
+      });
+    } catch (emailError) {
+      emailSent = false;
+      emailErrorMessage =
+        emailError instanceof Error ? emailError.message : "Email delivery failed";
+      console.warn(
+        "Failed to send registration approval email:",
+        emailErrorMessage,
+      );
+    }
 
     // Return the created user and registration details (excluding password hash)
     return res.status(200).json({
       registration: toRegistrationResponse(registration),
       user: toUserResponse(user),
+      email_sent: emailSent,
+      email_error: emailErrorMessage,
+      manual_credentials: emailSent
+        ? undefined
+        : {
+            account_email: sfcEmail,
+            temporary_password,
+          },
     });
   } catch (err) {
     if (err instanceof ValidationError) {
@@ -426,12 +447,19 @@ export const rejectRegistration = async (
       reviewed_at: new Date(),
     });
 
-    await sendRegistrationRejectedEmail({
-      to: registration.personal_email,
-      firstname: registration.firstname,
-      lastname: registration.lastname,
-      reason: req.body.message,
-    });
+    try {
+      await sendRegistrationRejectedEmail({
+        to: registration.personal_email,
+        firstname: registration.firstname,
+        lastname: registration.lastname,
+        reason: req.body.message,
+      });
+    } catch (emailError) {
+      console.warn(
+        "Failed to send registration rejection email:",
+        emailError instanceof Error ? emailError.message : emailError,
+      );
+    }
 
     return res.json(toRegistrationResponse(registration));
   } catch (err) {
