@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { progressService } from '../services/progressService';
+import { progressService } from '../services/ProgressService';
 
 export const useCourseProgress = (course) => {
     const [progressMap, setProgressMap] = useState({});
