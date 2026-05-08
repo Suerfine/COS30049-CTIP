@@ -112,22 +112,6 @@ const MapViewport = ({ events, center }) => {
   return null;
 };
 
-const AnomalyTooltipContent = ({ event }) => {
-  const confidence = getConfidenceLabel(event.metadata);
-
-  return (
-    <div style={webStyles.tooltip}>
-      <strong>{getEventTypeLabel(event.event_type)}</strong>
-      <span>{formatDate(event.created_at)}</span>
-      <span>
-        {Number(event.latitude).toFixed(6)}, {Number(event.longitude).toFixed(6)}
-      </span>
-      <span>{getUserLabel(event)}</span>
-      {confidence ? <span>Confidence: {confidence}</span> : null}
-    </div>
-  );
-};
-
 const AnomalyPopupContent = ({ event }) => {
   const metadataRows = getMetadataRows(event.metadata);
   const severity = getEventSeverity(event.event_type);
@@ -206,8 +190,7 @@ const AdminDashboard = () => {
     notifications, 
     loading: notificationsLoading, 
     error: notificationsError, 
-    fetchNotifications, 
-    handleDismiss 
+    fetchNotifications
   } = useNotification();
 
   const [hoveredAnomaly, setHoveredAnomaly] = useState(null);
@@ -233,7 +216,7 @@ const AdminDashboard = () => {
   }, [notifications]);
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <View style={styles.screenContainer}>
       <style>{LEAFLET_CSS}</style>
       <View style={styles.cards}>
         <View style={styles.adminCard}>
@@ -351,9 +334,6 @@ const AdminDashboard = () => {
                       weight: 2,
                     }}
                   >
-                    <Tooltip direction="top" offset={[0, -8]} opacity={1}>
-                      <AnomalyTooltipContent event={event} />
-                    </Tooltip>
                     <Popup>
                       <AnomalyPopupContent event={event} />
                     </Popup>
@@ -412,29 +392,22 @@ const AdminDashboard = () => {
                       {new Date(notification.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </Text>
                   </View>
-                  <View style={styles.notificationActions}>
-                    <Pressable
-                      onPress={() => handleDismiss(notification.id)}
-                      style={({ hovered }) => [styles.dismissBtn, hovered && styles.dismissBtnHover]}
-                      hitSlop={10}
-                    >
-                      <X size={20} color="#9ca3af" />
-                    </Pressable>
-                  </View>
                 </View>
               ))}
             </ScrollView>
           )}
         </View>
       </View>
-    </ScrollView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
+  screenContainer: {
+    height: '100vh', 
     backgroundColor: "#f6f8f7",
+    padding: 20,
+    gap: 20,
   },
   content: {
     paddingVertical: 20,
@@ -454,6 +427,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 10,
+    flex: 1,
   },
   label: {
     fontSize: 14,
@@ -473,8 +447,7 @@ const styles = StyleSheet.create({
   },
   cards: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    gap: 16,
+    gap: 25,
     flexWrap: "wrap",
     marginHorizontal: 20,
   },
@@ -483,11 +456,11 @@ const styles = StyleSheet.create({
   enrollTheme: { backgroundColor: "#f0fdf4" },
   alertTheme: { backgroundColor: "#fef2f2" },
   mapRow: {
+    flex: 1, 
     flexDirection: "row",
-    gap: 24,
-    flexWrap: "wrap",
-    alignItems: "flex-start",
-    marginLeft: 20,
+    gap: 20,
+    minHeight: 0,
+    paddingHorizontal: 20,
   },
   mapSection: {
     backgroundColor: "white",
