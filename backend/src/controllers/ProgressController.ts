@@ -36,7 +36,7 @@ const calculateProgress = async (userId: number, courseId: number, moduleId?: nu
 
   const modules = await Module.findAll({
     where: whereClause,
-    subQuery: false, // Essential for SQLite nested joins
+    subQuery: false, 
     include: [{
       model: Page,
       as: 'pages',
@@ -150,15 +150,27 @@ export const elementProgress = async (
       include: [{
         model: Submission,
         as: 'submissions',
-        where: { user_id: userId },
-        required: false
+        required: false,
+        include: [{
+          model: Enrollment,
+          as: 'enrollment',
+          where: { user_id: userId },
+          required: false
+        }]
       }]
     });
 
     if (!element) throw new HttpError(404, "Element not found");
 
     const maxScore = Number(element.score) || 0;
-    const earned = (element.submissions && element.submissions.length > 0) ? maxScore : 0;
+    
+    const userSubmissions = element.submissions?.filter(sub => 
+      sub.enrollment && Number(sub.enrollment.user_id) === Number(userId)
+    ) || [];
+
+    const earned = userSubmissions.reduce((sum, sub) => {
+      return sum + (Number(sub.earned_grade) || 0);
+    }, 0);
 
     return res.status(200).json({
       score: Number(earned),

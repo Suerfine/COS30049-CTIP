@@ -37,14 +37,6 @@ const MobileTopBar=({onToggleSidebar, routeName, onFilterPress, navigation})=>{
                         <View style={styles.badge}></View>
                     </Pressable>
                 )}
-                {routeName==='Courses' && (<Pressable 
-                    onPress={
-                        onFilterPress
-                    }
-                    style={styles.iconBtn}
-                >
-                    <SlidersHorizontal size={22} color="#333"/>
-                </Pressable>)}
                 {/* Notification */}
                 <Pressable style={styles.iconBtn}>
                     <Bell size={22} color="#333"/>

@@ -118,7 +118,7 @@ const EnrollmentDetailModal = ({
                             style={[modalStyles.actionBtn, modalStyles.outlineBtn]}
                             onPress={() => onUnenroll(data.id)}
                         >
-                            <Text style={modalStyles.outlineBtnText}>Unenroll</Text>
+                            <Text style={modalStyles.outlineBtnText}>Reject</Text>
                         </Pressable>
 
                         <Pressable 

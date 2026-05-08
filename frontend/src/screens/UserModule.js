@@ -209,16 +209,18 @@ const UserModule = ({navigation}) => {
                                 elements={elements}
                                 role={currentUser.role}
                                 courseId={id}
-                                onProgressUpdate={() => {
-                                    saveProgress();
-                                    refreshProgress(); 
+                                onProgressUpdate={async (elementId, score, content = {}) => {
+                                    const result = await saveProgress(elementId, score, content); 
+                                    if (result && result.success) {
+                                        refreshProgress(); 
+                                    }
+                                    return result; 
                                 }}
                                 userMarks={userMarks}
                             />
                         )}
                     </View>
                 );
-
             default:
                 return null;
         }
@@ -294,7 +296,13 @@ const UserModule = ({navigation}) => {
                                         elements={elements}
                                         role={currentUser.role}
                                         courseId={id}
-                                        onProgressUpdate={saveProgress}
+                                        onProgressUpdate={async (elementId, score, content = {}) => {
+                                            const result = await saveProgress(elementId, score, content); 
+                                            if (result && result.success) {
+                                                refreshProgress(); 
+                                            }
+                                            return result; 
+                                        }}
                                         userMarks={userMarks}
                                     />
                                 )}
