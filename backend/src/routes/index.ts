@@ -83,6 +83,11 @@ router.use("/Anomaly-events", anomalyEventRouter);
 router.use("/ar-models", arModelRouter);
 
 /*===============================
+=          AR MODELS            =
+===============================*/
+router.use("/ar-models", arModelRouter);
+
+/*===============================
 =        COURSE ROUTES         =
 ===============================*/
 router.use("/courses", courseRouter);

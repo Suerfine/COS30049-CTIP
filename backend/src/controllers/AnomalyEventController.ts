@@ -33,6 +33,15 @@ interface AnomalyEventResponse {
   updated_at: Date;
 }
 
+interface AnomalyMapEventResponse extends AnomalyEventResponse {
+  user?: {
+    id: number;
+    username: string;
+    firstname?: string | null;
+    lastname?: string | null;
+  } | null;
+}
+
 class HttpError extends Error {
   status: number;
 
@@ -133,6 +142,64 @@ export const getAnomalyEvents = async (
     } as any);
 
     res.json(result);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+/**
+ * GET /api/Anomaly-events/map
+ * List all anomaly events with valid coordinates for map plotting
+ */
+export const getAnomalyMapEvents = async (
+  req: Request,
+  res: Response<AnomalyMapEventResponse[] | { message: string }>,
+  next: NextFunction,
+) => {
+  try {
+    const events = await AnomalyEvent.findAll({
+      where: {
+        latitude: { [Op.ne]: null },
+        longitude: { [Op.ne]: null },
+      },
+      attributes: [
+        "id",
+        "user_id",
+        "event_type",
+        "metadata",
+        "latitude",
+        "longitude",
+        "created_at",
+        "updated_at",
+      ],
+      include: [
+        {
+          model: User,
+          as: "user",
+          attributes: ["id", "username", "firstname", "lastname"],
+        },
+      ],
+      order: [["created_at", "DESC"]],
+    });
+
+    const response = events.map((event) => {
+      const plainEvent = event.get({ plain: true }) as any;
+
+      return {
+        id: plainEvent.id,
+        user_id: plainEvent.user_id,
+        event_type: plainEvent.event_type,
+        metadata: plainEvent.metadata,
+        latitude: plainEvent.latitude,
+        longitude: plainEvent.longitude,
+        created_at: plainEvent.created_at,
+        updated_at: plainEvent.updated_at,
+        user: plainEvent.user ?? null,
+      };
+    });
+
+    res.json(response);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Internal server error" });
