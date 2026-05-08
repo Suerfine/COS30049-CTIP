@@ -375,7 +375,7 @@ const AccountManagement = () => {
               style={styles.pillTrigger}
               onPress={() => setIsOpen(!isOpen)}
             >
-              <Text style={styles.pillText}>Role</Text>
+              <Text style={styles.pillText}>{currentRole !== 'All' ? currentRole : 'Role'}</Text>
               {isOpen ? (
                 <ChevronUp size={16} color="#4b5563" />
               ) : (

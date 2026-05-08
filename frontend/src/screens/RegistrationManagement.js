@@ -156,7 +156,7 @@ const RegistrationManagement=()=>{
                             style={styles.pillTrigger} 
                             onPress={() => setIsOpen(!isOpen)}
                         > 
-                            <Text style={styles.pillText}>Status</Text>
+                            <Text style={styles.pillText}>{currentStatus !== 'All' ? currentStatus : 'Status'}</Text>
                             {isOpen ? (<ChevronUp size={16} color="#4b5563" />) : (<ChevronDown size={16} color="#4b5563" />)}
                         </Pressable>
 
@@ -601,7 +601,7 @@ const styles = StyleSheet.create({
         elevation: 5,
         borderWidth: 1,
         borderColor: '#f0f0f0',
-        userSelect:"none"
+        userSelect:"none",
     },
     dropdownWrapper:{
         position:'relative',
