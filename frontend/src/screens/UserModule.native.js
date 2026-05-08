@@ -427,7 +427,10 @@ const UserModule = ({ navigation }) => {
                   elements={elements}
                   role={currentUser.role}
                   courseId={id}
-                  onProgressUpdate={saveProgress}
+                  onProgressUpdate={async () => {
+                      await saveProgress(elementId, score, content);
+                      refreshProgress();
+                  }}
                   onRegisterWorkshop={registerWorkshop}
                   registering={registering}
                   userMarks={userMarks}

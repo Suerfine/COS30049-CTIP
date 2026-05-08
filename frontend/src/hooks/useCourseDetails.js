@@ -187,6 +187,7 @@ export const useCourseDetails=(id, enrollmentId, initialMarks = {})=>{
     };
 
     const saveProgress = useCallback(async (elementId, score, content = {}) => {
+        console.log("Attempting to save progress:", { elementId, score, content });
         try {
             const result = await submissionService.create({
                 enrollment_id: Number(enrollmentId),

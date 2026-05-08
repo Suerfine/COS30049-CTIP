@@ -36,7 +36,7 @@ const calculateProgress = async (userId: number, courseId: number, moduleId?: nu
 
   const modules = await Module.findAll({
     where: whereClause,
-    subQuery: false, // Essential for SQLite nested joins
+    subQuery: false, 
     include: [{
       model: Page,
       as: 'pages',
