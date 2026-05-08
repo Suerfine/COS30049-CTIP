@@ -1,0 +1,245 @@
+import { Request, Response, NextFunction } from "express";
+import {
+  CreateDiscussionRequest,
+  DiscussionResponse,
+  UpdateDiscussionRequest,
+  DiscussionPaginateRequest,
+} from "../types/Discussion";
+import { Discussion } from "../models";
+import { formatPaginateResponse, paginateModel } from "../utils/paginate";
+import { PaginateRequestParams, PaginateResponse } from "../types/common";
+
+class HttpError extends Error {
+  status: number;
+  constructor(status: number, message: string) {
+    super(message);
+    this.status = status;
+  }
+}
+
+export const createDiscussion = async (
+  req: Request<{}, any, CreateDiscussionRequest>,
+  res: Response<DiscussionResponse | { message: string }>,
+  next: NextFunction,
+) => {
+  try {
+    const course_id = Number((req.params as { course_id?: string }).course_id);
+    const { title, is_public = false } = req.body;
+
+    if (Number.isNaN(course_id)) {
+      throw new HttpError(400, "Invalid course id");
+    }
+
+    // Cehcking if the user is logged in just to deal with type error
+    if (!req.user) {
+      throw new HttpError(401, "Unauthorized");
+    }
+
+    // Create the discussion
+    const discussion = await Discussion.create({
+      course_id,
+      user_id: req.user.id,
+      title,
+      is_public,
+    });
+
+    //Return the created discussion
+    res.status(201).json({
+      id: discussion.id,
+      course_id: discussion.course_id,
+      creator_user_id: discussion.user_id,
+      title: discussion.title,
+      is_public: discussion.is_public,
+      created_at: discussion.created_at,
+      updated_at: discussion.updated_at,
+    });
+  } catch (err) {
+    if (err instanceof HttpError) {
+      res.status(err.status).json({ message: err.message });
+    } else {
+      res.status(500).json({ message: "Internal server error\n" + err });
+    }
+  }
+};
+
+export const getAllDiscussions = async (
+  req: Request,
+  res: Response<PaginateResponse<DiscussionResponse> | { message: string }>,
+  next: NextFunction,
+) => {
+  try {
+    const course_id = Number((req.params as { course_id?: string }).course_id);
+    if (Number.isNaN(course_id)) {
+      throw new HttpError(400, "Invalid course id");
+    }
+
+    const discussions = await paginateModel(Discussion, req.query, {
+      paranoid: !req.query.isDeleted,
+      where: { course_id },
+    });
+    const baseUrl = `${req.protocol}://${req.get("host")}${req.baseUrl}${req.path}`;
+    const formattedResponse = formatPaginateResponse(
+      discussions.data.map((discussion) => ({
+        id: discussion.id,
+        course_id: discussion.course_id,
+        creator_user_id: discussion.user_id,
+        title: discussion.title,
+        is_public: discussion.is_public,
+        created_at: discussion.created_at,
+        updated_at: discussion.updated_at,
+      })),
+      req.query,
+      true,
+      {
+        page: discussions.page,
+        size: discussions.size,
+        totalElements: discussions.totalElements,
+        totalPages: discussions.totalPages,
+        baseUrl,
+      },
+    );
+
+    return res.status(200).json(formattedResponse);
+  } catch (err) {
+    if (err instanceof HttpError) {
+      res.status(err.status).json({ message: err.message });
+    } else {
+      res.status(500).json({ message: "Internal server error\n" + err });
+    }
+  }
+};
+
+export const getDiscussionById = async (
+  req: Request,
+  res: Response<DiscussionResponse | { message: string }>,
+  next: NextFunction,
+) => {
+  try {
+    const params = req.params as {
+      course_id?: string;
+      discussion_id?: string;
+    };
+    const course_id = Number(params.course_id);
+    const discussion_id = Number(params.discussion_id);
+
+    if (Number.isNaN(course_id) || Number.isNaN(discussion_id)) {
+      throw new HttpError(400, "Invalid course or discussion id");
+    }
+
+    const discussion = await Discussion.findOne({
+      where: { id: discussion_id, course_id },
+    });
+
+    if (!discussion) {
+      throw new HttpError(404, "Discussion not found");
+    }
+
+    res.status(200).json({
+      id: discussion.id,
+      course_id: discussion.course_id,
+      creator_user_id: discussion.user_id,
+      title: discussion.title,
+      is_public: discussion.is_public,
+      created_at: discussion.created_at,
+      updated_at: discussion.updated_at,
+    });
+  } catch (err) {
+    if (err instanceof HttpError) {
+      res.status(err.status).json({ message: err.message });
+    } else {
+      res.status(500).json({ message: "Internal server error\n" + err });
+    }
+  }
+};
+
+export const updateDiscussion = async (
+  req: Request<{}, any, UpdateDiscussionRequest>,
+  res: Response<DiscussionResponse | { message: string }>,
+  next: NextFunction,
+) => {
+  try {
+    const params = req.params as {
+      course_id?: string;
+      discussion_id?: string;
+    };
+    const course_id = Number(params.course_id);
+    const discussion_id = Number(params.discussion_id);
+    const { title, is_public } = req.body;
+
+    if (Number.isNaN(course_id) || Number.isNaN(discussion_id)) {
+      throw new HttpError(400, "Invalid course or discussion id");
+    }
+
+    //Check if the discussion exists or not
+    const discussion = await Discussion.findOne({
+      where: { id: discussion_id, course_id },
+    });
+    if (!discussion) {
+      throw new HttpError(404, "Discussion not found");
+    }
+
+    // Update the discussion
+    if (title !== undefined && title !== discussion.title) {
+      discussion.title = title;
+    }
+    if (is_public !== undefined && is_public !== discussion.is_public) {
+      discussion.is_public = is_public;
+    }
+    await discussion.save();
+
+    // Return the updated discussion
+    res.status(200).json({
+      id: discussion.id,
+      course_id: discussion.course_id,
+      creator_user_id: discussion.user_id,
+      title: discussion.title,
+      is_public: discussion.is_public,
+      created_at: discussion.created_at,
+      updated_at: discussion.updated_at,
+    });
+  } catch (err) {
+    if (err instanceof HttpError) {
+      res.status(err.status).json({ message: err.message });
+    } else {
+      res.status(500).json({ message: "Internal server error\n" + err });
+    }
+  }
+};
+
+export const deleteDiscussion = async (
+  req: Request,
+  res: Response<{ message: string }>,
+  next: NextFunction,
+) => {
+  try {
+    const params = req.params as {
+      course_id?: string;
+      discussion_id?: string;
+    };
+    const course_id = Number(params.course_id);
+    const discussion_id = Number(params.discussion_id);
+
+    if (Number.isNaN(course_id) || Number.isNaN(discussion_id)) {
+      throw new HttpError(400, "Invalid course or discussion id");
+    }
+
+    // Check if the discussion exists or not
+    const discussion = await Discussion.findOne({
+      where: { id: discussion_id, course_id },
+    });
+    if (!discussion) {
+      throw new HttpError(404, "Discussion not found");
+    }
+
+    // Soft delete the discussion
+    await discussion.destroy();
+
+    res.status(200).json({ message: "Discussion deleted successfully" });
+  } catch (err) {
+    if (err instanceof HttpError) {
+      res.status(err.status).json({ message: err.message });
+    } else {
+      res.status(500).json({ message: "Internal server error\n" + err });
+    }
+  }
+};

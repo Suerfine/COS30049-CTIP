@@ -23,7 +23,7 @@ class Enrollment extends Model<
   declare completed_at: CreationOptional<Date | null>;
   declare reviewed_by_user_id: CreationOptional<ForeignKey<User["id"]> | null>;
   declare reviewed_at: CreationOptional<Date | null>;
-  declare review_comment: CreationOptional<string | null>;
+  declare reviewed_comment: CreationOptional<string | null>;
   declare badge_expire_at: CreationOptional<Date | null>;
   declare created_at: CreationOptional<Date>;
   declare updated_at: CreationOptional<Date>;
@@ -85,7 +85,7 @@ Enrollment.init(
       type: DataTypes.DATE,
       allowNull: true,
     },
-    review_comment: {
+    reviewed_comment: {
       type: DataTypes.TEXT,
       allowNull: true,
     },

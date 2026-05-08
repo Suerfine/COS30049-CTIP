@@ -145,3 +145,6 @@ vite.config.ts.timestamp-*
 
 # Storage files
 storage/*
+!storage/public/
+storage/public/*
+!storage/public/dev/

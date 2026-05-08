@@ -1,4 +1,5 @@
 import { RegistrationStatus } from "../enum/RegistrationStatus";
+import { UserResponse } from "./User";
 
 export interface RegistrationResponse {
   id: number;
@@ -17,16 +18,11 @@ export interface RegistrationResponse {
 }
 
 export interface CreateRegistrationRequest {
-  user_id?: number | null;
-  reviewed_by_user_id?: number | null;
-  status?: RegistrationStatus;
   firstname: string;
   lastname: string;
   identification: string;
   personal_email: string;
   tel: string;
-  admin_remark?: string | null;
-  reviewed_at?: string | Date | null;
 }
 
 export interface UpdateRegistrationRequest {
@@ -40,4 +36,15 @@ export interface UpdateRegistrationRequest {
   tel?: string;
   admin_remark?: string | null;
   reviewed_at?: string | Date | null;
+}
+
+export interface ApproveRegistrationRequest {}
+
+export interface RejectRegistrationRequest {
+  message: string;
+}
+
+export interface ApproveRegistrationResponse {
+  registration: RegistrationResponse;
+  user: UserResponse;
 }

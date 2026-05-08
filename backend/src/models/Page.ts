@@ -17,6 +17,7 @@ class Page extends Model<InferAttributes<Page>, InferCreationAttributes<Page>> {
   declare description: CreationOptional<string | null>;
   declare passing_score: number;
   declare max_tries: CreationOptional<number | null>;
+  declare final_quiz: CreationOptional<boolean>;
   declare created_at: CreationOptional<Date>;
   declare updated_at: CreationOptional<Date>;
   declare deleted_at: CreationOptional<Date | null>;
@@ -61,6 +62,11 @@ Page.init(
       type: DataTypes.INTEGER,
       allowNull: true,
       defaultValue: 3,
+    },
+    final_quiz: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
     },
     created_at: {
       type: DataTypes.DATE,

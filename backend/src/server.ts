@@ -1,12 +1,31 @@
 import express, { Application, Request, Response } from "express";
+import path from "path";
+import cors from "cors";
+import swaggerUi from "swagger-ui-express";
 import sequelize from "./config/Database";
 import "./models";
 import routes from "./routes";
-import swaggerUi from "swagger-ui-express";
 import swaggerSpec from "./config/Swagger";
+
+// Load environment variables from .env file
+const dotenv = require("dotenv");
+dotenv.config();
+
+// Issue with augmeneted Express Request type not being recognized in middleware, so we need to redeclare it here
+import { User } from "../src/models";
+declare global {
+  namespace Express {
+    export interface Request {
+      user?: User; // Add the user property to the Request interface
+    }
+  }
+}
 
 const app: Application = express();
 const port = Number(process.env.PORT) || 5000;
+
+// Configure storage path for public assets (e.g. user profile pictures)
+const publicStoragePath = path.resolve(__dirname, "../storage/public");
 
 // Enable URL-encoded form data parsing
 app.use(express.urlencoded({ extended: true }));
@@ -14,17 +33,33 @@ app.use(express.urlencoded({ extended: true }));
 // Middleware to parse JSON bodies
 app.use(express.json());
 
+// Enable CORS for all routes
+app.use(
+  cors({
+    origin: true,
+    credentials: true,
+    allowedHeaders: ["Content-Type", "Authorization"],
+  }),
+);
+
+// Serve public storage assets
+app.use("/public", express.static(publicStoragePath));
+
 // Basic route
 app.get("/", (req: Request, res: Response) => {
   res.send("Hello, TypeScript + Express!");
 });
 
 // Swagger docs
-app.get("/api/docs.json", (_req: Request, res: Response) => {
-  res.setHeader("Content-Type", "application/json");
-  res.send(swaggerSpec);
-});
-app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+app.use(
+  "/api/docs",
+  swaggerUi.serve,
+  // enable persistent authorization in the UI so the "Authorize" dialog
+  // correctly applies the Bearer token to Try it Out requests
+  swaggerUi.setup(swaggerSpec, undefined, {
+    swaggerOptions: { persistAuthorization: true },
+  }),
+);
 
 // Mount ALL routes on /api
 app.use("/api", routes);

@@ -29,7 +29,7 @@ interface Token {
   value: string;
 }
 
-type ComparisonOperator = "eq" | "ne" | "gt" | "ge" | "lt" | "le";
+type ComparisonOperator = "eq" | "ne" | "gt" | "ge" | "lt" | "le" | "like";
 
 const DEFAULT_PAGE = 1;
 const DEFAULT_SIZE = 20;
@@ -42,6 +42,7 @@ const FILTER_OPERATORS: Record<ComparisonOperator, symbol> = {
   ge: Op.gte,
   lt: Op.lt,
   le: Op.lte,
+  like: Op.like,
 };
 
 function normalizePositiveInt(
