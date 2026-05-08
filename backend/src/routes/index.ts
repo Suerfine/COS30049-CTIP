@@ -18,6 +18,7 @@ import sensorLogRouter from "./SensorLogRoute";
 import * as ElementController from "../controllers/ElementController";
 import { auth } from "../middelware/Auth";
 import sensorRouter from "./SensorRoute";
+import discussionRouter from "./DiscussionRoute";
 const router = Router();
 
 /*=============================
@@ -91,18 +92,13 @@ router.use("/enrollments", enrollmentRouter);
 ===============================*/
 router.use("/courses", courseRouter);
 router.use("/tags", tagRouter);
-router.use("/", moduleRouter);
-router.use("/", pageRouter);
-router.use("/", messageRouter);
-router.use("/", enrollmentRouter);
+router.use("/enrollments", enrollmentRouter);
 router.use("/", submissionRouter);
 router.use("/progress", progressRouter);
-
-/*===============================
-=        SENSOR ROUTES         =
-===============================*/
+router.use("/courses/:course_id/discussion", discussionRouter);
+router.use("/", messageRouter);
 router.use("/sensors", sensorRouter);
-router.use("/", sensorLogRouter);
+router.use("/sensors/{sensor_id}/logs", sensorLogRouter);
 
 /*===============================
 =     NOTIFICATION ROUTES      =
@@ -113,12 +109,6 @@ router.use("/notifications", NotificationRouter);
 =     Event ROUTES      =
 ===============================*/
 router.use("/events", eventRouter);
-
-/*===============================
-=        ENROLLMENT ROUTES        =
-===============================*/
-// TODO: Temporarily adding some of elements routes here to deal with some architecture issues.
-router.use("/", elementRouter);
 
 /**
  * @swagger
@@ -190,4 +180,50 @@ router.post(
   ElementController.joinWorkshop,
 );
 
+/**
+ * Debug function to log all route handlers as they are called.
+ * @param router The Express router to instrument.
+ */
+function instrumentRouter(router: Router) {
+  const anyRouter = router as any;
+  if (!anyRouter.stack || !Array.isArray(anyRouter.stack)) return;
+
+  anyRouter.stack.forEach((layer: any) => {
+    if (layer.route && layer.route.stack) {
+      layer.route.stack.forEach((routeLayer: any) => {
+        if (routeLayer.handle && routeLayer.handle.__instrumented) return;
+
+        const original = routeLayer.handle;
+        if (typeof original !== "function") return;
+
+        const wrapped = function (this: any, req: any, res: any, next: any) {
+          const handlerName = original.name || "<anonymous>";
+          const routePath = `${req.baseUrl || ""}${req.route?.path || ""}`;
+          console.log(`[router] ${req.method} ${routePath} -> ${handlerName}`);
+          try {
+            const result = original.call(this, req, res, next);
+            if (result && typeof result.then === "function") {
+              result.catch(next);
+            }
+            return result;
+          } catch (err) {
+            next(err);
+          }
+        };
+
+        (wrapped as any).__instrumented = true;
+        routeLayer.handle = wrapped;
+      });
+    }
+
+    if (
+      layer.name === "router" &&
+      layer.handle &&
+      Array.isArray(layer.handle.stack)
+    ) {
+      instrumentRouter(layer.handle);
+    }
+  });
+}
+instrumentRouter(router);
 export default router;
