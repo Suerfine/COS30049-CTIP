@@ -1,37 +1,19 @@
-import React, { useState, useEffect} from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, Pressable, Image} from 'react-native';
-import {LayoutDashboard, Book, ClipboardList, Flag, CreditCard,Bell, LogOut, UserPlus, User2} from 'lucide-react-native'
-import { CommonActions } from '@react-navigation/native';
-import { useNavigationState, useNavigation } from '@react-navigation/native';
-import { useAuth } from '../context/AuthContext';
-import { useUserDashboard } from '../hooks/useUserDashboard';
+import {LayoutDashboard, Book, ClipboardList, Flag, CreditCard,Bell, LogOut, User2} from 'lucide-react-native'
+import { CommonActions, useNavigation } from '@react-navigation/native';
 
 const SideBar = () => {
-    const {logout} =useAuth();
-    const { user } = useUserDashboard();
     const navigation=useNavigation();
-    const currentRoute = useNavigationState((state) => {
-        if (!state) return null;
-        let route=state.routes[state.index];
-        while(route.state){
-            route=route.state.routes[route.state.index];
-        }
-        return route.name;
-    });
-    const displayRoute = (currentRoute === 'AdminStack' || !currentRoute) 
-        ? 'Admin Dashboard' 
-        : currentRoute;
     // Navigation Link
     const menuItems= [
-        {name:'Dashboard', icon: LayoutDashboard, route:'Admin Dashboard'},
-        {name: 'Registration', icon: UserPlus, route:'Registration Management'},
-        {name: 'Accounts', icon: User2, route:'Account Management'},
+        {name:'Dashboard', icon: LayoutDashboard, route:'User Dashboard'},
+        {name: 'Users', icon: User2, route:'User Management'},
         {name: 'Courses', icon: Book, route:'Course Management'},
-        {name: 'Enrollment', icon: ClipboardList, route:'Enrollment Management'},
-        // {name:'Payment', icon: CreditCard},
+        {name: 'Enrollment', icon: ClipboardList},
+        {name:'Payment', icon: CreditCard},
         {name:'Abnormalies', icon: Flag},
     ];
-    
 
     //Set State
     const [activePage, setActivePage]=useState('Courses');
@@ -43,9 +25,7 @@ const SideBar = () => {
                 <Image source={require('../../assets/sfc_logo.png')} style={styles.logo} accessibilityLabel='Logo of SFC'/>
                 {menuItems.map((item) => {
                     const IconComponent=item.icon;
-                    const isExactMatch= displayRoute===item.route;
-                    const isCourseDetailActive=item.name==='Courses' && displayRoute==='Course Details';
-                    const isActive=isExactMatch || isCourseDetailActive;
+                    const isActive= activePage === item.name;
                     
                     return(
                         <View key={item.name}>
@@ -55,9 +35,12 @@ const SideBar = () => {
                                     style={({hovered})=>[styles.menuItem, isActive && styles.activeIcon, !isActive && hovered && styles.hoverStyle]}
                                         onPress={() => {
                                         setActivePage(item.name);
-                                        navigation.navigate('AdminStack',{
-                                            screen:item.route
-                                        })
+                                        navigation.dispatch(
+                                            CommonActions.reset({
+                                                index: 0,
+                                                routes: [{ name: item.route }],
+                                            })
+                                        );
 
                                     }}
                                 >
@@ -78,26 +61,14 @@ const SideBar = () => {
             </View>
             <View style={styles.admin}>
                 <View style={styles.adminInfo}>
-                    {/* Profile  */}
-                    {user?.pfp_url ? (
-                        <Image source={{ uri: user.pfp_url }} style={styles.profilePic}/>
-                        ) : (
-                            <View style={styles.pfpPlaceholder}>
-                                <Text style={styles.pfpInitials}>
-                                    {user?.firstname ? user?.firstname[0].toUpperCase() : '?'}
-                                </Text>
-                            </View>
-                        )}
-                        <View>
-                            <Text>{user?.firstname}</Text>
-                            <Text style={styles.role}>{user?.role === 'admin' && 'Admin'}</Text>
-                        </View>
+                    <Image source={require('../../assets/profile.png')} style={styles.profile} accessibilityLabel='Default Admin Profile'/>
+                        <Text>Admin</Text>
                 </View>
                 <Pressable
                     style={({ hovered }) => [
                         styles.logout,
                         hovered && styles.logoutHover, 
-                    ]} onPress={()=>logout()}
+                    ]}
                     >
                     <LogOut size={17}/>
                 </Pressable>
@@ -115,13 +86,15 @@ const styles = StyleSheet.create({
         flex:1,
         borderRightColor:'#3f3f3f4d',
         borderRightWidth:1,
-        backgroundColor:"white"
+
     },
     link:{
         gap:15,
         paddingBottom:25,
         borderBottomWidth: 1,
         borderBottomColor: '#ccc',
+        backgroundColor:'#ffffff',
+        
     },
     linkbtn:{
         paddingTop:8
@@ -155,50 +128,31 @@ const styles = StyleSheet.create({
         height:40,
         borderRadius:50,
         resizeMode:'contain',
-    },
-    admin:{
+},
+admin:{
         flex: 1,
         justifyContent:'space-between',
         alignItems:'flex-end',
         paddingBottom:10,
         flexDirection:'row',
         gap:15,
-            
-    },
-    logout:{
-        marginBottom:10,
-        color:'#474747'
-    },
-    adminInfo:{
-        flexDirection:'row',
-        alignItems:'center',
-        gap:5
-    },
-    hoverStyle:{
-        backgroundColor:"#eaefeb"
-    },
-    logoutHover:{
-        color:'#efab21'
-    },
-    role:{
-        fontSize:12,
-        color:"#6a6a6a"
-    },
-    pfpPlaceholder:{
-        width: 40,
-        height: 40,
-        borderRadius: 60,
-        backgroundColor: '#2f6618fe',
-        borderWidth: 1,
-        borderColor: '#ccc',
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    pfpInitials:{
-        fontSize: 14,
-        fontWeight: '700',
-        color: 'white',
-    },
+        
+},
+logout:{
+    marginBottom:10,
+    color:'#474747'
+},
+adminInfo:{
+    flexDirection:'row',
+    alignItems:'center',
+    gap:5
+},
+hoverStyle:{
+    backgroundColor:"#eaefeb"
+},
+logoutHover:{
+    color:'#efab21'
+}
 });
 
 export default SideBar;

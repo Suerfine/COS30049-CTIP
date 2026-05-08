@@ -1,8 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import path from "path";
-import { promises as fs } from "fs";
-import sharp from "sharp";
-import { User } from "../models";
+import { User, Registration } from "../models";
 import {
   CreateUserRequest,
   GetAllUserRequest,
@@ -13,32 +10,12 @@ import { formatPaginateResponse, paginateModel } from "../utils/paginate";
 import { PaginateRequestParams, PaginateResponse } from "../types/common";
 import { UserRoles } from "../enum/UserRoles";
 import { hashPassword } from "../utils/password";
-import { getStorage } from "../services/storage";
 
-class HttpError extends Error {
-  status: number;
-
-  constructor(status: number, message: string) {
-    super(message);
-    this.status = status;
-  }
-}
-
-function toUserResponse(user: User, req: Request<any>): UserResponse {
-  let full_url_pfp = user.pfp_url
-    ? `${req.protocol}:\\${req.get("host")}\\${user.pfp_url}`
-    : null;
-
+function toUserResponse(user: User): UserResponse {
   return {
     id: user.id,
     username: user.username,
-    firstname: user.firstname,
-    lastname: user.lastname,
     role: user.role,
-    identification: user.identification,
-    personal_email: user.personal_email,
-    tel: user.tel,
-    pfp_url: full_url_pfp,
     last_login_at: user.last_login_at,
     created_at: user.created_at,
     updated_at: user.updated_at,
@@ -47,7 +24,7 @@ function toUserResponse(user: User, req: Request<any>): UserResponse {
 
 export const getAllUsers = async (
   req: Request<PaginateRequestParams>,
-  res: Response<PaginateResponse<UserResponse> | { message: string }>,
+  res: Response<PaginateResponse<UserResponse>>,
   next: NextFunction,
 ) => {
   try {
@@ -62,7 +39,7 @@ export const getAllUsers = async (
     });
     const baseUrl = `${req.protocol}://${req.get("host")}${req.originalUrl}`;
     const formattedResponse = formatPaginateResponse(
-      users.data.map((user) => toUserResponse(user, req)),
+      users.data.map(toUserResponse),
       req.query,
       true,
       {
@@ -75,51 +52,42 @@ export const getAllUsers = async (
     );
     res.json(formattedResponse);
   } catch (err) {
-    if (err instanceof HttpError) {
-      res.status(err.status).json({ message: err.message });
-    } else {
-      res.status(500).json({ message: "Internal server error\n" + err });
-    }
+    next(err);
   }
 };
 
 export const getUserById = async (
   req: Request<{ id: string }>,
-  res: Response<UserResponse | { message: string }>,
+  res: Response<UserResponse | any>,
   next: NextFunction,
 ) => {
-  try {
-    const user = await User.findByPk(req.params.id);
-    if (!user) {
-      throw new HttpError(404, "User not found");
-    }
-    return res.status(200).json(toUserResponse(user, req));
-  } catch (err) {
-    if (err instanceof HttpError) {
-      res.status(err.status).json({ message: err.message });
-    } else {
-      res.status(500).json({ message: "Internal server error\n" + err });
-    }
-  }
+  User.findByPk(req.params.id)
+    .then((user) => {
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      res.json(toUserResponse(user));
+    })
+    .catch((err) => {
+      return res
+        .status(500)
+        .json({ message: "Internal server error\n" + err.message });
+    });
 };
 
 export const getCurrentUser = async (
-  req: Request,
+  req: Request & { user?: User },
   res: Response<UserResponse | { message: string }>,
   next: NextFunction,
 ) => {
   try {
     if (!req.user) {
-      throw new HttpError(401, "Unauthorized");
+      return res.status(401).json({ message: "Unauthorized" });
     }
 
-    return res.status(200).json(toUserResponse(req.user, req));
+    return res.json(toUserResponse(req.user));
   } catch (err) {
-    if (err instanceof HttpError) {
-      res.status(err.status).json({ message: err.message });
-    } else {
-      res.status(500).json({ message: "Internal server error\n" + err });
-    }
+    next(err);
   }
 };
 
@@ -128,92 +96,66 @@ export const deleteUser = async (
   res: Response,
   next: NextFunction,
 ) => {
-  try {
-    const user = await User.findByPk(req.params.id);
-    if (!user) {
-      throw new HttpError(404, "User not found");
-    }
-
-    await user.destroy();
-    return res.status(200).send();
-  } catch (err) {
-    if (err instanceof HttpError) {
-      res.status(err.status).json({ message: err.message });
-    } else {
-      res.status(500).json({ message: "Internal server error\n" + err });
-    }
-  }
+  // Soft delete by setting deleted_at to current timestamp
+  User.update({ deleted_at: new Date() }, { where: { id: req.params.id } })
+    .then(([affectedRows]) => {
+      if (affectedRows === 0) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      res.json({ message: "User deleted successfully" });
+    })
+    .catch((err) => {
+      return res
+        .status(500)
+        .json({ message: "Internal server error\n" + err.message });
+    });
 };
 
 export const upsertUser = async (
-  req: Request<{ id: string }, unknown, UpdateUserRequest> & {
-    user?: User;
-    file?: Express.Multer.File;
-  },
+  req: Request<{ id: string }, unknown, UpdateUserRequest> & { user?: User },
   res: Response<UserResponse | { message: string }>,
   next: NextFunction,
 ) => {
   try {
-    // TODO: Properly move authorization logic to middleware
-    //
-    // Authorization logic to check if the current user is admin or updating their own account
+    const currentUser = req.user;
+
+    if (!currentUser) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
     const targetUser = await User.findByPk(req.params.id);
-    const isAdmin = req.user?.role === UserRoles.ADMIN;
     if (!targetUser) {
       return res.status(404).json({ message: "User not found" });
     }
-    if (!isAdmin && req.user?.id !== targetUser.id) {
-      throw new HttpError(403, "You can only update your own account");
+
+    const isAdmin = currentUser.role === UserRoles.ADMIN;
+    const isSelf = currentUser.id === targetUser.id;
+
+    if (!isAdmin && !isSelf) {
+      return res
+        .status(403)
+        .json({ message: "You can only update your own account" });
     }
 
     if (!isAdmin && req.body.role && req.body.role !== targetUser.role) {
-      throw new HttpError(403, "You are not allowed to change role");
+      return res
+        .status(403)
+        .json({ message: "You are not allowed to change role" });
     }
 
-    // Build the update object based on provided fields
     const updates: Partial<User> = {};
+
     if (
       typeof req.body.username === "string" &&
       req.body.username.trim() !== ""
     ) {
-      // Checking if the new username already exists for another user
-      const existingUsername = await User.findOne({
-        where: { username: req.body.username },
-      });
-      if (existingUsername) {
-        throw new HttpError(400, "Username already exists");
-      }
-      // Only update username if it's provided and not empty
       updates.username = req.body.username;
     }
-    if (
-      typeof req.body.firstname === "string" &&
-      req.body.firstname.trim() !== ""
-    ) {
-      updates.firstname = req.body.firstname;
-    }
-    if (
-      typeof req.body.lastname === "string" &&
-      req.body.lastname.trim() !== ""
-    ) {
-      updates.lastname = req.body.lastname;
-    }
+
     if (
       typeof req.body.identification === "string" &&
       req.body.identification.trim() !== ""
     ) {
-      // Checking if the new identification already exists for another user
-      const existingIdentification = await User.findOne({
-        where: {
-          identification: req.body.identification,
-          id: { $ne: targetUser.id },
-        },
-      });
-      if (existingIdentification) {
-        throw new HttpError(400, "Identification already exists");
-      }
-
-      // Only update identification if it's provided and not empty
       updates.identification = req.body.identification;
     }
 
@@ -222,10 +164,6 @@ export const upsertUser = async (
       req.body.personal_email.trim() !== ""
     ) {
       updates.personal_email = req.body.personal_email;
-    }
-
-    if (typeof req.body.tel === "string" && req.body.tel.trim() !== "") {
-      updates.tel = req.body.tel;
     }
 
     if (
@@ -239,33 +177,22 @@ export const upsertUser = async (
       updates.role = req.body.role;
     }
 
-    if (Object.keys(updates).length === 0 && !req.file) {
-      throw new HttpError(400, "No valid fields provided to update");
+    if (Object.keys(updates).length === 0) {
+      return res
+        .status(400)
+        .json({ message: "No valid fields provided to update" });
     }
+
     await targetUser.update(updates);
 
-    // Handle profile picture update if a new file is provided
-    if (req.file) {
-      const storage = getStorage();
-      const path = await storage.save({
-        buffer: req.file.buffer,
-        filename: "avatar." + req.file.originalname.split(".").pop(), // preserve original file extension
-        mimeType: req.file.mimetype,
-        folder: "public",
-        subfolder: `users/${targetUser.id}/pfp`,
-      });
-      targetUser.pfp_url = path;
-      await targetUser.save();
-    }
-
-    return res.status(200).json(toUserResponse(targetUser, req));
+    return res.json(toUserResponse(targetUser));
   } catch (err) {
     next(err);
   }
 };
 
 export const createUser = async (
-  req: Request<{}, {}, CreateUserRequest> & { file?: Express.Multer.File },
+  req: Request<{}, {}, CreateUserRequest>,
   res: Response<UserResponse | { message: string }>,
   next: NextFunction,
 ) => {
@@ -273,43 +200,44 @@ export const createUser = async (
     username,
     password,
     role,
-    firstname,
-    lastname,
+    registration_id,
     identification,
     personal_email,
-    tel,
   } = req.body;
   try {
-    const storage = getStorage();
-    const user_username = username.trim();
-    const user_firstname = firstname.trim();
-    const user_lastname = lastname.trim();
-    const user_identification = identification.trim();
-    const user_personal_email = personal_email.trim();
-    const user_tel = tel.trim();
+    let user_identification: string = "";
+    let user_personal_email: string = "";
 
     // Checking if username already exists
-    const existingUser = await User.findOne({
-      where: { username: user_username },
-    });
+    const existingUser = await User.findOne({ where: { username } });
     if (existingUser) {
-      throw new HttpError(400, "Username already exists");
+      return res.status(400).json({ message: "Username already exists" });
     }
 
-    //Checking if identification already exists
-    const existingIdentification = await User.findOne({
-      where: { identification: user_identification },
-    });
-    if (existingIdentification) {
-      throw new HttpError(400, "Identification already exists");
-    }
-
-    //Checking if the email already exists
-    const existingEmail = await User.findOne({
-      where: { personal_email: user_personal_email },
-    });
-    if (existingEmail) {
-      throw new HttpError(400, "Email already exists");
+    // If the user being created is not an admin then we need to check if the registration_id is valid
+    if (role !== UserRoles.ADMIN) {
+      if (!registration_id) {
+        return res
+          .status(400)
+          .json({ message: "registration_id is required for non-admin users" });
+      }
+      // Check if the registration_id exists in the database
+      const registration = await Registration.findByPk(registration_id);
+      if (!registration) {
+        return res.status(400).json({ message: "Invalid registration_id" });
+      }
+      user_identification = registration.identification;
+      user_personal_email = registration.personal_email;
+    } else {
+      // If the user is an admin, we need to check for identification and personal_email
+      if (!identification || !personal_email) {
+        return res.status(400).json({
+          message:
+            "identification and personal_email are required for admin users",
+        });
+      }
+      user_identification = identification;
+      user_personal_email = personal_email;
     }
 
     // Hash the password before storing it in the database
@@ -317,35 +245,31 @@ export const createUser = async (
 
     // Create the new user in the database
     const newUser = await User.create({
-      username: user_username,
+      username: username,
       password_hash: hashedPassword,
       role: role,
-      firstname: user_firstname,
-      lastname: user_lastname,
       identification: user_identification,
       personal_email: user_personal_email,
-      tel: user_tel,
     });
 
-    // Save the profile picture if provided
-    if (req.file) {
-      const path = await storage.save({
-        buffer: req.file.buffer,
-        filename: "avatar." + req.file.originalname.split(".").pop(), // preserve original file extension
-        mimeType: req.file.mimetype,
-        folder: "public",
-        subfolder: `users/${newUser.id}/pfp`,
-      });
-      newUser.pfp_url = path;
-      await newUser.save();
+    // If the user was a non-admin, we should also update the registration to link it to the new user
+    if (role !== UserRoles.ADMIN) {
+      await Registration.update(
+        { user_id: newUser.id },
+        { where: { id: registration_id } },
+      );
     }
 
-    return res.status(201).json(toUserResponse(newUser, req));
+    // Return the created user (excluding the password hash)
+    res.status(201).json({
+      id: newUser.id,
+      username: newUser.username,
+      role: newUser.role,
+      last_login_at: newUser.last_login_at,
+      created_at: newUser.created_at,
+      updated_at: newUser.updated_at,
+    });
   } catch (err) {
-    if (err instanceof HttpError) {
-      res.status(err.status).json({ message: err.message });
-    } else {
-      res.status(500).json({ message: "Internal server error\n" + err });
-    }
+    res.status(500).json({ message: "Internal server error\n" + err });
   }
 };

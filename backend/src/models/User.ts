@@ -12,14 +12,10 @@ import { UserRoles } from "../enum/UserRoles";
 class User extends Model<InferAttributes<User>, InferCreationAttributes<User>> {
   declare id: CreationOptional<number>;
   declare username: string;
-  declare firstname: string;
-  declare lastname: string;
   declare identification: string;
   declare personal_email: string;
-  declare tel: string;
   declare role: UserRoles;
   declare password_hash: string;
-  declare pfp_url: CreationOptional<string | null>;
   declare last_login_at: CreationOptional<Date | null>;
   declare created_at: CreationOptional<Date>;
   declare updated_at: CreationOptional<Date>;
@@ -38,14 +34,6 @@ User.init(
       allowNull: false,
       unique: true,
     },
-    firstname: {
-      type: DataTypes.STRING(100),
-      allowNull: false,
-    },
-    lastname: {
-      type: DataTypes.STRING(100),
-      allowNull: false,
-    },
     identification: {
       type: DataTypes.STRING(30),
       allowNull: false,
@@ -56,10 +44,6 @@ User.init(
       allowNull: false,
       unique: true,
     },
-    tel: {
-      type: DataTypes.STRING(30),
-      allowNull: false,
-    },
     role: {
       type: DataTypes.ENUM(...Object.values(UserRoles)),
       allowNull: false,
@@ -67,10 +51,6 @@ User.init(
     password_hash: {
       type: DataTypes.STRING,
       allowNull: false,
-    },
-    pfp_url: {
-      type: DataTypes.STRING(512),
-      allowNull: true,
     },
     last_login_at: {
       type: DataTypes.DATE,
@@ -105,20 +85,11 @@ User.init(
         if (typeof user.username === "string") {
           user.username = user.username.trim();
         }
-        if (typeof user.firstname === "string") {
-          user.firstname = user.firstname.trim();
-        }
-        if (typeof user.lastname === "string") {
-          user.lastname = user.lastname.trim();
-        }
         if (typeof user.identification === "string") {
           user.identification = user.identification.trim();
         }
         if (typeof user.personal_email === "string") {
           user.personal_email = user.personal_email.trim().toLowerCase();
-        }
-        if (typeof user.tel === "string") {
-          user.tel = user.tel.trim();
         }
       },
       beforeSave: async (user) => {

@@ -23,7 +23,6 @@ class Registration extends Model<
   declare identification: string;
   declare personal_email: string;
   declare tel: string;
-  declare document_filepath: CreationOptional<string | null>;
   declare admin_remark: CreationOptional<string | null>;
   declare reviewed_at: CreationOptional<Date | null>;
   declare created_at: CreationOptional<Date>;
@@ -82,10 +81,6 @@ Registration.init(
     tel: {
       type: DataTypes.STRING(30),
       allowNull: false,
-    },
-    document_filepath: {
-      type: DataTypes.STRING(1024),
-      allowNull: true,
     },
     admin_remark: {
       type: DataTypes.TEXT,

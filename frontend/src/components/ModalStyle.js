@@ -10,7 +10,7 @@ export const ModalStyle=StyleSheet.create({
     },
     header:{
         justifyContent:'space-between',
-        marginBottom:20
+        marginBottom:30
     },
     title:{
         fontWeight:'bold',
@@ -28,7 +28,7 @@ export const ModalStyle=StyleSheet.create({
         flex:1
     },
     label:{
-        marginBottom:7,
+        marginBottom:10,
         fontWeight:550
     },
     input:{
@@ -36,7 +36,7 @@ export const ModalStyle=StyleSheet.create({
         borderColor:'#ddd',
         borderRadius:10,
         padding:12,
-        marginBottom:10,
+        marginBottom:15,
         flex:1,
         minWidth:220
     },

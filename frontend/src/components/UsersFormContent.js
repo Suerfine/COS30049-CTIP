@@ -3,76 +3,17 @@ import { View, Text, TextInput, StyleSheet, Pressable, Image, ActivityIndicator,
 import * as ImagePicker from 'expo-image-picker';
 import {X} from 'lucide-react-native';
 import { ModalStyle as styles } from './ModalStyle';
-import { isValidEmail, isOnlyLetters, phoneRegex } from '../utils/Validation';
 
 const UsersFormContent=({onSubmit, onCancel, isLoading})=>{
     const [form, setForm]=useState({
+        username:'',
         ic: '',
         email: '',
         image: null,
         fname: '',
         lname: '',
-        telefon: '',
-        role:'parkguide'
+        role: 'parkguide',
     });
-
-    const [errors, setErrors]=useState({});
-
-    const validateForm=()=>{
-        let tempErrors={};
-
-        if(!form.fname.trim()){
-            tempErrors.fname="* First name is required.";
-        }else if (!isOnlyLetters(form.fname)){
-            tempErrors.fname="* First name must only contain letters.";
-        }
-
-        if(!form.lname.trim()){
-            tempErrors.lname="* Last name is required.";
-        }else if (!isOnlyLetters(form.lname)){
-            tempErrors.lname="* Last name must only contain letters.";
-        }
-
-        if(!form.ic.trim()){
-            tempErrors.ic="* IC/Passport No. is required.";
-        }
-
-        if(!form.email.trim()){
-            tempErrors.email="* Personal Email is required.";
-        }else if(!isValidEmail(form.email)){
-            tempErrors.fname="* Personal Email is invalid format.";
-        }
-
-        if(!form.telefon.trim()){
-            tempErrors.telefon="* Phone Number is required.";
-        }else if(!phoneRegex.test(form.telefon)){
-            tempErrors.telefon = "* Invalid phone number.";
-        }
-
-        setErrors(tempErrors);
-        return Object.keys(tempErrors).length===0;
-    };
-
-    const handleSubmit=async()=>{
-        if(validateForm()){
-            const result=await onSubmit(form);
-            if(result && !result.success && result.serverError){
-                const msg=result.serverError.toLowerCase();
-                let serverErrors = {};
-
-                if (msg.includes('email')) {
-                    serverErrors.email = "* This email is already registered.";
-                } else if (msg.includes('identification') || msg.includes('ic')) {
-                    serverErrors.ic = "* This IC/Passport is already in use.";
-                } else {
-                    alert(result.serverError);
-                }
-
-                setErrors(prev => ({ ...prev, ...serverErrors }));
-            }
-        }
-    }
-    
 
     const pickImage=async()=>{
         // Ask for permission
@@ -85,7 +26,7 @@ const UsersFormContent=({onSubmit, onCancel, isLoading})=>{
         let result=await ImagePicker.launchImageLibraryAsync({
             mediaTypes: 'images',
             allowsEditing:true,
-            aspect:[1,1],
+            aspect:[16,9],
             quality:1,
         });
 
@@ -101,11 +42,29 @@ const UsersFormContent=({onSubmit, onCancel, isLoading})=>{
                 <Pressable onPress={onCancel}>
                     <X />
                 </Pressable>
-                
             </View>
-            
             <View style={styles.row}>
                 <View style={styles.content}>
+                    <View style={localStyles.row}>
+                        {/* User details */}
+                        <View>
+                            <Text style={styles.label}>Username:</Text>
+                            <TextInput style={styles.input} value={form.username} onChangeText={(text)=> setForm({...form, username: text})}/>
+                        </View>
+                        {/* IC */}
+                        <View>
+                            <Text style={styles.label}>Passport/IC:</Text>
+                            <TextInput style={styles.input} value={form.ic} onChangeText={(text)=> setForm({...form, ic: text})}/>
+                        </View>
+                    </View>
+
+                    {/* Email */}
+                    <View>
+                        <Text style={styles.label}>Email:</Text>
+                            <TextInput style={styles.input} value={form.email}  placeholder='address@email.com' 
+                            placeholderTextColor="#8f8f8f"  onChangeText={(text)=> setForm({...form, email: text})}/>
+                    </View>
+
                     {/* Full Name */}
                     <View style={localStyles.row}>
                         <View>
@@ -120,26 +79,7 @@ const UsersFormContent=({onSubmit, onCancel, isLoading})=>{
                             placeholderTextColor="#8f8f8f" onChangeText={(text)=> setForm({...form, lname: text})}/>
                         </View>
                     </View>
-                    {/* IC */}
                     <View>
-                        <Text style={styles.label}>Passport/IC:</Text>
-                        <TextInput style={styles.input} value={form.ic} onChangeText={(text)=> setForm({...form, ic: text})}/>
-                    </View>
-                    <View style={localStyles.row}>
-                        {/* Email */}
-                        <View>
-                            <Text style={styles.label}>Email:</Text>
-                                <TextInput style={styles.input} value={form.email}  placeholder='address@email.com' 
-                                placeholderTextColor="#8f8f8f"  onChangeText={(text)=> setForm({...form, email: text})}/>
-                        </View>
-                        {/* Telefon */}
-                        <View>
-                            <Text style={styles.label}>Telefon:</Text>
-                            <TextInput style={styles.input} value={form.telefon}  placeholder='012-3456789' 
-                            placeholderTextColor="#8f8f8f"  onChangeText={(text)=> setForm({...form, telefon: text})}/>
-                        </View>
-                    </View>
-                     <View>
                         <Text style={styles.label}>Role:</Text>
                         <View style={localStyles.row}>
                             <TouchableOpacity style={styles.row} onPress={()=>setForm({...form, role:'admin'})}>
@@ -169,14 +109,11 @@ const UsersFormContent=({onSubmit, onCancel, isLoading})=>{
                             </View>
                         )}
                     </Pressable>
-                    
                 </View>
-               
             </View>
-            {errors ? <Text style={{color:'red',marginTop:15}}>{errors.fname}</Text> : null}
             <Pressable 
                 style={styles.Btn} 
-                onPress={handleSubmit}
+                onPress={() => onSubmit(form)}
                 disabled={isLoading}
             >
                 {isLoading ? <ActivityIndicator color="white" /> : <Text>Add User</Text>}
@@ -234,4 +171,4 @@ const localStyles=StyleSheet.create({
 
 export default UsersFormContent;
 
-// Havent do the validation message, edit user function, delete user function
+// Havent do the validation message, add user function, edit user function, delete user function, two tab, approved user, active/deactive user

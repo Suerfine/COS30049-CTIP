@@ -1,15 +1,9 @@
 import { Router, Request, Response } from "express";
 import * as UserController from "../controllers/UserController";
 import { auth } from "../middelware/Auth";
-import profilePictureUpload from "../middelware/UserPfpUpload";
-import { validate } from "../middelware/Validate";
-import { body } from "express-validator";
-import { UserRoles } from "../enum/UserRoles";
-import { uploadAvatar } from "../config/multer";
 
 const userRouter = Router();
-const pfpUploader = uploadAvatar();
-const userPfpUpload = profilePictureUpload.single("pfp");
+
 /**
  * @swagger
  * /api/users:
@@ -18,44 +12,40 @@ const userPfpUpload = profilePictureUpload.single("pfp");
  *     description: Creates a user using form inputs in Swagger UI.
  *     tags: [Users]
  *     security:
- *       - OAuth2: ["all"]
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
- *         multipart/form-data:
+ *         application/x-www-form-urlencoded:
  *           schema:
  *             $ref: '#/components/schemas/CreateUserRequest'
  *     responses:
- *       200:
+ *       201:
  *         description: User created successfully
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/User'
  *       400:
- *         description: Invalid request data
+ *         description: Invalid input data
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         description: Internal server error
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-userRouter.post(
-  "/",
-  auth,
-  pfpUploader.single("pfp"),
-  [
-    body("username").isString().notEmpty(),
-    body("password").isString().isLength({ min: 6 }),
-    body("role").isIn(Object.values(UserRoles)),
-    body("firstname").isString().notEmpty(),
-    body("lastname").isString().notEmpty(),
-    body("identification").isString().notEmpty(),
-    body("personal_email").isEmail(),
-    body("tel").isString().notEmpty(),
-  ],
-  validate,
-  UserController.createUser,
-);
+userRouter.post("/", auth, UserController.createUser);
 
 /**
  * @swagger
@@ -65,7 +55,7 @@ userRouter.post(
  *     description: Returns a paginated list of users. Supports filtering, sorting, and pagination query parameters.
  *     tags: [Users]
  *     security:
- *       - OAuth2: ["all"]
+ *       - bearerAuth: []
  *     parameters:
  *       - in: query
  *         name: page
@@ -134,6 +124,12 @@ userRouter.post(
  *                   additionalProperties:
  *                     type: string
  *                     nullable: true
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 userRouter.get("/", auth, UserController.getAllUsers);
 
@@ -145,7 +141,7 @@ userRouter.get("/", auth, UserController.getAllUsers);
  *     description: Returns the profile of the authenticated user associated with the current request.
  *     tags: [Users]
  *     security:
- *       - OAuth2: ["all"]
+ *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: Current user retrieved successfully
@@ -169,7 +165,7 @@ userRouter.get("/me", auth, UserController.getCurrentUser);
  *     summary: Get user by ID
  *     tags: [Users]
  *     security:
- *       - OAuth2: ["all"]
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -204,10 +200,10 @@ userRouter.get("/:id", auth, UserController.getUserById);
  * /api/users/{id}:
  *   put:
  *     summary: Update user
- *     description: Admin can update any user. Non-admin can update only their own account. Pass in attributes to update in form inputs in Swagger UI. Only include the "pfp" field if you want to update the profile picture. If "pfp" is included, it will replace the existing profile picture.
+ *     description: Admin can update any user. Non-admin can update only their own account.
  *     tags: [Users]
  *     security:
- *       - OAuth2: ["all"]
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -217,7 +213,7 @@ userRouter.get("/:id", auth, UserController.getUserById);
  *     requestBody:
  *       required: true
  *       content:
- *         multipart/form-data:
+ *         application/x-www-form-urlencoded:
  *           schema:
  *             $ref: '#/components/schemas/UpdateUserRequest'
  *     responses:
@@ -227,24 +223,27 @@ userRouter.get("/:id", auth, UserController.getUserById);
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/User'
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       403:
+ *         description: Forbidden
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       404:
+ *         description: User not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 // Update user
-userRouter.put(
-  "/:id",
-  auth,
-  pfpUploader.single("pfp"),
-  [
-    body("username").isString().optional().notEmpty(),
-    body("password").isString().optional().isLength({ min: 6 }),
-    body("role").isIn(Object.values(UserRoles)).optional(),
-    body("firstname").isString().optional().notEmpty(),
-    body("lastname").isString().optional().notEmpty(),
-    body("identification").isString().optional().notEmpty(),
-    body("personal_email").isEmail().optional(),
-    body("tel").isString().optional().notEmpty(),
-  ],
-  UserController.upsertUser,
-);
+userRouter.put("/:id", auth, UserController.upsertUser);
 
 /**
  * @swagger
@@ -254,7 +253,7 @@ userRouter.put(
  *     description: Soft deletes a user by setting deleted_at.
  *     tags: [Users]
  *     security:
- *       - OAuth2: ["all"]
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -272,8 +271,26 @@ userRouter.put(
  *                 message:
  *                   type: string
  *                   example: User deleted successfully
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       404:
+ *         description: User not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 // Delete user
-userRouter.delete("/:id", UserController.deleteUser);
+userRouter.delete("/:id", auth, UserController.deleteUser);
 
 export default userRouter;
