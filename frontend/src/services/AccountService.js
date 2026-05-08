@@ -102,5 +102,5 @@ export const AccountService={
             const errorMessage=error.response?.data?.message || 'Failed to delete user account.';
             return Promise.reject(errorMessage);
         }
-    }
+    },
 };
