@@ -59,5 +59,10 @@ export const API_ENDPOINTS={
     },
     EVENTS:{
         BASE:'/events',
-    }
+    },
+    PROGRESS: {
+        COURSE: (courseId) => `/progress/course/${courseId}`,
+        MODULE: (moduleId, courseId) => `/progress/module/${moduleId}?courseId=${courseId}`,
+        ELEMENT: (elementId) => `/progress/element/${elementId}`,
+    },
 };
