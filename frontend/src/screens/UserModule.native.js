@@ -28,7 +28,7 @@ import Markdown from "react-native-markdown-display";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 // Import Components
-import OutlineBar from "../components/OutlineBar.js";
+import OutlineBar from "../components/OutlineBar.native.js";
 import { useCourseDetails } from "../hooks/useCourseDetails.js";
 import SlidingTabs from "../components/SlidingTabs.js";
 import { useElements } from "../hooks/useElements.js";
@@ -120,6 +120,20 @@ const UserModule = ({ navigation }) => {
   const handleSelectPage = (item) => {
     setSelectedPage(item);
     setDrawerOpen(false);
+  };
+
+  const handleBack = () => {
+    // Check if we are currently viewing a lesson page instead of the overview
+    if (selectedPage?.type === "page") {
+      // Reset state to overview instead of navigating
+      setSelectedPage({ type: "overview" });
+    } else if (navigation.canGoBack()) {
+      // Only call goBack if there is actually a screen to go back to
+      navigation.goBack();
+    } else {
+      // Fallback: If no history, send them to the Dashboard or Courses
+      navigation.navigate("ParkGuideStack", { screen: "UserCourse" });
+    }
   };
 
   const renderOverviewContent = () => {
@@ -347,7 +361,7 @@ const UserModule = ({ navigation }) => {
               <Menu color="white" size={25} />
             </Pressable>
             <Pressable
-              onPress={() => navigation.goBack()}
+              onPress={handleBack}
               style={({ pressed }) => [
                 styles.backButton,
                 pressed && styles.btnPressed,
