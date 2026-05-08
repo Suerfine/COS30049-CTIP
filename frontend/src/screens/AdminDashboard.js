@@ -1,12 +1,14 @@
-import { AlertTriangle, Book, ClipboardList, Flag, MapPin, RefreshCcw, User } from "lucide-react-native";
+import { AlertTriangle, Book, ClipboardList, Flag, MapPin, RefreshCcw, User, RotateCcw, X } from "lucide-react-native";
 import React, { useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { CircleMarker, MapContainer, Popup, TileLayer, Tooltip, useMap } from "react-leaflet";
+import { useTranslation } from "react-i18next";
 
 import { useAnomalyMapEvents } from "../hooks/useAnomalyMapEvents";
 import { formatDate } from "../utils/formatDate";
 import { DEFAULT_MAP_CENTER, LEAFLET_CSS, EVENT_LABELS, SEVERITY_CONFIG } from "../utils/AnomalyConstant";
 import { useAdminDashboard } from "../hooks/useAdminDashboard";
+import { useNotification } from '../hooks/useNotification';
 
 const getEventTypeLabel = (eventType) => {
   if (!eventType) {
@@ -197,10 +199,19 @@ const HoverDetailCard = ({ event }) => {
 };
 
 const AdminDashboard = () => {
-  const { events, loading, error, refresh} = useAnomalyMapEvents();
+  const { t } = useTranslation();
+  const { events, loading: mapLoading, error: mapError, refresh } = useAnomalyMapEvents();
+  const { stats } = useAdminDashboard();
+  const { 
+    notifications, 
+    loading: notificationsLoading, 
+    error: notificationsError, 
+    fetchNotifications, 
+    handleDismiss 
+  } = useNotification();
+
   const [hoveredAnomaly, setHoveredAnomaly] = useState(null);
   const mapCenter = useMemo(() => getMapCenter(events), [events]);
-  const {stats}=useAdminDashboard();
 
   const severityCounts = useMemo(
     () =>
@@ -213,6 +224,13 @@ const AdminDashboard = () => {
       ),
     [events]
   );
+
+  const latestNotifications = useMemo(() => {
+    return (notifications || [])
+      .slice()
+      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+      .slice(0, 20);
+  }, [notifications]);
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -256,10 +274,11 @@ const AdminDashboard = () => {
         </View>
       </View>
 
-      <View style={styles.mapSection}>
-        <View style={styles.mapHeader}>
-          <View>
-            <Text style={styles.mapTitle}>Anomaly Map</Text>
+      <View style={styles.mapRow}>
+        <View style={styles.mapSection}>
+          <View style={styles.mapHeader}>
+            <View>
+              <Text style={styles.mapTitle}>Anomaly Map</Text>
             <Text style={styles.mapSubtitle}>All anomaly events with valid coordinates</Text>
           </View>
           <View style={styles.mapActions}>
@@ -288,16 +307,16 @@ const AdminDashboard = () => {
         </View>
 
         <View style={styles.mapShell}>
-          {loading ? (
+          {mapLoading ? (
             <View style={styles.mapState}>
               <ActivityIndicator size="large" color="#0a6340" />
               <Text style={styles.stateText}>Loading anomaly map...</Text>
             </View>
-          ) : error ? (
+          ) : mapError ? (
             <View style={styles.mapState}>
               <AlertTriangle size={42} color="#dc2626" />
               <Text style={styles.errorText}>Failed to load anomaly map</Text>
-              <Text style={styles.errorDetail}>{error}</Text>
+              <Text style={styles.errorDetail}>{mapError}</Text>
               <Pressable
                 onPress={refresh}
                 style={({ hovered }) => [styles.retryBtn, hovered && styles.retryBtnHover]}
@@ -344,14 +363,68 @@ const AdminDashboard = () => {
             </MapContainer>
           )}
 
-          {!loading && !error && hoveredAnomaly ? <HoverDetailCard event={hoveredAnomaly} /> : null}
+          {!mapLoading && !mapError && hoveredAnomaly ? <HoverDetailCard event={hoveredAnomaly} /> : null}
 
-          {!loading && !error && events.length === 0 ? (
+          {!mapLoading && !mapError && events.length === 0 ? (
             <View style={styles.emptyOverlay}>
               <MapPin size={32} color="#9ca3af" />
               <Text style={styles.emptyText}>No coordinate-bearing anomalies found</Text>
             </View>
           ) : null}
+        </View>
+      </View>
+
+      <View style={styles.latestUpdatesSection}>
+          <View style={styles.sectionHeader}>
+            <View>
+              <Text style={styles.sectionTitle}>Latest Updates</Text>
+              <Text style={styles.sectionSubtitle}>20 most recent notifications</Text>
+            </View>
+            <Pressable onPress={fetchNotifications} disabled={notificationsLoading} style={styles.refreshBtn}>
+              <RotateCcw size={20} color="#666" />
+            </Pressable>
+          </View>
+
+          {notificationsError ? (
+            <View style={styles.centerContainer}>
+              <Text style={styles.errorText}>Failed to load updates</Text>
+              <Text style={styles.errorDetail}>{notificationsError}</Text>
+            </View>
+          ) : notificationsLoading ? (
+            <View style={styles.centerContainer}>
+              <ActivityIndicator size="large" color="#2f6618fe" />
+            </View>
+          ) : latestNotifications.length === 0 ? (
+            <View style={styles.centerContainer}>
+              <Text style={styles.emptyText}>{t('no notifications')}</Text>
+            </View>
+          ) : (
+            <ScrollView style={styles.latestUpdatesList}>
+              {latestNotifications.map((notification) => (
+                <View key={notification.id} style={styles.notificationItem}>
+                  <View style={styles.notificationContent}>
+                    <View style={styles.titleRow}>
+                      <Text style={styles.notificationTitle}>{notification.title}</Text>
+                    </View>
+                    <Text style={styles.notificationMessage}>{notification.message}</Text>
+                    <Text style={styles.notificationDate}>
+                      {new Date(notification.created_at).toLocaleDateString()} at{' '}
+                      {new Date(notification.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </Text>
+                  </View>
+                  <View style={styles.notificationActions}>
+                    <Pressable
+                      onPress={() => handleDismiss(notification.id)}
+                      style={({ hovered }) => [styles.dismissBtn, hovered && styles.dismissBtnHover]}
+                      hitSlop={10}
+                    >
+                      <X size={20} color="#9ca3af" />
+                    </Pressable>
+                  </View>
+                </View>
+              ))}
+            </ScrollView>
+          )}
         </View>
       </View>
     </ScrollView>
@@ -409,16 +482,56 @@ const styles = StyleSheet.create({
   coursesTheme: { backgroundColor: "#fff7ed" },
   enrollTheme: { backgroundColor: "#f0fdf4" },
   alertTheme: { backgroundColor: "#fef2f2" },
+  mapRow: {
+    flexDirection: "row",
+    gap: 24,
+    flexWrap: "wrap",
+    alignItems: "flex-start",
+    marginLeft: 20,
+  },
   mapSection: {
     backgroundColor: "white",
     borderRadius: 8,
     overflow: "hidden",
-    alignSelf: "flex-start",
-    marginLeft: 20,
-    width: "50vw",
-    maxWidth: "70vw",
+    flex: 2,
+    minWidth: 520,
     borderWidth: 1,
     borderColor: "#e5e7eb",
+  },
+  latestUpdatesSection: {
+    backgroundColor: "white",
+    borderRadius: 8,
+    overflow: "hidden",
+    flex: 1,
+    minWidth: 360,
+    maxHeight: 560,
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+  },
+  sectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    gap: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#e5e7eb",
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#111827",
+  },
+  sectionSubtitle: {
+    marginTop: 4,
+    fontSize: 13,
+    color: "#6b7280",
+  },
+  latestUpdatesList: {
+    maxHeight: 520,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
   },
   mapHeader: {
     flexDirection: "row",
@@ -587,6 +700,60 @@ const styles = StyleSheet.create({
     color: "#4b5563",
     fontSize: 12,
     lineHeight: 18,
+  },
+  centerContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 220,
+    paddingHorizontal: 20,
+  },
+  notificationItem: {
+    backgroundColor: "white",
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+    cursor: "default",
+  },
+  notificationContent: {
+    flex: 1,
+    marginRight: 10,
+  },
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 4,
+  },
+  notificationTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#1f2937",
+  },
+  notificationMessage: {
+    fontSize: 14,
+    color: "#4b5563",
+    marginBottom: 8,
+    lineHeight: 20,
+  },
+  notificationDate: {
+    fontSize: 12,
+    color: "#9ca3af",
+  },
+  notificationActions: {
+    paddingLeft: 10,
+  },
+  dismissBtn: {
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: "#f3f4f6",
+    transitionDuration: "150ms",
+  },
+  dismissBtnHover: {
+    backgroundColor: "#fee2e2",
   },
 });
 
