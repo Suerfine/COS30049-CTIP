@@ -109,6 +109,7 @@ const OutlineBar = ({ course, progressMap = {}, onSelectPage, editable, isCollap
             <FlatList
                 data={[...allModules].sort((a, b) => (a.order || 0) - (b.order || 0))}
                 keyExtractor={(m) => m.id.toString()}
+                extraData={progressMap}
                 renderItem={({ item: module, index }) => {
                     const mid = module.id;
                     const displayModuleNum = index + 1;
@@ -246,9 +247,14 @@ const OutlineBar = ({ course, progressMap = {}, onSelectPage, editable, isCollap
                                                             ? <CheckCircle2 size={18} color="#0a6340"/>
                                                             : status.isLocked
                                                                 ? <Lock size={14}/>
-                                                                : <Progress.Circle color="#0a6340" progress={status.percent/100} size={20} thickness={2}/>
+                                                                : <Progress.Circle 
+                                                                    color="#0a6340" 
+                                                                    progress={Math.min(Number(status.percent || 0) / 100, 1)} 
+                                                                    size={20} 
+                                                                    thickness={2}
+                                                                />
                                                     )}
-
+                                                    
                                                     {editable && isHoveringPage && !isEditingPage && (
                                                         <Pressable onPress={() => deletePage(mid, page.id)}>
                                                             <Trash2 size={16} color="red"/>
