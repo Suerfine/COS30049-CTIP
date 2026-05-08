@@ -209,9 +209,9 @@ const UserModule = ({navigation}) => {
                                 elements={elements}
                                 role={currentUser.role}
                                 courseId={id}
-                                onProgressUpdate={() => {
-                                    saveProgress();
-                                    refreshProgress(); 
+                                onProgressUpdate={async () => {
+                                    await saveProgress();
+                                    await refreshProgress();
                                 }}
                                 userMarks={userMarks}
                             />
@@ -294,7 +294,10 @@ const UserModule = ({navigation}) => {
                                         elements={elements}
                                         role={currentUser.role}
                                         courseId={id}
-                                        onProgressUpdate={saveProgress}
+                                        onProgressUpdate={async () => {
+                                            await saveProgress(); 
+                                            refreshProgress(); 
+                                        }}
                                         userMarks={userMarks}
                                     />
                                 )}
