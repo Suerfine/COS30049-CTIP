@@ -250,6 +250,7 @@ const EnrollmentManagement = () => {
                     const res = await handleUpdateStatus(id, "in_progress");
                     if (res.success) setDetailModalVisible(false);
                 }}
+                // Rejected
                 onUnenroll={async (id) => {
                     const res = await handleUpdateStatus(id, "dropped");
                     if (res.success) setDetailModalVisible(false);
