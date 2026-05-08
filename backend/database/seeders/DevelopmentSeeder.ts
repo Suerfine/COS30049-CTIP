@@ -28,6 +28,8 @@ import {
   EnrollmentFactoryCourse,
 } from "../factories/EnrollmentFactory";
 import { buildRegistrationHistory } from "../factories/RegistrationFactory";
+import { buildComplianceEvents } from "../factories/AnomalyEventFactory";
+import AnomalyEvent from "../../src/models/AnomalyEvent";
 import "../../src/models";
 
 export async function runSeeders(
@@ -185,6 +187,23 @@ export async function runSeeders(
       }
     }
   }
+
+  // Seed compliance events for park guides
+  console.log("🔍 Seeding Compliance Events...");
+  const eventTypesPerUser = 3; // Number of compliance events per user
+  for (const parkGuideUser of createdParkGuideUsers) {
+    const complianceEvents = buildComplianceEvents(
+      parkGuideUser.id,
+      eventTypesPerUser,
+    );
+
+    for (const event of complianceEvents) {
+      await AnomalyEvent.create(event);
+    }
+  }
+  console.log(
+    `✅ Created ${createdParkGuideUsers.length * eventTypesPerUser} compliance events`,
+  );
 
   // Enroll users in courses
   if (courses.length > 0) {

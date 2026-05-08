@@ -2,18 +2,16 @@ import { Router } from "express";
 import userRouter from "./UserRoute";
 import registrationRouter from "./RegistrationRoute";
 import courseRouter from "./CourseRoute";
-import moduleRouter from "./ModuleRoute";
-import pageRouter from "./PageRoute";
 import messageRouter from "./MessageRoute";
 import enrollmentRouter from "./EnrollmentRoute";
 import submissionRouter from "./SubmissionRoute";
 import NotificationRouter from "./NotificationRoute";
 import eventRouter from "./EventRoute";
 import tagRouter from "./TagRoute";
+import anomalyEventRouter from "./AnomalyEventRoute";
+import arModelRouter from "./ArModelRoute";
 import * as AuthController from "../controllers/AuthController";
-import elementRouter from "./ElementRoute";
 import progressRouter from "./ProgressRoute";
-// import sensorRouter from "./SensorRoute";
 import sensorLogRouter from "./SensorLogRoute";
 import * as ElementController from "../controllers/ElementController";
 import { auth } from "../middelware/Auth";
@@ -81,11 +79,8 @@ router.post("/token", AuthController.token);
 =     REGISTRATION ROUTES      =
 ===============================*/
 router.use("/registrations", registrationRouter);
-
-/*===============================
-=     ENROLLMENT ROUTES        =
-===============================*/
-router.use("/enrollments", enrollmentRouter);
+router.use("/Anomaly-events", anomalyEventRouter);
+router.use("/ar-models", arModelRouter);
 
 /*===============================
 =        COURSE ROUTES         =

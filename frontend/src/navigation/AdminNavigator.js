@@ -10,6 +10,8 @@ import AccountsManagement from "../screens/AccountsManagement";
 import EnrollmentManagement from "../screens/EnrollmentManagement";
 import UserProfile from "../screens/UserProfile";
 import AdminDashboard from "../screens/AdminDashboard";
+import AnomalyDetection from "../screens/AnomalyDetection";
+import AdminArModels from "../screens/AdminArModels";
 import Notification from "../screens/Notification";
 
 // Import components
@@ -18,11 +20,10 @@ import SideBar from "../components/SideBar";
 const Stack = createStackNavigator();
 
 export default function AdminNavigator() {
-
   return (
     <View style={{ flex: 1 }}>
       <View style={{ flexDirection: "row", flex: 1 }}>
-        <SideBar/>
+        <SideBar />
         <View style={{ flex: 1 }}>
           <Stack.Navigator
             screenOptions={{
@@ -44,10 +45,12 @@ export default function AdminNavigator() {
               name="Enrollment Management"
               component={EnrollmentManagement}
             />
+            <Stack.Screen name="Admin Dashboard" component={AdminDashboard} />
             <Stack.Screen
-              name="Admin Dashboard"
-              component={AdminDashboard}
+              name="Anomaly Detection"
+              component={AnomalyDetection}
             />
+            <Stack.Screen name="AR Models" component={AdminArModels} />
             <Stack.Screen name="User Profile" component={UserProfile} />
             <Stack.Screen
               name="Notification Management"
