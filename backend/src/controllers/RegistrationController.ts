@@ -386,8 +386,6 @@ export const approveRegistration = async (
       password_hash: hashPassword(temporary_password),
     });
 
-    // TODO: Send email to the user with their account details and temporary password
-
     // Update registration with user_id and approved status
     await registration.update({
       user_id: user.id,
