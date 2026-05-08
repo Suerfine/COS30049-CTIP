@@ -70,4 +70,10 @@ export const API_ENDPOINTS = {
     DETAIL: (id) => `/ar-models/${id}`,
     PATTERN: (id) => `/ar-models/${id}/pattern`,
   },
+  PROGRESS: {
+    COURSE: (courseId) => `/progress/course/${courseId}`,
+    MODULE: (moduleId, courseId) =>
+      `/progress/module/${moduleId}?courseId=${courseId}`,
+    ELEMENT: (elementId) => `/progress/element/${elementId}`,
+  },
 };

@@ -77,7 +77,6 @@ eventRouter.post(
   auth,
   [
     body("title").isString().notEmpty(),
-    body("description").isString().notEmpty(),
     body("event_start_at").isISO8601(),
     body("type").optional().isIn(["normal", "workshop"]),
   ],

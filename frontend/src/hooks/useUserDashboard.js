@@ -1,9 +1,10 @@
 import { useState, useEffect, useMemo, useCallback} from 'react';
-import { userDashboardService } from '../services/userDashboardService';
+import { progressService } from '../services/ProgressService';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { courseService } from '../services/courseService';
 import { eventService } from '../services/eventService';
+import { userDashboardService } from '../services/userDashboardService';
 
 export const useUserDashboard = () => {
     const {t, i18n}=useTranslation();
@@ -63,7 +64,7 @@ export const useUserDashboard = () => {
         setLoading(true);
         try {
             const [progressRes, coursesRes, eventsRes, fullProfileRes, tagsRes] = await Promise.allSettled([
-                userDashboardService.getProgress(),
+                progressService.getCourseProgress(),
                 userDashboardService.getCourses(),
                 eventService.getEvents(),
                 userDashboardService.getUserProfile(),

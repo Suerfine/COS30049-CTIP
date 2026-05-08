@@ -5,11 +5,13 @@ import {
   InferAttributes,
   InferCreationAttributes,
   Model,
+  NonAttribute
 } from "sequelize";
 import sequelize from "../config/Database";
 import Page from "./Page";
 import { ElementTypes } from "../enum/ElementTypes";
-
+import Submission from "./Submissions";
+import Enrollment from "./Enrollment";
 class Element extends Model<
   InferAttributes<Element>,
   InferCreationAttributes<Element>
@@ -24,6 +26,8 @@ class Element extends Model<
   declare created_at: CreationOptional<Date>;
   declare updated_at: CreationOptional<Date>;
   declare deleted_at: CreationOptional<Date | null>;
+  declare submissions: NonAttribute<Submission[]>;
+  
 }
 
 Element.init(

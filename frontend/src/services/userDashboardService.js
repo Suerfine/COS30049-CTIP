@@ -1,8 +1,5 @@
-// import { API_BASE_URL } from "../config/DummyapiConfig";
 import apiClient from "../config/apiConfig";
 import { API_ENDPOINTS } from "../config/ApiEndpoints";
-
-// const BASE_URL = `${API_BASE_URL}/api`;
 
 export const userDashboardService = {
 
@@ -20,11 +17,6 @@ export const userDashboardService = {
     //     const res = await fetch(`${BASE_URL}/todos`);
     //     return await res.json();
     // },
-
-    getProgress: async () => {
-        const response = await apiClient.get('/progress');
-        return response.data;
-    },
 
     getCourses: async () => {
         const response = await apiClient.get(API_ENDPOINTS.COURSE.LIST);

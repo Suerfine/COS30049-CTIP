@@ -187,7 +187,7 @@ const OutlineBar = ({ course, progressMap = {}, onSelectPage, editable, isCollap
                                         const displayPageNum = `${displayModuleNum}.${i + 1}`;
 
                                         const status = progressMap[page.id] || {
-                                            isLocked: true,
+                                            isLocked: true, 
                                             percent: 0,
                                             isCompleted: false
                                         };
@@ -382,5 +382,3 @@ const styles=StyleSheet.create({
 });
 
 export default OutlineBar;
-
-// Edit outline bar edit module name
