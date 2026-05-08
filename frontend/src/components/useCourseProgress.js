@@ -11,41 +11,47 @@ export const useCourseProgress = (course) => {
         setLoading(true);
         try {
             const map = {};
-            let previousPageCompleted = true;
+            let previousPageCompleted = true; 
+
             for (const module of course.modules) {
+                // 1. Module Progress
                 const modRes = await progressService.getModuleProgress(module.id, course.id);
-                
                 map[`module_${module.id}`] = {
-                    percent: modRes.maxScore > 0 ? (modRes.score / modRes.maxScore) * 100 : 0
+                    percent: modRes.maxScore > 0 ? (Number(modRes.score) / Number(modRes.maxScore)) * 100 : 0
                 };
 
-                const pages = module.pages || [];
+                for (const page of (module.pages || [])) {
+                    const elementPromises = (page.elements || []).map(el => 
+                        progressService.getElementProgress(el.id)
+                    );
+                    
+                    const elementResults = await Promise.all(elementPromises);
 
-                for (const page of pages) {
                     let totalPageScore = 0;
                     let earnedPageScore = 0;
 
-                    if (page.elements && page.elements.length > 0) {
-                        for (const element of page.elements) {
-                            const elRes = await progressService.getElementProgress(element.id);
-                            totalPageScore += Number(elRes.maxScore) || 0;
-                            earnedPageScore += Number(elRes.score) || 0;
-                        }
-                    }
+                    elementResults.forEach(res => {
+                        totalPageScore += Number(res.maxScore) || 0;
+                        earnedPageScore += Number(res.score) || 0;
+                    });
 
-                    const percent = totalPageScore > 0 ? (earnedPageScore / totalPageScore) * 100 : 0;
+                    const visualPercent = totalPageScore > 0 ? (earnedPageScore / totalPageScore) * 100 : 0;
                     
                     const isLocked = !previousPageCompleted;
                     
-                    const passingThreshold = page.passing_score || 100;
-                    const isCompleted = percent >= passingThreshold;
+                    const threshold = Number(page.passing_score) > 0 
+                        ? Number(page.passing_score) 
+                        : totalPageScore;
+
+                    const isCompleted = earnedPageScore >= threshold;
 
                     map[page.id] = {
-                        percent,
+                        percent: Number(visualPercent.toFixed(2)), 
                         isLocked,
-                        isCompleted
+                        isCompleted,
+                        earnedPoints: earnedPageScore,
+                        maxPoints: totalPageScore
                     };
-
                     previousPageCompleted = isCompleted;
                 }
             }
@@ -62,9 +68,5 @@ export const useCourseProgress = (course) => {
         refreshProgress();
     }, [refreshProgress]);
 
-    return { 
-        progressMap, 
-        loading, 
-        refreshProgress 
-    };
+    return { progressMap, loading, refreshProgress };
 };
