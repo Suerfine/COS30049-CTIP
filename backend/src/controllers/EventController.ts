@@ -1,7 +1,7 @@
-import { EventResponse } from './../types/Event';
+import { EventResponse } from "./../types/Event";
 import { NextFunction, Request, Response } from "express";
 import { Event } from "../models";
-import { EventStatus } from '../enum/EventStatus';
+import { EventStatus } from "../enum/EventStatus";
 
 class HttpError extends Error {
   status: number;
@@ -99,7 +99,7 @@ export const updateEvent = async (
     }
 
     if (req.user && event.user_id !== req.user.id) {
-        throw new HttpError(403, "Forbidden: You do not own this event");
+      throw new HttpError(403, "Forbidden: You do not own this event");
     }
 
     await event.update(req.body);
@@ -125,9 +125,10 @@ export const updateEventStatus = async (
       throw new HttpError(404, "Event not found");
     }
 
-    const nextStatus = (event.status === EventStatus.PENDING) 
-    ? EventStatus.COMPLETED 
-    : EventStatus.PENDING;
+    const nextStatus =
+      event.status === EventStatus.PENDING
+        ? EventStatus.COMPLETED
+        : EventStatus.PENDING;
 
     await event.update({ status: nextStatus });
 

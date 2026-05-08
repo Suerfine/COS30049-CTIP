@@ -388,10 +388,6 @@ enrollmentRouter.get(
  *       400:
  *         description: Final quiz verification failed
  */
-enrollmentRouter.patch(
-  "/:id/approve",
-  auth,
-  EnrollmentController.approveBadge,
-);
+enrollmentRouter.patch("/:id/approve", auth, EnrollmentController.approveBadge);
 
 export default enrollmentRouter;

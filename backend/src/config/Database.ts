@@ -7,6 +7,7 @@ let sequelize: Sequelize;
 if (dialect === "sqlite") {
   sequelize = new Sequelize({
     dialect: "sqlite",
+    logging: false, // Disable logging for SQLite
     storage: process.env.DB_STORAGE || "./storage/dev_db.sqlite",
   });
 } else if (dialect === "mysql") {

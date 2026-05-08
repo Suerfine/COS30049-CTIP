@@ -16,6 +16,8 @@ import Sensor from "./Sensor";
 import SensorLog from "./SensorLogs";
 import PrerequisiteGroup from "./PrerequisiteGroup";
 import Prerequisite from "./Prerequisite";
+import AnomalyEvent from "./AnomalyEvent";
+import ArModel from "./ArModel";
 import { RegistrationStatus } from "../enum/RegistrationStatus";
 
 // Associations
@@ -153,9 +155,14 @@ Notification.belongsTo(User, { foreignKey: "user_id", as: "user" });
 Sensor.hasMany(SensorLog, { foreignKey: "sensor_id", as: "logs" });
 SensorLog.belongsTo(Sensor, { foreignKey: "sensor_id", as: "sensor" });
 
-Enrollment.belongsTo(Course, { foreignKey: 'course_id' });
-Course.hasMany(Enrollment, { foreignKey: 'course_id' });
-Page.hasMany(Element, { foreignKey: 'page_id' });
+Enrollment.belongsTo(Course, { foreignKey: "course_id" });
+Course.hasMany(Enrollment, { foreignKey: "course_id" });
+Page.hasMany(Element, { foreignKey: "page_id" });
+User.hasMany(AnomalyEvent, { foreignKey: "user_id", as: "compliance_events" });
+AnomalyEvent.belongsTo(User, { foreignKey: "user_id", as: "user" });
+
+User.hasMany(ArModel, { foreignKey: "created_by_user_id", as: "ar_models" });
+ArModel.belongsTo(User, { foreignKey: "created_by_user_id", as: "created_by" });
 
 export {
   User,
@@ -176,4 +183,6 @@ export {
   Notification,
   Sensor,
   SensorLog,
+  AnomalyEvent as AnomalyEvent,
+  ArModel,
 };

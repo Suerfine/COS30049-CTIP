@@ -3,7 +3,7 @@ import { createStackNavigator } from "@react-navigation/stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { View, Platform } from "react-native";
 import { LayoutDashboard, Book, Award, ListTodo } from "lucide-react-native";
-import { useNavigationState, useNavigation } from '@react-navigation/native';
+import { useNavigationState, useNavigation } from "@react-navigation/native";
 
 // Import screens
 import UserDashboard from "../screens/UserDashboard";
@@ -17,6 +17,7 @@ import UserAnomaly from "../screens/UserAnomaly";
 import Badge from "../screens/Badge";
 import Notification from "../screens/Notification";
 import Payment from "../screens/Payment";
+import AIDetection from "../screens/AIDetection";
 
 // Import components
 import MobileTopBar from "../components/MobileTopBar";
@@ -89,9 +90,9 @@ function MobileTabNavigator() {
             tabPress: (e) => {
               e.preventDefault();
 
-              navigation.navigate('To Do', {
-                screen: 'To Do Calendar',
-                params: { layout: 'list' },
+              navigation.navigate("To Do", {
+                screen: "To Do Calendar",
+                params: { layout: "list" },
               });
             },
           })}
@@ -163,7 +164,7 @@ export default function ParkGuideNavigator() {
   return (
     <View style={{ flex: 1, flexDirection: "column" }}>
       <View style={{ zIndex: 9999, elevation: 999 }}>
-        <NavBar/>
+        <NavBar />
       </View>
       <View style={{ flex: 1 }}>
         <Stack.Navigator
@@ -175,12 +176,13 @@ export default function ParkGuideNavigator() {
           <Stack.Screen name="Dashboard" component={UserDashboard} />
           <Stack.Screen name="Courses" component={UserCourse} />
           <Stack.Screen name="UserModule" component={UserModule} />
-          <Stack.Screen name="UserAnomaly" component={UserAnomaly}/>
-          <Stack.Screen name="Badge" component={Badge}/>
-          <Stack.Screen name="Notification" component={Notification}/>
-          <Stack.Screen name="Payment" component={Payment}/>
-          <Stack.Screen name="PaymentReview" component={PaymentReview}/>
+          <Stack.Screen name="UserAnomaly" component={UserAnomaly} />
+          <Stack.Screen name="Badge" component={Badge} />
+          <Stack.Screen name="Notification" component={Notification} />
+          <Stack.Screen name="Payment" component={Payment} />
+          <Stack.Screen name="PaymentReview" component={PaymentReview} />
 
+          <Stack.Screen name="Anomaly" component={AIDetection} />
           {/* UserProfile, Preferences and Security screens */}
           <Stack.Screen name="ProfileStack" component={ProfileStack} />
         </Stack.Navigator>

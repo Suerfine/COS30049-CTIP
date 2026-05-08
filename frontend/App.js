@@ -2,8 +2,8 @@ import React, { useEffect, useState } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { StatusBar } from "expo-status-bar";
 import { StyleSheet, ActivityIndicator, View } from "react-native"; // Added View and Indicator
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import './src/i18n';
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import "./src/i18n";
 
 import RootNavigator from "./src/navigation/RootNavigator";
 import { AuthProvider } from "./src/context/AuthContext";
@@ -65,7 +65,7 @@ export default function App() {
   // If we aren't ready, show a splash or loader to prevent defaulting to Dashboard
   if (!isReady) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
         <ActivityIndicator size="large" color="#2f6618fe" />
       </View>
     );
@@ -73,7 +73,7 @@ export default function App() {
 
   return (
     <AuthProvider>
-      <NavigationContainer 
+      <NavigationContainer
         linking={linking}
         initialState={initialState}
         onStateChange={handleStateChange}

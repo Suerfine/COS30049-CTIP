@@ -17,7 +17,6 @@ const uploadCourseBadge = uploadBadgeImg();
 
 const courseRouter = Router();
 courseRouter.use("/:course_Id/modules", moduleRouter);
-courseRouter.use("/:id/discussion", discussionRouter);
 
 function parseNumericIdArray(value: unknown): number[] {
   if (value === undefined || value === null || value === "") {

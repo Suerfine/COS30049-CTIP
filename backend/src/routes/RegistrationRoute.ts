@@ -35,7 +35,7 @@ const documentUploader = uploadDocument();
  */
 registrationRouter.post(
   "/",
-  documentUploader.single("document"),
+  documentUploader.single("file"),
   [
     body("firstname").isString().notEmpty(),
     body("lastname").isString().notEmpty(),

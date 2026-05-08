@@ -75,7 +75,9 @@ function toRegistrationResponse(
 }
 
 export const createRegistration = async (
-  req: Request<{}, {}, CreateRegistrationRequest>,
+  req: Request<{}, {}, CreateRegistrationRequest> & {
+    file?: Express.Multer.File;
+  },
   res: Response<RegistrationResponse | { message: string }>,
   next: NextFunction,
 ) => {
@@ -98,6 +100,19 @@ export const createRegistration = async (
       );
     }
 
+    // Validate file upload
+    if (req.file) {
+      const allowedMimeTypes = ["application/pdf"];
+      if (!allowedMimeTypes.includes(req.file.mimetype)) {
+        throw new HttpError(
+          400,
+          "Invalid file type. Only PDF files are allowed.",
+        );
+      }
+    } else {
+      throw new HttpError(400, "Document file is required.");
+    }
+
     // Create the registration record
     const registration = await Registration.create({
       user_id: null,
@@ -114,17 +129,15 @@ export const createRegistration = async (
     });
 
     // Move the file to the private storage if it exists and update the registration record with the new path
-    if (req.file) {
-      const storage = getStorage();
-      const path = await storage.save({
-        buffer: req.file.buffer,
-        filename: req.file.originalname,
-        mimeType: req.file.mimetype,
-        folder: "private",
-        subfolder: "registrations/" + registration.id + "/documents/",
-      });
-      await registration.update({ document_filepath: path });
-    }
+    const storage = getStorage();
+    const path = await storage.save({
+      buffer: req.file.buffer,
+      filename: req.file.originalname,
+      mimeType: req.file.mimetype,
+      folder: "private",
+      subfolder: "registrations/" + registration.id + "/documents/",
+    });
+    await registration.update({ document_filepath: path });
 
     return res.status(200).json(toRegistrationResponse(registration));
   } catch (err) {
