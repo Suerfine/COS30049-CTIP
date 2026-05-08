@@ -4,7 +4,7 @@ export const isOnlyLetters=(str)=>{
     return /^[A-Za-z\s]+$/.test(str.trim());
 }
 
-export const phoneRegex = /^(01[0-9]{1}-?[0-9]{7,8}|0[1-9]{1}-?[0-9]{6,7})$/;
+export const phoneRegex = /^(01[0-9]{1}-?[0-9]{7,8}|0[1-9]{1}-?[0-9]{6,7}|\+61\d{9})$/;
 
 // min 6 characters, at least one letter and one number
 export const isValidPassword = (password) =>
