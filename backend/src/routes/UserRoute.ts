@@ -164,6 +164,44 @@ userRouter.get("/me", auth, UserController.getCurrentUser);
 
 /**
  * @swagger
+ * /api/users/search/{name}/{limit}:
+ *   get:
+ *     summary: Search users by username
+ *     description: Search for users by username with case-insensitive matching
+ *     tags: [Users]
+ *     security:
+ *       - OAuth2: ["all"]
+ *     parameters:
+ *       - in: path
+ *         name: name
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Username search term
+ *       - in: path
+ *         name: limit
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Maximum number of results to return
+ *     responses:
+ *       200:
+ *         description: Users found successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/User'
+ */
+userRouter.get(
+  "/search/:name/:limit",
+  auth,
+  UserController.searchUsersByUsername,
+);
+
+/**
+ * @swagger
  * /api/users/{id}:
  *   get:
  *     summary: Get user by ID
