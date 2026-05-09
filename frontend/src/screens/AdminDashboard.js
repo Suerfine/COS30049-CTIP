@@ -1,4 +1,4 @@
-import { AlertTriangle, Book, ClipboardList, Flag, MapPin, RefreshCcw, User, RotateCcw, X } from "lucide-react-native";
+import { AlertTriangle, Book, ClipboardList, Flag, MapPin, RefreshCcw, User, RotateCcw, Pin } from "lucide-react-native";
 import React, { useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { CircleMarker, MapContainer, Popup, TileLayer, Tooltip, useMap } from "react-leaflet";
@@ -59,17 +59,6 @@ const getConfidenceLabel = (metadata) => {
   return `${Math.round(confidence * 100)}%`;
 };
 
-const getMetadataRows = (metadata) => {
-  if (!metadata || typeof metadata !== "object") {
-    return [];
-  }
-
-  return Object.entries(metadata).map(([key, value]) => ({
-    key,
-    value: typeof value === "object" ? JSON.stringify(value) : String(value),
-  }));
-};
-
 const getMapCenter = (events) => {
   if (!events.length) {
     return DEFAULT_MAP_CENTER;
@@ -112,55 +101,7 @@ const MapViewport = ({ events, center }) => {
   return null;
 };
 
-const AnomalyPopupContent = ({ event }) => {
-  const metadataRows = getMetadataRows(event.metadata);
-  const severity = getEventSeverity(event.event_type);
-
-  return (
-    <div style={webStyles.popup}>
-      <div style={webStyles.popupHeader}>
-        <strong>{getEventTypeLabel(event.event_type)}</strong>
-        <span
-          style={{
-            ...webStyles.severityPill,
-            backgroundColor: SEVERITY_CONFIG[severity].fillColor,
-          }}
-        >
-          {SEVERITY_CONFIG[severity].label}
-        </span>
-      </div>
-      <div style={webStyles.popupRow}>
-        <span style={webStyles.popupLabel}>Detected</span>
-        <span>{formatDate(event.created_at)}</span>
-      </div>
-      <div style={webStyles.popupRow}>
-        <span style={webStyles.popupLabel}>Coordinates</span>
-        <span>
-          {Number(event.latitude).toFixed(6)}, {Number(event.longitude).toFixed(6)}
-        </span>
-      </div>
-      <div style={webStyles.popupRow}>
-        <span style={webStyles.popupLabel}>User</span>
-        <span>{getUserLabel(event)}</span>
-      </div>
-      {metadataRows.length ? (
-        <div style={webStyles.metadata}>
-          <strong>Metadata</strong>
-          {metadataRows.map((row) => (
-            <div key={row.key} style={webStyles.popupRow}>
-              <span style={webStyles.popupLabel}>{row.key.replaceAll("_", " ")}</span>
-              <span>{row.value}</span>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div style={webStyles.emptyMetadata}>No metadata available</div>
-      )}
-    </div>
-  );
-};
-
-const HoverDetailCard = ({ event }) => {
+const HoverDetailCard = ({ event, isPinned }) => {
   const severity = getEventSeverity(event.event_type);
   const confidence = getConfidenceLabel(event.metadata);
 
@@ -168,6 +109,7 @@ const HoverDetailCard = ({ event }) => {
     <View style={styles.hoverCard}>
       <View style={styles.hoverHeader}>
         <Text style={styles.hoverTitle}>{getEventTypeLabel(event.event_type)}</Text>
+        
         <View style={[styles.hoverBadge, { backgroundColor: SEVERITY_CONFIG[severity].fillColor }]}>
           <Text style={styles.hoverBadgeText}>{SEVERITY_CONFIG[severity].label}</Text>
         </View>
@@ -177,7 +119,10 @@ const HoverDetailCard = ({ event }) => {
         Coordinates: {Number(event.latitude).toFixed(6)}, {Number(event.longitude).toFixed(6)}
       </Text>
       <Text style={styles.hoverRow}>User: {getUserLabel(event)}</Text>
-      {confidence ? <Text style={styles.hoverRow}>Confidence: {confidence}</Text> : null}
+      <View style={{ flexDirection: "row", justifyContent: "space-between", }}>
+        {confidence ? <Text style={styles.hoverRow}>Confidence: {confidence}</Text> : null}
+        {isPinned && <Pin size={14} color="#b96363" fill="#b96363" />}
+      </View>
     </View>
   );
 };
@@ -194,6 +139,7 @@ const AdminDashboard = () => {
   } = useNotification();
 
   const [hoveredAnomaly, setHoveredAnomaly] = useState(null);
+  const [selectedAnomaly, setSelectedAnomaly] = useState(null);
   const mapCenter = useMemo(() => getMapCenter(events), [events]);
 
   const severityCounts = useMemo(
@@ -326,24 +272,29 @@ const AdminDashboard = () => {
                     eventHandlers={{
                       mouseover: () => setHoveredAnomaly(event),
                       mouseout: () => setHoveredAnomaly(null),
+                      click: () => {
+                        setSelectedAnomaly(prev => prev?.id === event.id ? null : event);
+                      },
                     }}
                     pathOptions={{
-                      color: severityConfig.color,
+                      color: selectedAnomaly?.id === event.id ? "#161515" : severityConfig.color,
                       fillColor: severityConfig.fillColor,
                       fillOpacity: 0.82,
-                      weight: 2,
+                      weight: selectedAnomaly?.id === event.id ? 3 : 2,
                     }}
                   >
-                    <Popup>
-                      <AnomalyPopupContent event={event} />
-                    </Popup>
                   </CircleMarker>
                 );
               })}
             </MapContainer>
           )}
 
-          {!mapLoading && !mapError && hoveredAnomaly ? <HoverDetailCard event={hoveredAnomaly} /> : null}
+          {!mapLoading && !mapError && (selectedAnomaly || hoveredAnomaly) ? (
+            <HoverDetailCard 
+              event={selectedAnomaly || hoveredAnomaly} 
+              isPinned={!!selectedAnomaly}
+            />
+          ) : null}
 
           {!mapLoading && !mapError && events.length === 0 ? (
             <View style={styles.emptyOverlay}>
@@ -408,6 +359,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#f6f8f7",
     padding: 20,
     gap: 20,
+    overflow: "hidden",
   },
   content: {
     paddingVertical: 20,
@@ -448,8 +400,10 @@ const styles = StyleSheet.create({
   cards: {
     flexDirection: "row",
     gap: 25,
-    flexWrap: "wrap",
+    flexWrap: "nowrap",
     marginHorizontal: 20,
+    marginVertical: 10,
+    height: 120,
   },
   usersTheme: { backgroundColor: "#eef2ff" },
   coursesTheme: { backgroundColor: "#fff7ed" },
@@ -515,6 +469,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderBottomWidth: 1,
     borderBottomColor: "#e5e7eb",
+    zIndex: 1000,
   },
   mapTitle: {
     fontSize: 20,
@@ -574,7 +529,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   mapShell: {
-    height: 520,
+    flex: 1,
     position: "relative",
   },
   mapState: {
@@ -636,7 +591,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 18,
     right: 18,
-    width: 300,
+    width: 250,
     paddingHorizontal: 14,
     paddingVertical: 12,
     backgroundColor: "white",
@@ -734,57 +689,7 @@ const webStyles = {
   map: {
     width: "100%",
     height: "100%",
-  },
-  tooltip: {
-    display: "flex",
-    flexDirection: "column",
-    gap: 3,
-    fontSize: 12,
-    color: "#111827",
-  },
-  popup: {
-    minWidth: 240,
-    display: "flex",
-    flexDirection: "column",
-    gap: 8,
-    fontSize: 13,
-    color: "#111827",
-  },
-  popupHeader: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: 12,
-    paddingBottom: 6,
-    borderBottom: "1px solid #e5e7eb",
-  },
-  popupRow: {
-    display: "flex",
-    justifyContent: "space-between",
-    gap: 14,
-  },
-  popupLabel: {
-    color: "#6b7280",
-    textTransform: "capitalize",
-  },
-  severityPill: {
-    color: "white",
-    borderRadius: 999,
-    padding: "2px 8px",
-    fontSize: 11,
-    fontWeight: 700,
-  },
-  metadata: {
-    display: "flex",
-    flexDirection: "column",
-    gap: 6,
-    paddingTop: 6,
-    borderTop: "1px solid #e5e7eb",
-  },
-  emptyMetadata: {
-    color: "#6b7280",
-    paddingTop: 6,
-    borderTop: "1px solid #e5e7eb",
+    zIndex: 0,
   },
 };
 
