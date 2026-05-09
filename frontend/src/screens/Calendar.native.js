@@ -9,7 +9,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { useTranslation } from 'react-i18next';
 
 // Import other hook and components
-import { useUserDashboard } from '../hooks/useUserDashboard.js';
+import { useUserDashboard } from '../hooks/useUserDashboard';
 import SlidingTabs from '../components/SlidingTabs.js';
 
 const toDateKey = (value) => {
