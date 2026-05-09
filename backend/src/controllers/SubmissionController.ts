@@ -461,3 +461,28 @@ export const markSubmission = async (
     next(err);
   }
 };
+
+export const getAllByEnrollment = async (
+  req: Request<{ enrollment_id: string }>,
+  res: Response<SubmissionResponse[] | { message: string }>,
+  next: NextFunction,
+) => {
+  try {
+    const enrollmentId = parseId(req.params.enrollment_id);
+    if (enrollmentId === null) {
+      throw new HttpError(400, "Invalid enrollment_id");
+    }
+    const submissions = await Submission.findAll({
+      where: { enrollment_id: enrollmentId },
+      order: [["created_at", "DESC"]],
+    });
+
+    return res.status(200).json(submissions.map(toSubmissionResponse));
+    
+  } catch (err) {
+    if (err instanceof HttpError) {
+      return res.status(err.status).json({ message: err.message });
+    }
+    next(err);
+  }
+};
