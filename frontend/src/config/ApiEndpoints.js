@@ -28,6 +28,9 @@ export const API_ENDPOINTS = {
     LIST: (courseId) => `/courses/${courseId}/discussion`,
     MESSAGES: (discussionId) => `/discussion/${discussionId}/messages`,
   },
+  MESSAGE: {
+    DETAIL: (messageId) => `/messages/${messageId}`,
+  },
   ENROLLMENT: {
     LIST: "/enrollments",
     ENROLL: (courseId) => `/enrollments/${courseId}/enroll`,
