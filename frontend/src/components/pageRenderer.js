@@ -1,4 +1,4 @@
-import { useState,useEffect, useRef } from 'react';
+import { useState,useEffect, useRef, useMemo } from 'react';
 import { View, Text, Image, StyleSheet, TouchableOpacity, Linking, Platform } from 'react-native';
 import { FileText, Play, Download, HelpCircle, Edit3, editCircle, Trash2,ChevronUp, ChevronDown, CheckCircle2, RotateCcw, AlertCircle, Calendar, Clock, MapPin, ExternalLink} from 'lucide-react-native';
 import Markdown from 'react-native-markdown-display';
@@ -11,7 +11,7 @@ import { markdownStyles } from './markdownStyle';
 import { UserRoles } from '../enum/UserRoles';
 import { useAuth } from '../context/AuthContext';
 
-const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement, onMoveElement, onProgressUpdate, onRegisterWorkshop, userMarks,pageMetadata,currentAttempts,isPageFinished, isFinalQuiz}) => {
+const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement, onMoveElement, onProgressUpdate, onRegisterWorkshop, userMarks,pageMetadata,currentAttempts,isPageFinished, isFinalQuiz, enrollmentId, fullHistoryMap, onFetchHistory, onRefreshHistory}) => {
     const isAdmin = role === UserRoles.ADMIN;
     const [videoProgress, setVideoProgress]=useState({});
     const [quizStates, setQuizStates]=useState({});
@@ -24,6 +24,134 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [finalSummary, setFinalSummary] = useState(null);
     const [showFinalResults, setShowFinalResults] = useState(false);
+    const [localAnswers, setLocalAnswers] = useState({});
+
+    useEffect(() => {
+        if (!isFinalQuiz || !userMarks || elements.length === 0) return;
+        const restoredAnswers = {};
+        const restoredQuizStates = {};
+        elements.forEach(el => {
+            if (el.type !== 'quiz_objective') return;
+            const submission = userMarks?.[el.id];
+            if (submission?.content?.selected !== undefined) {
+                const selectedAnswer = submission.content.selected;
+                const isCorrect = submission.content.isCorrect;
+                restoredAnswers[el.id] = selectedAnswer;
+                restoredQuizStates[el.id] = {
+                    selected: selectedAnswer,
+                    isCorrect,
+                    submitted: true
+                };
+            }
+        });
+
+        setLocalAnswers(restoredAnswers);
+        setQuizStates(restoredQuizStates);
+        if (Object.keys(restoredAnswers).length > 0) {
+            const totalScore = elements.reduce(
+                (acc, el) => acc + (el.score || 0),
+                0
+            );
+
+            const earnedScore = Object.values(restoredQuizStates).reduce(
+                (acc, q) => {
+                    const question = elements.find(e => e.id === Object.keys(restoredQuizStates).find(
+                        key => restoredQuizStates[key] === q
+                    ));
+
+                    return acc + (q.isCorrect ? (question?.score || 0) : 0);
+                },
+                0
+            );
+            const percentage = (earnedScore / totalScore) * 100;
+            setFinalSummary({
+                score: earnedScore,
+                total: totalScore,
+                percentage,
+                status: earnedScore>=pageMetadata.passing_score  ? 'PASS' : 'FAIL'
+            });
+
+            setShowFinalResults(true);
+        }
+
+    }, [userMarks, elements, isFinalQuiz]);
+
+    const handleQuizSelect = (elId, selectedOption) => {
+        if (showFinalResults) return;
+        setLocalAnswers(prev => ({
+            ...prev,
+            [elId]: selectedOption
+        }));
+    };
+
+    const handleFinalSubmit = async () => {
+        const quizElements = elements.filter(el => el.type === 'quiz_objective');
+        const unansweredQuestions = quizElements.filter(el => localAnswers[el.id] === undefined);
+
+        if (unansweredQuestions.length > 0) {
+            alert(`Please answer all questions before submitting. Remaining: ${unansweredQuestions.length}`);
+            return;
+        }
+        setIsSubmitting(true);
+        try {
+            for (const el of quizElements) {
+                const userAnswer = localAnswers[el.id];
+                const isCorrect = userAnswer === el.content.answer;
+                const points = isCorrect ? el.score : 0;
+
+                await onProgressUpdate(el.id, points, {
+                    selected: userAnswer,
+                    isCorrect
+                });
+            }
+            if (onRefreshHistory) await onRefreshHistory();
+            const finalPercent = (currentStats.potentialScore / currentStats.potentialMax) * 100;
+            setFinalSummary({
+                score: currentStats.potentialScore,
+                total: currentStats.potentialMax,
+                percentage: finalPercent,
+                status: finalPercent >= (pageMetadata.page?.passing_score || 80) ? 'PASS' : 'FAIL'
+            });
+            setShowFinalResults(true);
+
+        } catch (err) {
+            console.error("Submission failed", err);
+            alert("Failed to submit assessment.");
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleTryAgain = () => {
+        setLocalAnswers({});
+        setQuizStates({});
+        setShowFinalResults(false);
+        setFinalSummary(null);
+    };
+
+    const currentStats = useMemo(() => {
+        const quizElements = elements.filter(e => e.type === 'quiz_objective');
+        const totalQuizzes = quizElements.length;
+        const answeredCount = Object.keys(localAnswers).length;
+        
+        let potentialScore = 0;
+        let potentialMax = 0;
+
+        quizElements.forEach(el => {
+            potentialMax += el.score;
+            if (localAnswers[el.id] === el.content.answer) {
+                potentialScore += el.score;
+            }
+        });
+
+        return {
+            answeredCount,
+            totalQuizzes,
+            potentialScore,
+            potentialMax,
+            isAllAnswered: answeredCount === totalQuizzes
+        };
+    }, [localAnswers, elements]);
 
     const IntersectionWrapper = ({ children, id, score, type, isAlreadyComplete }) => {
         const elementRef = useRef(null);
@@ -105,7 +233,7 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
                 submitted: !isFinalQuiz 
             }
         }));
-        if (onProgressUpdate) {
+        if (onProgressUpdate && !isFinalQuiz) {
             onProgressUpdate(el.id, isCorrect ? el.score : 0);
         }
 
@@ -122,6 +250,12 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
             ...prev,
             [id]: { selected: null, isCorrect: null, submitted: false }
         }));
+
+        setLocalAnswers(prev=>{
+            const updated={...prev};
+            delete updated[id];
+            return updated;
+        })
     };
 
     const handleFinalReveal = () => {
@@ -175,27 +309,6 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
         }
     }, [courseId, isAdmin]);
     
-    const handleVideoProgress = async (id, data) => {
-        if (isAdmin) return;
-
-        const percent = data.currentTime / data.playableDuration;
-        const lastSavedPercent = videoProgress[id] || 0;
-
-        if (percent > lastSavedPercent + 0.02 || percent >= 0.95) {
-            const updatedProgress = { ...videoProgress, [id]: percent };
-            setVideoProgress(updatedProgress);
-            
-            try {
-                await AsyncStorage.setItem(
-                    `@video_progress_${courseId}`, 
-                    JSON.stringify(updatedProgress)
-                );
-            } catch (e) {
-                console.error("Storage error", e);
-            }
-        }
-    };
-
     const VideoPlayer = ({ url }) => {
         const getEmbedUrl = (originalUrl) => {
             let videoId = '';
@@ -274,10 +387,20 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
         }
     };
 
-    
+    const fetchHistory = async (elementId) => {
+        try {
+            const history = await submissionService.getByElement(enrollmentId, elementId);
+            setHistoryModal({ visible: true, data: history });
+        } catch (err) {
+            alert("Could not load history.");
+        }
+    };
+
     const renderElement = (el, index) => {
         if (!el || !el.id) return null;
         const { type, content, score, id } = el;
+        const elementHistory = fullHistoryMap?.[id] || [];
+        const attemptCount = elementHistory.length;
         const earnedScore = typeof userMarks?.[id] === 'object' 
         ? (userMarks[id]?.earned_grade ?? 0) 
         : (userMarks?.[id] ?? 0);
@@ -288,24 +411,7 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
             isCorrect: isViewed,
             submitted: isViewed 
         };
-        // Submit
-        // {isFinalQuiz && !showFinalResults && (
-        //     <View style={{ padding: 20 }}>
-        //         <TouchableOpacity 
-        //             style={styles.joinBtn} 
-        //             onPress={handleFinalReveal}
-        //         >
-        //             <Text style={styles.joinBtnText}>Submit and Reveal Results</Text>
-        //             <CheckCircle2 size={18} color="white" />
-        //         </TouchableOpacity>
-        //     </View>
-        // )}
-
-        // Show final result
-        // {showFinalResults && finalSummary && (
-        //     <View style={styles.finalSummaryCard}>
-        //     </View>
-        // )}
+        const selected = localAnswers[el.id];
 
         return (
             <IntersectionWrapper key={id} id={id} score={score} type={type} isAlreadyComplete={isAlreadyComplete}>
@@ -384,14 +490,31 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
                                             (revealFeedback && quiz.submitted && !quiz.isCorrect) && styles.quizCardError
                                         ]}>
                                             <View style={styles.quizHeader}>
-                                                <HelpCircle color="#0a6340" size={13}/>
-                                                <Text style={styles.quizTitle}>Knowledge Check</Text>
+                                                <View style={{flexDirection: 'row', alignItems: 'center', gap: 6}}>
+                                                    <HelpCircle color="#0a6340" size={13}/>
+                                                    <Text style={styles.quizTitle}>Knowledge Check</Text>
+                                                </View>
+
+                                                {/* INTEGRATED HISTORY PILL
+                                                {!isAdmin && attemptCount > 0 && (
+                                                    <TouchableOpacity 
+                                                        onPress={() => {
+                                                            onFetchHistory(id);
+                                                        }
+                                                            
+                                                        }
+                                                        style={styles.historyPill}
+                                                    >
+                                                        <Clock size={10} color="#64748b" />
+                                                        <Text style={styles.historyPillText}>{attemptCount} Attempts</Text>
+                                                    </TouchableOpacity>
+                                                )} */}
                                             </View>
                                             
                                             <Text style={styles.question}>{content.question}</Text>
                                             
                                             {content.options.map((option, idx) => {
-                                                const isSelected = quiz.selected === option;
+                                                const isSelected = localAnswers[id] === option;
                                                 const showSuccess = revealFeedback && (quiz.submitted || isAdmin) && option === content.answer;
                                                 const showDanger = revealFeedback && quiz.submitted && isSelected && !quiz.isCorrect;
 
@@ -399,7 +522,10 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
                                                     <TouchableOpacity 
                                                         key={idx}
                                                         disabled={isAdmin || (isFinalQuiz ? showFinalResults : quiz.submitted)}
-                                                        onPress={() => handleQuizSubmit(el, option)}
+                                                        onPress={() => {
+                                                            handleQuizSubmit(el, option);
+                                                            handleQuizSelect(id, option);
+                                                        }}
                                                         style={[
                                                             styles.optionBtn,
                                                             isSelected && styles.optionSelected,
@@ -427,9 +553,18 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
                                                     ) : (
                                                         <Text style={styles.successText}>Correct! Well done.</Text>
                                                     )}
+                                                    {!isFinalQuiz && !quiz.isCorrect && (
+                                                        <TouchableOpacity
+                                                            style={styles.redoBtn}
+                                                            onPress={() => resetQuiz(el.id)}
+                                                        >
+                                                            <RotateCcw size={14} color="#0a6340" />
+                                                            <Text style={styles.redoText}>Try Again</Text>
+                                                        </TouchableOpacity>
+                                                    )}
                                                 </View>
                                             )}
-                                        </View>
+                                        </View>                                        
                                     );
                                 case 'workshop':
                                     const { title, description, sessions, location, link } = content;
@@ -570,7 +705,53 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
 
     return (
         <View style={styles.container}>
-            {elements.map((el) => renderElement(el))}
+            {elements.map((el, index) => renderElement(el, index))}
+
+            {/* Compact Submit Bar */}
+            {isFinalQuiz && !showFinalResults && (
+                <View style={styles.compactSubmitBar}>
+                    <Text style={styles.submitInfoText}>
+                        Progress: {currentStats.answeredCount} / {currentStats.totalQuizzes} Answered
+                    </Text>
+                    <TouchableOpacity
+                        style={[styles.minimalSubmitBtn, isSubmitting && { opacity: 0.5 }]}
+                        onPress={handleFinalSubmit}
+                        disabled={isSubmitting}
+                    >
+                        <Text style={styles.minimalSubmitText}>
+                            {isSubmitting ? "Submitting..." : "Submit Assessment"}
+                        </Text>
+                    </TouchableOpacity>
+                </View>
+            )}
+
+            {/* Professional Compact Result Card */}
+            {showFinalResults && (
+                <View style={styles.profResultCard}>
+                    <View style={[styles.statusIndicator, { backgroundColor: finalSummary?.status === 'PASS' ? '#0a6340' : '#dc2626' }]} />
+                    <View style={styles.resultMain}>
+                        <View style={styles.resultHeader}>
+                            <Text style={styles.resScoreValue}>
+                                {finalSummary?.score} <Text style={styles.resScoreTotal}>/ {finalSummary?.total}</Text>
+                            </Text>
+                            <TouchableOpacity onPress={handleTryAgain} style={styles.tryAgainBtn}>
+                                <RotateCcw size={14} color="#64748b" />
+                                <Text style={styles.tryAgainText}>Try Again</Text>
+                            </TouchableOpacity>
+                        </View>
+                        <Text style={[styles.miniBadgeText, { color: finalSummary?.status === 'PASS' ? '#0a6340' : '#dc2626' }]}>
+                            {finalSummary?.status === 'PASS' ? "Requirement Met" : "Re-attempt Required"}
+                            {console.log(finalSummary?.status)}
+                        </Text>
+                    </View>
+                </View>
+            )}
+            <View style={styles.quizHeader}>
+                <Text style={styles.quizTitle}>Knowledge Check</Text>
+                <TouchableOpacity onPress={() => onFetchHistory(id)}>
+                    <Clock size={16} color="#0a6340" />
+                </TouchableOpacity>
+            </View>
         </View>
     );
 };
@@ -1071,6 +1252,103 @@ const styles = StyleSheet.create({
     },
     toggleThumbActive: {
         transform: [{ translateX: 16 }],
+    },
+    compactSubmitBar: {
+        marginTop: 40,
+        padding: 16,
+        backgroundColor: '#f8fafc',
+        borderRadius: 12,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        borderWidth: 1,
+        borderColor: '#e2e8f0',
+    },
+    submitInfo: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+    },
+    submitInfoText: {
+        fontSize: 12,
+        color: '#64748b',
+        fontWeight: '500',
+    },
+    minimalSubmitBtn: {
+        backgroundColor: '#0a6340',
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 8,
+        paddingHorizontal: 16,
+        borderRadius: 6,
+        gap: 6,
+    },
+    minimalSubmitText: {
+        color: 'white',
+        fontWeight: '600',
+        fontSize: 13,
+    },
+
+    profResultCard: {
+        backgroundColor: '#fff',
+        borderRadius: 8,
+        marginTop: 20,
+        flexDirection: 'row',
+        overflow: 'hidden',
+        borderWidth: 1,
+        borderColor: '#e5e7eb',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 2,
+        elevation: 2,
+    },
+    statusIndicator: {
+        width: 6,
+    },
+    resultMain: {
+        flex: 1,
+        padding: 16,
+    },
+    resultHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 12,
+    },
+    miniBadge: {
+        paddingHorizontal: 8,
+        paddingVertical: 2,
+        borderRadius: 4,
+    },
+    miniBadgeText: {
+        fontSize: 10,
+        fontWeight: '800',
+    },
+    resScoreValue: {
+        fontSize: 24,
+        fontWeight: '700',
+        color: '#1e293b',
+    },
+    resScoreTotal: {
+        fontSize: 14,
+        color: '#94a3b8',
+        fontWeight: '400',
+    },
+    tryAgainBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+        padding: 6,
+        backgroundColor: '#f8fafc',
+        borderRadius: 4,
+        borderWidth: 1,
+        borderColor: '#e2e8f0',
+    },
+    tryAgainText: {
+        fontSize: 12,
+        color: '#64748b',
+        fontWeight: '600',
     },
 });
 

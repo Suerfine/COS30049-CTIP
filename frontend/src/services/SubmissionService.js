@@ -65,7 +65,6 @@ export const submissionService = {
 
   /**
    * POST: Mark a submission (Admin marking)
-   * Path: /api/submission/{submission_id}/mark
    */
   markSubmission: async (id, markData) => {
     try {
@@ -79,6 +78,7 @@ export const submissionService = {
     }
   },
 
+  // GET: Show the Submission By Element
   getByElement: async (enrollmentId, elementId) => {
     if(elementId===undefined){
       return [];
@@ -133,11 +133,17 @@ export const submissionService = {
 // GET: Audit
   getEnrollmentAudit: async (id) => {
       try {
-          const res = await apiClient.get(`/enrollments/${id}/audit`);
+          const res = await apiClient.get(API_ENDPOINTS.ENROLLMENT.AUDIT(id));
           return res.data;
       } catch (error) {
           console.error("Fetch Audit Error:", error);
           throw error;
       }
   },
+
+  // GET: get all element submission by using enrollment id
+  getAllByEnrollment: async (enrollmentId) => {
+    const response = await apiClient.get(API_ENDPOINTS.ENROLLMENT.HISTORY_BY_ENROLLMENT(enrollmentId));
+    return response.data;
+  }
 };
