@@ -246,7 +246,6 @@ const UserDashboard = ({ navigation }) => {
                                             const hasEvent = hasPendingEventOnDate(date);
                                             
                                             return (
-                                                
                                                 <Pressable
                                                     key={index}
                                                     style={[
@@ -260,7 +259,6 @@ const UserDashboard = ({ navigation }) => {
                                                         setSelectedDate(isSelected ? null : dateString)
                                                     }
                                                 >
-
                                                     <Text
                                                         style={[
                                                             styles.dayNumber,
@@ -275,7 +273,7 @@ const UserDashboard = ({ navigation }) => {
                                             );
                                         })}
                                     </View>
-                                    </View>
+                                </View>
 
                                 {/* Right Button - Always visible */}
                                 <Pressable onPress={() => {

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { TextInput, 
+import { Alert,
+    TextInput, 
     Switch, 
     View, 
     Text, 
@@ -63,7 +64,11 @@ const AddTodo = ({ visible, setIsModalVisible, onCreated, initialEvent = null })
 
     const handleSave = async () => {
         if (!title.trim()) {
-            window.alert("Title is required.");
+            if (Platform.OS === "web") {
+                window.alert("Title is required.");
+            } else {
+                Alert.alert("Title is required.");
+            }
             return;
         }
         
@@ -79,6 +84,15 @@ const AddTodo = ({ visible, setIsModalVisible, onCreated, initialEvent = null })
                     ? `${endDateText}T00:00:00`
                     : `${endDateText}T${endTimeText}:00`
             );
+
+            if (endDate < startDate) {
+                if (Platform.OS === "web") {
+                    window.alert("End date must be later than start date.");
+                } else {
+                    Alert.alert("End date must be later than start date.");
+                }
+                return;
+            }
 
             const payload = {
                 title: title.trim(),
@@ -344,6 +358,7 @@ const styles = StyleSheet.create({
         padding: 15,
         fontSize: 16,
         marginTop: 5,
+        marginBottom: 20,
         borderWidth: 1,
         borderColor: "#eee",
     }
