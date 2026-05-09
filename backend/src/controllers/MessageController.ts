@@ -5,7 +5,7 @@ import {
   UpdateMessageRequest,
   MessagePaginateRequest,
 } from "../types/Message";
-import { Message, User } from "../models";
+import { Message, User, Discussion } from "../models";
 import { formatPaginateResponse, paginateModel } from "../utils/paginate";
 import { PaginateResponse } from "../types/common";
 import sequelize from "../config/Database";
@@ -47,6 +47,13 @@ export const createMessage = async (
       { transaction },
     );
 
+    const discussion = await Discussion.findByPk(discussion_id, {
+      attributes: ['title'], // 
+      transaction
+    });
+
+    const discussionTopic = discussion?.title || `ID: ${discussion_id}`;
+
     // Sending notificationts to whoevers bane was tagged in the message content
     const taggedUsernames =
       content.match(/@(\w+)/g)?.map((tag) => tag.substring(1)) || [];
@@ -63,8 +70,8 @@ export const createMessage = async (
       usersInDiscussion.forEach((userId) => {
         sendNotification(
           "single",
-          "You were tagged in a message",
-          `You were tagged in a message in discussion: ${discussion_id}. Check it out now!`,
+          `New mention from @${req.user?.username}`,
+          `@${req.user?.username} tagged you in "${discussionTopic}".`,
           transaction,
           userId,
           false,
@@ -80,8 +87,8 @@ export const createMessage = async (
         if (taggedUser) {
           await sendNotification(
             "single",
-            "You were tagged in a message",
-            `You were tagged in a message in discussion: ${discussion_id}. Check it out now!`,
+            `New mention from @${req.user?.username}`,
+            `@${req.user?.username} tagged you in "${discussionTopic}".`,
             transaction,
             taggedUser.id,
             false,

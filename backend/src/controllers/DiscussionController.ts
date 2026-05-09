@@ -5,7 +5,7 @@ import {
   UpdateDiscussionRequest,
   DiscussionPaginateRequest,
 } from "../types/Discussion";
-import { Discussion, User } from "../models";
+import { Discussion, User, Course } from "../models";
 import { formatPaginateResponse, paginateModel } from "../utils/paginate";
 import { PaginateRequestParams, PaginateResponse } from "../types/common";
 import { Op } from "sequelize";
@@ -39,13 +39,19 @@ export const createDiscussion = async (
       throw new HttpError(401, "Unauthorized");
     }
 
+    const course = await Course.findByPk(course_id, {
+      attributes: ['title'], 
+      transaction
+    });
+    const courseName = course?.title || `Course #${course_id}`;
+
     // Create the discussion
     const discussion = await Discussion.create({
       course_id,
       user_id: req.user.id,
       title,
       is_public,
-    });
+    }, { transaction });
 
     //Return the created discussion
     res.status(201).json({
@@ -80,8 +86,8 @@ export const createDiscussion = async (
         ParkGuidePeersIds.map((userId) => {
           return sendNotification(
             "single",
-            "New Public Discussion Channel Created",
-            `A new public discussion channel "${discussion.title}" has been created in the course you are enrolled in. Check it out now!`,
+            "New Public Discussion",
+            `A new discussion channel "${discussion.title}" has been created in ${courseName} Course. Check it out now!`,
             transaction,
             userId,
             false,
@@ -91,8 +97,8 @@ export const createDiscussion = async (
     }
     await sendNotification(
       "admin",
-      "New Discussion Channel Created",
-      `A new discussion channel "${discussion.title}" has been created in course ID ${course_id}. Please review it as soon as possible.`,
+      "New Public Discussion",
+      `A new discussion channel "${discussion.title}" has been created in ${courseName} Course. Please review it as soon as possible.`,
       transaction,
       undefined,
       false,
