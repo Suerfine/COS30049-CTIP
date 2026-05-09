@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, Pressable, ActivityIndicator, StyleSheet, ScrollView } from 'react-native';
-import { Lock, ShieldCheck, Send, ArrowLeft } from 'lucide-react-native';
+import { View, Text, TextInput, Pressable, ActivityIndicator, StyleSheet, ScrollView, Alert, Platform } from 'react-native';
+import { Lock, ShieldCheck, Send, ArrowLeft, Trash2 } from 'lucide-react-native';
 import { useDiscussions } from '../hooks/useDiscussion';
 import { discussionService } from '../services/discussionService';
 import { messageService } from '../services/messageService';
 import { useMessage } from '../hooks/useMessage';
 import { AccountService } from '../services/AccountService';
 import { UserRoles } from "../enum/UserRoles";
+import { useAuth } from '../context/AuthContext';
 
 const DiscussionSection = ({ courseId, navigation }) => {
     const [forumType, setForumType] = useState('Public');
@@ -18,9 +19,10 @@ const DiscussionSection = ({ courseId, navigation }) => {
     const [mentionSearch, setMentionSearch] = useState('');
     const [activeMentionId, setActiveMentionId] = useState(null);
     const [allSystemUsers, setAllSystemUsers] = useState([]);
+    const { currentUser } = useAuth();
 
     const { discussions, loading, refreshDiscussions } = useDiscussions(courseId, forumType);
-    const { messages, sendMessage, loading: loadingMessages } = useMessage(selectedDiscussion?.id);
+    const { messages, sendMessage, loading: loadingMessages, deleteMessage: deleteMessage } = useMessage(selectedDiscussion?.id);
 
     // Reset inputs when switching contexts
     useEffect(() => {
@@ -56,6 +58,74 @@ const DiscussionSection = ({ courseId, navigation }) => {
             console.error('Unable to create discussion', err);
         } finally {
             setIsCreatingDiscussion(false);
+        }
+    };
+
+    const canDelete = (item) => {
+        if (!currentUser) return false; 
+        
+        const isOwner = String(currentUser.id) === String(item.creator_user_id);
+        const isPrivilegedUser = currentUser.role === UserRoles.ADMIN; 
+
+        return isOwner || isPrivilegedUser;
+    };
+
+    const handleDeleteDiscussion = (discussionId) => {
+        const title = "Delete Discussion";
+        const message = "Are you sure? This will remove all replies as well.";
+
+        // Web fallback
+        if (Platform.OS === 'web') {
+            const confirmed = window.confirm(`${title}\n\n${message}`);
+            if (confirmed) {
+                performDeleteDiscussion(discussionId);
+            }
+            return;
+        }
+
+        // Native Mobile Alert
+        Alert.alert(title, message, [
+            { text: "Cancel", style: "cancel" },
+            { text: "Delete", style: "destructive", onPress: () => performDeleteDiscussion(discussionId) }
+        ]);
+    };
+
+    const performDeleteDiscussion = async (discussionId) => {
+        try {
+            await discussionService.deleteDiscussion(courseId, discussionId);
+            refreshDiscussions();
+            setSelectedDiscussion(null);
+        } catch (err) {
+            console.error("Delete discussion failed", err);
+        }
+    };
+
+    const handleDeleteMessage = (messageId) => {
+        const title = "Delete Reply";
+        const message = "Are you sure you want to delete this message?";
+
+        // Web fallback
+        if (Platform.OS === 'web') {
+            const confirmed = window.confirm(`${title}\n\n${message}`);
+            if (confirmed) {
+                performDelete(messageId);
+            }
+            return;
+        }
+
+        // Native Mobile Alert
+        Alert.alert(title, message, [
+            { text: "Cancel", style: "cancel" },
+            { text: "Delete", style: "destructive", onPress: () => performDelete(messageId) }
+        ]);
+    };
+
+    const performDelete = async (messageId) => {
+        console.log("performDelete called with messageId:", messageId, "Type:", typeof messageId);
+        try {
+            const success = await deleteMessage(messageId);
+        } catch (err) {
+            console.error("Delete message failed", err);
         }
     };
 
@@ -100,7 +170,7 @@ const DiscussionSection = ({ courseId, navigation }) => {
         setActiveMentionId(null);
     };
 
-    const MentionSuggestions = ({ discussionId }) => {
+    const MentionSuggestions = ({ discussionId, position = 'bottom' }) => {
         if (activeMentionId !== discussionId) return null;
 
         let baseUsers = allSystemUsers;
@@ -117,8 +187,12 @@ const DiscussionSection = ({ courseId, navigation }) => {
 
         if (filteredUsers.length === 0) return null;
 
+        const dynamicPos = position === 'top' 
+        ? { bottom: '50%' } 
+        : { top: '70%' };
+
         return (
-            <View style={styles.mentionList}>
+            <View style={[styles.mentionList, dynamicPos]}>
                 {filteredUsers.map((user) => (
                     <Pressable 
                         key={user} 
@@ -165,7 +239,7 @@ const DiscussionSection = ({ courseId, navigation }) => {
 
                         {/* THE INPUT BOX */}
                         <View style={{ zIndex: 2000 }}>
-                            <MentionSuggestions discussionId={selectedDiscussion.id} />
+                            <MentionSuggestions discussionId={selectedDiscussion.id} position="bottom" />
 
                             <View style={styles.inlineInputContainer}>
                                 <TextInput
@@ -190,20 +264,31 @@ const DiscussionSection = ({ courseId, navigation }) => {
                                 <ActivityIndicator color="#0f5132" />
                             ) : messages && messages.length > 0 ? (
                                 messages.map((msg) => (
-                                    <View key={msg.id} style={styles.msgBubble}>
-                                        <View style={styles.msgHeader}>
-                                            <Text style={styles.msgUser}>{msg.creator?.username}</Text>
-                                            {/* Date Display */}
-                                            <Text style={styles.msgDate}>
-                                                {new Date(msg.created_at).toLocaleDateString(undefined, {
-                                                    month: 'short',
-                                                    day: 'numeric',
-                                                    hour: '2-digit',
-                                                    minute: '2-digit'
-                                                })}
-                                            </Text>
+                                    <View key={msg.id} style={styles.msgWrapper}>
+                                        <View key={msg.id} style={styles.msgBubble}>
+                                            <View style={styles.msgHeader}>
+                                                <Text style={styles.msgUser}>{msg.creator?.username}</Text>
+                                                {/* Date Display */}
+                                                <Text style={styles.msgDate}>
+                                                    {new Date(msg.created_at).toLocaleDateString(undefined, {
+                                                        month: 'short',
+                                                        day: 'numeric',
+                                                        hour: '2-digit',
+                                                        minute: '2-digit'
+                                                    })}
+                                                </Text>
+                                            </View>
+                                            <Text style={styles.msgText}>{msg.content}</Text>
                                         </View>
-                                        <Text style={styles.msgText}>{msg.content}</Text>
+
+                                        {canDelete(msg) && (
+                                            <Pressable 
+                                                onPress={() => handleDeleteMessage(msg.id)}
+                                                style={styles.msgDeleteBtn}
+                                            >
+                                                <Trash2 size={16} color="#9ca3af" />
+                                            </Pressable>
+                                        )}
                                     </View>
                                 ))
                             ) : (
@@ -278,6 +363,15 @@ const DiscussionSection = ({ courseId, navigation }) => {
                 <>
                     {filteredData.map((item) => (
                         <View key={item.id} style={styles.messageContainer}>
+                            {canDelete(item) && (
+                                <Pressable 
+                                    onPress={() => handleDeleteDiscussion(item.id)}
+                                    style={styles.deleteBtnAbsolute}
+                                >
+                                    <Trash2 size={18} color="#dc3545" />
+                                </Pressable>
+                            )}
+
                             {/* Topic Header - Clickable to open Detail View */}
                             <Pressable onPress={() => setSelectedDiscussion(item)}>
                                 <Text style={styles.messageTitle}>{item.title || 'Untitled'}</Text>
@@ -292,7 +386,7 @@ const DiscussionSection = ({ courseId, navigation }) => {
 
                             {/* Instant Reply UI */}
                             <View style={{ zIndex: 1000 }}>
-                                <MentionSuggestions discussionId={item.id} />
+                                <MentionSuggestions discussionId={item.id} position="top"/>
 
                                 <View style={styles.instantReplyBox}>
                                     <TextInput
@@ -619,7 +713,7 @@ const styles = StyleSheet.create({
     },
     mentionList: {
         position: 'absolute',
-        bottom: '100%', 
+        elevation: 5,
         left: 0,
         right: 0,
         backgroundColor: 'white',
@@ -642,6 +736,22 @@ const styles = StyleSheet.create({
         color: '#0f5132',
         fontWeight: '600',
         fontSize: 14,
+    },
+    deleteBtnAbsolute: {
+        position: 'absolute',
+        top: 15,
+        right: 15,
+        zIndex: 10,
+    },
+    msgWrapper: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 8,
+        width: '100%',
+    },
+    msgDeleteBtn: {
+        marginLeft: 5,
+        padding: 5,
     },
 });
 

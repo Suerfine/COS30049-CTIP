@@ -64,7 +64,7 @@ export const createMessage = async (
         sendNotification(
           "single",
           "You were tagged in a message",
-          `You were tagged in a message in discussion ID ${discussion_id}. Check it out now!`,
+          `You were tagged in a message in discussion: ${discussion_id}. Check it out now!`,
           transaction,
           userId,
           false,
@@ -81,7 +81,7 @@ export const createMessage = async (
           await sendNotification(
             "single",
             "You were tagged in a message",
-            `You were tagged in a message in discussion ID ${discussion_id}. Check it out now!`,
+            `You were tagged in a message in discussion: ${discussion_id}. Check it out now!`,
             transaction,
             taggedUser.id,
             false,
@@ -91,6 +91,7 @@ export const createMessage = async (
     }
 
     await transaction.commit();
+    
     // Return the created message
     res.status(201).json({
       id: message.id,
@@ -129,7 +130,7 @@ export const getAllMessages = async (
     }
 
     const messages = await paginateModel(Message, req.query, {
-      paranoid: !req.query.isDeleted,
+      paranoid: true,
       where: { discussion_id },
       include: [
         {
@@ -276,7 +277,11 @@ export const deleteMessage = async (
 
     // Check if the message exists or not
     const message = await Message.findByPk(message_id);
+    
     if (!message) {
+      // Debug: List all messages in DB
+      const allMessages = await Message.findAll({ attributes: ["id", "discussion_id", "user_id"] });
+      console.log("All messages in database:", allMessages.map(m => ({ id: m.id, discussion_id: m.discussion_id, user_id: m.user_id })));
       throw new HttpError(404, "Message not found");
     }
 

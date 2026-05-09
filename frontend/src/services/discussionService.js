@@ -24,5 +24,15 @@ export const discussionService={
     createDiscussion: async (courseId, discussionData) => {
         const response = await apiClient.post(API_ENDPOINTS.DISCUSSION.LIST(courseId), discussionData);
         return response.data;
+    },
+    deleteDiscussion: async (courseId, discussionId) => {
+        try {
+            const response = await apiClient.delete(API_ENDPOINTS.DISCUSSION.DETAIL(courseId, discussionId));
+            return response.data;
+        } catch (error) {
+            console.error("Delete Discussion Error:", error);
+            const errorMessage = error.response?.data?.message || 'Failed to delete discussion.';
+            return Promise.reject(errorMessage);
+        }
     }
 };

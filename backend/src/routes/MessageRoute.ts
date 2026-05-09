@@ -205,7 +205,7 @@ messageRouter.get(
  *               $ref: '#/components/schemas/ErrorResponse'
  */
 messageRouter.get(
-  "messages/:message_id",
+  "/messages/:message_id",
   auth,
   MessageController.getMessageById,
 );
@@ -263,7 +263,7 @@ messageRouter.get(
  *               $ref: '#/components/schemas/ErrorResponse'
  */
 messageRouter.put(
-  "messages/:message_id",
+  "/messages/:message_id",
   auth,
   [body("content").optional().isString().notEmpty()],
   validate,
@@ -317,7 +317,7 @@ messageRouter.put(
  *               $ref: '#/components/schemas/ErrorResponse'
  */
 messageRouter.delete(
-  "messages/:message_id",
+  "/messages/:message_id",
   auth,
   MessageController.deleteMessage,
 );

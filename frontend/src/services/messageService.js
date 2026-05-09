@@ -44,6 +44,7 @@ export const messageService = {
   },
 
   deleteMessage: async (messageId) => {
+    console.log("Attempting to delete message ID:", messageId, "Type:", typeof messageId);
     try {
       const response = await apiClient.delete(API_ENDPOINTS.MESSAGE.DETAIL(messageId));
       return response.data;

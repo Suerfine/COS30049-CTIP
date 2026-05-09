@@ -26,6 +26,7 @@ export const API_ENDPOINTS = {
   },
   DISCUSSION: {
     LIST: (courseId) => `/courses/${courseId}/discussion`,
+    DETAIL: (courseId, discussionId) => `/courses/${courseId}/discussion/${discussionId}`,
     MESSAGES: (discussionId) => `/discussion/${discussionId}/messages`,
   },
   MESSAGE: {
