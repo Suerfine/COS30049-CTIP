@@ -6,26 +6,27 @@ export const useDiscussions = (courseId, forumType) => {
     const [loading, setLoading] = useState(false);
 
     const fetchDiscussions = useCallback(async () => {
-        if (!courseId) return;
         setLoading(true);
         try {
-            const response = await discussionService.getDiscussions(courseId);
-            const filtered = (response || []).filter(d => {
-                const isPublic = d.is_public === true;
-                return forumType === 'Public' ? isPublic : !isPublic;
+            const data = await discussionService.getDiscussions(courseId);
+            
+            // Only set state if the data actually exists
+            // This stops the loop if the service returns a new empty array [] 
+            // that React thinks is different from the previous empty array []
+            setDiscussions(prev => {
+                if (JSON.stringify(prev) === JSON.stringify(data)) return prev;
+                return data;
             });
-            setDiscussions(filtered);
         } catch (err) {
-            console.error("Discussion Hook Error:", err);
-            setDiscussions([]);
+            console.error("Fetch error:", err);
         } finally {
             setLoading(false);
         }
-    }, [courseId, forumType]);
+    }, [courseId]); 
 
     useEffect(() => {
         fetchDiscussions();
-    }, [fetchDiscussions]);
+    }, [fetchDiscussions, forumType]);
 
     return { discussions, loading, refreshDiscussions: fetchDiscussions };
 };

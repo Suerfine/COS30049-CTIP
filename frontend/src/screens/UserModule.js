@@ -16,8 +16,7 @@ import { useCourses } from '../hooks/useCourses.js';
 import { useCourseProgress } from '../components/useCourseProgress.js';
 import AIChatBot from '../components/AIChatbot.js';
 import { useTranslation } from 'react-i18next';
-import { useDiscussions } from '../hooks/useDiscussion.js';
-import { discussionService } from '../services/discussionService.js';
+import DiscussionSection from '../components/DiscussionSection.js';
 
 const UserModule = ({navigation}) => {
     const route=useRoute();
@@ -38,9 +37,6 @@ const UserModule = ({navigation}) => {
     const [selectedPage, setSelectedPage]=useState({type:'overview'});
     const [isCollapsed, setIsCollapsed]=useState(false);
     const [activeTab,setActiveTab]=useState('Overview');
-    const [forumType, setForumType]=useState('Public');
-    const [newDiscussionTitle, setNewDiscussionTitle] = useState('');
-    const [isCreatingDiscussion, setIsCreatingDiscussion] = useState(false);
 
     const { elements, loading: elementsLoading, workshopsLoading,loadWorkshops, workshops } = useElements(
         id,
@@ -57,46 +53,6 @@ const UserModule = ({navigation}) => {
         {id: 'Overview', label:'Overview'},
         {id: 'Workshops', label:'Workshops'},
     ];
-
-    const{discussions, loading: discussionsLoading, refreshDiscussions}=useDiscussions(id, forumType);
-
-    const handleCreateDiscussion = async () => {
-        if (!newDiscussionTitle.trim()) return;
-
-        setIsCreatingDiscussion(true);
-        try {
-            await discussionService.createDiscussion(id, {
-                title: newDiscussionTitle.trim(),
-                is_public: forumType === 'Public',
-            });
-            setNewDiscussionTitle('');
-            refreshDiscussions();
-        } catch (err) {
-            console.error('Unable to create discussion', err);
-        } finally {
-            setIsCreatingDiscussion(false);
-        }
-    };
-
-    const renderForumList = () => {
-        if (discussionsLoading) return <ActivityIndicator color="#0a6340" style={{marginTop: 20}} />;
-        
-        if (discussions.length === 0) {
-            return (
-                <View style={styles.emptyForum}>
-                    <Text style={styles.emptyText}>No {forumType.toLowerCase()} discussions yet.</Text>
-                </View>
-            );
-        }
-        return discussions.map((item) => (
-            <View key={item.id} style={styles.messageContainer}>
-                <Text style={styles.messageTitle}>{item.title || 'Untitled discussion'}</Text>
-                <Text style={styles.messageMeta}>
-                    {item.is_public ? 'Public' : 'Private'} · Started {item.created_at ? new Date(item.created_at).toLocaleDateString() : 'recently'}
-                </Text>
-            </View>
-        ));
-    };
 
     if(loading)return(
         <View style={styles.center}>
@@ -233,7 +189,7 @@ const UserModule = ({navigation}) => {
             progressMap={progressMap}
             editable={false} isCollapsed={isCollapsed} isLocked={isLocked}
             userMarks={userMarks}/>
-            <ScrollView style={{height:'100vh'}}>
+            <ScrollView>
                 <View style={styles.container}>
                     {/* Background Image */}
                     <ImageBackground 
@@ -308,65 +264,11 @@ const UserModule = ({navigation}) => {
                                 )}
                             </View>
                         ) : selectedPage?.type === 'forum' ? (
-                            <View style={styles.forumWrapper}>
-                                <View style={styles.tabNav}>
-                                    <Pressable
-                                        style={[styles.tab, forumType === 'Public' && styles.tabActive]}
-                                        onPress={() => setForumType('Public')}
-                                    >
-                                        <Text style={[styles.tabText, forumType === 'Public' && styles.tabTextActive]}>
-                                            Public Forum
-                                        </Text>
-                                    </Pressable>
-
-                                    <Pressable
-                                        style={[styles.tab, forumType === 'Private' && styles.tabActive]}
-                                        onPress={() => setForumType('Private')}
-                                    >
-                                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                                            <Lock size={14} color={forumType === 'Private' ? '#2f6618fe' : '#999'} />
-                                            <Text style={[styles.tabText, forumType === 'Private' && styles.tabTextActive]}>
-                                                Private Support
-                                            </Text>
-                                        </View>
-                                    </Pressable>
-                                </View>
-
-                                {forumType === 'Private' && (
-                                    <View style={styles.privacyBanner}>
-                                        <ShieldCheck size={16} color="#065f46" />
-                                        <Text style={styles.privacyText}>
-                                            Topics in this section are visible only to you and the administrators.
-                                        </Text>
-                                    </View>
-                                )}
-
-                                <View style={styles.newDiscussionForm}>
-                                    <Text style={styles.newDiscussionLabel}>
-                                        Ask a question or start a new topic
-                                    </Text>
-                                    <TextInput
-                                        style={styles.newDiscussionInput}
-                                        placeholder={`New ${forumType.toLowerCase()} discussion title`}
-                                        value={newDiscussionTitle}
-                                        onChangeText={setNewDiscussionTitle}
-                                        editable={!isCreatingDiscussion}
-                                    />
-                                    <Pressable
-                                        style={[styles.btn, { marginTop: 12, alignSelf: 'flex-start' }, isCreatingDiscussion && { opacity: 0.6 }]}
-                                        onPress={handleCreateDiscussion}
-                                        disabled={!newDiscussionTitle.trim() || isCreatingDiscussion}
-                                    >
-                                        <Text style={styles.btnText}>
-                                            {isCreatingDiscussion ? 'Posting...' : 'Post Question'}
-                                        </Text>
-                                    </Pressable>
-                                </View>
-
-                                <View>
-                                    {renderForumList()}
-                                </View>
-                            </View>
+                            <DiscussionSection 
+                                courseId={id} 
+                                navigation={navigation} 
+                                styles={styles} 
+                            />
                         ) : (
                             // Course Overview
                             <View>
