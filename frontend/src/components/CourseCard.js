@@ -135,8 +135,6 @@ const CourseCard = ({
   };
 
   return (
-    // Title need change to course ID later
-    // Not enrolled courses cannot view course content
     <Pressable
       style={({ pressed, hovered }) => [
         styles.card,
