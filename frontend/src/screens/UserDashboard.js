@@ -36,12 +36,12 @@ const UserDashboard = ({ navigation }) => {
         weekLabels,eventTab, courseTab, categories,
     } = useUserDashboard();
 
+
     const { inProgressCourses, completedCourses, loading: coursesLoading } = useUserCourse();
     const [showModal, setShowModal] = useState(false);
     const [selectedTask, setSelectedTask] = useState(null);
     const openEdit = (event) => { setSelectedTask(event); setShowModal(true); };
     const {t, i18n}=useTranslation();
-    {console.log("DEBUG:", inProgressCourses)}
 
     return(
         <ScrollView style={{ flex: 1 }}>
@@ -117,7 +117,7 @@ const UserDashboard = ({ navigation }) => {
                                                 id={course.id}
                                                 coverImgUrl={course.cover_img_url}
                                                 courseTitle={course.title}
-                                                numModules={course.modules?.length ?? 0}
+                                                numModules={course.module_count ?? 0}
                                                 duration={course.expected_completion_weeks}
                                                 expiry={course.must_complete_in_weeks}
                                                 progress={course.progress} // This is now the real weighted score %
@@ -141,7 +141,7 @@ const UserDashboard = ({ navigation }) => {
                             {/* completed courses */}
                             {courseFilter === 'completed' &&
                                 completedCourses.map(course => {
-                                    const numModules = course.modules ? course.modules.length : 0;
+                                    const numModules = course.module_count ? course.module_count.length : 0;
                                     return (
                                         <CourseCard
                                             key={course.id}

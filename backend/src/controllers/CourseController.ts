@@ -8,6 +8,7 @@ import {
   PrerequisiteGroup,
   Tag,
   User,
+  Module
 } from "../models";
 import sequelize from "../config/Database";
 import { PaginateRequestParams, PaginateResponse } from "../types/common";
@@ -26,6 +27,7 @@ import { getStorage } from "../services/storage";
 import { logger } from "../utils/logger";
 import { canUserEnrollCourse } from "../utils/canUserEnrollCourse";
 import { EnrollmentResponse } from "../types/Enrollment";
+import { fn, col } from "sequelize";
 
 class HttpError extends Error {
   status: number;
@@ -103,6 +105,10 @@ function toCourseResponse(course: Course, req?: Request<any>): CourseResponse {
       ? `${req.protocol}://${req.get("host")}${course.cover_img_path.startsWith("/") ? course.cover_img_path : `/${course.cover_img_path}`}`
       : null;
 
+  const module_count = Number(
+    (course.toJSON() as any).module_count ?? 0
+  );
+
   return {
     id: course.id,
     title: course.title,
@@ -116,6 +122,7 @@ function toCourseResponse(course: Course, req?: Request<any>): CourseResponse {
     cover_img_url: cover_url,
     tags,
     prerequisite_groups,
+    module_count,
     created_at: course.created_at,
     updated_at: course.updated_at,
     final_quiz_max_score: final_quiz_max_score,
@@ -613,7 +620,24 @@ export const getAllCourses = async (
 
     const courses = await paginateModel(Course, req.query, {
       paranoid: !includeDeleted,
-      include: COURSE_PREREQUISITE_INCLUDE,
+      include: [
+        ...COURSE_PREREQUISITE_INCLUDE,
+        {
+          model: Module,
+          as: "modules",
+          attributes: [],
+        },
+      ],
+      attributes:{
+        include:[[fn("COUNT", col("modules.id")), "module_count"]],
+      },
+      group:[
+        "Course.id",
+        "tags.id",
+        "prerequisite_groups.id",
+        "prerequisite_groups->prerequisites.id",
+      ],
+      subQuery:false,
     });
 
     logger.info("Courses fetched successfully", {

@@ -183,7 +183,7 @@ const AdminCourse = ({ navigation }) => {
           <View style={styles.cardContainer}>
             {Array.isArray(filteredCourses) && filteredCourses.length > 0 ? (
               filteredCourses.map((course) => {
-                const numModules = course.modules ? course.modules.length : 0;
+                const numModules = course.module_count ? course.module_count : 0;
                 return (
                   <CourseCard
                     key={course.id}
