@@ -37,12 +37,11 @@ const SlidingTabs=({tabs, activeTab, onTabChange})=>{
 
 const styles=StyleSheet.create({
     tabWrapper:{
-        positive:'relative',
+        position:'relative',
         justifyContent:'space-between',
     },
     tabContainer:{
         width:'100%',
-        userSelect:'none',
         flexDirection:'row'
     },
     slidingLine:{

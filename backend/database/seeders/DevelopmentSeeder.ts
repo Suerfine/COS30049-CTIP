@@ -14,6 +14,9 @@ import Element from "../../src/models/Element";
 import Sensor from "../../src/models/Sensor";
 import Notification from "../../src/models/Notification";
 import { SensorStatus } from "../../src/enum/SensorStatus";
+import { buildEvents } from "../factories/EventFactory";
+import Event from "../../src/models/Event";
+
 import {
   buildUser,
   buildUsers,
@@ -125,6 +128,25 @@ export async function runSeeders(
     }
   }
 
+  // Creating dummy todo list (event) for users
+  const eventPerUser = 5;
+
+  const allUsers = [
+    createdAdminUser,
+    ...createdAdminUsers.map((u) => ({ id: u.id })),
+    ...createdParkGuideUsers.map((u) => ({ id: u.id })),
+  ];
+
+  for (const user of allUsers) {
+    const events = buildEvents(eventPerUser, {
+      user_id: user.id,
+    });
+
+    for (const event of events) {
+      await Event.create(event as any);
+    }
+  }
+  
   // Creating courses with modules, pages, and elements
   const tags: TagFactoryAttributes[] = buildTags(15);
   const createdTags = [] as Array<{ id: number }>;

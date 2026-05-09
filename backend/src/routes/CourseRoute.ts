@@ -182,7 +182,14 @@ courseRouter.post(
  *                 data:
  *                   type: array
  *                   items:
- *                     $ref: '#/components/schemas/Course'
+ *                     allOf:
+  *                       - $ref: '#/components/schemas/Course'
+  *                       - type: object
+  *                         properties:
+  *                           module_count:
+  *                             type: integer
+  *                             example: 5
+  *                             description: Number of modules inside the course
  *                 page:
  *                   type: integer
  *                   example: 1

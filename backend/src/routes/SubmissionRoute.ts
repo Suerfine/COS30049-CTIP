@@ -376,4 +376,70 @@ submissionRouter.post(
   SubmissionController.markSubmission,
 );
 
+/**
+ * @swagger
+ * /api/submission/enrollment/{enrollment_id}:
+ *   get:
+ *     summary: Get all submission history for a specific enrollment
+ *     description: Returns all submission attempts for a course enrollment
+ *     tags: [Submissions]
+ *     security:
+ *       - OAuth2: ["all"]
+ *     parameters:
+ *       - in: path
+ *         name: enrollment_id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: The unique ID of the course enrollment
+ *     responses:
+ *       200:
+ *         description: Success
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: integer
+ *                   enrollment_id:
+ *                     type: integer
+ *                   element_id:
+ *                     type: integer
+ *                   submission_id:
+ *                     type: integer
+ *                     nullable: true
+ *                   marked_by_user_id:
+ *                     type: integer
+ *                     nullable: true
+ *                   content:
+ *                     type: object
+ *                     description: Stores user's answer selection
+ *                     example:
+ *                       selected: "Option A"
+ *                   marking_remark:
+ *                     type: string
+ *                     nullable: true
+ *                   earned_grade:
+ *                     type: number
+ *                   created_at:
+ *                     type: string
+ *                     format: date-time
+ *                   updated_at:
+ *                     type: string
+ *                     format: date-time
+ *       400:
+ *         description: Invalid enrollment_id provided
+ *       404:
+ *         description: No submissions found for this enrollment
+ *       500:
+ *         description: Internal server error
+ */
+submissionRouter.get(
+  "/submission/enrollment/:enrollment_id",
+  auth,
+  SubmissionController.getAllByEnrollment 
+);
 export default submissionRouter;

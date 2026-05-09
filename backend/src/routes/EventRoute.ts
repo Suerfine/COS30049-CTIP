@@ -205,7 +205,7 @@ eventRouter.put(
   auth,
   [
     body("title").optional().isString().notEmpty(),
-    body("description").optional().isString().notEmpty(),
+    body("description").optional().isString(),
   ],
   validate,
   EventController.updateEvent,

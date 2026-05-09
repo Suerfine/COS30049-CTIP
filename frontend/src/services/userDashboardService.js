@@ -2,22 +2,6 @@ import apiClient from "../config/apiConfig";
 import { API_ENDPOINTS } from "../config/ApiEndpoints";
 
 export const userDashboardService = {
-
-    // getProgress: async () => {
-    //     const res = await fetch(`${BASE_URL}/progress`);
-    //     return await res.json();
-    // },
-
-    // getCourses: async () => {
-    //     const res = await fetch(`${BASE_URL}/courses`);
-    //     return await res.json();
-    // },
-
-    // getTodos: async () => {
-    //     const res = await fetch(`${BASE_URL}/todos`);
-    //     return await res.json();
-    // },
-
     getCourses: async () => {
         const response = await apiClient.get(API_ENDPOINTS.COURSE.LIST);
         return response.data;

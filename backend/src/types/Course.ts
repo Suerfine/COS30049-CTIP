@@ -39,6 +39,7 @@ export interface CourseResponse {
   final_quiz_max_score: number | null;
   total_max_score: number | null;
   prerequisite_groups: PrerequisiteGroupResponse[];
+  module_count:number,
   created_at: Date;
   updated_at: Date;
 }
