@@ -40,6 +40,7 @@ export const API_ENDPOINTS = {
     SUMARRIES: "/enrollments/submissions/summaries",
     AUDIT: (id) => `/enrollments/${id}/audit`,
     PATCH: (id) => `/enrollments/${id}/approve`,
+    HISTORY_BY_ENROLLMENT: (enrollmentId) => `/submission/enrollment/${enrollmentId}`,
   },
   WORKSHOP: {
     JOIN_WORKSHOP: (courseId, elementId) =>

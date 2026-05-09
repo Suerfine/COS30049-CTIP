@@ -11,6 +11,9 @@ export const useCourseDetails=(id, enrollmentId, initialMarks = {})=>{
     const [loading,setLoading]=useState(true);
     const [error, setError]=useState(null);
     const [userMarks, setUserMarks] = useState(initialMarks || {});
+    const [historyData, setHistoryData] = useState([]);
+    const [isHistoryVisible, setIsHistoryVisible] = useState(false);
+    const [fullHistoryMap, setFullHistoryMap] = useState({});
 
     const fetchCourse = useCallback(async () => {
         if (!id) return;
@@ -40,11 +43,9 @@ export const useCourseDetails=(id, enrollmentId, initialMarks = {})=>{
                                                     Number(enrollmentId),
                                                     Number(el.id)
                                                 );
-
-                                            submission =
-                                                subs && subs.length > 0
-                                                    ? subs[0]
-                                                    : null;
+                                            submission = (subs && subs.length > 0) 
+                                                ? subs.sort((a, b) => b.id - a.id)[0] 
+                                                : null;
 
                                         } catch (e) {
                                             console.warn(
@@ -229,10 +230,65 @@ export const useCourseDetails=(id, enrollmentId, initialMarks = {})=>{
         }
     }, [enrollmentId]);
 
+    const handleFetchHistory = async (currentElementIds) => {
+        try {
+            const allHistory = await submissionService.getAllByEnrollment(enrollmentId);
+            
+            const pageSubmissions = allHistory.filter(sub => 
+                currentElementIds.includes(sub.element_id)
+            );
+
+            const attempts = [];
+            pageSubmissions.forEach(sub => {
+                const subTime = new Date(sub.created_at).getTime();
+                let existingAttempt = attempts.find(a => Math.abs(a.time - subTime) < 5000);
+
+                if (existingAttempt) {
+                    existingAttempt.score += sub.earned_grade;
+                    existingAttempt.maxScore += 1;
+                } else {
+                    attempts.push({
+                        id: sub.id,
+                        time: subTime,
+                        date: sub.created_at,
+                        score: sub.earned_grade,
+                        maxScore: 1
+                    });
+                }
+            });
+
+            setHistoryData(attempts);
+            setIsHistoryVisible(true);
+        } catch (err) {
+            console.error("History grouping error:", err);
+        }
+    };
+
+    const fetchAllHistory = useCallback(async () => {
+        if (!enrollmentId) return;
+        try {
+            const allSubmissions = await submissionService.getAllByEnrollment(enrollmentId);
+            const map = {};
+            allSubmissions.forEach(sub => {
+                if (!map[sub.element_id]) {
+                    map[sub.element_id] = [];
+                }
+                map[sub.element_id].push(sub);
+            });
+            
+            setFullHistoryMap(map);
+        } catch (err) {
+            console.error("Bulk history fetch failed:", err);
+        }
+    }, [enrollmentId]);
+
     useEffect(() => {
         fetchCourse();
     }, [fetchCourse]);
 
+    useEffect(() => {
+        fetchAllHistory();
+    }, [fetchAllHistory]);
 
     return {
         course, 
@@ -242,6 +298,7 @@ export const useCourseDetails=(id, enrollmentId, initialMarks = {})=>{
         updateDescription,
         locationTags, categoryTags,
         saveProgress,
-        userMarks
+        userMarks,
+        historyData, isHistoryVisible, fullHistoryMap, setIsHistoryVisible, refreshHistory: fetchAllHistory, handleFetchHistory
     };
 }

@@ -1,5 +1,5 @@
 import React,{useEffect,useState} from 'react';
-import { View, Text, StyleSheet, ScrollView, ImageBackground, Pressable, ActivityIndicator, Image, TouchableOpacity, TextInput, Modal} from 'react-native';
+import { View, Text, StyleSheet, ScrollView, ImageBackground, Pressable, ActivityIndicator, Image, TouchableOpacity, TextInput, Modal, FlatList} from 'react-native';
 import {useRoute} from '@react-navigation/native';
 import { Award, Calendar, Clock, Menu, ChevronLeft, Bot, Lock, ShieldCheck } from 'lucide-react-native';
 import Markdown from 'react-native-markdown-display';
@@ -29,7 +29,7 @@ const UserModule = ({navigation}) => {
         enrollmentStatus === 'expired';
 
     const {currentUser}=useAuth();
-    const {course, loading, error,locationTags, categoryTags, saveProgress, userMarks}=useCourseDetails(id, enrollmentId);
+    const {course, loading, error,locationTags, categoryTags, saveProgress, userMarks, historyData, isHistoryVisible, fullHistoryMap, setIsHistoryVisible, refreshHistory,handleFetchHistory}=useCourseDetails(id, enrollmentId);
     const {allCourseList}=useCourses();
     const [chatOpen, setChatOpen] = useState(false);
     
@@ -66,6 +66,46 @@ const UserModule = ({navigation}) => {
             <Text style={{ color: 'red' }}>{error || "Course not found"}</Text>
         </View>
     );
+
+    const renderHistoryItem = ({ item }) => {
+        const requiredScore = selectedPage?.page?.passing_score || 80;
+        const isPass = item.score >= requiredScore;
+
+        return (
+            <View style={styles.historyItem}>
+                <View style={styles.historyLeft}>
+                    <Calendar size={14} color="#64748b" />
+                    <View style={{marginLeft: 8}}>
+                        <Text style={styles.historyDate}>
+                            {new Date(item.date).toLocaleDateString()}
+                        </Text>
+                        <Text style={{fontSize: 10, color: '#94a3b8'}}>
+                            {new Date(item.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                        </Text>
+                    </View>
+                </View>
+
+                <View style={{ flex: 1, alignItems: 'center' }}>
+                    <Text style={{fontSize: 10, color: '#64748b', textTransform: 'uppercase'}}>Overall Score</Text>
+                    <Text style={styles.historyScoreValue}>
+                        {item.score} <Text style={{fontSize: 12, color: '#94a3b8', fontWeight: '400'}}>/ {item.maxScore}</Text>
+                    </Text>
+                </View>
+
+                <View style={[
+                    styles.historyBadge, 
+                    { backgroundColor: isPass ? '#dcfce7' : '#fee2e2' }
+                ]}>
+                    <Text style={[
+                        styles.historyBadgeText, 
+                        { color: isPass ? '#166534' : '#991b1b' }
+                    ]}>
+                        {isPass ? 'PASSED' : 'FAILED'}
+                    </Text>
+                </View>
+            </View>
+        );
+    };
 
     const renderOverviewContent = () => {
         switch (activeTab) {
@@ -260,8 +300,38 @@ const UserModule = ({navigation}) => {
                                             return result; 
                                         }}
                                         userMarks={userMarks}
+                                        isFinalQuiz={selectedPage.page.final_quiz}
+                                        pageMetadata={selectedPage}
+                                        enrollmentId={enrollmentId}
+                                        fullHistoryMap={fullHistoryMap}
+                                        onFetchHistory={() => {
+                                            const quizIds = elements
+                                                .filter(el => el.type === 'quiz_objective')
+                                                .map(el => el.id);
+                                            handleFetchHistory(quizIds); 
+                                        }}
+                                        onRefreshHistory={refreshHistory}
                                     />
                                 )}
+                                <Modal visible={isHistoryVisible} transparent animationType="slide">
+                                    <View style={styles.modalOverlay}>
+                                        <View style={styles.modalContent}>
+                                            <Text style={styles.modalTitle}>Attempt History</Text>
+                                            <FlatList 
+                                                data={historyData}
+                                                renderItem={renderHistoryItem}
+                                                keyExtractor={(item) => item.id.toString()}
+                                                ListEmptyComponent={<Text style={styles.emptyHistory}>No previous attempts.</Text>}
+                                            />
+                                            <TouchableOpacity 
+                                                onPress={() => setIsHistoryVisible(false)}
+                                                style={styles.closeBtn}
+                                            >
+                                                <Text style={styles.closeBtnText}>Close</Text>
+                                            </TouchableOpacity>
+                                        </View>
+                                    </View>
+                                </Modal>
                             </View>
                         ) : selectedPage?.type === 'forum' ? (
                             <DiscussionSection 
@@ -781,6 +851,71 @@ const styles = StyleSheet.create({
         color: 'white',
         fontWeight: 'bold',
         fontSize: 14,
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'center',
+        padding: 20
+    },
+    modalContent: {
+        backgroundColor: 'white',
+        borderRadius: 12,
+        padding: 20,
+        maxHeight: '86%',
+        width:'60%',
+        alignSelf:'center'
+    },
+    modalTitle: {
+        fontSize: 18,
+        fontWeight: '800',
+        color: '#1e293b',
+        marginBottom: 15,
+        textAlign: 'center'
+    },
+    historyItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingVertical: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: '#f1f5f9'
+    },
+    historyLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        width: '30%'
+    },
+    historyDate: {
+        fontSize: 12,
+        color: '#64748b'
+    },
+    historySelection: {
+        fontSize: 13,
+        color: '#1e293b',
+        flex: 1,
+        paddingHorizontal: 8
+    },
+    historyBadge: {
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 4
+    },
+    historyBadgeText: {
+        fontSize: 10,
+        fontWeight: '800'
+    },
+    closeBtn: {
+        marginTop: 15,
+        padding: 12,
+        backgroundColor: '#0a6340',
+        borderRadius: 8,
+        alignItems: 'center'
+    },
+    closeBtnText: {
+        color: 'white',
+        fontWeight: 'bold'
     }
 });
 
