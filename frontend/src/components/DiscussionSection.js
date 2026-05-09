@@ -1,10 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, Pressable, ActivityIndicator, StyleSheet, ScrollView } from 'react-native';
 import { Lock, ShieldCheck, Send, ArrowLeft } from 'lucide-react-native';
 import { useDiscussions } from '../hooks/useDiscussion';
 import { discussionService } from '../services/discussionService';
+import { messageService } from '../services/messageService';
+import { useMessage } from '../hooks/useMessage';
+import { AccountService } from '../services/AccountService';
+import { UserRoles } from "../enum/UserRoles";
 
-// Remove 'styles' from the props here so it uses the local StyleSheet below
 const DiscussionSection = ({ courseId, navigation }) => {
     const [forumType, setForumType] = useState('Public');
     const [selectedDiscussion, setSelectedDiscussion] = useState(null);
@@ -12,7 +15,32 @@ const DiscussionSection = ({ courseId, navigation }) => {
     const [instantReplies, setInstantReplies] = useState({});
     const [isCreatingDiscussion, setIsCreatingDiscussion] = useState(false);
 
+    const [mentionSearch, setMentionSearch] = useState('');
+    const [activeMentionId, setActiveMentionId] = useState(null);
+    const [allSystemUsers, setAllSystemUsers] = useState([]);
+
     const { discussions, loading, refreshDiscussions } = useDiscussions(courseId, forumType);
+    const { messages, sendMessage, loading: loadingMessages } = useMessage(selectedDiscussion?.id);
+
+    // Reset inputs when switching contexts
+    useEffect(() => {
+        setInstantReplies({}); 
+        setNewDiscussionTitle(''); 
+        setActiveMentionId(null); 
+    }, [forumType, selectedDiscussion]);
+
+    useEffect(() => {
+        const loadUsers = async () => {
+            try {
+                const response = await AccountService.getAll(1, 100, '', null, 'All');
+                const users = response?.data || response?.users || (Array.isArray(response) ? response : []);
+                setAllSystemUsers(users);
+            } catch (err) {
+                console.error("Mention load error:", err);
+            }
+        };
+        loadUsers();
+    }, []);
 
     const handleCreateDiscussion = async () => {
         if (!newDiscussionTitle.trim()) return;
@@ -31,14 +59,14 @@ const DiscussionSection = ({ courseId, navigation }) => {
         }
     };
 
-    const handleInstantReply = async (discussionId) => {
-        const text = instantReplies[discussionId];
+    const handleInstantReply = async (discussion) => {
+        const text = instantReplies[discussion.id];
         if (!text?.trim()) return;
 
         try {
-            await discussionService.createMessage(discussionId, { content: text.trim() });
-            setInstantReplies({ ...instantReplies, [discussionId]: '' });
-            alert("Reply posted!");
+            setSelectedDiscussion(discussion);
+            await sendMessage(text.trim(), discussion.id);
+            setInstantReplies({ ...instantReplies, [discussion.id]: '' });
             refreshDiscussions();
         } catch (err) { console.error(err); }
     };
@@ -46,6 +74,73 @@ const DiscussionSection = ({ courseId, navigation }) => {
     const filteredData = discussions.filter(item => 
         forumType === 'Public' ? item.is_public === true : item.is_public === false
     );
+
+    const handleInputChange = (text, id, type) => {
+        setInstantReplies({ ...instantReplies, [id]: text });
+
+        // 2. Check for @ trigger
+        const words = text.split(/\s/);
+        const lastWord = words[words.length - 1];
+
+        if (lastWord.startsWith('@')) {
+            setMentionSearch(lastWord.substring(1).toLowerCase());
+            setActiveMentionId(id);
+        } else {
+            setActiveMentionId(null);
+        }
+    };
+
+    const insertMention = (username, id) => {
+        const currentText = instantReplies[id] || '';
+        const words = currentText.split(/\s/);
+        words.pop(); 
+        const newText = [...words, `@${username} `].join(' ');
+        
+        setInstantReplies({ ...instantReplies, [id]: newText });
+        setActiveMentionId(null);
+    };
+
+    const MentionSuggestions = ({ discussionId }) => {
+        if (activeMentionId !== discussionId) return null;
+
+        let baseUsers = allSystemUsers;
+
+        if (forumType === 'Private') {
+            baseUsers = allSystemUsers.filter(u => u.role === UserRoles.ADMIN);
+        }
+
+        const suggestionList = forumType === 'Public' ? ['all', ...baseUsers.map(u => u.username)] : baseUsers.map(u => u.username);
+
+        const filteredUsers = suggestionList.filter(u => 
+            u?.toLowerCase().includes(mentionSearch)
+        ).slice(0, 5); // Limit to top 5 matches
+
+        if (filteredUsers.length === 0) return null;
+
+        return (
+            <View style={styles.mentionList}>
+                {filteredUsers.map((user) => (
+                    <Pressable 
+                        key={user} 
+                        style={styles.mentionItem}
+                        onPress={() => insertMention(user, discussionId)}
+                    >
+                        <Text style={styles.mentionText}>@{user}</Text>
+                    </Pressable>
+                ))}
+            </View>
+        );
+    };
+
+    const ReplyCount = ({ discussionId }) => {
+        const { pagination } = useMessage(discussionId);
+
+        return (
+            <Text style={styles.messageMeta}>
+                {pagination.totalElements || 0} replies
+            </Text>
+        );
+    };
 
     if (selectedDiscussion) {
         return (
@@ -69,28 +164,45 @@ const DiscussionSection = ({ courseId, navigation }) => {
                         <View style={styles.separator} />
 
                         {/* THE INPUT BOX */}
-                        <View style={styles.inlineInputContainer}>
-                            <TextInput
-                                style={styles.detailInput}
-                                placeholder="Write a reply..."
-                                value={instantReplies[selectedDiscussion.id] || ''}
-                                onChangeText={(text) => setInstantReplies({ ...instantReplies, [selectedDiscussion.id]: text })}
-                                multiline
-                            />
-                            <Pressable 
-                                style={styles.inlineSendBtn}
-                                onPress={() => handleInstantReply(selectedDiscussion.id)}
-                            >
-                                <Send size={18} color="white" />
-                            </Pressable>
+                        <View style={{ zIndex: 2000 }}>
+                            <MentionSuggestions discussionId={selectedDiscussion.id} />
+
+                            <View style={styles.inlineInputContainer}>
+                                <TextInput
+                                    style={styles.detailInput}
+                                    placeholder="Write a reply... use @ to mention someone"
+                                    value={instantReplies[selectedDiscussion.id] || ''}
+                                    onChangeText={(text) => handleInputChange(text, selectedDiscussion.id, 'detail')}
+                                    multiline
+                                />
+                                <Pressable 
+                                    style={styles.inlineSendBtn}
+                                    onPress={() => handleInstantReply(selectedDiscussion)}
+                                >
+                                    <Send size={18} color="white" />
+                                </Pressable>
+                            </View>
                         </View>
 
                         {/* THE REPLIES LIST */}
                         <View style={styles.messagesContainer}>
-                            {selectedDiscussion.messages && selectedDiscussion.messages.length > 0 ? (
-                                selectedDiscussion.messages.map((msg) => (
+                            {loadingMessages ? (
+                                <ActivityIndicator color="#0f5132" />
+                            ) : messages && messages.length > 0 ? (
+                                messages.map((msg) => (
                                     <View key={msg.id} style={styles.msgBubble}>
-                                        <Text style={styles.msgUser}>{msg.creator?.username}</Text>
+                                        <View style={styles.msgHeader}>
+                                            <Text style={styles.msgUser}>{msg.creator?.username}</Text>
+                                            {/* Date Display */}
+                                            <Text style={styles.msgDate}>
+                                                {new Date(msg.created_at).toLocaleDateString(undefined, {
+                                                    month: 'short',
+                                                    day: 'numeric',
+                                                    hour: '2-digit',
+                                                    minute: '2-digit'
+                                                })}
+                                            </Text>
+                                        </View>
                                         <Text style={styles.msgText}>{msg.content}</Text>
                                     </View>
                                 ))
@@ -164,41 +276,49 @@ const DiscussionSection = ({ courseId, navigation }) => {
                 </View>
             ) : (
                 <>
-                        {filteredData.map((item) => (
-                            <View key={item.id} style={styles.messageContainer}>
-                                {/* Topic Header - Clickable to open Detail View */}
-                                <Pressable onPress={() => setSelectedDiscussion(item)}>
-                                    <Text style={styles.messageTitle}>{item.title || 'Untitled'}</Text>
+                    {filteredData.map((item) => (
+                        <View key={item.id} style={styles.messageContainer}>
+                            {/* Topic Header - Clickable to open Detail View */}
+                            <Pressable onPress={() => setSelectedDiscussion(item)}>
+                                <Text style={styles.messageTitle}>{item.title || 'Untitled'}</Text>
+                                <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center'}}>
                                     <Text style={styles.messageMeta}>
                                         By {item.creator?.username} · {new Date(item.created_at).toLocaleDateString()}
                                     </Text>
-                                </Pressable>
+                                
+                                    <ReplyCount discussionId={item.id} />
+                                </View>
+                            </Pressable>
 
-                                {/* Instant Reply UI */}
+                            {/* Instant Reply UI */}
+                            <View style={{ zIndex: 1000 }}>
+                                <MentionSuggestions discussionId={item.id} />
+
                                 <View style={styles.instantReplyBox}>
                                     <TextInput
                                         style={styles.instantInput}
-                                        placeholder="Quick reply..."
+                                        placeholder="Quick reply... use @ to mention someone"
                                         value={instantReplies[item.id] || ''}
-                                        onChangeText={(text) => setInstantReplies({...instantReplies, [item.id]: text})}
+                                        onChangeText={(text) => handleInputChange(text, item.id, 'public')}
                                     />
                                     <Pressable 
-                                        onPress={() => handleInstantReply(item.id)}
+                                        onPress={() => handleInstantReply(item)}
                                         style={styles.sendIcon}
                                     >
                                         <Send size={18} color="#0f5132" />
                                     </Pressable>
                                 </View>
                             </View>
-                        ))}
-                        
-                        {/* End of Discussion UI */}
-                        <View style={styles.endContainer}>
-                            <View style={styles.line} />
-                            <Text style={styles.endText}>Oops! U have reached the end.</Text>
-                            <View style={styles.line} />
                         </View>
-                    </>
+                    ))}
+                    
+                    {/* End of Discussion UI */}
+                    <View style={styles.endContainer}>
+                        <View style={styles.line} />
+                        <Text style={styles.endText}>Oops! U have reached the end.</Text>
+                        <View style={styles.line} />
+                    </View>
+                </>
             )}
         </View>
     );
@@ -434,7 +554,7 @@ const styles = StyleSheet.create({
         borderTopLeftRadius: 2, 
         marginBottom: 8,
         borderWidth: 1,
-        borderColor: '#f1f1f1', 
+        borderColor: '#e4e3e3', 
         alignSelf: 'flex-start', 
         maxWidth: '85%',
     },
@@ -470,6 +590,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         marginVertical: 70,
         padding: 20,
+        flex: 1,
     },
     emptyDetailText: {
         color: '#6b7280',
@@ -482,8 +603,46 @@ const styles = StyleSheet.create({
         marginTop: 4,
     },
     messagesContainer: {
-        marginTop: 10,
-    }
+        flex: 1,
+        marginBottom: 30,
+    },
+    msgHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 4,
+        gap: 10,
+    },
+    msgDate: {
+        fontSize: 10,
+        color: '#9ca3af', 
+    },
+    mentionList: {
+        position: 'absolute',
+        bottom: '100%', 
+        left: 0,
+        right: 0,
+        backgroundColor: 'white',
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#e5e7eb',
+        zIndex: 5000,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+    },
+    mentionItem: {
+        paddingHorizontal: 12,
+        paddingVertical: 5,
+        borderBottomWidth: 1,
+        borderBottomColor: '#f3f4f6',
+    },
+    mentionText: {
+        color: '#0f5132',
+        fontWeight: '600',
+        fontSize: 14,
+    },
 });
 
 export default DiscussionSection;

@@ -21,7 +21,7 @@ class HttpError extends Error {
 
 export const createMessage = async (
   req: Request<{ discussion_id: string }, any, CreateMessageRequest>,
-  res: Response<MessageResponse | { message: string }>,
+  res: Response<(MessageResponse & { creator?: any } ) | { message: string }>,
   next: NextFunction,
 ) => {
   const transaction = await sequelize.transaction();
@@ -59,6 +59,7 @@ export const createMessage = async (
         },
         attributes: ["id"],
       }).then((users) => users.map((user) => user.id));
+      
       usersInDiscussion.forEach((userId) => {
         sendNotification(
           "single",
@@ -89,6 +90,7 @@ export const createMessage = async (
       }
     }
 
+    await transaction.commit();
     // Return the created message
     res.status(201).json({
       id: message.id,
@@ -97,8 +99,11 @@ export const createMessage = async (
       content: message.content,
       created_at: message.created_at,
       updated_at: message.updated_at,
+      creator: {
+        id: req.user.id,
+        username: req.user.username,
+      },
     });
-    transaction.commit();
   } catch (err) {
     transaction.rollback();
     if (err instanceof HttpError) {
@@ -126,17 +131,25 @@ export const getAllMessages = async (
     const messages = await paginateModel(Message, req.query, {
       paranoid: !req.query.isDeleted,
       where: { discussion_id },
+      include: [
+        {
+          model: User,
+          as: "user",
+          attributes: ["id", "username"],
+        }
+      ]
     });
 
     const baseUrl = `${req.protocol}://${req.get("host")}${req.baseUrl}${req.path}`;
     const formattedResponse = formatPaginateResponse(
-      messages.data.map((message) => ({
+      messages.data.map((message:any) => ({
         id: message.id,
         discussion_id: message.discussion_id,
         creator_user_id: message.user_id,
         content: message.content,
         created_at: message.created_at,
         updated_at: message.updated_at,
+        creator: message.user,
       })),
       req.query,
       true,
@@ -161,7 +174,7 @@ export const getAllMessages = async (
 
 export const getMessageById = async (
   req: Request<{ message_id: string }>,
-  res: Response<MessageResponse | { message: string }>,
+  res: Response<(MessageResponse & { creator?: any } ) | { message: string }>,
   next: NextFunction,
 ) => {
   try {
@@ -171,11 +184,19 @@ export const getMessageById = async (
       throw new HttpError(400, "Invalid message id");
     }
 
-    const message = await Message.findByPk(message_id);
+    const message = await Message.findByPk(message_id, {
+      include: {
+        model: User,
+        as: "user",
+        attributes: ["id", "username"],
+      }
+    });
 
     if (!message) {
       throw new HttpError(404, "Message not found");
     }
+
+    const messageData = message as any;
 
     res.status(200).json({
       id: message.id,
@@ -184,6 +205,10 @@ export const getMessageById = async (
       content: message.content,
       created_at: message.created_at,
       updated_at: message.updated_at,
+      creator: messageData.user ? {
+        id: messageData.user.id,
+        username: messageData.user.username,
+      } : null,
     });
   } catch (err) {
     if (err instanceof HttpError) {

@@ -3,14 +3,14 @@ import { Alert } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import messageService from '../services/messageService';
 
-export const useMessage = (discussionId, options = { page: 1, size: 20 }) => {
+export const useMessage = (discussionId) => {
   const { t } = useTranslation();
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [pagination, setPagination] = useState({
-    page: options.page,
-    size: options.size,
+    page: 1,
+    size: 20,
     totalElements: 0,
     totalPages: 0,
   });
@@ -23,15 +23,16 @@ export const useMessage = (discussionId, options = { page: 1, size: 20 }) => {
 
       try {
         const response = await messageService.getMessages(discussionId, {
-          ...options,
+          page: 1,
+          size: 20,
           ...params,
         });
 
         const data = response?.data ?? [];
         setMessages(Array.isArray(data) ? data : []);
         setPagination({
-          page: response?.page ?? params.page ?? options.page,
-          size: response?.size ?? params.size ?? options.size,
+          page: response?.page ?? params.page ?? 1,
+          size: response?.size ?? params.size ?? 20,
           totalElements: response?.totalElements ?? 0,
           totalPages: response?.totalPages ?? 0,
         });
@@ -42,14 +43,14 @@ export const useMessage = (discussionId, options = { page: 1, size: 20 }) => {
         setLoading(false);
       }
     },
-    [discussionId, options, t],
+    [discussionId, t],
   );
 
   const sendMessage = useCallback(
-    async (content) => {
-      if (!discussionId) return null;
+    async (content, targetDiscussionId = discussionId) => {
+      if (!targetDiscussionId) return null;
       try {
-        const message = await messageService.createMessage(discussionId, { content });
+        const message = await messageService.createMessage(targetDiscussionId, { content });
         setMessages((prev) => [message, ...prev]);
         return message;
       } catch (err) {
