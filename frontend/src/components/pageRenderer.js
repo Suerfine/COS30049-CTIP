@@ -20,6 +20,10 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
     const [selectedSessions, setSelectedSessions] = useState({});
     const [autoAddTodo, setAutoAddTodo] = useState(true);
     const {currentUser}=useAuth();
+    const [finalQuizAnswers, setFinalQuizAnswers] = useState({});
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [finalSummary, setFinalSummary] = useState(null);
+    const [showFinalResults, setShowFinalResults] = useState(false);
 
     const IntersectionWrapper = ({ children, id, score, type, isAlreadyComplete }) => {
         const elementRef = useRef(null);
@@ -61,15 +65,55 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
         }
     };
 
+    const handleSubmitFinalQuiz = async () => {
+        setIsSubmitting(true);
+        const totalPossible = elements.reduce((acc, el) => acc + (el.score || 0), 0);
+        const totalEarned = Object.values(finalQuizAnswers).reduce((acc, curr) => acc + curr.earned, 0);
+        const passPercentage = (totalEarned / totalPossible) * 100;
+        const isPass = passPercentage >= 80; 
+        
+
+        const finalSubmission = {
+            total_score: totalEarned,
+            max_score: totalPossible,
+            percentage: passPercentage,
+            status: isPass ? 'PASS' : 'FAIL',
+            submitted_at: new Date().toISOString()
+        };
+
+        try {
+            await onProgressUpdate('final_quiz_submission', totalEarned, finalSubmission);
+            setFinalSummary({
+                score: totalEarned,
+                total: totalPossible,
+                status: isPass ? 'PASS' : 'FAIL'
+            });
+        } catch (err) {
+            alert("Failed to submit results. Please try again.");
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
     const handleQuizSubmit = (el, selectedOption) => {
         const isCorrect = selectedOption === el.content.answer;
         setQuizStates(prev => ({
             ...prev,
-            [el.id]: { selected: selectedOption, isCorrect, submitted: true }
+            [el.id]: { 
+                selected: selectedOption, 
+                isCorrect, 
+                submitted: !isFinalQuiz 
+            }
         }));
+        if (onProgressUpdate) {
+            onProgressUpdate(el.id, isCorrect ? el.score : 0);
+        }
 
-        if (isCorrect && onProgressUpdate) {
-            onProgressUpdate(el.id, el.score);
+        if (isFinalQuiz) {
+            setFinalQuizAnswers(prev => ({
+                ...prev,
+                [el.id]: { isCorrect, earned: isCorrect ? el.score : 0, score: el.score }
+            }));
         }
     };
 
@@ -78,6 +122,26 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
             ...prev,
             [id]: { selected: null, isCorrect: null, submitted: false }
         }));
+    };
+
+    const handleFinalReveal = () => {
+        const answeredCount = Object.keys(finalQuizAnswers).length;
+        const totalQuestions = elements.filter(e => e.type === 'quiz_objective').length;
+
+        if (answeredCount < totalQuestions) {
+            alert(`Please answer all ${totalQuestions} questions before submitting.`);
+            return;
+        }
+
+        setShowFinalResults(true);
+        const totalPossible = elements.reduce((acc, el) => acc + (el.score || 0), 0);
+        const totalEarned = Object.values(finalQuizAnswers).reduce((acc, curr) => acc + curr.earned, 0);
+        
+        setFinalSummary({
+            score: totalEarned,
+            total: totalPossible,
+            status: (totalEarned / totalPossible) >= 0.8 ? 'PASS' : 'FAIL'
+        });
     };
 
     const confirmDelete = (el) => {
@@ -224,6 +288,24 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
             isCorrect: isViewed,
             submitted: isViewed 
         };
+        // Submit
+        // {isFinalQuiz && !showFinalResults && (
+        //     <View style={{ padding: 20 }}>
+        //         <TouchableOpacity 
+        //             style={styles.joinBtn} 
+        //             onPress={handleFinalReveal}
+        //         >
+        //             <Text style={styles.joinBtnText}>Submit and Reveal Results</Text>
+        //             <CheckCircle2 size={18} color="white" />
+        //         </TouchableOpacity>
+        //     </View>
+        // )}
+
+        // Show final result
+        // {showFinalResults && finalSummary && (
+        //     <View style={styles.finalSummaryCard}>
+        //     </View>
+        // )}
 
         return (
             <IntersectionWrapper key={id} id={id} score={score} type={type} isAlreadyComplete={isAlreadyComplete}>
@@ -294,21 +376,29 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
                                         </View>
                                     );
                                 case 'quiz_objective':
+                                    const revealFeedback = !isFinalQuiz || showFinalResults;
+
                                     return (
-                                        <View style={[styles.quizCard, quiz.submitted && !quiz.isCorrect && styles.quizCardError]}>
+                                        <View style={[
+                                            styles.quizCard, 
+                                            (revealFeedback && quiz.submitted && !quiz.isCorrect) && styles.quizCardError
+                                        ]}>
                                             <View style={styles.quizHeader}>
                                                 <HelpCircle color="#0a6340" size={13}/>
                                                 <Text style={styles.quizTitle}>Knowledge Check</Text>
                                             </View>
+                                            
                                             <Text style={styles.question}>{content.question}</Text>
+                                            
                                             {content.options.map((option, idx) => {
                                                 const isSelected = quiz.selected === option;
-                                                const showSuccess = (quiz.submitted || isAdmin) && option === content.answer;
-                                                const showDanger = quiz.submitted && isSelected && !quiz.isCorrect;
+                                                const showSuccess = revealFeedback && (quiz.submitted || isAdmin) && option === content.answer;
+                                                const showDanger = revealFeedback && quiz.submitted && isSelected && !quiz.isCorrect;
+
                                                 return (
                                                     <TouchableOpacity 
-                                                        key={idx} 
-                                                        disabled={isAdmin || quiz.submitted}
+                                                        key={idx}
+                                                        disabled={isAdmin || (isFinalQuiz ? showFinalResults : quiz.submitted)}
                                                         onPress={() => handleQuizSubmit(el, option)}
                                                         style={[
                                                             styles.optionBtn,
@@ -317,31 +407,23 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
                                                             showDanger && styles.optionDanger
                                                         ]}
                                                     >
-                                                        <View style={[styles.radioOutline, isSelected && styles.correctRadio]}>
+                                                        <View style={[styles.radioOutline, (isSelected || showSuccess) && styles.correctRadio]}>
                                                             {(isSelected || showSuccess) && <View style={styles.radioInner} />}
                                                         </View>
                                                         <Text style={styles.optionText}>{option}</Text>
                                                     </TouchableOpacity>
                                                 );
                                             })}
-                                            {quiz.submitted && (
+
+                                            {(revealFeedback && quiz.submitted) && (
                                                 <View style={styles.quizFeedback}>
                                                     {!quiz.isCorrect ? (
-                                                        <>
-                                                            <View style={styles.feedbackRow}>
-                                                                <AlertCircle size={16} color="#dc2626" />
-                                                                <Text style={styles.errorText}>
-                                                                    Incorrect. {isFinalQuiz ? "Check your final score at the end." : `The correct answer is: ${content.answer}`}
-                                                                </Text>
-                                                            </View>
-                                                            {/* Hide Try Again if it is a Final Quiz */}
-                                                            {!isFinalQuiz && (
-                                                                <TouchableOpacity style={styles.redoBtn} onPress={() => resetQuiz(id)}>
-                                                                    <RotateCcw size={14} color="#0a6340" />
-                                                                    <Text style={styles.redoText}>Try Again</Text>
-                                                                </TouchableOpacity>
-                                                            )}
-                                                        </>
+                                                        <View style={styles.feedbackRow}>
+                                                            <AlertCircle size={16} color="#dc2626" />
+                                                            <Text style={styles.errorText}>
+                                                                Incorrect. {isFinalQuiz ? "Check your summary below." : `The correct answer is: ${content.answer}`}
+                                                            </Text>
+                                                        </View>
                                                     ) : (
                                                         <Text style={styles.successText}>Correct! Well done.</Text>
                                                     )}
