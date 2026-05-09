@@ -3,6 +3,7 @@ import { Op } from "sequelize";
 import {
   Course,
   CourseTag,
+  Enrollment,
   Prerequisite,
   PrerequisiteGroup,
   Tag,
@@ -18,9 +19,13 @@ import {
   PrerequisiteGroupResponse,
   PrerequisiteResponse,
   UpdateCourseRequest,
+  UserCourseEnrollmentResponse,
 } from "../types/Course";
 import { ErrorResponse } from "../types/common";
 import { getStorage } from "../services/storage";
+import { logger } from "../utils/logger";
+import { canUserEnrollCourse } from "../utils/canUserEnrollCourse";
+import { EnrollmentResponse } from "../types/Enrollment";
 
 class HttpError extends Error {
   status: number;
@@ -179,6 +184,10 @@ function parseCourseReleasedAt(releasedAt: unknown): Date | null | undefined {
 async function _verify_prerequisite_course_ids_input(
   prerequisite_course_ids: unknown,
 ): Promise<void> {
+  logger.debug("Verifying prerequisite course IDs", {
+    prerequisite_course_ids,
+  });
+
   if (typeof prerequisite_course_ids === "string") {
     const trimmed = prerequisite_course_ids.trim();
     if (trimmed === "") {
@@ -196,34 +205,44 @@ async function _verify_prerequisite_course_ids_input(
   }
 
   if (!Array.isArray(prerequisite_course_ids)) {
-    throw new Error("prerequisite_course_ids must be an array");
+    const error = "prerequisite_course_ids must be an array";
+    logger.warn(error);
+    throw new Error(error);
   }
 
   // Normalize to numbers and ensure uniqueness
   const ids = prerequisite_course_ids.map((id) => Number(id));
   for (const id of ids) {
     if (!Number.isInteger(id) || id <= 0) {
-      throw new Error(
-        `Each course ID in prerequisite_course_ids must be a positive integer: ${id}`,
-      );
+      const error = `Each course ID in prerequisite_course_ids must be a positive integer: ${id}`;
+      logger.warn(error);
+      throw new Error(error);
     }
   }
 
   const uniqueIds = Array.from(new Set(ids));
   if (uniqueIds.length !== ids.length) {
-    throw new Error("prerequisite_course_ids must contain unique course IDs");
+    const error = "prerequisite_course_ids must contain unique course IDs";
+    logger.warn(error);
+    throw new Error(error);
   }
 
   // Verify existence
   for (const courseId of uniqueIds) {
     const course = await Course.findByPk(Number(courseId));
     if (!course) {
-      throw new Error(`Course with ID ${courseId} does not exist`);
+      const error = `Course with ID ${courseId} does not exist`;
+      logger.warn(error);
+      throw new Error(error);
     }
   }
+
+  logger.debug("Prerequisite course IDs verified successfully", { uniqueIds });
 }
 
 function parseTagIdsInput(value: unknown, fieldName: string): number[] {
+  logger.debug(`Parsing ${fieldName}`, { value });
+
   if (value === undefined || value === null || value === "") {
     return [];
   }
@@ -250,25 +269,35 @@ function parseTagIdsInput(value: unknown, fieldName: string): number[] {
   } else if (typeof value === "number") {
     parsedValue = [value];
   } else {
-    throw new Error(`${fieldName} must be an array of numbers`);
+    const error = `${fieldName} must be an array of numbers`;
+    logger.warn(error);
+    throw new Error(error);
   }
 
   if (!Array.isArray(parsedValue)) {
-    throw new Error(`${fieldName} must be an array of numbers`);
+    const error = `${fieldName} must be an array of numbers`;
+    logger.warn(error);
+    throw new Error(error);
   }
 
   const tagIds = parsedValue.map((id) => {
     const parsedId = Number(id);
     if (!Number.isInteger(parsedId) || parsedId <= 0) {
-      throw new Error(`${fieldName} must contain valid positive integer IDs`);
+      const error = `${fieldName} must contain valid positive integer IDs`;
+      logger.warn(error);
+      throw new Error(error);
     }
     return parsedId;
   });
 
-  return [...new Set(tagIds)];
+  const uniqueIds = [...new Set(tagIds)];
+  logger.debug(`${fieldName} parsed successfully`, { uniqueIds });
+  return uniqueIds;
 }
 
 async function verifyTagIdsExist(tagIds: number[]): Promise<void> {
+  logger.debug("Verifying tag IDs exist", { tagIds });
+
   if (tagIds.length === 0) {
     return;
   }
@@ -282,8 +311,12 @@ async function verifyTagIdsExist(tagIds: number[]): Promise<void> {
   const missingTagIds = tagIds.filter((id) => !existingIds.has(id));
 
   if (missingTagIds.length > 0) {
-    throw new Error(`Tag(s) not found: ${missingTagIds.join(", ")}`);
+    const error = `Tag(s) not found: ${missingTagIds.join(", ")}`;
+    logger.warn(error);
+    throw new Error(error);
   }
+
+  logger.debug("All tag IDs verified successfully", { tagIds });
 }
 
 async function addCourseTags(
@@ -291,6 +324,8 @@ async function addCourseTags(
   tagIds: number[],
   transaction: any,
 ): Promise<void> {
+  logger.debug("Adding course tags", { courseId, tagIds });
+
   if (tagIds.length === 0) {
     return;
   }
@@ -322,13 +357,20 @@ async function addCourseTags(
         },
         { transaction },
       );
+      logger.debug("Created new course tag", { courseId, tagId });
       continue;
     }
 
     if (association.deleted_at) {
       await association.restore({ transaction });
+      logger.debug("Restored course tag", { courseId, tagId });
     }
   }
+
+  logger.debug("Course tags added successfully", {
+    courseId,
+    tagCount: tagIds.length,
+  });
 }
 
 async function removeCourseTags(
@@ -336,6 +378,8 @@ async function removeCourseTags(
   tagIds: number[],
   transaction: any,
 ): Promise<void> {
+  logger.debug("Removing course tags", { courseId, tagIds });
+
   if (tagIds.length === 0) {
     return;
   }
@@ -347,6 +391,11 @@ async function removeCourseTags(
     },
     transaction,
   });
+
+  logger.debug("Course tags removed successfully", {
+    courseId,
+    tagCount: tagIds.length,
+  });
 }
 
 async function createPrerequisiteGroupsAndPrerequisites(
@@ -354,6 +403,11 @@ async function createPrerequisiteGroupsAndPrerequisites(
   prerequisite_course_ids: unknown,
   transaction: any,
 ): Promise<void> {
+  logger.debug("Creating prerequisite groups and prerequisites", {
+    courseId,
+    prerequisite_course_ids,
+  });
+
   if (typeof prerequisite_course_ids === "string") {
     const trimmed = prerequisite_course_ids.trim();
     if (trimmed === "") {
@@ -374,12 +428,19 @@ async function createPrerequisiteGroupsAndPrerequisites(
     ? prerequisite_course_ids.map((id) => Number(id))
     : [];
 
-  if (ids.length === 0) return;
+  if (ids.length === 0) {
+    logger.debug("No prerequisites to create", { courseId });
+    return;
+  }
 
   const prerequisiteGroup = await PrerequisiteGroup.create(
     { course_id: courseId },
     { transaction },
   );
+  logger.debug("Created prerequisite group", {
+    courseId,
+    groupId: prerequisiteGroup.id,
+  });
 
   await Promise.all(
     ids.map((cid) =>
@@ -392,6 +453,12 @@ async function createPrerequisiteGroupsAndPrerequisites(
       ),
     ),
   );
+
+  logger.debug("Prerequisites created successfully", {
+    courseId,
+    groupId: prerequisiteGroup.id,
+    prerequisiteCount: ids.length,
+  });
 }
 
 export const createCourse = async (
@@ -399,6 +466,7 @@ export const createCourse = async (
   res: Response<CourseResponse | ErrorResponse>,
   next: NextFunction,
 ) => {
+  logger.info("Creating new course", { title: req.body.title });
   const transaction = await sequelize.transaction();
   try {
     const tagIds = parseTagIdsInput(req.body.tag_ids, "tag_ids");
@@ -431,6 +499,10 @@ export const createCourse = async (
       },
       { transaction },
     );
+    logger.debug("Course record created", {
+      courseId: course.id,
+      title: course.title,
+    });
 
     // Create the related prerequisite courses associations after the course is created
     if (req.body.prerequisite_course_ids) {
@@ -451,6 +523,10 @@ export const createCourse = async (
     const badgeFile = uploadedFiles.badge?.[0];
 
     if (coverFile) {
+      logger.debug("Saving course cover image", {
+        courseId: course.id,
+        fileName: coverFile.originalname,
+      });
       const ext = coverFile.originalname.split(".").pop();
       const savedPath = await storage.save({
         buffer: coverFile.buffer,
@@ -460,9 +536,17 @@ export const createCourse = async (
         subfolder: "courses/covers",
       });
       course.cover_img_path = savedPath;
+      logger.debug("Course cover image saved", {
+        courseId: course.id,
+        path: savedPath,
+      });
     }
 
     if (badgeFile) {
+      logger.debug("Saving course badge image", {
+        courseId: course.id,
+        fileName: badgeFile.originalname,
+      });
       const ext = badgeFile.originalname.split(".").pop();
       const savedPath = await storage.save({
         buffer: badgeFile.buffer,
@@ -472,21 +556,35 @@ export const createCourse = async (
         subfolder: "courses/badges",
       });
       course.badge_img_path = savedPath;
+      logger.debug("Course badge image saved", {
+        courseId: course.id,
+        path: savedPath,
+      });
     }
 
     await course.save({ transaction });
     await transaction.commit();
+    logger.info("Course created successfully", {
+      courseId: course.id,
+      title: course.title,
+    });
 
     //Returning the created course with its prerequisite groups and courses
     const createdCourse = await Course.findByPk(course.id, {
       include: COURSE_PREREQUISITE_INCLUDE,
     });
     if (!createdCourse) {
+      logger.error("Created course not found during retrieval", {
+        courseId: course.id,
+      });
       return res.status(404).json({ message: "Course not found" });
     }
     return res.status(201).json(toCourseResponse(createdCourse, req));
   } catch (err) {
     await transaction.rollback();
+    logger.error("Error creating course", {
+      error: err instanceof Error ? err.message : String(err),
+    });
     if (err instanceof HttpError) {
       res.status(err.status).json({ message: err.message });
     } else {
@@ -497,9 +595,13 @@ export const createCourse = async (
 
 export const getAllCourses = async (
   req: Request<PaginateRequestParams & { tags?: string | string[] }>,
-  res: Response<PaginateResponse<CourseResponse>>,
+  res: Response<PaginateResponse<CourseResponse> | ErrorResponse>,
   next: NextFunction,
 ) => {
+  logger.info("Fetching all courses", {
+    page: req.query.page,
+    size: req.query.size,
+  });
   try {
     const isDeletedRaw = req.query.isDeleted;
     const includeDeleted =
@@ -507,9 +609,16 @@ export const getAllCourses = async (
         isDeletedRaw.toLowerCase() === "true") ||
       (typeof isDeletedRaw === "boolean" && isDeletedRaw === true);
 
+    logger.debug("Course fetch parameters", { includeDeleted });
+
     const courses = await paginateModel(Course, req.query, {
       paranoid: !includeDeleted,
       include: COURSE_PREREQUISITE_INCLUDE,
+    });
+
+    logger.info("Courses fetched successfully", {
+      totalElements: courses.totalElements,
+      totalPages: courses.totalPages,
     });
 
     const baseUrl = `${req.protocol}://${req.get("host")}${req.originalUrl}`;
@@ -528,7 +637,106 @@ export const getAllCourses = async (
 
     return res.json(formattedResponse);
   } catch (err) {
+    logger.error("Error fetching all courses", {
+      error: err instanceof Error ? err.message : String(err),
+    });
     next(err);
+  }
+};
+
+/**
+ * Retrieve all courses that a user could/currently enroll in
+ */
+export const getAllUserCourses = async (
+  req: Request<PaginateRequestParams & { tags?: string | string[] }>,
+  res: Response<PaginateResponse<UserCourseEnrollmentResponse> | ErrorResponse>,
+  next: NextFunction,
+) => {
+  logger.info("Fetching all user courses", { userId: req.user?.id });
+  try {
+    let responseData: UserCourseEnrollmentResponse[] = [];
+
+    // Retrieve all released courses with tags and prerequisites
+    const courses = await Course.findAll({
+      where: {
+        status: CourseStatus.RELEASED,
+      },
+    });
+
+    // For each course, determine if the user can enroll and include enrollment status
+    for (const course of courses) {
+      let canEnroll = false;
+
+      // Check if user can enroll in this course
+      canEnroll = await canUserEnrollCourse(req.user!, course);
+
+      // Latest enrollment should be most relevant for determining the user's current status in relation to the course
+      const enrollment = await Enrollment.findOne({
+        where: {
+          user_id: req.user!.id,
+          course_id: course.id,
+        },
+        order: [["created_at", "DESC"]],
+      });
+
+      // Format enrollment to response if exist else return null
+      let enrollmentResponse: EnrollmentResponse | null = null;
+      if (enrollment) {
+        enrollmentResponse = {
+          id: enrollment.id,
+          user_id: enrollment.user_id,
+          course_id: enrollment.course_id,
+          status: enrollment.status,
+          enrolled_at: enrollment.enrolled_at,
+          completed_at: enrollment.completed_at,
+          reviewed_by_user_id: enrollment.reviewed_by_user_id,
+          reviewed_at: enrollment.reviewed_at,
+          reviewed_comment: enrollment.reviewed_comment,
+          badge_expire_at: enrollment.badge_expire_at,
+          created_at: enrollment.created_at,
+          updated_at: enrollment.updated_at,
+        };
+      }
+
+      responseData.push({
+        ...toCourseResponse(course, req),
+        status: enrollment ? enrollment.status : null,
+        is_enrollable: canEnroll,
+        enrollment: enrollmentResponse,
+      });
+    }
+
+    // Format pagination data
+    const baseUrl = `${req.protocol}://${req.get("host")}${req.originalUrl}`;
+    const formattedResponse = formatPaginateResponse(
+      responseData,
+      req.query,
+      true,
+      {
+        page: 1,
+        size: responseData.length,
+        totalElements: responseData.length,
+        totalPages: 1,
+        baseUrl,
+      },
+    );
+
+    logger.info("User courses fetched successfully", {
+      userId: req.user!.id,
+      totalCourses: responseData.length,
+    });
+
+    return res.json(formattedResponse);
+  } catch (err) {
+    logger.error("Error fetching user courses", {
+      userId: req.user?.id,
+      error: err instanceof Error ? err.message : String(err),
+    });
+    if (err instanceof HttpError) {
+      res.status(err.status).json({ message: err.message });
+    } else {
+      res.status(500).json({ message: "Internal server error" });
+    }
   }
 };
 
@@ -537,16 +745,26 @@ export const getCourseById = async (
   res: Response<CourseResponse | { message: string }>,
   next: NextFunction,
 ) => {
+  logger.info("Fetching course by ID", { courseId: req.params.id });
   try {
     const course = await Course.findByPk(req.params.id, {
       include: COURSE_PREREQUISITE_INCLUDE,
     });
     if (!course) {
+      logger.warn("Course not found", { courseId: req.params.id });
       return res.status(404).json({ message: "Course not found" });
     }
 
+    logger.info("Course fetched successfully", {
+      courseId: course.id,
+      title: course.title,
+    });
     return res.json(toCourseResponse(course, req));
   } catch (err) {
+    logger.error("Error fetching course by ID", {
+      courseId: req.params.id,
+      error: err instanceof Error ? err.message : String(err),
+    });
     next(err);
   }
 };
@@ -558,13 +776,17 @@ export const upsertCourse = async (
   res: Response<CourseResponse | { message: string }>,
   next: NextFunction,
 ) => {
+  logger.info("Updating course", { courseId: req.params.id });
   let transaction = await sequelize.transaction();
   try {
     // Check if the course exists or not
     const course = await Course.findByPk(req.params.id);
     if (!course) {
+      logger.warn("Course not found for update", { courseId: req.params.id });
       throw new HttpError(404, "Course does not exist");
     }
+
+    logger.debug("Preparing course updates", { courseId: course.id });
 
     // Validate and apply the updates from the request body and file
     const updates: Partial<Course> = {};
@@ -602,6 +824,10 @@ export const upsertCourse = async (
 
     //TODO: Handle cover image uploads
     if (req.file) {
+      logger.debug("Saving course badge image during update", {
+        courseId: course.id,
+        fileName: req.file.originalname,
+      });
       const storage = getStorage();
       const ext = req.file.originalname.split(".").pop();
       const savedPath = await storage.save({
@@ -612,18 +838,30 @@ export const upsertCourse = async (
         subfolder: "courses/badges",
       });
       updates.badge_img_path = savedPath;
+      logger.debug("Course badge image saved during update", {
+        courseId: course.id,
+        path: savedPath,
+      });
     }
     if (
       Object.keys(updates).length === 0 &&
       req.body.prerequisite_course_ids === undefined &&
       req.body.tag_ids === undefined
     ) {
+      logger.warn("No valid fields provided for update", {
+        courseId: req.params.id,
+      });
       throw new Error("No valid fields provided for update");
     }
     await course.update(updates, { transaction });
+    logger.debug("Course basic fields updated", {
+      courseId: course.id,
+      updatedFields: Object.keys(updates),
+    });
 
     // Handle prerequisite courses updates if provided
     if (req.body.prerequisite_course_ids !== undefined) {
+      logger.debug("Updating course prerequisites", { courseId: course.id });
       await _verify_prerequisite_course_ids_input(
         req.body.prerequisite_course_ids,
       );
@@ -643,6 +881,10 @@ export const upsertCourse = async (
 
     //Handle course tags updates if provided
     const tagIds = parseTagIdsInput(req.body.tag_ids, "tag_ids");
+    logger.debug("Updating course tags", {
+      courseId: course.id,
+      tagCount: tagIds.length,
+    });
 
     //Delete tags that are not in the tagIds list
     await CourseTag.destroy({
@@ -659,20 +901,34 @@ export const upsertCourse = async (
     await addCourseTags(course.id, tagIds, transaction);
 
     await transaction.commit();
+    logger.debug("Course update transaction committed", {
+      courseId: course.id,
+    });
 
     const updatedCourse = await Course.findByPk(req.params.id, {
       include: COURSE_PREREQUISITE_INCLUDE,
     });
 
     if (!updatedCourse) {
+      logger.error("Updated course not found during retrieval", {
+        courseId: req.params.id,
+      });
       return res.status(404).json({ message: "Course not found" });
     }
 
+    logger.info("Course updated successfully", {
+      courseId: updatedCourse.id,
+      title: updatedCourse.title,
+    });
     return res.json(toCourseResponse(updatedCourse, req));
   } catch (err) {
     if (transaction) {
       await transaction.rollback();
     }
+    logger.error("Error updating course", {
+      courseId: req.params.id,
+      error: err instanceof Error ? err.message : String(err),
+    });
     return res.status(400).json({
       message: err instanceof Error ? err.message : "Invalid request data",
     });
@@ -684,15 +940,22 @@ export const deleteCourse = async (
   res: Response<{ message: string }>,
   next: NextFunction,
 ) => {
+  logger.info("Deleting course", { courseId: req.params.id });
   try {
     const deletedCount = await Course.destroy({ where: { id: req.params.id } });
 
     if (deletedCount === 0) {
+      logger.warn("Course not found for deletion", { courseId: req.params.id });
       return res.status(404).json({ message: "Course not found" });
     }
 
+    logger.info("Course deleted successfully", { courseId: req.params.id });
     return res.json({ message: "Course deleted successfully" });
   } catch (err) {
+    logger.error("Error deleting course", {
+      courseId: req.params.id,
+      error: err instanceof Error ? err.message : String(err),
+    });
     next(err);
   }
 };

@@ -5,10 +5,12 @@ import {
   UpdateDiscussionRequest,
   DiscussionPaginateRequest,
 } from "../types/Discussion";
-import { Discussion } from "../models";
+import { Discussion, User } from "../models";
 import { formatPaginateResponse, paginateModel } from "../utils/paginate";
 import { PaginateRequestParams, PaginateResponse } from "../types/common";
 import { Op } from "sequelize";
+import { sendNotification } from "../utils/sendNotification";
+import sequelize from "../config/Database";
 
 class HttpError extends Error {
   status: number;
@@ -23,6 +25,7 @@ export const createDiscussion = async (
   res: Response<(DiscussionResponse & { creator?: any }) | { message: string }>,
   next: NextFunction,
 ) => {
+  const transaction = await sequelize.transaction();
   try {
     const course_id = Number((req.params as { course_id?: string }).course_id);
     const { title, is_public = false } = req.body;
@@ -55,7 +58,48 @@ export const createDiscussion = async (
       created_at: discussion.created_at,
       updated_at: discussion.updated_at,
     });
+
+    // Sending notification to those whom it may concern about the new discussion channel created
+    if (discussion.is_public) {
+      // If the discussion is public, notify all Park Guides in the course about the new discussion channel
+      const ParkGuidePeersIds = await User.findAll({
+        where: {
+          role: "park_guide",
+          "$enrollments.course_id$": course_id,
+        },
+        include: [
+          {
+            model: require("../models/Enrollment").default,
+            as: "enrollments",
+            attributes: [],
+          },
+        ],
+        attributes: ["id"],
+      }).then((users) => users.map((user) => user.id));
+      await Promise.all(
+        ParkGuidePeersIds.map((userId) => {
+          return sendNotification(
+            "single",
+            "New Public Discussion Channel Created",
+            `A new public discussion channel "${discussion.title}" has been created in the course you are enrolled in. Check it out now!`,
+            transaction,
+            userId,
+            false,
+          );
+        }),
+      );
+    }
+    await sendNotification(
+      "admin",
+      "New Discussion Channel Created",
+      `A new discussion channel "${discussion.title}" has been created in course ID ${course_id}. Please review it as soon as possible.`,
+      transaction,
+      undefined,
+      false,
+    );
+    transaction.commit();
   } catch (err) {
+    transaction.rollback();
     if (err instanceof HttpError) {
       res.status(err.status).json({ message: err.message });
     } else {
@@ -78,16 +122,16 @@ export const getAllDiscussions = async (
     const userAccessFilter: any[] = [{ is_public: true }];
 
     if (req.user) {
-      if (req.user.role === 'admin') {
+      if (req.user.role === "admin") {
         // Admins can see EVERYTHING in this course
-        userAccessFilter.push({ is_public: false }); 
-      } else if (req.user.role === 'park_guide') {
+        userAccessFilter.push({ is_public: false });
+      } else if (req.user.role === "park_guide") {
         // Park Guide Access:
         userAccessFilter.push({
           [Op.or]: [
             { user_id: req.user.id }, // Their own posts
-            { '$user.role$': 'admin' } // Posts created by Admins
-          ]
+            { "$user.role$": "admin" }, // Posts created by Admins
+          ],
         });
       } else {
         // Standard User Access:
@@ -97,15 +141,17 @@ export const getAllDiscussions = async (
 
     const discussions = await paginateModel(Discussion, req.query, {
       paranoid: !req.query.isDeleted,
-      where: { 
+      where: {
         course_id,
         [Op.or]: userAccessFilter,
       },
-      include: [{
-        model: require("../models/User").default,
-        as: "user",
-        attributes: ["username", "role"]
-      }]
+      include: [
+        {
+          model: require("../models/User").default,
+          as: "user",
+          attributes: ["username", "role"],
+        },
+      ],
     });
     const baseUrl = `${req.protocol}://${req.get("host")}${req.baseUrl}${req.path}`;
     const formattedResponse = formatPaginateResponse(
@@ -113,10 +159,12 @@ export const getAllDiscussions = async (
         id: discussion.id,
         course_id: discussion.course_id,
         creator_user_id: discussion.user_id,
-        creator: discussion.user ? {
-          username: discussion.user.username,
-          role: discussion.user.role,
-        } : null,
+        creator: discussion.user
+          ? {
+              username: discussion.user.username,
+              role: discussion.user.role,
+            }
+          : null,
         title: discussion.title,
         is_public: discussion.is_public,
         created_at: discussion.created_at,
@@ -162,11 +210,13 @@ export const getDiscussionById = async (
 
     const discussion = await Discussion.findOne({
       where: { id: discussion_id, course_id },
-      include: [{
-        model: require("../models/User").default,
-        as: "user",
-        attributes: ["username", "role"]
-      }]
+      include: [
+        {
+          model: require("../models/User").default,
+          as: "user",
+          attributes: ["username", "role"],
+        },
+      ],
     });
 
     if (!discussion) {
@@ -177,10 +227,12 @@ export const getDiscussionById = async (
       id: discussion.id,
       course_id: discussion.course_id,
       creator_user_id: discussion.user_id,
-      creator: (discussion as any).user ? {
-        username: (discussion as any).user.username,
-        role: (discussion as any).user.role
-      } : null,
+      creator: (discussion as any).user
+        ? {
+            username: (discussion as any).user.username,
+            role: (discussion as any).user.role,
+          }
+        : null,
       title: discussion.title,
       is_public: discussion.is_public,
       created_at: discussion.created_at,
@@ -276,7 +328,10 @@ export const deleteDiscussion = async (
     }
 
     // Only the creator of the discussion or admin can delete the discussion
-    if (!req.user || (req.user.id !== discussion.user_id && req.user.role !== "admin")) {
+    if (
+      !req.user ||
+      (req.user.id !== discussion.user_id && req.user.role !== "admin")
+    ) {
       throw new HttpError(403, "Forbidden");
     }
 

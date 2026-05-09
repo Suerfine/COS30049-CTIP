@@ -23,6 +23,9 @@ import { PRIVATE_UPLOAD_STORAGE_PATH } from "../middelware/PrivateDocumentUpload
 import { UserResponse } from "../types/User";
 import { getStorage } from "../services/storage";
 import { th } from "@faker-js/faker";
+import { sendNotification } from "../utils/sendNotification";
+import { logger } from "../utils/logger";
+import sequelize from "../config/Database";
 
 class HttpError extends Error {
   status: number;
@@ -81,6 +84,7 @@ export const createRegistration = async (
   res: Response<RegistrationResponse | { message: string }>,
   next: NextFunction,
 ) => {
+  const transaction = await sequelize.transaction();
   try {
     // Check if there's already a pending registration with the same firstname and lastname, identification or personal_email
     const existingRegistration = await Registration.findOne({
@@ -139,11 +143,23 @@ export const createRegistration = async (
     });
     await registration.update({ document_filepath: path });
 
+    // Notify all admins about the new registration
+    await sendNotification(
+      "admin",
+      "New Park Guide Registration",
+      `A new park guide registration has been submitted by ${registration.firstname} ${registration.lastname}. Please review it as soon as possible.`,
+      transaction,
+      undefined,
+      true,
+    );
+    transaction.commit();
     return res.status(200).json(toRegistrationResponse(registration));
   } catch (err) {
+    transaction.rollback();
     if (err instanceof HttpError) {
       res.status(err.status).json({ message: err.message });
     } else {
+      logger.error("Internal server error", { error: err });
       res.status(500).json({ message: "Internal server error\n" + err });
     }
   }

@@ -1,4 +1,6 @@
 import { CourseStatus } from "../enum/CourseStatus";
+import { EnrollmentStatus } from "../enum/EnrollmentStatus";
+import { EnrollmentResponse } from "./Enrollment";
 
 export interface PrerequisiteResponse {
   id: number;
@@ -63,4 +65,13 @@ export interface UpdateCourseRequest {
   badge_expire_in_months?: number;
   tag_ids?: number[];
   prerequisite_course_ids?: number[];
+}
+
+export interface UserCourseEnrollmentResponse extends Omit<
+  CourseResponse,
+  "status"
+> {
+  status: EnrollmentStatus | null;
+  is_enrollable: boolean;
+  enrollment: EnrollmentResponse | null;
 }

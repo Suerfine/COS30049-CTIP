@@ -211,6 +211,243 @@ courseRouter.get("/", auth, CourseController.getAllCourses);
 
 /**
  * @swagger
+ * /api/courses/user:
+ *   get:
+ *     summary: Get all courses available for user enrollment
+ *     description: Retrieves a paginated list of all released courses with enrollment eligibility information. For each course, includes the user's current enrollment status (if any), whether they can enroll, and enrollment details. Uses the canUserEnrollCourse function to determine enrollability based on course prerequisites.
+ *     tags: [Courses]
+ *     security:
+ *       - OAuth2: ["all"]
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         required: false
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           example: 1
+ *         description: Page number to retrieve.
+ *       - in: query
+ *         name: size
+ *         required: false
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           example: 10
+ *         description: Number of records per page.
+ *       - in: query
+ *         name: orderBy
+ *         required: false
+ *         schema:
+ *           type: string
+ *           example: created_at desc
+ *         description: Sort expression format "attribute asc|desc".
+ *       - in: query
+ *         name: filter
+ *         required: false
+ *         schema:
+ *           type: string
+ *         description: Filter expression parsed by backend pagination utility.
+ *       - in: query
+ *         name: tags
+ *         required: false
+ *         schema:
+ *           oneOf:
+ *             - type: string
+ *             - type: array
+ *               items:
+ *                 type: string
+ *         description: Optional tag filters for courses.
+ *     responses:
+ *       200:
+ *         description: User courses retrieved successfully with enrollment eligibility
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: integer
+ *                         example: 1
+ *                       title:
+ *                         type: string
+ *                         example: "Introduction to Web Development"
+ *                       description:
+ *                         type: string
+ *                         nullable: true
+ *                         example: "Learn the fundamentals of web development"
+ *                       status:
+ *                         type: string
+ *                         enum: [ENROLLED, ACTIVE, COMPLETED, EXPIRED]
+ *                         nullable: true
+ *                         description: User's enrollment status in this course. Null if not enrolled.
+ *                         example: "COMPLETED"
+ *                       released_at:
+ *                         type: string
+ *                         format: date-time
+ *                         nullable: true
+ *                         example: "2026-05-09T00:00:00Z"
+ *                       expected_completion_weeks:
+ *                         type: integer
+ *                         nullable: true
+ *                         example: 4
+ *                       must_complete_in_weeks:
+ *                         type: integer
+ *                         nullable: true
+ *                         example: 8
+ *                       badge_expire_in_months:
+ *                         type: integer
+ *                         example: 24
+ *                       badge_img_url:
+ *                         type: string
+ *                         nullable: true
+ *                         format: uri
+ *                         example: "http://localhost:3000/public/courses/badges/badge_1.png"
+ *                       cover_img_url:
+ *                         type: string
+ *                         nullable: true
+ *                         format: uri
+ *                         example: "http://localhost:3000/public/courses/covers/cover_1.png"
+ *                       tags:
+ *                         type: array
+ *                         items:
+ *                           type: object
+ *                           properties:
+ *                             id:
+ *                               type: integer
+ *                               example: 1
+ *                             title:
+ *                               type: string
+ *                               example: "Web"
+ *                             type:
+ *                               type: string
+ *                               example: "category"
+ *                       is_enrollable:
+ *                         type: boolean
+ *                         description: Indicates whether the user can enroll in this course (prerequisites met, not already enrolled).
+ *                         example: true
+ *                       enrollment:
+ *                         type: object
+ *                         nullable: true
+ *                         description: User's enrollment record if exists, null otherwise.
+ *                         properties:
+ *                           id:
+ *                             type: integer
+ *                             example: 1
+ *                           user_id:
+ *                             type: integer
+ *                             example: 5
+ *                           course_id:
+ *                             type: integer
+ *                             example: 1
+ *                           status:
+ *                             type: string
+ *                             enum: [ENROLLED, ACTIVE, COMPLETED, EXPIRED]
+ *                             example: "COMPLETED"
+ *                           enrolled_at:
+ *                             type: string
+ *                             format: date-time
+ *                             example: "2026-01-15T10:30:00Z"
+ *                           completed_at:
+ *                             type: string
+ *                             format: date-time
+ *                             nullable: true
+ *                             example: "2026-03-20T14:45:00Z"
+ *                           reviewed_by_user_id:
+ *                             type: integer
+ *                             nullable: true
+ *                             example: 2
+ *                           reviewed_at:
+ *                             type: string
+ *                             format: date-time
+ *                             nullable: true
+ *                           reviewed_comment:
+ *                             type: string
+ *                             nullable: true
+ *                           badge_expire_at:
+ *                             type: string
+ *                             format: date-time
+ *                             nullable: true
+ *                             example: "2028-03-20T14:45:00Z"
+ *                           created_at:
+ *                             type: string
+ *                             format: date-time
+ *                           updated_at:
+ *                             type: string
+ *                             format: date-time
+ *                       prerequisite_groups:
+ *                         type: array
+ *                         items:
+ *                           type: object
+ *                           properties:
+ *                             id:
+ *                               type: integer
+ *                             course_id:
+ *                               type: integer
+ *                             prerequisites:
+ *                               type: array
+ *                               items:
+ *                                 type: object
+ *                                 properties:
+ *                                   id:
+ *                                     type: integer
+ *                                   course_id:
+ *                                     type: integer
+ *                                   prerequisite_group_id:
+ *                                     type: integer
+ *                       final_quiz_max_score:
+ *                         type: integer
+ *                         nullable: true
+ *                         example: 100
+ *                       total_max_score:
+ *                         type: integer
+ *                         nullable: true
+ *                         example: 100
+ *                       created_at:
+ *                         type: string
+ *                         format: date-time
+ *                       updated_at:
+ *                         type: string
+ *                         format: date-time
+ *                 page:
+ *                   type: integer
+ *                   example: 1
+ *                 size:
+ *                   type: integer
+ *                   example: 10
+ *                 totalElements:
+ *                   type: integer
+ *                   example: 25
+ *                 totalPages:
+ *                   type: integer
+ *                   example: 3
+ *                 _links:
+ *                   type: object
+ *                   additionalProperties:
+ *                     type: string
+ *                     nullable: true
+ *       401:
+ *         description: Unauthorized - Authentication required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+courseRouter.get("/user", auth, CourseController.getAllUserCourses);
+
+/**
+ * @swagger
  * /api/courses/{id}:
  *   get:
  *     summary: Get course by ID

@@ -15,6 +15,7 @@ import { PaginateRequestParams, PaginateResponse } from "../types/common";
 import { UserRoles } from "../enum/UserRoles";
 import { hashPassword, verifyPassword } from "../utils/password";
 import { getStorage } from "../services/storage";
+import { Op } from "sequelize";
 
 class HttpError extends Error {
   status: number;
@@ -95,6 +96,32 @@ export const getUserById = async (
       throw new HttpError(404, "User not found");
     }
     return res.status(200).json(toUserResponse(user, req));
+  } catch (err) {
+    if (err instanceof HttpError) {
+      res.status(err.status).json({ message: err.message });
+    } else {
+      res.status(500).json({ message: "Internal server error\n" + err });
+    }
+  }
+};
+
+export const searchUsersByUsername = async (
+  req: Request<{ name: string; limit: string }>,
+  res: Response<UserResponse[] | { message: string }>,
+  next: NextFunction,
+) => {
+  try {
+    const name = req.params.name;
+    const limit = parseInt(req.params.limit) || 10;
+    const users = await User.findAll({
+      where: {
+        username: {
+          [Op.like]: `%${name}%`,
+        },
+      },
+      limit,
+    });
+    return res.status(200).json(users.map((user) => toUserResponse(user, req)));
   } catch (err) {
     if (err instanceof HttpError) {
       res.status(err.status).json({ message: err.message });
