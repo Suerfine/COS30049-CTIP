@@ -10,6 +10,7 @@ import { formatPaginateResponse, paginateModel } from "../utils/paginate";
 import { PaginateRequestParams, PaginateResponse } from "../types/common";
 import { Op } from "sequelize";
 import { sendNotification } from "../utils/sendNotification";
+import sequelize from "../config/Database";
 
 class HttpError extends Error {
   status: number;
@@ -24,6 +25,7 @@ export const createDiscussion = async (
   res: Response<(DiscussionResponse & { creator?: any }) | { message: string }>,
   next: NextFunction,
 ) => {
+  const transaction = await sequelize.transaction();
   try {
     const course_id = Number((req.params as { course_id?: string }).course_id);
     const { title, is_public = false } = req.body;
@@ -80,6 +82,7 @@ export const createDiscussion = async (
             "single",
             "New Public Discussion Channel Created",
             `A new public discussion channel "${discussion.title}" has been created in the course you are enrolled in. Check it out now!`,
+            transaction,
             userId,
             false,
           );
@@ -90,10 +93,13 @@ export const createDiscussion = async (
       "admin",
       "New Discussion Channel Created",
       `A new discussion channel "${discussion.title}" has been created in course ID ${course_id}. Please review it as soon as possible.`,
+      transaction,
       undefined,
       false,
     );
+    transaction.commit();
   } catch (err) {
+    transaction.rollback();
     if (err instanceof HttpError) {
       res.status(err.status).json({ message: err.message });
     } else {

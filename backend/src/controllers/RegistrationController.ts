@@ -25,6 +25,7 @@ import { getStorage } from "../services/storage";
 import { th } from "@faker-js/faker";
 import { sendNotification } from "../utils/sendNotification";
 import { logger } from "../utils/logger";
+import sequelize from "../config/Database";
 
 class HttpError extends Error {
   status: number;
@@ -83,6 +84,7 @@ export const createRegistration = async (
   res: Response<RegistrationResponse | { message: string }>,
   next: NextFunction,
 ) => {
+  const transaction = await sequelize.transaction();
   try {
     // Check if there's already a pending registration with the same firstname and lastname, identification or personal_email
     const existingRegistration = await Registration.findOne({
@@ -146,12 +148,14 @@ export const createRegistration = async (
       "admin",
       "New Park Guide Registration",
       `A new park guide registration has been submitted by ${registration.firstname} ${registration.lastname}. Please review it as soon as possible.`,
+      transaction,
       undefined,
       true,
     );
-
+    transaction.commit();
     return res.status(200).json(toRegistrationResponse(registration));
   } catch (err) {
+    transaction.rollback();
     if (err instanceof HttpError) {
       res.status(err.status).json({ message: err.message });
     } else {
