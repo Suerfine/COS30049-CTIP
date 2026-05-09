@@ -5,9 +5,11 @@ import {
   UpdateMessageRequest,
   MessagePaginateRequest,
 } from "../types/Message";
-import { Message } from "../models";
+import { Message, User } from "../models";
 import { formatPaginateResponse, paginateModel } from "../utils/paginate";
 import { PaginateResponse } from "../types/common";
+import sequelize from "../config/Database";
+import { sendNotification } from "../utils/sendNotification";
 
 class HttpError extends Error {
   status: number;
@@ -22,6 +24,7 @@ export const createMessage = async (
   res: Response<MessageResponse | { message: string }>,
   next: NextFunction,
 ) => {
+  const transaction = await sequelize.transaction();
   try {
     const discussion_id = Number(req.params.discussion_id);
     const { content } = req.body;
@@ -35,11 +38,56 @@ export const createMessage = async (
     }
 
     // Create the message
-    const message = await Message.create({
-      discussion_id,
-      user_id: req.user.id,
-      content,
-    });
+    const message = await Message.create(
+      {
+        discussion_id,
+        user_id: req.user.id,
+        content,
+      },
+      { transaction },
+    );
+
+    // Sending notificationts to whoevers bane was tagged in the message content
+    const taggedUsernames =
+      content.match(/@(\w+)/g)?.map((tag) => tag.substring(1)) || [];
+    //Check if any of the tags is @all, if so send notification to all users in the discussion
+    if (taggedUsernames.includes("all")) {
+      const usersInDiscussion = await User.findAll({
+        include: {
+          model: Message,
+          where: { discussion_id },
+        },
+        attributes: ["id"],
+      }).then((users) => users.map((user) => user.id));
+      usersInDiscussion.forEach((userId) => {
+        sendNotification(
+          "single",
+          "You were tagged in a message",
+          `You were tagged in a message in discussion ID ${discussion_id}. Check it out now!`,
+          transaction,
+          userId,
+          false,
+        );
+      });
+    } else {
+      for (const taggedUsername of taggedUsernames) {
+        // Check if the tagged user exists
+        const taggedUser = await User.findOne({
+          where: { username: taggedUsername },
+          attributes: ["id"],
+        });
+        if (taggedUser) {
+          await sendNotification(
+            "single",
+            "You were tagged in a message",
+            `You were tagged in a message in discussion ID ${discussion_id}. Check it out now!`,
+            transaction,
+            taggedUser.id,
+            false,
+          );
+        }
+      }
+    }
 
     // Return the created message
     res.status(201).json({
@@ -50,7 +98,9 @@ export const createMessage = async (
       created_at: message.created_at,
       updated_at: message.updated_at,
     });
+    transaction.commit();
   } catch (err) {
+    transaction.rollback();
     if (err instanceof HttpError) {
       res.status(err.status).json({ message: err.message });
     } else {
