@@ -150,7 +150,7 @@ const Landing = ({ navigation }) => {
                 <Animated.View
                     style={{
                         opacity: btnFade,
-                        width: '100%',
+                        alignSelf: 'center',
                         transform: [{ scale: btnScale }],
                     }}
                 >
@@ -207,23 +207,22 @@ const styles = StyleSheet.create({
         textAlign: 'center',
     },
     ctaBtn: {
-      backgroundColor: 'transparent',
-        borderRadius: 14,
+        backgroundColor: 'rgba(255,255,255,1)',
+        borderRadius: 50,
         paddingVertical: 16,
+        paddingHorizontal: 32,
         alignItems: 'center',
         marginTop: 8,
-        width: '100%',
+        borderWidth: 1,
+        borderColor: '#ffffff',
     },
     ctaBtnPressed: {
         opacity: 0.7,
     },
     ctaBtnText: {
-        color: '#ffffff',
+        color: '#000000',
         fontSize: 17,
         fontWeight: '700',
-        paddingBottom: 4,
-        borderBottomWidth: 1,
-        borderBottomColor: '#ffffff',
     },
 });
  
