@@ -31,7 +31,7 @@ const CourseFormContent = ({ onSubmit, onCancel, isLoading, initialData, allCour
     const [form, setForm] = useState({
         courseTitle: initialData?.title || '',
         duration: initialData?.expected_completion_weeks?.toString() || '',
-        cost: initialData?.cost?.toString() || '',
+        cost: initialData?.cost || '',
         expiryWeeks: initialData?.must_complete_in_weeks?.toString() || '',
         badgeExpiry: initialData?.badge_expire_in_months?.toString() || '',
         image: initialData?.cover_img_url || null,
