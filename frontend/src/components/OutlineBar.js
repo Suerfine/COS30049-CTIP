@@ -26,7 +26,7 @@ const OutlineBar = ({ course, progressMap = {}, onSelectPage, editable, isCollap
     if (!course) return null;
 
     const handleSelect = (item) => {
-        if (isLocked && item.type !== 'overview' && item.type !== 'forum') return;
+        if (isLocked && item.type !== 'overview') return;
         setSelectedItem(item);
         onSelectPage(item);
     };
@@ -96,7 +96,8 @@ const OutlineBar = ({ course, progressMap = {}, onSelectPage, editable, isCollap
 
             {!isCollapsed && (
                 <Pressable
-                    style={[styles.item, selectedItem?.type === 'forum' && styles.selected]}
+                    disabled={isLocked}
+                    style={[styles.item, selectedItem?.type === 'forum' && styles.selected, isLocked && styles.lockedItem]}
                     onPress={() => handleSelect({ type: 'forum', course })}
                     onMouseEnter={() => setHoveredItem({ type: 'forum' })}
                     onMouseLeave={() => setHoveredItem(null)}
