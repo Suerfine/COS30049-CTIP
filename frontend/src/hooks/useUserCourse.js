@@ -269,15 +269,6 @@ export const useUserCourse = () => {
     });
   }, [coursesWithStatus, searchText, filters, allcourseFilter]);
 
-  // const handleSearch = (text) => {
-  //   setSearchText(text);
-  //   const filterString = text
-  //     ? `title like "%${text}%" or description like "%${text}%"`
-  //     : "";
-
-  //   loadCourses({ filter: filterString, page: 1 });
-  // };
-
   const removeFilter = (key, value) => {
     setFilters((prev) => {
       if (key === "status") return { ...prev, status: "all" };
