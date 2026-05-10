@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, ScrollView, Pressable, ImageBackground, TextInput} from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, ImageBackground, TextInput, Platform } from 'react-native';
 import { useMemo, useState, useEffect } from 'react';
 import { CircleX, ListFilter, SignalZero, SlidersHorizontal, Search } from 'lucide-react-native'
 import { useRoute } from '@react-navigation/native';
@@ -134,37 +134,40 @@ const UserCourse = ({ navigation }) => {
                         ) : ( filteredCourses.map(course => {
                             const numModules = course.module_count ? course.module_count : 0;
                             return(
-                            <CourseCard
-                                key={course.id}
-                                id={course.id}
-                                coverImgUrl={course.cover_img_url}
-                                courseTitle={course.title}
-                                numModules={numModules || 16}
-                                duration={course.expected_completion_weeks}
-                                expiry={course.must_complete_in_weeks}
-                                userType={userType}
-                                progress={course.progress}
-                                // enrollment
-                                enrollmentStatus={course.enrollmentStatus}
-                                prerequisiteGroups={course.prerequisiteGroups || []}
-                                myEnrollments={myEnrollments}
-                                // handlers
-                                onPress={() => navigation.navigate('ParkGuideStack', {
-                                    screen: 'UserModule', 
-                                    params: { 
-                                        id: course.id,
-                                        enrollmentStatus: course.enrollmentStatus ?? null,
-                                        enrollmentId: course.enrollmentId
-                                    }
-                                })}
-                               onEnroll={() => {
-                                    const confirmed = window.confirm(`Are you sure you want to enroll in ${course.title}?`);
-                                    if (confirmed) {
-                                        handleEnrollment(course.id);
-                                    }
-                                }}
-                                onDrop={() => handleDrop(course.id)}
-                            />)
+                            <View key={course.id} style={styles.cardWrapper}>
+                                <CourseCard
+                                    key={course.id}
+                                    id={course.id}
+                                    coverImgUrl={course.cover_img_url}
+                                    courseTitle={course.title}
+                                    numModules={numModules || 16}
+                                    duration={course.expected_completion_weeks}
+                                    expiry={course.must_complete_in_weeks}
+                                    userType={userType}
+                                    progress={course.progress}
+                                    // enrollment
+                                    enrollmentStatus={course.enrollmentStatus}
+                                    prerequisiteGroups={course.prerequisiteGroups || []}
+                                    myEnrollments={myEnrollments}
+                                    // handlers
+                                    onPress={() => navigation.navigate('ParkGuideStack', {
+                                        screen: 'UserModule', 
+                                        params: { 
+                                            id: course.id,
+                                            enrollmentStatus: course.enrollmentStatus ?? null,
+                                            enrollmentId: course.enrollmentId
+                                        }
+                                    })}
+                                    onEnroll={() => {
+                                        const confirmed = window.confirm(`Are you sure you want to enroll in ${course.title}?`);
+                                        if (confirmed) {
+                                            handleEnrollment(course.id);
+                                        }
+                                    }}
+                                    onDrop={() => handleDrop(course.id)}
+                                    style={{ width: '100%' }}
+                                />
+                            </View>)
                         })
                     )}
                     </View>
@@ -193,9 +196,8 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     courseContainer: {
-        marginTop: 20,
-        marginBottom: 20,
-        marginHorizontal:60
+        marginVertical: 20,
+        marginHorizontal: Platform.OS === 'web' ? 60 : 15,
     },
     title: {
         fontSize: 24,
@@ -225,10 +227,18 @@ const styles = StyleSheet.create({
     },
     cardContainer: {
         flexDirection: 'row',
-        gap: 80,
+        flexWrap: 'wrap',
+        paddingHorizontal: Platform.OS === 'web' ? 60 : 15, 
+        justifyContent: 'flex-start',
+        columnGap: '2%', 
+        rowGap: 30,      
         marginBottom: 20,
-        flexWrap:'wrap',
-        marginHorizontal:60,
+        alignItems: 'stretch',
+    },
+    cardWrapper: {
+        width: Platform.OS === 'web' ? '23.5%' : '100%', 
+        minWidth: Platform.OS === 'web' ? 200 : '100%', 
+        display: 'flex',
     },
     filterContainer:{
         flexDirection:'row',

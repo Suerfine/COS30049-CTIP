@@ -169,7 +169,6 @@ const CourseCard = ({
               <ClockAlert size={isWeb ? 20 : 15} />
               <Text style={styles.DetailsText}>Valid for {expiry} Weeks</Text>
             </View>
-          </View>
 
           {/* mobile */}
           {!isAdmin && !isWeb && (
@@ -177,32 +176,33 @@ const CourseCard = ({
               {renderEnrollmentWidget()}
             </View>
           )}
+          </View>
         </View>
+
+        {isAdmin && (
+          <View style={styles.icon}>
+            <Pressable
+              onPress={onEdit}
+              style={({ hovered }) => [hovered && styles.btnHover]}
+            >
+              <SquarePen size={20} />
+            </Pressable>
+            <Pressable
+              onPress={onDelete}
+              style={({ hovered }) => [hovered && styles.btnHover]}
+            >
+              <Trash2 size={20} />
+            </Pressable>
+          </View>
+        )}
+
+        {/* web */}
+        {!isAdmin && isWeb && (
+          <View style={styles.webWidgetContainer}>
+            {renderEnrollmentWidget()}
+          </View>
+        )}
       </View>
-
-      {isAdmin && (
-        <View style={styles.icon}>
-          <Pressable
-            onPress={onEdit}
-            style={({ hovered }) => [hovered && styles.btnHover]}
-          >
-            <SquarePen size={20} />
-          </Pressable>
-          <Pressable
-            onPress={onDelete}
-            style={({ hovered }) => [hovered && styles.btnHover]}
-          >
-            <Trash2 size={20} />
-          </Pressable>
-        </View>
-      )}
-
-      {/* web */}
-      {!isAdmin && isWeb && (
-        <View style={styles.webWidgetContainer}>
-          {renderEnrollmentWidget()}
-        </View>
-      )}
     </Pressable>
   );
 };
@@ -210,42 +210,24 @@ const CourseCard = ({
 const styles = StyleSheet.create({
   card: {
     backgroundColor: "white",
-    borderRadius: 12,
-    paddingHorizontal: Platform.select({
-      web: 17,
-      default: 0,
-    }),
-    paddingVertical: Platform.select({
-      web: 10,
-      default: 0,
-    }),
-    borderRadius: Platform.select({
-      web: 12,
-      default: 15,
-    }),
-    width: Platform.select({
-      web: 280,
-      default: 190,
-    }),
+    borderRadius: 10,
+    width: "100%", 
     elevation: 4,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 6,
+    overflow: "hidden", 
+    borderColor: "#897474",
+    flex: 1,
   },
   imageWrapper: {
-    position: "relative",
+    width: "100%",
   },
   courseImg: {
-    width: Platform.select({
-      web: 250,
-      default: "100%",
-    }),
-    height: Platform.select({
-      web: 170,
-      default: 150,
-    }),
-    resizeMode: "fill",
+    width: "100%", 
+    height: 180, 
+    resizeMode: "cover", 
     alignSelf: "center",
   },
   // drop courses toolbar
@@ -268,20 +250,15 @@ const styles = StyleSheet.create({
     opacity: 2.0,
   },
   // course detail
-  CourseTitle: {
+ CourseTitle: {
     borderBottomColor: "#8f8f8f",
     borderBottomWidth: 1,
-    fontSize: Platform.select({
-      web: 17,
-      default: 14,
-    }),
-    paddingVertical: Platform.select({
-      web: 10,
-      default: 5,
-    }),
+    fontSize: Platform.select({ web: 17, default: 14 }),
+    paddingVertical: Platform.select({ web: 10, default: 5 }),
     marginBottom: 10,
     textAlign: "left",
     fontWeight: "600",
+    minHeight: Platform.OS === 'web' ? 60 : 50, 
   },
   courseDetails: {
     flexDirection: "row",
@@ -312,7 +289,7 @@ const styles = StyleSheet.create({
     color: "#efab21",
   },
   enrollBtn: {
-    marginTop: 10,
+    marginVertical: 5,
     backgroundColor: "#efab21",
     padding: 8,
     borderRadius: 6,
@@ -324,18 +301,19 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   details: {
-    paddingHorizontal: Platform.select({
-      web: 0,
-      default: 10,
-    }),
-    paddingBottom: Platform.select({
-      web: 0,
-      default: 10,
-    }),
+    paddingTop: 5,
+    padding: 20, 
+    flex: 1,
+    justifyContent: "space-between",
   },
   cardHover: {
-    transform: [{ translateY: -5 }],
-    shadowOpacity: 0.2,
+    ...Platform.select({
+      web: {
+        borderColor: "#efab21", 
+        shadowOpacity: 0.25,
+        shadowRadius: 10,
+      }
+    })
   },
   cardPressed: {
     opacity: 0.8,

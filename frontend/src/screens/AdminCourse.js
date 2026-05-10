@@ -9,6 +9,7 @@ import {
   ScrollView,
   Modal,
   ActivityIndicator,
+  Platform
 } from "react-native";
 import { CopyPlus, Search, SlidersHorizontal, CircleX, Plus } from "lucide-react-native";
 
@@ -185,6 +186,7 @@ const AdminCourse = ({ navigation }) => {
               filteredCourses.map((course) => {
                 const numModules = course.module_count ? course.module_count : 0;
                 return (
+                <View key={course.id} style={styles.cardWrapper}>
                   <CourseCard
                     key={course.id}
                     id={course.id}
@@ -202,7 +204,9 @@ const AdminCourse = ({ navigation }) => {
                     }
                     onEdit={() => handleEdit(course)}
                     onDelete={() => handleDelete(course.id)}
+                    style={{width: '100%'}}
                   />
+                </View>
                 );
               })
             ) : (
@@ -262,12 +266,11 @@ const styles = StyleSheet.create({
     color: "white",
   },
   courseContainer: {
-    paddingHorizontal: 40,
-    paddingVertical: 30,
-    borderRadius: 20,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    userSelect: "none",
+    marginVertical: 20,
+    marginHorizontal: Platform.OS === 'web' ? 50 : 15,
+    flexDirection: 'row',           
+    justifyContent: 'space-between', 
+    alignItems: 'center',  
   },
   backgroundImage: {
     width: "100%",
@@ -278,7 +281,6 @@ const styles = StyleSheet.create({
   },
   btn: {
     flexDirection: "row",
-    gap: 8,
     alignItems: "center",
     alignSelf: "center",
     backgroundColor: "#4a8947",
@@ -310,11 +312,18 @@ const styles = StyleSheet.create({
     outlineStyle: "none",
   },
   cardContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "flex-start",
-    gap: 30,
-    marginTop: 20,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'flex-start',
+    columnGap: '2%', 
+    rowGap: 30,      
+    marginBottom: 20,
+    alignItems: 'stretch',
+  },
+  cardWrapper: {
+    width: Platform.OS === 'web' ? '23.5%' : '100%', 
+    minWidth: Platform.OS === 'web' ? 200 : '100%', 
+    display: 'flex',
   },
   filter: {
     flexDirection: "row",
@@ -326,52 +335,45 @@ const styles = StyleSheet.create({
     color: "#efab21",
   },
   toolbar: {
-    justifyContent: "space-between",
     flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginTop: 20,
-  },
-  pillContainer:{
-        flexDirection:'row',
-        flexWrap:'wrap',
-        gap:8,
-        marginTop:15,
-    },
-    pill:{
-        flexDirection:'row',
-        alignItems:'center',
-        backgroundColor: '#0a6340',
-        paddingHorizontal:12,
-        paddingVertical:8,
-        borderRadius:20,
-    },
-    pillText:{
-        fontSize:14,
-        color:"white",
-        marginRight:6,
-        fontWeight:'500'
-    },
-    toolbar: {
-      justifyContent: "space-between",
-      flexDirection: "row",
-      alignItems: "center",
-      marginTop: 20,
-      gap: 15,
-    },
-    
-    addTagButton: {
-      flexDirection: "row",
-      backgroundColor: "#0a6340",
-      paddingHorizontal: 15,
-      paddingVertical: 10,
-      borderRadius: 12,
-      alignItems: "center",
-      justifyContent: "center",
-      gap: 8,
-    },
-    row:{
-      flexDirection:'row',
-      gap:25
-    }
+},
+pillContainer:{
+  flexDirection:'row',
+  flexWrap:'wrap',
+  gap:8,
+  marginTop:15,
+},
+pill:{
+  flexDirection:'row',
+  alignItems:'center',
+  backgroundColor: '#0a6340',
+  paddingHorizontal:12,
+  paddingVertical:8,
+  borderRadius:20,
+},
+pillText:{
+  fontSize:14,
+  color:"white",
+  marginRight:6,
+  fontWeight:'500'
+},
+addTagButton: {
+  flexDirection: "row",
+  backgroundColor: "#0a6340",
+  paddingHorizontal: 15,
+  paddingVertical: 10,
+  borderRadius: 12,
+  alignItems: "center",
+  justifyContent: "center",
+  gap: 8,
+},
+row:{
+  flexDirection:'row',
+  gap:25
+}
 });
 
 export default AdminCourse;
