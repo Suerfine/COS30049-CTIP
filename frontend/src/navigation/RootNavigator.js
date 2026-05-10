@@ -18,12 +18,13 @@ const Stack = createStackNavigator();
 export default function RootNavigator() {
   const { currentUser, isLoading, userToken } = useAuth();
 
-  {userToken == null && (
-    <Stack.Screen name="Auth" component={UnloggedInNavigator} />
-  )}
-
+  // Show loading indicator while auth state is being determined
   if (isLoading) {
-    return null;
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator size="large" />
+      </View>
+    );
   }
 
   // No user logged in - show unlogged in stack
@@ -48,7 +49,7 @@ export default function RootNavigator() {
         <Stack.Screen
           name="AdminStack"
           component={AdminNavigator}
-          initialParams={{screen: 'Admin Dashboard'}}
+          initialParams={{ screen: "Admin Dashboard" }}
           options={{
             animationEnabled: false,
           }}
@@ -57,7 +58,7 @@ export default function RootNavigator() {
         <Stack.Screen
           name="ParkGuideStack"
           component={ParkGuideNavigator}
-          initialParams={{screen: 'Dashboard'}}
+          initialParams={{ screen: "Dashboard" }}
           options={{
             animationEnabled: false,
           }}
