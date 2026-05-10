@@ -1,4 +1,4 @@
-import React,{useEffect,useState} from 'react';
+import React,{useEffect,useState, useRef} from 'react';
 import { View, Text, StyleSheet, ScrollView, ImageBackground, Pressable, ActivityIndicator, Image, TouchableOpacity, TextInput, Modal, FlatList} from 'react-native';
 import {useRoute} from '@react-navigation/native';
 import { Award, Calendar, Clock, Menu, ChevronLeft, Bot, Lock, ShieldCheck } from 'lucide-react-native';
@@ -33,10 +33,18 @@ const UserModule = ({navigation}) => {
     const {allCourseList}=useCourses();
     const [chatOpen, setChatOpen] = useState(false);
     
-    const { progressMap, loading: progressLoading, refreshProgress } = useCourseProgress(course);
+    const { progressMap} = useCourseProgress(course, userMarks, fullHistoryMap);
     const [selectedPage, setSelectedPage]=useState({type:'overview'});
     const [isCollapsed, setIsCollapsed]=useState(false);
     const [activeTab,setActiveTab]=useState('Overview');
+    const scrollViewRef=useRef(null);
+
+    const scrollToTop=()=>{
+        scrollViewRef.current?.scrollTo({
+            y:0,
+            animated:true,
+        })
+    }
 
     const { elements, loading: elementsLoading, workshopsLoading,loadWorkshops, workshops } = useElements(
         id,
@@ -207,9 +215,6 @@ const UserModule = ({navigation}) => {
                                 courseId={id}
                                 onProgressUpdate={async (elementId, score, content = {}) => {
                                     const result = await saveProgress(elementId, score, content); 
-                                    if (result && result.success) {
-                                        refreshProgress(); 
-                                    }
                                     return result; 
                                 }}
                                 userMarks={userMarks}
@@ -229,7 +234,7 @@ const UserModule = ({navigation}) => {
             progressMap={progressMap}
             editable={false} isCollapsed={isCollapsed} isLocked={isLocked}
             userMarks={userMarks}/>
-            <ScrollView>
+            <ScrollView ref={scrollViewRef}>
                 <View style={styles.container}>
                     {/* Background Image */}
                     <ImageBackground 
@@ -294,9 +299,6 @@ const UserModule = ({navigation}) => {
                                         courseId={id}
                                         onProgressUpdate={async (elementId, score, content = {}) => {
                                             const result = await saveProgress(elementId, score, content); 
-                                            if (result && result.success) {
-                                                refreshProgress(); 
-                                            }
                                             return result; 
                                         }}
                                         userMarks={userMarks}
@@ -311,6 +313,7 @@ const UserModule = ({navigation}) => {
                                             handleFetchHistory(quizIds); 
                                         }}
                                         onRefreshHistory={refreshHistory}
+                                        scrollToTop={scrollToTop}
                                     />
                                 )}
                                 <Modal visible={isHistoryVisible} transparent animationType="slide">

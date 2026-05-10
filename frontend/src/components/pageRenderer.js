@@ -11,7 +11,7 @@ import { markdownStyles } from './markdownStyle';
 import { UserRoles } from '../enum/UserRoles';
 import { useAuth } from '../context/AuthContext';
 
-const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement, onMoveElement, onProgressUpdate, onRegisterWorkshop, userMarks,pageMetadata,currentAttempts,isPageFinished, isFinalQuiz, enrollmentId, fullHistoryMap, onFetchHistory, onRefreshHistory}) => {
+const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement, onMoveElement, onProgressUpdate, onRegisterWorkshop, userMarks,pageMetadata,currentAttempts,isPageFinished, isFinalQuiz, enrollmentId, fullHistoryMap, onFetchHistory, onRefreshHistory, scrollToTop}) => {
     const isAdmin = role === UserRoles.ADMIN;
     const [videoProgress, setVideoProgress]=useState({});
     const [quizStates, setQuizStates]=useState({});
@@ -157,6 +157,7 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
         setFinalSummary(null);
         setShowFinalResults(false);
         setFinalQuizAnswers({});
+        scrollToTop?.();
     };
 
     const currentStats = useMemo(() => {
