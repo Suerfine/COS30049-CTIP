@@ -88,30 +88,30 @@ const UserCourse = ({ navigation }) => {
                 <View>
                     <View style={styles.filterContainer}>
                         <SlidingTabs tabs={tabs} activeTab={allcourseFilter} onTabChange={(id)=>setAllCourseFilter(id)}/>
-                        <Pressable 
-                            onPress={() => {
-                                setTempFilters(filters);
-                                setFilterVisible(true);
-                            }}
-                            style={({ hovered }) => [
-                                styles.filter,
-                                hovered && styles.filterHover, 
-                            ]}
-                        >
-                            <SlidersHorizontal/>
-                        </Pressable>
-                    </View>
-                    {/* Search and Filter */}
-                    <View style={styles.toolbar}>
-                        <View style={styles.search}>
-                        <Search size={18} />
-                        <TextInput
-                            style={styles.input}
-                            value={searchText}
-                            onChangeText={handleSearch}
-                            placeholder="Search..."
-                            placeholderTextColor="#8f8f8f"
-                        />
+                        <View style={styles.toolbar}>
+                            <View style={styles.search}>
+                            <Search size={18} />
+                            <TextInput
+                                style={styles.input}
+                                value={searchText}
+                                onChangeText={handleSearch}
+                                placeholder="Search..."
+                                placeholderTextColor="#8f8f8f"
+                            />
+                            </View>
+
+                            <Pressable 
+                                onPress={() => {
+                                    setTempFilters(filters);
+                                    setFilterVisible(true);
+                                }}
+                                style={({ hovered }) => [
+                                    styles.filter,
+                                    hovered && styles.filterHover, 
+                                ]}
+                            >
+                                <SlidersHorizontal/>
+                            </Pressable>
                         </View>
                     </View>
                     <View style={styles.pillContainer}>
@@ -262,10 +262,12 @@ const styles = StyleSheet.create({
     filterContainer:{
         flexDirection:'row',
         marginBottom:10,
+        alignItems:'center',
         justifyContent:'space-between',
         borderBottomColor:'#42424255',
         borderBottomWidth:1,
         marginHorizontal:60,
+        paddingBottom:5
     },
     filter:{
         flexDirection:'row',
@@ -313,8 +315,8 @@ const styles = StyleSheet.create({
         gap: 7,
         borderWidth: 1,
         borderColor: "#8f8f8f",
-        minWidth: 300,
-        padding: 5,
+        minWidth: 200,
+        padding: 3,
         backgroundColor: "white",
         borderRadius: 15,
         alignItems: "center",
@@ -325,10 +327,9 @@ const styles = StyleSheet.create({
         outlineStyle: "none",
     },
     toolbar: {
-        justifyContent: "space-between",
-        flexDirection: "row",
-        marginHorizontal:60,
-        marginBottom:10
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 15,
     },
 });
 
