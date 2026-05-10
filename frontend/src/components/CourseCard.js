@@ -211,7 +211,6 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: "white",
     borderRadius: 10,
-    maxWidth:'330px',
     elevation: 4,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
