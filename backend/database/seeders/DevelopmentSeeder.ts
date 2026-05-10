@@ -16,6 +16,9 @@ import Notification from "../../src/models/Notification";
 import { SensorStatus } from "../../src/enum/SensorStatus";
 import { buildEvents } from "../factories/EventFactory";
 import Event from "../../src/models/Event";
+import Payment from "../../src/models/Payment";
+import { buildPayment } from "../factories/PaymentFactory";
+import { EnrollmentStatus } from "../../src/enum/EnrollmentStatus";
 
 import {
   buildUser,
@@ -34,6 +37,7 @@ import { buildRegistrationHistory } from "../factories/RegistrationFactory";
 import { buildComplianceEvents } from "../factories/AnomalyEventFactory";
 import AnomalyEvent from "../../src/models/AnomalyEvent";
 import "../../src/models";
+import { PaymentStatus } from "../../src/enum/PaymentStatus";
 
 export async function runSeeders(
   user_admin_count: number = 5,
@@ -227,26 +231,51 @@ export async function runSeeders(
     `✅ Created ${createdParkGuideUsers.length * eventTypesPerUser} compliance events`,
   );
 
-  // Enroll users in courses
   if (courses.length > 0) {
     for (const parkGuideUser of createdParkGuideUsers) {
       const maxCoursesForUser = Math.min(2, courses.length);
-      const courseCountForUser = faker.number.int({
-        min: 1,
-        max: maxCoursesForUser,
-      });
-      const selectedCourses = faker.helpers
-        .shuffle(courses)
-        .slice(0, courseCountForUser);
+      const courseCountForUser = faker.number.int({ min: 1, max: maxCoursesForUser });
+      const selectedCourses = faker.helpers.shuffle(courses).slice(0, courseCountForUser);
 
-      for (const course of selectedCourses) {
-        const enrollment = await buildEnrollment({
+      for (const courseInfo of selectedCourses) {
+        const dbCourse = await Course.findByPk(courseInfo.id);
+        if (!dbCourse) continue;
+
+        const isApproved = faker.datatype.boolean(0.7); 
+
+        const finalEnrollmentStatus = isApproved 
+          ? EnrollmentStatus.IN_PROGRESS 
+          : EnrollmentStatus.PENDING_PAYMENT;
+
+        const finalPaymentStatus = isApproved 
+          ? PaymentStatus.PAID 
+          : PaymentStatus.PENDING;
+
+        const enrollmentData = await buildEnrollment({
           user: parkGuideUser,
-          course,
+          course: courseInfo,
           adminUsers: createdAdminUsers,
         });
 
-        await Enrollment.create(enrollment.enrollment);
+        const createdEnrollment = await Enrollment.create({
+          ...enrollmentData.enrollment,
+          status: finalEnrollmentStatus,
+        });
+
+        const paymentData = buildPayment({
+          user_id: parkGuideUser.id,
+          course_id: dbCourse.id,
+          enrollment_id: createdEnrollment.id,
+          amount: dbCourse.cost,
+        });
+
+        await Payment.create({
+          ...paymentData,
+          status: finalPaymentStatus,
+          processed_by_user_id: isApproved ? createdAdminUser.id : null,
+          processed_at: isApproved ? new Date() : null,
+          admin_remark: isApproved ? "Automated seed approval" : null,
+        });
       }
     }
   }
