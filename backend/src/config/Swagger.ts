@@ -76,6 +76,10 @@ const options: swaggerJSDoc.Options = {
         name: "Payments",
         description: "Payment management endpoints",
       },
+      {
+        name: "Chatbot",
+        description: "AI chatbot interaction endpoints",
+      },
     ],
     components: {
       securitySchemes: {
@@ -483,11 +487,11 @@ const options: swaggerJSDoc.Options = {
               nullable: true,
               example: "Introduction to wildlife safety procedures.",
             },
-            cost: { 
-              type: "number", 
-              format: "float", 
-              example: 150.00,
-              description: "The enrollment fee for the course" 
+            cost: {
+              type: "number",
+              format: "float",
+              example: 150.0,
+              description: "The enrollment fee for the course",
             },
             expected_completion_weeks: {
               type: "integer",
@@ -547,11 +551,11 @@ const options: swaggerJSDoc.Options = {
               nullable: true,
               example: "Updated course description.",
             },
-            cost: { 
-              type: "number", 
-              format: "float", 
+            cost: {
+              type: "number",
+              format: "float",
               example: 199.99,
-              description: "Updated enrollment fee"
+              description: "Updated enrollment fee",
             },
             status: {
               type: "string",

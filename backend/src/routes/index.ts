@@ -18,6 +18,7 @@ import { auth } from "../middelware/Auth";
 import sensorRouter from "./SensorRoute";
 import discussionRouter from "./DiscussionRoute";
 import paymentRouter from "./PaymentRoute";
+import ChatbotRouter from "./ChatbotRoute";
 const router = Router();
 
 /*=============================
@@ -115,7 +116,7 @@ router.use("/events", eventRouter);
 =        PAYMENT ROUTES        =
 ===============================*/
 router.use("/payments", paymentRouter);
-
+router.use("/chatbot", ChatbotRouter);
 
 /**
  * @swagger
