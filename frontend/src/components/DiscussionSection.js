@@ -20,6 +20,7 @@ const DiscussionSection = ({ courseId, navigation }) => {
     const [activeMentionId, setActiveMentionId] = useState(null);
     const [allSystemUsers, setAllSystemUsers] = useState([]);
     const { currentUser } = useAuth();
+    const [suggestedUsers, setSuggestedUsers] = useState([]);
 
     const { discussions, loading, refreshDiscussions } = useDiscussions(courseId, forumType);
     const { messages, sendMessage, loading: loadingMessages, deleteMessage: deleteMessage } = useMessage(selectedDiscussion?.id);
@@ -43,6 +44,30 @@ const DiscussionSection = ({ courseId, navigation }) => {
         };
         loadUsers();
     }, []);
+
+    useEffect(() => {
+        const fetchMentions = async () => {
+            if (mentionSearch.length > 0) {
+                try {
+                    let data = await AccountService.searchByUsername(mentionSearch, 5);
+            
+                    if (forumType === 'Private') {
+                        data = data.filter(user => user.role !== UserRoles.PARK_GUIDE);
+                    }
+
+                    setSuggestedUsers(data);
+                } catch (err) {
+                    setSuggestedUsers([]);
+                }
+            }
+        };
+
+        const timer = setTimeout(() => {
+            fetchMentions();
+        }, 300); 
+
+        return () => clearTimeout(timer);
+    }, [mentionSearch]);
 
     const handleCreateDiscussion = async () => {
         if (!newDiscussionTitle.trim()) return;
@@ -171,35 +196,19 @@ const DiscussionSection = ({ courseId, navigation }) => {
     };
 
     const MentionSuggestions = ({ discussionId, position = 'bottom' }) => {
-        if (activeMentionId !== discussionId) return null;
+        if (activeMentionId !== discussionId || suggestedUsers.length === 0) return null;
 
-        let baseUsers = allSystemUsers;
-
-        if (forumType === 'Private') {
-            baseUsers = allSystemUsers.filter(u => u.role === UserRoles.ADMIN);
-        }
-
-        const suggestionList = forumType === 'Public' ? ['all', ...baseUsers.map(u => u.username)] : baseUsers.map(u => u.username);
-
-        const filteredUsers = suggestionList.filter(u => 
-            u?.toLowerCase().includes(mentionSearch)
-        ).slice(0, 5); // Limit to top 5 matches
-
-        if (filteredUsers.length === 0) return null;
-
-        const dynamicPos = position === 'top' 
-        ? { bottom: '50%' } 
-        : { top: '70%' };
+        const dynamicPos = position === 'top' ? { bottom: '50%' } : { top: '70%' };
 
         return (
             <View style={[styles.mentionList, dynamicPos]}>
-                {filteredUsers.map((user) => (
+                {suggestedUsers.map((user) => (
                     <Pressable 
-                        key={user} 
+                        key={user.id} 
                         style={styles.mentionItem}
-                        onPress={() => insertMention(user, discussionId)}
+                        onPress={() => insertMention(user.username, discussionId)}
                     >
-                        <Text style={styles.mentionText}>@{user}</Text>
+                        <Text style={styles.mentionText}>@{user.username}</Text>
                     </Pressable>
                 ))}
             </View>

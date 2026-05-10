@@ -103,4 +103,15 @@ export const AccountService={
             return Promise.reject(errorMessage);
         }
     },
+
+    searchByUsername: async (name, limit = 5) => {
+    try {
+        // This matches your backend route: req.params.name and req.params.limit
+        const response = await apiClient.get(`${API_ENDPOINTS.USER.ACCOUNT}/search/${name}/${limit}`);
+        return response.data;
+    } catch (error) {
+        console.error("Search Mentions Error:", error);
+        return []; 
+    }
+},
 };
