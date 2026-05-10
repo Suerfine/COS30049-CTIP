@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, ScrollView, Pressable, ImageBackground, TextInput} from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, ImageBackground, TextInput, Platform, useWindowDimensions } from 'react-native';
 import { useMemo, useState, useEffect } from 'react';
 import { CircleX, ListFilter, SignalZero, SlidersHorizontal, Search } from 'lucide-react-native'
 import { useRoute } from '@react-navigation/native';
@@ -48,6 +48,26 @@ const UserCourse = ({ navigation }) => {
         }
     }, [filterCategory]);
 
+    const { width } = useWindowDimensions();
+    const cardStyles = useMemo(() => {
+        if (Platform.OS !== 'web') {
+            return { width: '100%', gap: 0 };
+        }
+
+        let columns = 4;
+        if (width < 600) columns = 1;
+        else if (width < 900) columns = 2;
+        else if (width < 1200) columns = 3;
+
+        const gapPercent = 2; 
+        const calculatedWidth = (100 - (gapPercent * (columns - 1))) / columns;
+
+        return {
+            width: `${calculatedWidth}%`,
+            gap: `${gapPercent}%`
+        };
+    }, [width]);
+
     return (
         <View style={{ flex: 1 }}>
             <ScrollView style={styles.container}>
@@ -68,30 +88,30 @@ const UserCourse = ({ navigation }) => {
                 <View>
                     <View style={styles.filterContainer}>
                         <SlidingTabs tabs={tabs} activeTab={allcourseFilter} onTabChange={(id)=>setAllCourseFilter(id)}/>
-                        <Pressable 
-                            onPress={() => {
-                                setTempFilters(filters);
-                                setFilterVisible(true);
-                            }}
-                            style={({ hovered }) => [
-                                styles.filter,
-                                hovered && styles.filterHover, 
-                            ]}
-                        >
-                            <SlidersHorizontal/>
-                        </Pressable>
-                    </View>
-                    {/* Search and Filter */}
-                    <View style={styles.toolbar}>
-                        <View style={styles.search}>
-                        <Search size={18} />
-                        <TextInput
-                            style={styles.input}
-                            value={searchText}
-                            onChangeText={handleSearch}
-                            placeholder="Search..."
-                            placeholderTextColor="#8f8f8f"
-                        />
+                        <View style={styles.toolbar}>
+                            <View style={styles.search}>
+                            <Search size={18} />
+                            <TextInput
+                                style={styles.input}
+                                value={searchText}
+                                onChangeText={handleSearch}
+                                placeholder="Search..."
+                                placeholderTextColor="#8f8f8f"
+                            />
+                            </View>
+
+                            <Pressable 
+                                onPress={() => {
+                                    setTempFilters(filters);
+                                    setFilterVisible(true);
+                                }}
+                                style={({ hovered }) => [
+                                    styles.filter,
+                                    hovered && styles.filterHover, 
+                                ]}
+                            >
+                                <SlidersHorizontal/>
+                            </Pressable>
                         </View>
                     </View>
                     <View style={styles.pillContainer}>
@@ -125,7 +145,7 @@ const UserCourse = ({ navigation }) => {
                             </View>
                                   ))}
                     </View>
-                    <View style={styles.cardContainer}>
+                    <View style={[styles.cardContainer, { columnGap: cardStyles.gap }]}>
                         {filteredCourses.length === 0?(
                             
                             <View style={styles.emptyContainer}>
@@ -134,37 +154,40 @@ const UserCourse = ({ navigation }) => {
                         ) : ( filteredCourses.map(course => {
                             const numModules = course.module_count ? course.module_count : 0;
                             return(
-                            <CourseCard
-                                key={course.id}
-                                id={course.id}
-                                coverImgUrl={course.cover_img_url}
-                                courseTitle={course.title}
-                                numModules={numModules || 16}
-                                duration={course.expected_completion_weeks}
-                                expiry={course.must_complete_in_weeks}
-                                userType={userType}
-                                progress={course.progress}
-                                // enrollment
-                                enrollmentStatus={course.enrollmentStatus}
-                                prerequisiteGroups={course.prerequisiteGroups || []}
-                                myEnrollments={myEnrollments}
-                                // handlers
-                                onPress={() => navigation.navigate('ParkGuideStack', {
-                                    screen: 'UserModule', 
-                                    params: { 
-                                        id: course.id,
-                                        enrollmentStatus: course.enrollmentStatus ?? null,
-                                        enrollmentId: course.enrollmentId
-                                    }
-                                })}
-                               onEnroll={() => {
-                                    const confirmed = window.confirm(`Are you sure you want to enroll in ${course.title}?`);
-                                    if (confirmed) {
-                                        handleEnrollment(course.id);
-                                    }
-                                }}
-                                onDrop={() => handleDrop(course.id)}
-                            />)
+                            <View key={course.id} style={[styles.cardWrapper, { flexBasis: cardStyles.width, minWidth: cardStyles.width }]}>
+                                <CourseCard
+                                    key={course.id}
+                                    id={course.id}
+                                    coverImgUrl={course.cover_img_url}
+                                    courseTitle={course.title}
+                                    numModules={numModules || 16}
+                                    duration={course.expected_completion_weeks}
+                                    expiry={course.must_complete_in_weeks}
+                                    userType={userType}
+                                    progress={course.progress}
+                                    // enrollment
+                                    enrollmentStatus={course.enrollmentStatus}
+                                    prerequisiteGroups={course.prerequisiteGroups || []}
+                                    myEnrollments={myEnrollments}
+                                    // handlers
+                                    onPress={() => navigation.navigate('ParkGuideStack', {
+                                        screen: 'UserModule', 
+                                        params: { 
+                                            id: course.id,
+                                            enrollmentStatus: course.enrollmentStatus ?? null,
+                                            enrollmentId: course.enrollmentId
+                                        }
+                                    })}
+                                    onEnroll={() => {
+                                        const confirmed = window.confirm(`Are you sure you want to enroll in ${course.title}?`);
+                                        if (confirmed) {
+                                            handleEnrollment(course.id);
+                                        }
+                                    }}
+                                    onDrop={() => handleDrop(course.id)}
+                                    style={{ width: '100%' }}
+                                />
+                            </View>)
                         })
                     )}
                     </View>
@@ -193,9 +216,8 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     courseContainer: {
-        marginTop: 20,
-        marginBottom: 20,
-        marginHorizontal:60
+        marginVertical: 20,
+        marginHorizontal: Platform.OS === 'web' ? 60 : 15,
     },
     title: {
         fontSize: 24,
@@ -225,18 +247,27 @@ const styles = StyleSheet.create({
     },
     cardContainer: {
         flexDirection: 'row',
-        gap: 80,
+        flexWrap: 'wrap',
+        marginHorizontal: Platform.OS === 'web' ? 60 : 15, 
+        justifyContent: 'flex-start',
+        rowGap: 30,      
         marginBottom: 20,
-        flexWrap:'wrap',
-        marginHorizontal:60,
+        alignItems: 'stretch',
+    },
+    cardWrapper: {
+        flexGrow: 0, 
+        flexShrink: 1,
+        display: 'flex',
     },
     filterContainer:{
         flexDirection:'row',
         marginBottom:10,
+        alignItems:'center',
         justifyContent:'space-between',
         borderBottomColor:'#42424255',
         borderBottomWidth:1,
         marginHorizontal:60,
+        paddingBottom:5
     },
     filter:{
         flexDirection:'row',
@@ -284,8 +315,8 @@ const styles = StyleSheet.create({
         gap: 7,
         borderWidth: 1,
         borderColor: "#8f8f8f",
-        minWidth: 300,
-        padding: 5,
+        minWidth: 200,
+        padding: 3,
         backgroundColor: "white",
         borderRadius: 15,
         alignItems: "center",
@@ -294,13 +325,12 @@ const styles = StyleSheet.create({
         flex: 1,
         paddingVertical: 2,
         outlineStyle: "none",
-  },
-  toolbar: {
-    justifyContent: "space-between",
-    flexDirection: "row",
-    marginHorizontal:60,
-    marginBottom:10
-  },
+    },
+    toolbar: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 15,
+    },
 });
 
 export default UserCourse;

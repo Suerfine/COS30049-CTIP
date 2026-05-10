@@ -97,12 +97,26 @@ const EditCourseDetail = () => {
         }
     };
 
-    if(loading)return(
-        <View style={styles.center}>
-            <ActivityIndicator size='large' color="#0a6340"/>
-            <Text>Syncing with Server...</Text>
-        </View>
-    );
+    if (loading) {
+        return (
+            <View style={styles.loadingContainer}>
+                <View style={styles.loadingCard}>
+                    <ActivityIndicator
+                        size="large"
+                        color="#0a6340"
+                    />
+
+                    <Text style={styles.loadingTitle}>
+                        Loading Course
+                    </Text>
+
+                    <Text style={styles.loadingSubtitle}>
+                        Syncing content and progress...
+                    </Text>
+                </View>
+            </View>
+        );
+    }
     
     if (error || !course) return (
         <View style={styles.center}>
@@ -1491,7 +1505,7 @@ const styles = StyleSheet.create({
         textTransform: 'uppercase',
     },
     guideInfoCard: {
-        backgroundColor: '#f0fdf4', // Light SIGMAmed Green
+        backgroundColor: '#f0fdf4',
         borderRadius: 12,
         padding: 20,
         borderWidth: 1,
@@ -1528,6 +1542,35 @@ const styles = StyleSheet.create({
         color: '#15803d',
         fontStyle: 'italic',
         marginTop: 15,
+        textAlign: 'center',
+    },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#f8faf8',
+    },
+
+    loadingCard: {
+        backgroundColor: 'white',
+        paddingVertical: 32,
+        paddingHorizontal: 40,
+        borderRadius: 20,
+        alignItems: 'center',
+        minWidth: 260,
+    },
+
+    loadingTitle: {
+        marginTop: 18,
+        fontSize: 18,
+        fontWeight: '700',
+        color: '#1f2937',
+    },
+
+    loadingSubtitle: {
+        marginTop: 6,
+        fontSize: 13,
+        color: '#6b7280',
         textAlign: 'center',
     },
 });

@@ -72,6 +72,10 @@ const options: swaggerJSDoc.Options = {
         name: "Sensor Logs",
         description: "Sensor log management endpoints",
       },
+      {
+        name: "Payments",
+        description: "Payment management endpoints",
+      },
     ],
     components: {
       securitySchemes: {
@@ -179,6 +183,51 @@ const options: swaggerJSDoc.Options = {
               type: "string",
               format: "binary",
               description: "Optional profile image file",
+            },
+          },
+        },
+        Payment: {
+          type: "object",
+          properties: {
+            id: { type: "integer", example: 1 },
+            user_id: { type: "integer", example: 2 },
+            course_id: { type: "integer", example: 3 },
+            enrollment_id: { type: "integer", example: 5 },
+            amount: { type: "number", example: 150.0 },
+            receipt_filepath: {
+              type: "string",
+              example: "uploads/receipts/payment1.jpg",
+            },
+            status: {
+              type: "string",
+              enum: ["pending", "paid", "failed"],
+              example: "pending",
+            },
+            admin_remark: {
+              type: "string",
+              nullable: true,
+              example: "Payment verified successfully",
+            },
+            processed_by_user_id: {
+              type: "integer",
+              nullable: true,
+              example: 1,
+            },
+            processed_at: {
+              type: "string",
+              format: "date-time",
+              nullable: true,
+              example: "2026-05-10T08:00:00.000Z",
+            },
+            created_at: {
+              type: "string",
+              format: "date-time",
+              example: "2026-05-10T08:00:00.000Z",
+            },
+            updated_at: {
+              type: "string",
+              format: "date-time",
+              example: "2026-05-10T08:00:00.000Z",
             },
           },
         },
@@ -426,13 +475,19 @@ const options: swaggerJSDoc.Options = {
         },
         CreateCourseRequest: {
           type: "object",
-          required: ["title", "badge"],
+          required: ["title", "badge", "cost"],
           properties: {
             title: { type: "string", example: "Wildlife Safety Basics" },
             description: {
               type: "string",
               nullable: true,
               example: "Introduction to wildlife safety procedures.",
+            },
+            cost: { 
+              type: "number", 
+              format: "float", 
+              example: 150.00,
+              description: "The enrollment fee for the course" 
             },
             expected_completion_weeks: {
               type: "integer",
@@ -491,6 +546,12 @@ const options: swaggerJSDoc.Options = {
               type: "string",
               nullable: true,
               example: "Updated course description.",
+            },
+            cost: { 
+              type: "number", 
+              format: "float", 
+              example: 199.99,
+              description: "Updated enrollment fee"
             },
             status: {
               type: "string",

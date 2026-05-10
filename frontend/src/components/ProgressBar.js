@@ -13,7 +13,7 @@ const ProgressBar = ({ progress }) => {
   const percentage = Math.round(progress * 100);
 
   if(Platform.OS !== 'web'){
-    const size=40;
+    const size=30;
     const strokeWidth=5;
     const radius=(size-strokeWidth)/2;
     const circumference=radius*2 * Math.PI;
@@ -50,8 +50,17 @@ const ProgressBar = ({ progress }) => {
 
   return (
     <View style={styles.container}>
-      <View style={[styles.bar, { width: `${percentage}%` }]} />
-      <Text style={styles.label}>{percentage}%</Text>
+      <Text style={[styles.label, { color: '#000000' }]}>
+        {percentage}%
+      </Text>
+
+      <View style={[styles.bar, { width: `${percentage}%` }]}>
+        <View style={styles.textMaskWrapper}>
+          <Text style={[styles.label, { color: '#ffffff' }]}>
+            {percentage}%
+          </Text>
+        </View>
+      </View>
     </View>
   );
 };
@@ -59,25 +68,42 @@ const ProgressBar = ({ progress }) => {
 const styles = StyleSheet.create({
   container: {
     width: '100%',
-    height: 20,
+    height: 35,
     backgroundColor: '#EEE',
-    borderRadius: 10,
+    borderRadius: 6,
     overflow: 'hidden',
-    marginTop: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
+    marginVertical: 5,
+    justifyContent: 'center',
+    position: 'relative',
   },
   bar: {
     height: '100%',
-    backgroundColor: '#ffb116',
+    backgroundColor: '#2a6027',
     borderRadius: 10,
+    overflow: 'hidden', 
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    justifyContent: 'center',
+  },
+  textMaskWrapper: {
+    width: 1000, 
+    position: 'absolute',
+    left: 0,
+    justifyContent: 'center',
   },
   label: {
-    position: 'absolute',
-    alignSelf: 'center',
-    width: '100%',
     textAlign: 'center',
-    color: '#000000',
+    width: '100%',
+    zIndex: 1,
+    whiteSpace: 'nowrap', 
+    flexShrink: 0,
+    ...Platform.select({
+      web: { 
+        whiteSpace: 'nowrap',
+        userSelect: 'none' 
+      }
+    })
   },
   circularContainer:{
     justifyContent:'center',

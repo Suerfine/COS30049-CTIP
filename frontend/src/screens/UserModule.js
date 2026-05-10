@@ -51,8 +51,9 @@ const UserModule = ({navigation}) => {
         selectedPage?.page?.module_id || selectedPage?.module?.id,
         selectedPage?.page?.id
     );
+
     useEffect(() => {
-        if (activeTab === 'Workshops') {
+        if (selectedPage?.type === 'workshops') {
             loadWorkshops();
         }
     }, [activeTab, loadWorkshops]);
@@ -62,12 +63,26 @@ const UserModule = ({navigation}) => {
         {id: 'Workshops', label:'Workshops'},
     ];
 
-    if(loading)return(
-        <View style={styles.center}>
-            <ActivityIndicator size='large' color="#0a6340"/>
-            <Text>Syncing with Server...</Text>
-        </View>
-    );
+    if (loading) {
+        return (
+            <View style={styles.loadingContainer}>
+                <View style={styles.loadingCard}>
+                    <ActivityIndicator
+                        size="large"
+                        color="#0a6340"
+                    />
+
+                    <Text style={styles.loadingTitle}>
+                        Loading Course
+                    </Text>
+
+                    <Text style={styles.loadingSubtitle}>
+                        Syncing content and progress...
+                    </Text>
+                </View>
+            </View>
+        );
+    }
     
     if (error || !course) return (
         <View style={styles.center}>
@@ -116,115 +131,92 @@ const UserModule = ({navigation}) => {
     };
 
     const renderOverviewContent = () => {
-        switch (activeTab) {
-            case 'Overview':
-                const prerequisiteTitles = course.prerequisite_groups?.flatMap(group => 
-                    group.prerequisites?.map(p => {
-                        const match = allCourseList.find(c => c.id === p.course_id);
-                        return match ? match.title : `Course #${p.course_id}`;
-                    })
-                ) || [];
-                return (
-                    <View style={styles.tabSection}>
-                        {/* Prerequisite Section */}
-                        {prerequisiteTitles.length > 0 && (
-                            <View style={styles.prereqSection}>
-                                <Text style={styles.sectionTitle}>Required Prerequisite Courses</Text>
-                                <View>
-                                    {prerequisiteTitles.map((title, index) => (
-                                        <View key={index} style={styles.prereqItem}>
-                                            <View style={styles.prereqDot} />
-                                            <Text style={styles.prereqText}>{title}</Text>
-                                        </View>
-                                    ))}
-                                </View>
-                            </View>
-                        )}
-                        {/* Tag Sections */}
-                        <View style={styles.tagSectionContainer}>
-                            {/* Render Location Tags */}
-                            {locationTags.length > 0 && (
-                                <View style={styles.tagGroup}>
-                                    <Text style={styles.tagLabel}>Locations</Text>
-                                    <View style={styles.tagList}>
-                                        {locationTags.map(tag => (
-                                            <View key={tag.id} style={[styles.tagPill, styles.locationPill]}>
-                                                <Text style={styles.tagPillText}>{tag.title}</Text>
-                                            </View>
-                                        ))}
+            const prerequisiteTitles = course.prerequisite_groups?.flatMap(group => 
+                group.prerequisites?.map(p => {
+                    const match = allCourseList.find(c => c.id === p.course_id);
+                    return match ? match.title : `Course #${p.course_id}`;
+                })
+            ) || [];
+            return (
+                <View style={styles.tabSection}>
+                    {/* Prerequisite Section */}
+                    {prerequisiteTitles.length > 0 && (
+                        <View style={styles.prereqSection}>
+                            <Text style={styles.sectionTitle}>Required Prerequisite Courses</Text>
+                            <View>
+                                {prerequisiteTitles.map((title, index) => (
+                                    <View key={index} style={styles.prereqItem}>
+                                        <View style={styles.prereqDot} />
+                                        <Text style={styles.prereqText}>{title}</Text>
                                     </View>
-                                </View>
-                            )}
-
-                        {/* Render Category Tags */}
-                        {categoryTags.length > 0 && (
+                                ))}
+                            </View>
+                        </View>
+                    )}
+                    {/* Tag Sections */}
+                    <View style={styles.tagSectionContainer}>
+                        {/* Render Location Tags */}
+                        {locationTags.length > 0 && (
                             <View style={styles.tagGroup}>
-                                <Text style={styles.tagLabel}>Categories</Text>
+                                <Text style={styles.tagLabel}>Locations</Text>
                                 <View style={styles.tagList}>
-                                    {categoryTags.map(tag => (
-                                        <View key={tag.id} style={[styles.tagPill, styles.categoryPill]}>
+                                    {locationTags.map(tag => (
+                                        <View key={tag.id} style={[styles.tagPill, styles.locationPill]}>
                                             <Text style={styles.tagPillText}>{tag.title}</Text>
                                         </View>
                                     ))}
                                 </View>
                             </View>
                         )}
-                    </View>
-                {/* Render the dynamic content */}
-                <View style={styles.markdownContainer}>
-                    <Markdown style={markdownStyles}>
-                        {course?.description || "_No content provided yet. Click edit to start._"}
-                    </Markdown>
-                </View>
 
-                        {/* Badge Achievement Section */}
-                        <View>
-                        <Text style={styles.sectionTitle}>Completion Reward</Text>
-                        <View style={styles.badgeAchievementCard}>
-                            <View style={styles.badgeTextContent}>
-                                <Text style={styles.badgeSubtitle}>Official Certification</Text>
-                                <Text style={styles.badgeDescription}>
-                                    Complete all modules and pass the final assessment to earn your 
-                                    <Text style={{fontWeight: '700'}}> {course.title} Professional Badge.</Text>
-                                </Text>
-                            </View>
-                            
-                            <View style={styles.badgePreviewContainer}>
-                                <Image 
-                                    source={course.badge_img_url ? { uri: course.badge_img_url } : require('../../assets/course_badge.png')} 
-                                    style={styles.largeAchievementBadge}
-                                />
-                                <View style={styles.verifiedBadge}>
-                                    <Text style={styles.verifiedText}>VERIFIED</Text>
-                                </View>
+                    {/* Render Category Tags */}
+                    {categoryTags.length > 0 && (
+                        <View style={styles.tagGroup}>
+                            <Text style={styles.tagLabel}>Categories</Text>
+                            <View style={styles.tagList}>
+                                {categoryTags.map(tag => (
+                                    <View key={tag.id} style={[styles.tagPill, styles.categoryPill]}>
+                                        <Text style={styles.tagPillText}>{tag.title}</Text>
+                                    </View>
+                                ))}
                             </View>
                         </View>
+                    )}
+                </View>
+            {/* Render the dynamic content */}
+            <View style={styles.markdownContainer}>
+                <Markdown style={markdownStyles}>
+                    {course?.description || "_No content provided yet. Click edit to start._"}
+                </Markdown>
+            </View>
+
+                    {/* Badge Achievement Section */}
+                    <View>
+                    <Text style={styles.sectionTitle}>Completion Reward</Text>
+                    <View style={styles.badgeAchievementCard}>
+                        <View style={styles.badgeTextContent}>
+                            <Text style={styles.badgeSubtitle}>Official Certification</Text>
+                            <Text style={styles.badgeDescription}>
+                                Complete all modules and pass the final assessment to earn your 
+                                <Text style={{fontWeight: '700'}}> {course.title} Professional Badge.</Text>
+                            </Text>
                         </View>
-                    </View>
-                );
-            case 'Workshops':
-                return (
-                    <View style={styles.tabSection}>
-                        <Text style={styles.sectionTitle}>Course Workshops</Text>
-                        {workshopsLoading ? (
-                            <ActivityIndicator color="#0a6340" size="large" />
-                        ) : (
-                            <PageRenderer 
-                                elements={elements}
-                                role={currentUser.role}
-                                courseId={id}
-                                onProgressUpdate={async (elementId, score, content = {}) => {
-                                    const result = await saveProgress(elementId, score, content); 
-                                    return result; 
-                                }}
-                                userMarks={userMarks}
+                        
+                        <View style={styles.badgePreviewContainer}>
+                            <Image 
+                                source={course.badge_img_url ? { uri: course.badge_img_url } : require('../../assets/course_badge.png')} 
+                                style={styles.largeAchievementBadge}
                             />
-                        )}
+                            <View style={styles.verifiedBadge}>
+                                <Text style={styles.verifiedText}>VERIFIED</Text>
+                            </View>
+                        </View>
                     </View>
-                );
-            default:
-                return null;
-        }
+                    </View>
+                </View>
+            );
+        
+        
     };
 
     return (
@@ -342,6 +334,32 @@ const UserModule = ({navigation}) => {
                                 navigation={navigation} 
                                 styles={styles} 
                             />
+                        ) : selectedPage?.type==='workshops' ? (
+                            // Workshops
+                            <View style={styles.editorContainer}>
+                                <Text style={styles.editorLabel}>Workshop Learning</Text>
+                                <Text style={styles.pageTitle}>Course Workshops</Text>
+
+                                {workshopsLoading ? (
+                                    <View style={styles.elementLoader}>
+                                        <ActivityIndicator color="#0a6340" />
+                                        <Text style={styles.loaderText}>
+                                            Loading Workshops...
+                                        </Text>
+                                    </View>
+                                ) : (
+                                    <PageRenderer 
+                                        elements={workshops}
+                                        role={currentUser.role}
+                                        courseId={id}
+                                        onProgressUpdate={async (elementId, score, content = {}) => {
+                                            const result = await saveProgress(elementId, score, content); 
+                                            return result; 
+                                        }}
+                                        userMarks={userMarks}
+                                    />
+                                )}
+                            </View>
                         ) : (
                             // Course Overview
                             <View>
@@ -369,13 +387,7 @@ const UserModule = ({navigation}) => {
                                     source={course.cover_img_url ? { uri: course.cover_img_url } : require('../../assets/first_aid.png')} style={styles.course_cover}
                                 />
 
-                                {/* Sliding Tab */}
-                                <SlidingTabs tabs={tabs} activeTab={activeTab} onTabChange={(tab) => setActiveTab(tab)} />
-
-                                {/* Tab Content */}
-                                <View style={styles.dynamicContent}>
-                                    {renderOverviewContent()}
-                                </View>
+                                {renderOverviewContent()}
                             </View>
                         )}
                     </View>
@@ -919,7 +931,36 @@ const styles = StyleSheet.create({
     closeBtnText: {
         color: 'white',
         fontWeight: 'bold'
-    }
+    },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#f8faf8',
+    },
+
+    loadingCard: {
+        backgroundColor: 'white',
+        paddingVertical: 32,
+        paddingHorizontal: 40,
+        borderRadius: 20,
+        alignItems: 'center',
+        minWidth: 260,
+    },
+
+    loadingTitle: {
+        marginTop: 18,
+        fontSize: 18,
+        fontWeight: '700',
+        color: '#1f2937',
+    },
+
+    loadingSubtitle: {
+        marginTop: 6,
+        fontSize: 13,
+        color: '#6b7280',
+        textAlign: 'center',
+    },
 });
 
 export default UserModule;

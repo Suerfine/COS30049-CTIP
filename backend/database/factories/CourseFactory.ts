@@ -23,6 +23,7 @@ export type CourseFactoryAttributes = {
   id?: number;
   title: string;
   description?: string | null;
+  cost: number;
   expected_completion_weeks: number;
   must_complete_in_weeks: number;
   badge_expire_in_months: number;
@@ -82,11 +83,12 @@ export const buildCourse = (
     expectedCompletionWeeks + faker.number.int({ min: 2, max: 12 });
 
   const defaultCourse: CourseFactoryAttributes = {
-    title: title,
+    title : buildUniqueCourseTitle(),
     description: description,
     expected_completion_weeks: expectedCompletionWeeks,
     must_complete_in_weeks: hardLimitWeeks,
     badge_expire_in_months: faker.number.int({ min: 6, max: 36 }),
+    cost: parseFloat(faker.commerce.price({ min: 50, max: 500 })),
     cover_img_path: "public/dev/course_cover_placeholder.jpg",
     badge_img_path: "public/dev/course_badge_placeholder.png",
   };

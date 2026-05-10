@@ -106,6 +106,7 @@ courseRouter.post(
   [
     body("title").isString().notEmpty(),
     body("description").optional().isString(),
+    body("cost").isNumeric().notEmpty(),
     body("status").optional().isIn(Object.values(CourseStatus)),
     body("tag_ids")
       .optional()
