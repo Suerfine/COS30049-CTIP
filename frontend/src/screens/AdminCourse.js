@@ -110,7 +110,7 @@ const AdminCourse = ({ navigation }) => {
             style={({ hovered }) => [styles.btn, hovered && styles.btnHover]}
           >
             <CopyPlus />
-            <Text style={styles.btnText}>Add Course</Text>
+            <Text style={styles.btnText}> Add Course</Text>
           </Pressable>
         </View>
       </ImageBackground>
