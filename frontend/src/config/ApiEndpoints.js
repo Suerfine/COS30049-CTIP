@@ -69,6 +69,7 @@ export const API_ENDPOINTS = {
   },
   EVENTS: {
     BASE: "/events",
+    STATUS: (id)=> `/events/${id}/status`
   },
   AR: {
     LIST: "/ar-models",

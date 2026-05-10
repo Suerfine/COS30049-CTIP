@@ -41,7 +41,7 @@ export const useUserDashboard = () => {
         const nextStatus = targetEvent.status === 'completed' ? 'pending' : 'completed';
 
         try {
-            await eventService.updateStatus(id, nextStatus);
+            await eventService.updateStatus(id);
 
             setEvents((prev) =>
                 prev.map((event) =>

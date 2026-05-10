@@ -22,9 +22,9 @@ export const eventService = {
             return Promise.reject(errorMessage);
         }
     },
-    updateStatus: async (id, status) => {
+    updateStatus: async (id) => {
         try {
-            const response = await apiClient.patch(`${API_ENDPOINTS.EVENTS.BASE}/${id}/status`, { status });
+            const response = await apiClient.patch(API_ENDPOINTS.EVENTS.STATUS(id));
             return response.data;
         } catch (err) {
             console.error("Update Event Status Error:", err);
