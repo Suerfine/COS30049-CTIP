@@ -1,49 +1,75 @@
-import {useState, useEffect, useCallback} from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { enrollmentService } from '../services/EnrollmentService';
 import { submissionService } from '../services/SubmissionService';
 import { paymentService } from '../services/PaymentService';
 
-export const useEnrollmentManagement=()=>{
-    const [enrollments, setEnrollments]=useState([]);
-    const [submissions, setSubmissions]=useState([]);
-    const [payments, setPayments]=useState([]);
+export const useEnrollmentManagement = () => {
+    const [enrollments, setEnrollments] = useState([]);
+    const [submissions, setSubmissions] = useState([]);
+    const [payments, setPayments] = useState([]);
+
+    const [loading, setLoading] = useState(false);
+
+    // Enrollment
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [totalElements, setTotalElements] = useState(0);
+    const [currentStatus, setCurrentStatus] = useState('All');
+
+    // Submission
+    const [currentSubmissionPage, setSubmissionCurrentPage] = useState(1);
+    const [submissionTotalPages, setSubmissionTotalPages] = useState(1);
+    const [submissionTotalElements, setSubmissionTotalElements] = useState(0);
+    const [currentSubmissionStatus, setCurrentSubmissionStatus] = useState('All');
+
+    // Payment
+    const [currentPaymentPage, setPaymentCurrentPage] = useState(1);
     const [paymentTotalPages, setPaymentTotalPages] = useState(1);
     const [paymentTotalElements, setPaymentTotalElements] = useState(0);
-    const [currentPaymentPage, setPaymentCurrentPage] = useState(1);
-    const [loading, setLoading]=useState(false);
-    const [totalPages, setTotalPages]=useState(1);
-    const [searchQuery, setSearchQuery]=useState('');
-    const [sortConfig, setSortConfig]=useState({
-        key:null,
-        direction:'asc'
-    });
-    const [sortSubmissionConfig, setSortSubmissionConfig]=useState({
-        key:null,
-        direction:'asc'
-    });
-    const [currentPage, setCurrentPage]=useState(1);
-    const [currentSubmissionPage, setSubmissionCurrentPage]=useState(1);
-    const [currentStatus, setCurrentStatus]=useState('All');
-    const [currentSubmissionStatus, setCurrentSubmissionStatus]=useState('All');
-    const [totalElements, setTotalElements] = useState(0);
+    const [paymentStatus, setPaymentStatus] = useState('All');
+
+    // Shared
+    const [searchQuery, setSearchQuery] = useState('');
     const [courses, setCourses] = useState([]);
-    const [submissionTotalPages, setSubmissionTotalPages]=useState(1);
-    const [submissionTotalElements, setSubmissionTotalElements]=useState(0);
+
+    // Sorting
+    const [sortConfig, setSortConfig] = useState({
+        key: null,
+        direction: 'asc'
+    });
+
+    const [sortSubmissionConfig, setSortSubmissionConfig] = useState({
+        key: null,
+        direction: 'asc'
+    });
+
+    const [paymentSortConfig, setPaymentSortConfig] = useState({
+        key: null,
+        direction: 'asc'
+    });
+
+    // Audit
     const [auditData, setAuditData] = useState(null);
     const [auditLoading, setAuditLoading] = useState(false);
 
-
     const fetchData = useCallback(async () => {
         setLoading(true);
+
         try {
-            const [enrollData, submissionData] = await Promise.all([
+            const [
+                enrollData,
+                submissionData,
+                paymentData
+            ] = await Promise.all([
+
                 enrollmentService.getAll(
-                    currentPage, 
-                    10, 
-                    searchQuery, 
-                    sortConfig, 
+                    currentPage,
+                    10,
+                    searchQuery,
+                    sortConfig,
                     currentStatus
                 ),
+
                 submissionService.getSummaries(
                     currentSubmissionPage,
                     10,
@@ -51,112 +77,276 @@ export const useEnrollmentManagement=()=>{
                     currentSubmissionStatus,
                     sortSubmissionConfig
                 ),
+
                 paymentService.getAll(
                     currentPaymentPage,
                     10,
-                    searchQuery
+                    searchQuery,
+                    paymentSortConfig,
+                    paymentStatus
                 )
             ]);
 
-            setEnrollments(enrollData.data || []); 
-            setCourses(enrollData.courses);
+            // Enrollment
+            setEnrollments(enrollData.data || []);
+            setCourses(enrollData.courses || []);
             setTotalPages(enrollData.totalPages || 1);
             setTotalElements(enrollData.totalElements || 0);
-            
+
+            // Submission
             setSubmissions(submissionData.data || []);
             setSubmissionTotalPages(submissionData.totalPages || 1);
             setSubmissionTotalElements(submissionData.totalElements || 0);
 
+            // Payment
             setPayments(paymentData.data || []);
             setPaymentTotalPages(paymentData.totalPages || 1);
             setPaymentTotalElements(paymentData.totalElements || 0);
+
         } catch (err) {
             console.error("Fetch Error:", err);
+
             setEnrollments([]);
+            setSubmissions([]);
+            setPayments([]);
+
         } finally {
             setLoading(false);
         }
-    }, [currentPage, searchQuery, sortConfig, currentStatus, currentSubmissionPage, sortSubmissionConfig, currentSubmissionStatus, currentPaymentPage]);
 
-    const handleUpdateStatus = async (enrollmentId, newStatus) => {
+    }, [
+        currentPage,
+        searchQuery,
+        sortConfig,
+        currentStatus,
+
+        currentSubmissionPage,
+        sortSubmissionConfig,
+        currentSubmissionStatus,
+
+        currentPaymentPage,
+        paymentSortConfig,
+        paymentStatus
+    ]);
+
+    // Enrollment Status Update
+    const handleUpdateStatus = async (
+        enrollmentId,
+        newStatus
+    ) => {
         try {
-            await enrollmentService.updateStatus(enrollmentId, newStatus);
-            console.log(enrollmentId);
-            console.log(newStatus);
-            await fetchData();
-            return { success: true };
-        } catch (err) {
-            const isBadRequest = err.response?.status === 400;
-            const errorMessage = isBadRequest 
-                ? "Action cannot be done. Cannot repeat same action." 
-                : (err.response?.data?.message || "Failed to update status.");
 
-            return { 
-                success: false, 
-                error: errorMessage 
+            await enrollmentService.updateStatus(
+                enrollmentId,
+                newStatus
+            );
+
+            await fetchData();
+
+            return { success: true };
+
+        } catch (err) {
+
+            const isBadRequest =
+                err.response?.status === 400;
+
+            const errorMessage = isBadRequest
+                ? "Action cannot be repeated."
+                : (
+                    err.response?.data?.message ||
+                    "Failed to update enrollment."
+                );
+
+            return {
+                success: false,
+                error: errorMessage
             };
         }
     };
 
-    const requestSort=(key)=>{
-        let direction='asc';
+    // Payment Status Update
+    const handlePaymentStatusUpdate = async (
+        paymentId,
+        newPaymentStatus,
+        enrollmentId = null,
+        enrollmentStatus = null
+    ) => {
 
-        if(sortConfig.key===key && sortConfig.direction ==='asc'){
-            direction='desc';
-        }
-        setSortConfig({key,direction});
-    };
-
-    const resetSort=()=>{
-        setSortConfig({key:null, direction:'asc'});
-    }
-
-    const deleteRecord = async (enrollmentId) => {
         try {
-            await enrollmentService.delete(enrollmentId);
+
+            await paymentService.updateStatus(
+                paymentId,
+                newPaymentStatus
+            );
+
+            if (enrollmentId && enrollmentStatus) {
+
+                await enrollmentService.updateStatus(
+                    enrollmentId,
+                    enrollmentStatus
+                );
+            }
+
             await fetchData();
+
             return { success: true };
+
         } catch (err) {
-            console.error("Delete Error:", err);
-            return { success: false, error: err.message };
+
+            return {
+                success: false,
+                error:
+                    err.response?.data?.message ||
+                    "Failed to update payment."
+            };
         }
     };
 
-    const fetchEnrollmentAudit = async (id) => {
-        setAuditLoading(true);
+    // Delete Enrollment
+    const deleteRecord = async (enrollmentId) => {
+
         try {
-            const data = await submissionService.getEnrollmentAudit(id);
-            setAuditData(data);
+
+            await enrollmentService.delete(enrollmentId);
+
+            await fetchData();
+
+            return { success: true };
+
         } catch (err) {
-            window.alert("Failed to fetch enrollment audit details.");
+
+            console.error("Delete Error:", err);
+
+            return {
+                success: false,
+                error: err.message
+            };
+        }
+    };
+
+    // Enrollment Audit
+    const fetchEnrollmentAudit = async (id) => {
+
+        setAuditLoading(true);
+
+        try {
+
+            const data =
+                await submissionService.getEnrollmentAudit(id);
+
+            setAuditData(data);
+
+        } catch (err) {
+
+            console.error(err);
+
         } finally {
+
             setAuditLoading(false);
         }
     };
 
+    // Sorting
+    const requestSort = (key) => {
 
-    useEffect(()=>{
+        let direction = 'asc';
+
+        if (
+            sortConfig.key === key &&
+            sortConfig.direction === 'asc'
+        ) {
+            direction = 'desc';
+        }
+
+        setSortConfig({
+            key,
+            direction
+        });
+    };
+
+    const resetSort = () => {
+
+        setSortConfig({
+            key: null,
+            direction: 'asc'
+        });
+
+        setSortSubmissionConfig({
+            key: null,
+            direction: 'asc'
+        });
+
+        setPaymentSortConfig({
+            key: null,
+            direction: 'asc'
+        });
+    };
+
+    useEffect(() => {
         fetchData();
-    },[fetchData]);
-    
-    return {enrollments, submissions, loading, refresh: fetchData, updateStatus: handleUpdateStatus,
+    }, [fetchData]);
+
+    return {
+
+        // Data
+        enrollments,
+        submissions,
+        payments,
+        courses,
+
+        // Loading
+        loading,
+
+        // Search
+        searchQuery,
+        setSearchQuery,
+
+        // Enrollment
         currentPage,
         setCurrentPage,
         totalPages,
         totalElements,
-        searchQuery,
-        setSearchQuery,
         currentStatus,
         setCurrentStatus,
+
+        // Submission
+        currentSubmissionPage,
+        setSubmissionCurrentPage,
+        submissionTotalPages,
+        submissionTotalElements,
+        currentSubmissionStatus,
+        setCurrentSubmissionStatus,
+
+        // Payment
+        currentPaymentPage,
+        setPaymentCurrentPage,
+        paymentTotalPages,
+        paymentTotalElements,
+        paymentStatus,
+        setPaymentStatus,
+
+        // Sorting
         sortConfig,
         setSortConfig,
-        requestSort,resetSort,
+
+        sortSubmissionConfig,
+        setSortSubmissionConfig,
+
+        paymentSortConfig,
+        setPaymentSortConfig,
+
+        requestSort,
+        resetSort,
+
+        // Actions
+        refresh: fetchData,
         handleUpdateStatus,
+        handlePaymentStatusUpdate,
         deleteRecord,
-        courses,
-        submissionTotalPages, submissionTotalElements,
-        currentSubmissionPage, setSubmissionCurrentPage,
-        auditData, auditLoading, fetchEnrollmentAudit,
-        payments, paymentTotalPages, paymentTotalElements, currentPaymentPage, setPaymentCurrentPage,
+
+        // Audit
+        auditData,
+        auditLoading,
+        fetchEnrollmentAudit
     };
 };

@@ -82,4 +82,11 @@ export const API_ENDPOINTS = {
       `/progress/module/${moduleId}?courseId=${courseId}`,
     ELEMENT: (elementId) => `/progress/element/${elementId}`,
   },
+  PAYMENT: {
+    LIST: "/payments",
+    SUBMIT: "/payments",
+    BY_USER: (userId) => `/payments/user/${userId}`,
+    DETAIL: (id) => `/payments/${id}`,
+    UPDATE_STATUS: (paymentId, status) => `/payments/${paymentId}/status/${status}`,
+  },
 };

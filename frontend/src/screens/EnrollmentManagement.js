@@ -30,7 +30,23 @@ const EnrollmentManagement = () => {
     const [detailModalVisible, setDetailModalVisible] = useState(false);
     const [selectedUserEnrollment, setSelectedUserEnrollment] = useState(null);
     const [selectedUserHistory, setSelectedUserHistory] = useState([]);
-    const status_options=['All', 'in_progress', 'in_review', 'completed', 'failed', 'dropped', 'expired'];
+    const enrollmentStatusOptions = [
+        'All',
+        'in_progress',
+        'in_review',
+        'completed',
+        'failed',
+        'dropped',
+        'expired'
+    ];
+
+    const paymentStatusOptions = [
+        'All',
+        'pending',
+        'paid',
+        'failed',
+        'refunded'
+    ];
 
     const isEnrollment = activeTab === 'enrollment';
     const isSubmission = activeTab === 'submission';
@@ -60,13 +76,11 @@ const EnrollmentManagement = () => {
     const indexOfFirstItem = (activeCurrentPage - 1) * itemsPerPage;
     const indexOfLastItem = indexOfFirstItem + displayData.length;
     const [auditModalVisible, setAuditModalVisible] = useState(false);
-    const [selectedAudit, setSelectedAudit] = useState(null);
 
     const handleOpenAudit = async (id) => {
         try {
             setAuditModalVisible(true);
-            const data = await getEnrollmentAudit(id);
-            setSelectedAudit(data);
+            const data = await fetchEnrollmentAudit(id);
         } catch (err) {
             console.error(err);
             setAuditModalVisible(false);
@@ -242,7 +256,19 @@ const EnrollmentManagement = () => {
     return (
         <ScrollView style={styles.container}>
             <Text style={styles.title}>Enrollment Management</Text>
-            <SlidingTabs tabs={tabs} activeTab={activeTab} onTabChange={(id) => { setActiveTab(id); isEnrollment ? setCurrentPage(1) : setSubmissionCurrentPage(1); }} />
+            <SlidingTabs 
+                tabs={tabs} 
+                activeTab={activeTab} 
+                onTabChange={(id) => { 
+                    setActiveTab(id);  
+                    if (id === 'enrollment') {
+                        setCurrentPage(1);
+                    } else if (id === 'submission') {
+                        setSubmissionCurrentPage(1);
+                    } else {
+                        setPaymentCurrentPage(1);
+                    }
+                }} />
 
             <View style={[styles.toolbar, styles.row]}>
                 <View style={styles.row}>
@@ -258,7 +284,7 @@ const EnrollmentManagement = () => {
                         </Pressable>
                         {isOpen && (
                             <View style={styles.dropdownMenu}>
-                                {status_options.map((status) => (
+                                {(isPayment ? paymentStatusOptions : enrollmentStatusOptions).map((status) => (
                                     <Pressable key={status} style={[styles.menuItem, currentStatus === status && styles.menuItemActive]} onPress={() => { setCurrentStatus(status); setActivePage(1); setIsOpen(false); }}>
                                         <Text style={[currentStatus === status && styles.menuItemTextActive]}>{formatted(status)}</Text>
                                     </Pressable>
