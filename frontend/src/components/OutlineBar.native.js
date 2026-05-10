@@ -322,7 +322,7 @@ const styles=StyleSheet.create({
         backgroundColor:'white',
         borderRadius:15,
         alignItems:"center",
-        marginBottom:25,
+        marginBottom:10,
         marginHorizontal:15,
         paddingHorizontal:5
     },
