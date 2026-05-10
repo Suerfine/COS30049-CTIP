@@ -31,6 +31,7 @@ const CourseFormContent = ({ onSubmit, onCancel, isLoading, initialData, allCour
     const [form, setForm] = useState({
         courseTitle: initialData?.title || '',
         duration: initialData?.expected_completion_weeks?.toString() || '',
+        cost: initialData?.cost || '',
         expiryWeeks: initialData?.must_complete_in_weeks?.toString() || '',
         badgeExpiry: initialData?.badge_expire_in_months?.toString() || '',
         image: initialData?.cover_img_url || null,
@@ -66,6 +67,12 @@ const CourseFormContent = ({ onSubmit, onCancel, isLoading, initialData, allCour
             tempErrors.duration = "* Duration is required.";
         } else if (!isValidDuration(form.duration)) {
             tempErrors.duration = "* Duration must be between 1-52 weeks.";
+        }
+
+        if (!form.cost || form.cost.toString().trim() === "") {
+            tempErrors.cost = "* Cost is required.";
+        } else if (isNaN(form.cost) || parseFloat(form.cost) < 0) {
+            tempErrors.cost = "* Cost must be a valid positive number.";
         }
 
         if (!form.expiryWeeks || form.expiryWeeks.toString().trim() === "") {
@@ -152,6 +159,7 @@ const CourseFormContent = ({ onSubmit, onCancel, isLoading, initialData, allCour
             ...form,
             status: statusOverride || form.status,
             duration: parseInt(form.duration, 10) || 0,
+            cost: parseFloat(form.cost) || 0,
             expiryWeeks: parseInt(form.expiryWeeks, 10) || 0,
             badgeExpiry: parseInt(form.badgeExpiry, 10) || 0,
             prerequisite_course_ids: form.prerequisites.map(p => p.id),
@@ -193,7 +201,7 @@ const CourseFormContent = ({ onSubmit, onCancel, isLoading, initialData, allCour
                 keyboardShouldPersistTaps="handled"
             >
                 <View style={styles.row}>
-                    <View style={styles.content}>
+                    <View style={styles.content, {flex: 2}}>
                         {/* Course Title */}
                         <View style={localStyles.inputGroup}>
                             <Text style={styles.label}>Title:</Text>
@@ -210,21 +218,39 @@ const CourseFormContent = ({ onSubmit, onCancel, isLoading, initialData, allCour
                             {errors.courseTitle && <Text style={localStyles.errorText}>{errors.courseTitle}</Text>}
                         </View>
 
-                        {/* Completion Weeks */}
-                        <View style={localStyles.inputGroup}>
-                            <Text style={styles.label}>Course Completion (Recommend in Weeks):</Text>
-                            <TextInput
-                                style={styles.input}
-                                placeholder='e.g. 4'
-                                placeholderTextColor="#8f8f8f"
-                                keyboardType="numeric"
-                                value={form.duration}
-                                onChangeText={(text) => {
-                                    handleNumericInput('duration', text);
-                                    clearError('duration');
-                                }}
-                            />
-                            {errors.duration && <Text style={localStyles.errorText}>{errors.duration}</Text>}
+                        {/* Completion Weeks & Cost */}
+                        <View style={[styles.row, { gap: 15, marginBottom: 15 }]}>
+                            <View style={{ flex: 1 }}>
+                                <Text style={styles.label}>Course Completion (Weeks):</Text>
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder='e.g. 4'
+                                    placeholderTextColor="#8f8f8f"
+                                    keyboardType="numeric"
+                                    value={form.duration}
+                                    onChangeText={(text) => {
+                                        handleNumericInput('duration', text);
+                                        clearError('duration');
+                                    }}
+                                />
+                                {errors.duration && <Text style={localStyles.errorText}>{errors.duration}</Text>}
+                            </View>
+                            <View style={{ flex: 1 }}>
+                                <Text style={styles.label}>Cost (RM):</Text>
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder='0.00'
+                                    placeholderTextColor="#8f8f8f"
+                                    keyboardType="decimal-pad"
+                                    value={form.cost}
+                                    onChangeText={(text) => {
+                                        const cleaned = text.replace(/[^0-9.]/g, '');
+                                        setForm(prev => ({ ...prev, cost: cleaned }));
+                                        clearError('cost');
+                                    }}
+                                />
+                                {errors.cost && <Text style={localStyles.errorText}>{errors.cost}</Text>}
+                            </View>
                         </View>
 
                         {/* Validity Settings */}
@@ -410,7 +436,7 @@ const CourseFormContent = ({ onSubmit, onCancel, isLoading, initialData, allCour
 
 const localStyles = StyleSheet.create({
     inputGroup: { marginBottom: 15 },
-    errorText: { color: 'red', fontSize: 12, marginTop: 4 },
+    errorText: { color: 'red', fontSize: 12 },
     placeholder: { width: 70, height: 70, borderRadius: 10 },
     uploadPlaceholder: { width: '100%', height: '100%', justifyContent: 'center', alignItems: 'center' },
     muted: { color: "#646464" },
@@ -419,13 +445,14 @@ const localStyles = StyleSheet.create({
     multiSelectContainer: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        gap: 10,
+        gap: 5,
         borderWidth: 1,
         borderColor: '#ccc',
         borderRadius: 8,
         padding: 10,
         backgroundColor: '#fdfdfd',
-        minHeight: 45,
+        minHeight: 35,
+        width: '100%'
     },
     pill: {
         backgroundColor: '#217837',
@@ -449,9 +476,9 @@ const localStyles = StyleSheet.create({
         gap: 8,
     },
     prereqText: { fontSize: 12, color: '#2e7d32', fontWeight: '500' },
-    addTagBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+    addTagBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, width: '100%' },
     addTagText: { color: '#217837', fontSize: 12, fontWeight: '600' },
-    addPrereqBtn: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+    addPrereqBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, width: '100%' },
     addPrereqText: { color: '#217837', fontSize: 12, fontWeight: '600' },
     badgePicker: {
         width: 150,
@@ -470,12 +497,12 @@ const localStyles = StyleSheet.create({
         borderRadius: 8,
         borderWidth: 1,
         borderColor: '#eee',
-        marginTop: 5,
         elevation: 3,
         zIndex: 1000
     },
     TagdropdownItem: {
-        padding: 12,
+        paddingHorizontal: 12,
+        paddingVertical: 8,
         borderBottomWidth: 1,
         borderBottomColor: '#f0f0f0',
         flexDirection: 'row',

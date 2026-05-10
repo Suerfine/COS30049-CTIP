@@ -43,6 +43,8 @@ export const courseService = {
             data.append('expected_completion_weeks', formData.duration);
             data.append('must_complete_in_weeks', formData.expiryWeeks);
             data.append('badge_expire_in_months', formData.badgeExpiry);
+            const costToSend = (formData.cost && formData.cost !== "") ? formData.cost : "0";
+            data.append('cost', costToSend);
 
             data.append(
                 'prerequisite_course_ids',
@@ -95,6 +97,11 @@ export const courseService = {
 
     update: async (id, courseData) => {
         try {
+            const parsedCost =
+                courseData.cost !== undefined && courseData.cost !== null
+                    ? parseFloat(courseData.cost)
+                    : undefined;
+
             const payload = {
                 title: courseData.courseTitle,
                 description: courseData.description || "",
@@ -102,6 +109,7 @@ export const courseService = {
                 expected_completion_weeks: parseInt(courseData.duration, 10),
                 must_complete_in_weeks: parseInt(courseData.expiryWeeks, 10),
                 badge_expire_in_months: parseInt(courseData.badgeExpiry, 10),
+                cost: Number.isNaN(parsedCost) ? undefined : parsedCost,
                 tag_ids: courseData.tags || [],
                 prerequisite_course_ids: courseData.prerequisite_course_ids || []
             };

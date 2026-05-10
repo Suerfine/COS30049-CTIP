@@ -82,6 +82,10 @@ export const useCourses=()=>{
                 description: formData.description ?? existingCourse.description,
                 status: formData.status ?? existingCourse.status,
                 duration: formData.duration ?? existingCourse.expected_completion_weeks,
+                cost:
+                    formData.cost?.toString().trim() !== ""
+                        ? formData.cost
+                        : existingCourse.cost,
                 expiryWeeks: formData.expiryWeeks ?? existingCourse.must_complete_in_weeks,
                 badgeExpiry: formData.badgeExpiry ?? existingCourse.badge_expire_in_months,
                 tags: formData.tags ?? [],
