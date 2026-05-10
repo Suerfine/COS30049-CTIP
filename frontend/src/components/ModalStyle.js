@@ -38,7 +38,8 @@ export const ModalStyle=StyleSheet.create({
         padding:12,
         marginBottom:10,
         flex:1,
-        minWidth:220
+        minWidth:220,
+        maxHeight: 35,
     },
     imagePicker: { 
         height: 170, 

@@ -488,13 +488,18 @@ export const createCourse = async (
     }
 
     // Construct the course data from the request body and file
+    const costValue = Number(req.body.cost ?? 0);
+    if (Number.isNaN(costValue)) {
+      throw new HttpError(400, "Cost must be a valid number");
+    }
+
     const course = await Course.create(
       {
         title: req.body.title,
         description: req.body.description ?? null,
         status: CourseStatus.UNRELEASED,
         released_at: null,
-        cost: req.body.cost ? parseFloat(String(req.body.cost)) : 0,
+        cost: costValue,
         expected_completion_weeks: req.body.expected_completion_weeks ?? null,
         must_complete_in_weeks: req.body.must_complete_in_weeks ?? null,
         badge_expire_in_months:
@@ -817,8 +822,12 @@ export const upsertCourse = async (
 
     // Validate and apply the updates from the request body and file
     const updates: Partial<Course> = {};
-    if (req.body.cost !== undefined) {
-      updates.cost = parseFloat(String(req.body.cost));
+    if (req.body.cost !== undefined && req.body.cost !== null) {
+      const costValue = Number(req.body.cost);
+      if (Number.isNaN(costValue)) {
+        throw new HttpError(400, "Cost must be a valid number");
+      }
+      updates.cost = costValue;
     }
     const status = parseCourseStatus(req.body.status);
     const releasedAtInput = parseCourseReleasedAt(req.body.released_at);
