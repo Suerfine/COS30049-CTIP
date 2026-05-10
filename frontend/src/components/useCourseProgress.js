@@ -1,72 +1,105 @@
-import { useState, useEffect, useCallback } from 'react';
-import { progressService } from '../services/ProgressService';
+import { useState, useEffect } from 'react';
 
-export const useCourseProgress = (course) => {
+export const useCourseProgress = (course, userMarks, fullHistoryMap) => {
     const [progressMap, setProgressMap] = useState({});
-    const [loading, setLoading] = useState(false);
-
-    const refreshProgress = useCallback(async () => {
-        if (!course || !course.modules) return;
-
-        setLoading(true);
-        try {
-            const map = {};
-            let previousPageCompleted = true; 
-
-            for (const module of course.modules) {
-                // 1. Module Progress
-                const modRes = await progressService.getModuleProgress(module.id, course.id);
-                map[`module_${module.id}`] = {
-                    percent: modRes.maxScore > 0 ? (Number(modRes.score) / Number(modRes.maxScore)) * 100 : 0
-                };
-
-                for (const page of (module.pages || [])) {
-                    const elementPromises = (page.elements || []).map(el => 
-                        progressService.getElementProgress(el.id)
-                    );
-                    
-                    const elementResults = await Promise.all(elementPromises);
-
-                    let totalPageScore = 0;
-                    let earnedPageScore = 0;
-
-                    elementResults.forEach(res => {
-                        totalPageScore += Number(res.maxScore) || 0;
-                        earnedPageScore += Number(res.score) || 0;
-                    });
-
-                    const visualPercent = totalPageScore > 0 ? (earnedPageScore / totalPageScore) * 100 : 0;
-                    
-                    const isLocked = !previousPageCompleted;
-                    
-                    const threshold = Number(page.passing_score) > 0 
-                        ? Number(page.passing_score) 
-                        : totalPageScore;
-
-                    const isCompleted = earnedPageScore >= threshold;
-
-                    map[page.id] = {
-                        percent: Number(visualPercent.toFixed(2)), 
-                        isLocked,
-                        isCompleted,
-                        earnedPoints: earnedPageScore,
-                        maxPoints: totalPageScore
-                    };
-                    previousPageCompleted = isCompleted;
-                }
-            }
-
-            setProgressMap(map);
-        } catch (error) {
-            console.error("Error syncing weighted progress:", error);
-        } finally {
-            setLoading(false);
-        }
-    }, [course]);
 
     useEffect(() => {
-        refreshProgress();
-    }, [refreshProgress]);
+        if (!course || !course.modules) return;
 
-    return { progressMap, loading, refreshProgress };
+        const map = {};
+        let previousPageCompleted = true;
+
+        course.modules.forEach((module) => {
+            let totalModuleScore = 0;
+            let earnedModuleScore = 0;
+
+            (module.pages || []).forEach((page) => {
+                let isCompleted = false;
+                let visualPercent = 0;
+
+                const quizElements =
+                    page.elements?.filter(
+                        el => el.type === 'quiz_objective'
+                    ) || [];
+
+                const quizIds = quizElements.map(el => el.id);
+
+                if (page.final_quiz === true && quizIds.length > 0) {
+                    const passingScore = page.passing_score || 12;
+
+                    const attempts = [];
+
+                    quizIds.forEach(id => {
+                        if (fullHistoryMap?.[id]) {
+                            fullHistoryMap[id].forEach(sub => {
+                                const subTime = new Date(sub.created_at).getTime();
+
+                                let existing = attempts.find(
+                                    a => Math.abs(a.time - subTime) < 10000
+                                );
+
+                                if (existing) {
+                                    existing.score += sub.earned_grade;
+                                } else {
+                                    attempts.push({
+                                        time: subTime,
+                                        score: sub.earned_grade
+                                    });
+                                }
+                            });
+                        }
+                    });
+
+                    isCompleted = attempts.some(
+                        a => a.score >= passingScore
+                    );
+
+                    visualPercent = isCompleted ? 100 : 0;
+                } else {
+                    const totalPageElements =
+                        page.elements?.length || 0;
+
+                    const completedCount =
+                        page.elements?.filter(el => {
+                            const mark = userMarks?.[el.id];
+
+                            return (mark?.earned_grade || 0) > 0;
+                        }).length || 0;
+
+                    isCompleted =
+                        totalPageElements > 0 &&
+                        completedCount === totalPageElements;
+
+                    visualPercent =
+                        totalPageElements > 0
+                            ? (completedCount / totalPageElements) * 100
+                            : 0;
+                }
+
+                const isLocked = !previousPageCompleted;
+
+                map[page.id] = {
+                    percent: visualPercent,
+                    isLocked,
+                    isCompleted
+                };
+
+                previousPageCompleted = isCompleted;
+
+                totalModuleScore += 100;
+                earnedModuleScore += visualPercent;
+            });
+
+            map[`module_${module.id}`] = {
+                percent:
+                    totalModuleScore > 0
+                        ? (earnedModuleScore / totalModuleScore) * 100
+                        : 0
+            };
+        });
+
+        setProgressMap(map);
+    }, [course, userMarks, fullHistoryMap]);
+
+    return { progressMap };
 };

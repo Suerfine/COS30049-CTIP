@@ -429,7 +429,6 @@ const UserModule = ({ navigation }) => {
                   courseId={id}
                   onProgressUpdate={async () => {
                       await saveProgress(elementId, score, content);
-                      refreshProgress();
                   }}
                   onRegisterWorkshop={registerWorkshop}
                   registering={registering}

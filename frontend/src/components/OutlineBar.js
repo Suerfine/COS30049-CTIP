@@ -144,7 +144,6 @@ const OutlineBar = ({ course, progressMap = {}, onSelectPage, editable, isCollap
                                     style={[styles.moduleBlock, isSelected && styles.selected, isLocked && styles.lockedItem]}
                                     onPress={() => {
                                         if (isLocked || isEditing) return;
-                                        handleSelect({ type: 'module', module });
                                         toggleModule(mid);
                                         if (editable && expandedModule !== mid) {
                                             setEditingItem({
@@ -245,7 +244,7 @@ const OutlineBar = ({ course, progressMap = {}, onSelectPage, editable, isCollap
 
                                                     {!editable && !isLocked && (
                                                         status.isCompleted
-                                                            ? <CheckCircle2 size={18} color="#0a6340"/>
+                                                            ? <CheckCircle2 size={20} color="#0a6340"/>
                                                             : status.isLocked
                                                                 ? <Lock size={14}/>
                                                                 : <Progress.Circle 
@@ -353,9 +352,8 @@ const styles=StyleSheet.create({
         alignItems:'center'
     },
     pageItem:{
-        paddingLeft:30,
-        paddingRight:10,
         paddingVertical:10,
+        paddingHorizontal:15
     },
     section:{
         borderWidth: 1,
@@ -376,7 +374,8 @@ const styles=StyleSheet.create({
     pageBlock:{
         flexDirection:'row',
         justifyContent:"space-between",
-        width:'160px'
+        flex:1,
+        gap:5
     },
     highlight: {
         backgroundColor: '#ffd07d', 
