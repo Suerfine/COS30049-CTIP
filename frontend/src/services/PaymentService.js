@@ -36,19 +36,31 @@ export const paymentService = {
                 params.orderBy = `${sortConfig.key} ${sortConfig.direction}`;
             }
 
-            const paymentRes = await apiClient.get(
-                API_ENDPOINTS.PAYMENT.LIST,
-                { params }
-            );
+            const [paymentRes, userRes] = await Promise.all([
+                apiClient.get(API_ENDPOINTS.PAYMENT.LIST, { params }),
+                apiClient.get(API_ENDPOINTS.USER.ACCOUNT, { params: { size: 100 } })
+            ]);
 
             const payments = getData(paymentRes);
+            const users = getData(userRes);
+
+            let enriched = payments.map(p => {
+                const user = users.find(u => Number(u.id) === Number(p.user_id));
+
+                return {
+                    ...p,
+                    fullName: user ? `${user.firstname} ${user.lastname}` : `User #${p.user_id}`
+                };
+            });
+
+            return enriched;
 
             // simple search filter (kept lightweight)
             if (searchQuery.trim()) {
                 const q = searchQuery.toLowerCase();
 
                 return payments.filter((p) =>
-                    String(p.user_id).includes(q) ||
+                    String(p.fullName || "").toLowerCase().includes(q) ||
                     String(p.course_id).includes(q) ||
                     String(p.status).toLowerCase().includes(q)
                 );

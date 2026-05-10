@@ -54,7 +54,7 @@ const EnrollmentManagement = () => {
     const displayData =
         isEnrollment ? enrollments :
         isSubmission ? submissions :
-        payments || [];
+        (payments || []);
     const activeTotalPages =
         isEnrollment ? totalPages :
         isSubmission ? submissionTotalPages :
@@ -285,7 +285,20 @@ const EnrollmentManagement = () => {
                         {isOpen && (
                             <View style={styles.dropdownMenu}>
                                 {(isPayment ? paymentStatusOptions : enrollmentStatusOptions).map((status) => (
-                                    <Pressable key={status} style={[styles.menuItem, currentStatus === status && styles.menuItemActive]} onPress={() => { setCurrentStatus(status); setActivePage(1); setIsOpen(false); }}>
+                                    <Pressable 
+                                    key={status} 
+                                    style={[styles.menuItem, currentStatus === status && styles.menuItemActive]} 
+                                    onPress={() => { 
+                                        if (isPayment) {
+                                            setPaymentStatus(status);
+                                        } else if (isSubmission) {
+                                            setSubmissionStatus(status);
+                                        } else {
+                                            setCurrentStatus(status);
+                                        }
+                                        setActivePage(1); 
+                                        setIsOpen(false); 
+                                        }}>
                                         <Text style={[currentStatus === status && styles.menuItemTextActive]}>{formatted(status)}</Text>
                                     </Pressable>
                                 ))}
