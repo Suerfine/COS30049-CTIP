@@ -115,7 +115,7 @@ const OutlineBar = ({ course, progressMap = {}, onSelectPage, editable, isCollap
                     )}
                     
                     {/* Workshop */}
-                    {!isCollapsed && (
+                    {!isCollapsed && !editable && (
                         <Pressable
                             disabled={isLocked}
                             style={[styles.item, selectedItem?.type === 'workshops' && styles.selected, isLocked && styles.lockedItem]}
