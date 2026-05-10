@@ -1505,7 +1505,7 @@ const styles = StyleSheet.create({
         textTransform: 'uppercase',
     },
     guideInfoCard: {
-        backgroundColor: '#f0fdf4', // Light SIGMAmed Green
+        backgroundColor: '#f0fdf4',
         borderRadius: 12,
         padding: 20,
         borderWidth: 1,
