@@ -32,7 +32,7 @@ const UserCourse = ({ navigation }) => {
         handleDrop,
         handleApply,
         removeFilter,allTagList, addTag,
-        searchText, setSearchText, handleSearch,
+        searchText, setSearchText,
     }=useUserCourse({progressData});
 
     // sync parameter with filter from UserDashboard Explore Categories section
@@ -94,7 +94,7 @@ const UserCourse = ({ navigation }) => {
                             <TextInput
                                 style={styles.input}
                                 value={searchText}
-                                onChangeText={handleSearch}
+                                onChangeText={setSearchText}
                                 placeholder="Search..."
                                 placeholderTextColor="#8f8f8f"
                             />

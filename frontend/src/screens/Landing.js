@@ -29,6 +29,9 @@ const Landing = ({ navigation }) => {
     const btnFade = useRef(new Animated.Value(0)).current;
     const btnScale = useRef(new Animated.Value(1)).current;
 
+    const introAnimation = useRef(null);
+    const skipped = useRef(false);
+
     const handlePressIn = () => {
         Animated.spring(btnScale, {
             toValue: 1.05,
@@ -42,6 +45,18 @@ const Landing = ({ navigation }) => {
             friction: 5,
             useNativeDriver: true,
         }).start();
+    };
+
+    const skipIntro = () => {
+        if (skipped.current) return;
+
+        skipped.current = true;
+
+        introAnimation.current?.stop();
+
+        contentFade.setValue(1);
+        contentSlide.setValue(0);
+        btnFade.setValue(1);
     };
 
     const getRandomNext = (current) => {
@@ -73,7 +88,7 @@ const Landing = ({ navigation }) => {
     }, [currentIndex]);
         
     useEffect(() => {
-        Animated.sequence([
+        introAnimation.current = Animated.sequence([
             Animated.delay(500),
             Animated.parallel([
                 Animated.timing(contentFade, {
@@ -93,11 +108,15 @@ const Landing = ({ navigation }) => {
                 duration: 600,
                 useNativeDriver: true,
             }),
-        ]).start();
+        ]);
+        introAnimation.current.start();
     }, []);
 
     return (
-        <View style={styles.container}>
+        <Pressable
+            style={styles.container}
+            onPress={skipIntro}
+        >
             <StatusBar translucent backgroundColor="transparent" barStyle="light-content" />
  
             {/* Current image (always visible underneath) */}
@@ -166,7 +185,7 @@ const Landing = ({ navigation }) => {
                     </Pressable>
                 </Animated.View>
             </View>
-        </View>
+        </Pressable>
     );
 };
 
