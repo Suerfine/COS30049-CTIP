@@ -20,7 +20,9 @@ const EnrollmentManagement = () => {
         currentStatus, setCurrentStatus,
         sortConfig, requestSort, resetSort,
         handleUpdateStatus, deleteRecord, courses,
-        auditData, auditLoading, fetchEnrollmentAudit
+        auditData, auditLoading, fetchEnrollmentAudit,
+        payments, currentPaymentPage, setPaymentCurrentPage,
+        paymentTotalPages, paymentTotalElements
     } = useEnrollmentManagement();
 
     const [activeTab, setActiveTab] = useState('enrollment');
@@ -31,11 +33,28 @@ const EnrollmentManagement = () => {
     const status_options=['All', 'in_progress', 'in_review', 'completed', 'failed', 'dropped', 'expired'];
 
     const isEnrollment = activeTab === 'enrollment';
-    const displayData = (isEnrollment ? enrollments : submissions) || [];
-    const activeTotalPages = isEnrollment ? totalPages : submissionTotalPages;
-    const activeTotalElements = isEnrollment ? totalElements : submissionTotalElements;
-    const activeCurrentPage = isEnrollment ? currentPage : currentSubmissionPage;
-    const setActivePage = isEnrollment ? setCurrentPage : setSubmissionCurrentPage;
+    const isSubmission = activeTab === 'submission';
+    const isPayment = activeTab === 'payment';
+    const displayData =
+        isEnrollment ? enrollments :
+        isSubmission ? submissions :
+        payments || [];
+    const activeTotalPages =
+        isEnrollment ? totalPages :
+        isSubmission ? submissionTotalPages :
+        paymentTotalPages;
+    const activeTotalElements =
+        isEnrollment ? totalElements :
+        isSubmission ? submissionTotalElements :
+        paymentTotalElements;
+    const activeCurrentPage =
+        isEnrollment ? currentPage :
+        isSubmission ? currentSubmissionPage :
+        currentPaymentPage;
+    const setActivePage =
+        isEnrollment ? setCurrentPage :
+        isSubmission ? setSubmissionCurrentPage :
+        setPaymentCurrentPage;
 
     const itemsPerPage = 10;
     const indexOfFirstItem = (activeCurrentPage - 1) * itemsPerPage;
@@ -70,6 +89,7 @@ const EnrollmentManagement = () => {
     const tabs = [
         { id: 'enrollment', label: 'Enrollment' },
         { id: 'submission', label: 'Submission' },
+        { id: 'payment', label: 'Payment' },
     ];
 
     const formatted = (status) => {
@@ -110,6 +130,16 @@ const EnrollmentManagement = () => {
             <Text style={[styles.headerText, { flex: 1 }]}>Badge</Text>
             <Text style={[styles.headerText, { flex: 2 }]}>Issued On</Text>
             <Text style={[styles.headerText, { flex: 2 }]}>Expiry On</Text>
+        </View>
+    );
+
+    const renderPaymentHeader = () => (
+        <View style={[styles.tableHeader, styles.row]}>
+            <Text style={[styles.headerText, { flex: 3 }]}>Full Name</Text>
+            <Text style={[styles.headerText, { flex: 2 }]}>Amount</Text>
+            <Text style={[styles.headerText, { flex: 2 }]}>Method</Text>
+            <Text style={[styles.headerText, { flex: 2 }]}>Status</Text>
+            <Text style={[styles.headerText, { flex: 3 }]}>Paid On</Text>
         </View>
     );
 
@@ -162,6 +192,19 @@ const EnrollmentManagement = () => {
             </Pressable>
         );
     };
+
+    const renderPaymentItem = ({ item }) => (
+        <View style={[styles.row, styles.tableRow]}>
+            <View style={[{ flex: 3 }, styles.userInfo, styles.row]}>
+                <Text>{item.fullName}</Text>
+            </View>
+
+            <Text style={{ flex: 2 }}>RM {item.amount}</Text>
+            <Text style={{ flex: 2 }}>{item.method}</Text>
+            <Text style={{ flex: 2 }}>{item.status}</Text>
+            <Text style={{ flex: 3 }}>{formatDate(item.paid_at)}</Text>
+        </View>
+    );
 
     const renderPagination = () => {
         const pageNumbers = [];
@@ -231,8 +274,20 @@ const EnrollmentManagement = () => {
                     style={styles.table}
                     data={displayData}
                     loading={loading}
-                    ListHeaderComponent={isEnrollment ? renderEnrollmentHeader : renderSubmissionsHeader}
-                    renderItem={isEnrollment ? renderEnrollmentItem : renderSubmissionsItem}
+                    ListHeaderComponent={
+                        isEnrollment
+                            ? renderEnrollmentHeader
+                            : isSubmission
+                            ? renderSubmissionsHeader
+                            : renderPaymentHeader
+                    }
+                    renderItem={
+                        isEnrollment
+                            ? renderEnrollmentItem
+                            : isSubmission
+                            ? renderSubmissionsItem
+                            : renderPaymentItem
+                    }
                     keyExtractor={item => item.id.toString()}
                     ListEmptyComponent={<View style={styles.tableRow}><Text>{loading ? "Loading..." : "No Record Found."}</Text></View>}
                 />

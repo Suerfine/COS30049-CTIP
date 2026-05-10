@@ -3,8 +3,8 @@ import apiClient from "../config/apiConfig";
 
 export const enrollmentService = {
     /**
-     * GET: Fetch all enrollments enriched with User names (Admin View)
-     */
+        * GET: Fetch all enrollments enriched with User names (Admin View)
+    */
     getAll: async (page = 1, size = 10, searchQuery = '', sortConfig, status = 'All') => {
         try {
             const params = { page, size };
