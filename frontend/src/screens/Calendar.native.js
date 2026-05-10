@@ -169,6 +169,7 @@ const Calendar=({ route,navigation })=>{
 
         return (
             <>
+<<<<<<< HEAD
                 <RNCalendar
                     renderArrow={(direction) =>
                         direction === 'left' ? (
@@ -182,6 +183,24 @@ const Calendar=({ route,navigation })=>{
                             <Text style={styles.customHeaderTitle}>{date.toString('MMMM yyyy')}</Text>
                         </View>
                     )}
+=======
+            <RNCalendar
+                renderArrow={(direction)=>(
+                    direction==='left' ? <ChevronLeft size={24} color="#32750e"/> : <ChevronRight size={24} color="#32750e"/>
+                )}
+                renderHeader={(date) => {
+                    const monthYear = new Date(date).toLocaleDateString('en-US', {
+                        month: 'long',
+                        year: 'numeric',
+                    });
+
+                    return (
+                        <View>
+                            <Text style={styles.customHeaderTitle}>{monthYear}</Text>
+                        </View>
+                    );
+                }}
+>>>>>>> 13c8599e7fdfc6593c1ec46016ea8a0c3447b544
                     current={new Date().toISOString().split('T')[0]}
                     onDayPress={(day) => {
                         setSelectedDate((prev) => (prev === day.dateString ? '' : day.dateString));
@@ -307,11 +326,26 @@ const Calendar=({ route,navigation })=>{
                         </Pressable>
                     );
                 }}
+<<<<<<< HEAD
                 renderHeader={(date) => (
                     <View>
                         <Text style={styles.customHeaderTitle}>{date.toString('MMMM yyyy')}</Text>
                     </View>
                 )}
+=======
+                renderHeader={(date) => {
+                    const monthYear = new Date(date).toLocaleDateString('en-US', {
+                        month: 'long',
+                        year: 'numeric',
+                    });
+
+                    return (
+                        <View>
+                            <Text style={styles.customHeaderTitle}>{monthYear}</Text>
+                        </View>
+                    );
+                }}
+>>>>>>> 13c8599e7fdfc6593c1ec46016ea8a0c3447b544
                 theme={{
                     'stylesheet.calendar.main': {
                         week: {
