@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { Send, Bot, X } from "lucide-react-native";
 import chatbotService from "../services/chatbotService";
+import Markdown from "react-native-markdown-display";
 
 const AIChatBot = ({ isOpen, onClose }) => {
   const [messages, setMessages] = useState([
@@ -153,7 +154,7 @@ const AIChatBot = ({ isOpen, onClose }) => {
                   msg.isThinking && styles.thinkingText,
                 ]}
               >
-                {msg.text}
+                <Markdown>{msg.text}</Markdown>
               </Text>
             </View>
             {!!msg.time && <Text style={styles.timestamp}>{msg.time}</Text>}
