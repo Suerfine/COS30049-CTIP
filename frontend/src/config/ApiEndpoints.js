@@ -26,7 +26,8 @@ export const API_ENDPOINTS = {
   },
   DISCUSSION: {
     LIST: (courseId) => `/courses/${courseId}/discussion`,
-    DETAIL: (courseId, discussionId) => `/courses/${courseId}/discussion/${discussionId}`,
+    DETAIL: (courseId, discussionId) =>
+      `/courses/${courseId}/discussion/${discussionId}`,
     MESSAGES: (discussionId) => `/discussion/${discussionId}/messages`,
   },
   MESSAGE: {
@@ -41,7 +42,8 @@ export const API_ENDPOINTS = {
     SUMARRIES: "/enrollments/submissions/summaries",
     AUDIT: (id) => `/enrollments/${id}/audit`,
     PATCH: (id) => `/enrollments/${id}/approve`,
-    HISTORY_BY_ENROLLMENT: (enrollmentId) => `/submission/enrollment/${enrollmentId}`,
+    HISTORY_BY_ENROLLMENT: (enrollmentId) =>
+      `/submission/enrollment/${enrollmentId}`,
   },
   WORKSHOP: {
     JOIN_WORKSHOP: (courseId, elementId) =>
@@ -69,7 +71,7 @@ export const API_ENDPOINTS = {
   },
   EVENTS: {
     BASE: "/events",
-    STATUS: (id)=> `/events/${id}/status`
+    STATUS: (id) => `/events/${id}/status`,
   },
   AR: {
     LIST: "/ar-models",
@@ -87,6 +89,10 @@ export const API_ENDPOINTS = {
     SUBMIT: "/payments",
     BY_USER: (userId) => `/payments/user/${userId}`,
     DETAIL: (id) => `/payments/${id}`,
-    UPDATE_STATUS: (paymentId, status) => `/payments/${paymentId}/status/${status}`,
+    UPDATE_STATUS: (paymentId, status) =>
+      `/payments/${paymentId}/status/${status}`,
+  },
+  CHATBOT: {
+    SEND: "/chatbot",
   },
 };

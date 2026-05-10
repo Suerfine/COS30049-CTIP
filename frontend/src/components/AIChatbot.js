@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from "react";
 import {
   View,
   Text,
@@ -8,40 +8,103 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
-  Image
-} from 'react-native';
-import { Send, Bot, User, X, MessageSquare, Sparkles } from 'lucide-react-native';
+} from "react-native";
+import { Send, Bot, X } from "lucide-react-native";
+import chatbotService from "../services/chatbotService";
 
 const AIChatBot = ({ isOpen, onClose }) => {
   const [messages, setMessages] = useState([
-    { id: 1, text: "Hello! I'm your SIGMAmed Assistant. How can I help you with your training today?", sender: 'ai', time: '9:41 AM' },
+    {
+      id: 1,
+      text: "Hello! I'm your SIGMAmed Assistant. How can I help you with your training today?",
+      sender: "ai",
+      time: "9:41 AM",
+    },
   ]);
   const [inputText, setInputText] = useState("");
+  const [isSending, setIsSending] = useState(false);
+  const [thinkingDots, setThinkingDots] = useState("");
   const scrollViewRef = useRef();
 
-  const handleSendMessage = () => {
-    if (inputText.trim() === "") return;
+  useEffect(() => {
+    if (!isSending) {
+      setThinkingDots("");
+      return;
+    }
+
+    const frames = [".", "..", "..."];
+    let index = 0;
+    setThinkingDots(frames[index]);
+
+    const intervalId = setInterval(() => {
+      index = (index + 1) % frames.length;
+      setThinkingDots(frames[index]);
+    }, 350);
+
+    return () => clearInterval(intervalId);
+  }, [isSending]);
+
+  const handleSendMessage = async () => {
+    const message = inputText.trim();
+    if (message === "" || isSending) return;
 
     const userMsg = {
       id: Date.now(),
-      text: inputText,
-      sender: 'user',
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      text: message,
+      sender: "user",
+      time: new Date().toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
     };
 
-    setMessages(prev => [...prev, userMsg]);
+    setMessages((prev) => [...prev, userMsg]);
     setInputText("");
+    setIsSending(true);
 
-    setTimeout(() => {
+    try {
+      const response = await chatbotService.sendMessage(message);
       const aiResponse = {
         id: Date.now() + 1,
-        text: "That's an interesting question about park safety! I'm currently in dummy mode, but soon I'll be able to help you analyze course elements in real-time.",
-        sender: 'ai',
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        text: response?.data || "I couldn't generate a response right now.",
+        sender: "ai",
+        time: new Date().toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
       };
-      setMessages(prev => [...prev, aiResponse]);
-    }, 1000);
+      setMessages((prev) => [...prev, aiResponse]);
+    } catch (error) {
+      const aiError = {
+        id: Date.now() + 1,
+        text:
+          typeof error === "string"
+            ? error
+            : "Unable to contact chatbot service.",
+        sender: "ai",
+        time: new Date().toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+      };
+      setMessages((prev) => [...prev, aiError]);
+    } finally {
+      setIsSending(false);
+    }
   };
+
+  const displayedMessages = isSending
+    ? [
+        ...messages,
+        {
+          id: "thinking",
+          text: `Thinking${thinkingDots}`,
+          sender: "ai",
+          time: "",
+          isThinking: true,
+        },
+      ]
+    : messages;
 
   if (!isOpen) return null;
 
@@ -62,36 +125,43 @@ const AIChatBot = ({ isOpen, onClose }) => {
         </TouchableOpacity>
       </View>
 
-      <ScrollView 
+      <ScrollView
         style={styles.chatArea}
         ref={scrollViewRef}
-        onContentSizeChange={() => scrollViewRef.current.scrollToEnd({ animated: true })}
+        onContentSizeChange={() =>
+          scrollViewRef.current.scrollToEnd({ animated: true })
+        }
       >
-        {messages.map((msg) => (
-          <View 
-            key={msg.id} 
+        {displayedMessages.map((msg) => (
+          <View
+            key={msg.id}
             style={[
-              styles.messageWrapper, 
-              msg.sender === 'user' ? styles.userWrapper : styles.aiWrapper
+              styles.messageWrapper,
+              msg.sender === "user" ? styles.userWrapper : styles.aiWrapper,
             ]}
           >
-            <View style={[
-              styles.bubble, 
-              msg.sender === 'user' ? styles.userBubble : styles.aiBubble
-            ]}>
-              <Text style={[
-                styles.messageText, 
-                msg.sender === 'user' ? styles.userText : styles.aiText
-              ]}>
+            <View
+              style={[
+                styles.bubble,
+                msg.sender === "user" ? styles.userBubble : styles.aiBubble,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.messageText,
+                  msg.sender === "user" ? styles.userText : styles.aiText,
+                  msg.isThinking && styles.thinkingText,
+                ]}
+              >
                 {msg.text}
               </Text>
             </View>
-            <Text style={styles.timestamp}>{msg.time}</Text>
+            {!!msg.time && <Text style={styles.timestamp}>{msg.time}</Text>}
           </View>
         ))}
       </ScrollView>
 
-      <KeyboardAvoidingView 
+      <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.inputContainer}
       >
@@ -102,10 +172,13 @@ const AIChatBot = ({ isOpen, onClose }) => {
           onChangeText={setInputText}
           multiline
         />
-        <TouchableOpacity 
-          style={[styles.sendBtn, !inputText.trim() && styles.sendBtnDisabled]} 
+        <TouchableOpacity
+          style={[
+            styles.sendBtn,
+            (!inputText.trim() || isSending) && styles.sendBtnDisabled,
+          ]}
           onPress={handleSendMessage}
-          disabled={!inputText.trim()}
+          disabled={!inputText.trim() || isSending}
         >
           <Send size={18} color="white" />
         </TouchableOpacity>
@@ -116,128 +189,132 @@ const AIChatBot = ({ isOpen, onClose }) => {
 
 const styles = StyleSheet.create({
   botContainer: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 90,
     right: 20,
     width: 350,
     height: 500,
-    backgroundColor: 'white',
+    backgroundColor: "white",
     borderRadius: 20,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.15,
     shadowRadius: 20,
     elevation: 10,
-    overflow: 'hidden',
+    overflow: "hidden",
     zIndex: 9999,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     padding: 15,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: "#f0f0f0",
   },
-  headerInfo: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    gap: 10 
-},
-  botIconCircle: { 
-    width: 35, 
-    height: 35, 
-    borderRadius: 18, 
-    backgroundColor: '#0a6340', 
-    justifyContent: 'center', 
-    alignItems: 'center' 
+  headerInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
   },
-  headerTitle: { 
-    fontWeight: 'bold', 
-    fontSize: 14, 
-    color: '#333' 
-},
-  headerStatus: { 
-    fontSize: 10, 
-    color: '#4caf50', 
-    fontWeight: '600' 
-},
-  
-  chatArea: { 
-    flex: 1, 
-    padding: 15 
-},
-  messageWrapper: { 
-    marginBottom: 15, 
-    maxWidth: '85%' 
-},
-  userWrapper: { 
-    alignSelf: 'flex-end' 
-},
-  aiWrapper: { 
-    alignSelf: 'flex-start' 
-},
-  
-  bubble: { 
-    padding: 12, 
-    borderRadius: 15 
-},
-  userBubble: { 
-    backgroundColor: '#0a6340', 
-    borderBottomRightRadius: 2 
-},
-  aiBubble: { 
-    backgroundColor: '#f0f2f5', 
-    borderBottomLeftRadius: 2 
-},
-  
-  messageText: { 
-    fontSize: 14, 
-    lineHeight: 20 
-},
-  userText: { 
-    color: 'white' 
-},
-  aiText: { 
-    color: '#333' 
-},
-  timestamp: { 
-    fontSize: 9, 
-    color: '#999', 
-    marginTop: 4, 
-    alignSelf: 'flex-end' 
-},
+  botIconCircle: {
+    width: 35,
+    height: 35,
+    borderRadius: 18,
+    backgroundColor: "#0a6340",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  headerTitle: {
+    fontWeight: "bold",
+    fontSize: 14,
+    color: "#333",
+  },
+  headerStatus: {
+    fontSize: 10,
+    color: "#4caf50",
+    fontWeight: "600",
+  },
 
-  inputContainer: { 
-    flexDirection: 'row', 
-    padding: 10, 
-    alignItems: 'center', 
-    backgroundColor: 'white',
+  chatArea: {
+    flex: 1,
+    padding: 15,
+  },
+  messageWrapper: {
+    marginBottom: 15,
+    maxWidth: "85%",
+  },
+  userWrapper: {
+    alignSelf: "flex-end",
+  },
+  aiWrapper: {
+    alignSelf: "flex-start",
+  },
+
+  bubble: {
+    padding: 12,
+    borderRadius: 15,
+  },
+  userBubble: {
+    backgroundColor: "#0a6340",
+    borderBottomRightRadius: 2,
+  },
+  aiBubble: {
+    backgroundColor: "#f0f2f5",
+    borderBottomLeftRadius: 2,
+  },
+
+  messageText: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  userText: {
+    color: "white",
+  },
+  aiText: {
+    color: "#333",
+  },
+  thinkingText: {
+    fontStyle: "italic",
+    color: "#5f6368",
+  },
+  timestamp: {
+    fontSize: 9,
+    color: "#999",
+    marginTop: 4,
+    alignSelf: "flex-end",
+  },
+
+  inputContainer: {
+    flexDirection: "row",
+    padding: 10,
+    alignItems: "center",
+    backgroundColor: "white",
     borderTopWidth: 1,
-    borderTopColor: '#f0f0f0'
+    borderTopColor: "#f0f0f0",
   },
   input: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: "#f8f9fa",
     borderRadius: 20,
     paddingHorizontal: 15,
     paddingVertical: 8,
     marginRight: 10,
     maxHeight: 100,
-    fontSize: 14
+    fontSize: 14,
   },
   sendBtn: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#0a6340',
-    justifyContent: 'center',
-    alignItems: 'center'
+    backgroundColor: "#0a6340",
+    justifyContent: "center",
+    alignItems: "center",
   },
-  sendBtnDisabled: { 
-    backgroundColor: '#ccc' 
-}
+  sendBtnDisabled: {
+    backgroundColor: "#ccc",
+  },
 });
 
 export default AIChatBot;
