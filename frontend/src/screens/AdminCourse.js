@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import {
   View,
   Text,
@@ -9,7 +9,8 @@ import {
   ScrollView,
   Modal,
   ActivityIndicator,
-  Platform
+  Platform,
+  useWindowDimensions
 } from "react-native";
 import { CopyPlus, Search, SlidersHorizontal, CircleX, Plus } from "lucide-react-native";
 
@@ -29,6 +30,26 @@ const AdminCourse = ({ navigation }) => {
   const [selectedCourse, setSelectedCourse] = useState(null);
   const {currentUser}=useAuth();
   const [isTagModalVisible, setTagModalVisible] = useState(false);
+
+  const { width } = useWindowDimensions();
+  const cardStyles = useMemo(() => {
+    if (Platform.OS !== 'web') {
+      return { width: '100%', gap: 0 };
+    }
+
+    let columns = 4;
+    if (width < 600) columns = 1;
+    else if (width < 900) columns = 2;
+    else if (width < 1200) columns = 3;
+
+    const gapPercent = 2; 
+    const calculatedWidth = (100 - (gapPercent * (columns - 1))) / columns;
+
+    return {
+      width: `${calculatedWidth}%`,
+      gap: `${gapPercent}%`
+    };
+  }, [width]);
 
   useEffect(() => {
     loadCourses();
@@ -89,7 +110,7 @@ const AdminCourse = ({ navigation }) => {
             style={({ hovered }) => [styles.btn, hovered && styles.btnHover]}
           >
             <CopyPlus />
-            <Text style={styles.btnText}>Add Course</Text>
+            <Text style={styles.btnText}> Add Course</Text>
           </Pressable>
         </View>
       </ImageBackground>
@@ -181,12 +202,12 @@ const AdminCourse = ({ navigation }) => {
         <ActivityIndicator size="large" color="#18704d" />
       ) : (
         <>
-          <View style={styles.cardContainer}>
+          <View style={[styles.cardContainer, { columnGap: cardStyles.gap }]}>
             {Array.isArray(filteredCourses) && filteredCourses.length > 0 ? (
               filteredCourses.map((course) => {
                 const numModules = course.module_count ? course.module_count : 0;
                 return (
-                <View key={course.id} style={styles.cardWrapper}>
+                <View key={course.id} style={[styles.cardWrapper, { flexBasis: cardStyles.width, minWidth: cardStyles.width }]}>
                   <CourseCard
                     key={course.id}
                     id={course.id}
@@ -321,8 +342,8 @@ const styles = StyleSheet.create({
     alignItems: 'stretch',
   },
   cardWrapper: {
-    width: Platform.OS === 'web' ? '23.5%' : '100%', 
-    minWidth: Platform.OS === 'web' ? 200 : '100%', 
+    flexGrow: 0, 
+    flexShrink: 1,
     display: 'flex',
   },
   filter: {
@@ -339,41 +360,41 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     marginTop: 20,
-},
-pillContainer:{
-  flexDirection:'row',
-  flexWrap:'wrap',
-  gap:8,
-  marginTop:15,
-},
-pill:{
-  flexDirection:'row',
-  alignItems:'center',
-  backgroundColor: '#0a6340',
-  paddingHorizontal:12,
-  paddingVertical:8,
-  borderRadius:20,
-},
-pillText:{
-  fontSize:14,
-  color:"white",
-  marginRight:6,
-  fontWeight:'500'
-},
-addTagButton: {
-  flexDirection: "row",
-  backgroundColor: "#0a6340",
-  paddingHorizontal: 15,
-  paddingVertical: 10,
-  borderRadius: 12,
-  alignItems: "center",
-  justifyContent: "center",
-  gap: 8,
-},
-row:{
-  flexDirection:'row',
-  gap:25
-}
+  },
+  pillContainer:{
+    flexDirection:'row',
+    flexWrap:'wrap',
+    gap:8,
+    marginTop:15,
+  },
+  pill:{
+    flexDirection:'row',
+    alignItems:'center',
+    backgroundColor: '#0a6340',
+    paddingHorizontal:12,
+    paddingVertical:8,
+    borderRadius:20,
+  },
+  pillText:{
+    fontSize:14,
+    color:"white",
+    marginRight:6,
+    fontWeight:'500'
+  },
+  addTagButton: {
+    flexDirection: "row",
+    backgroundColor: "#0a6340",
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  row:{
+    flexDirection:'row',
+    gap:25
+  }
 });
 
 export default AdminCourse;
