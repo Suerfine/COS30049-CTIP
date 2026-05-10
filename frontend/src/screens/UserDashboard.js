@@ -1,5 +1,5 @@
 import {useState, useEffect, useMemo} from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView, Image, ImageBackground, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ScrollView, Image, ImageBackground, Dimensions, Platform, useWindowDimensions } from 'react-native';
 import { ListPlus, ChevronRight, ChevronLeft, ClockFading, Phone, Mail, ChevronsUpDown, ChevronsDownUp} from 'lucide-react-native';
 import Checkbox from 'expo-checkbox';
 import {Animated} from 'react-native';
@@ -36,6 +36,24 @@ const UserDashboard = ({ navigation }) => {
         weekLabels,eventTab, courseTab, categories,
     } = useUserDashboard();
 
+    const { width } = useWindowDimensions();
+    const cardStyles = useMemo(() => {
+        if (Platform.OS !== 'web') {
+            return { width: '100%', gap: 0 };
+        }
+
+        let columns = 3;
+        if (width < 600) columns = 1;
+        else if (width < 900) columns = 2;
+
+        const gapPercent = 2; 
+        const calculatedWidth = (100 - (gapPercent * (columns - 1))) / columns;
+
+        return {
+            width: `${calculatedWidth}%`,
+            gap: `${gapPercent}%`
+        };
+    }, [width]);
 
     const { inProgressCourses, completedCourses, loading: coursesLoading } = useUserCourse();
     const [showModal, setShowModal] = useState(false);
@@ -105,33 +123,36 @@ const UserDashboard = ({ navigation }) => {
                             </View>
                             <Text style={styles.sectionTitle}>My Courses</Text>
                             <SlidingTabs tabs={courseTab} activeTab={courseFilter} onTabChange={(id)=>setCourseFilter(id)}/>
-                            <View style={styles.cardContainer}>
+                            <View style={[styles.cardContainer, { columnGap: cardStyles.gap }]}>
                                 {coursesLoading && <Text>Updating progress...</Text>}
 
                                 {/* Render In Progress Tab */}
                                 {courseFilter === 'in progress' && (
                                     inProgressCourses.length > 0 ? (
                                         inProgressCourses.map(course => (
-                                            <CourseCard
-                                                key={course.id}
-                                                id={course.id}
-                                                coverImgUrl={course.cover_img_url}
-                                                courseTitle={course.title}
-                                                numModules={course.module_count ?? 0}
-                                                duration={course.expected_completion_weeks}
-                                                expiry={course.must_complete_in_weeks}
-                                                progress={course.progress} // This is now the real weighted score %
-                                                enrollmentStatus={course.enrollmentStatus}
-                                                userType={userType}
-                                                onPress={() => navigation.navigate('ParkGuideStack', {
-                                                    screen: 'UserModule', 
-                                                    params: { 
-                                                        id: course.id,
-                                                        enrollmentStatus: course.enrollmentStatus,
-                                                        enrollmentId: course.enrollmentId
-                                                    }
-                                                })}
-                                            />
+                                            <View key={course.id} style={[styles.cardWrapper, { flexBasis: cardStyles.width, minWidth: cardStyles.width }]}>
+                                                <CourseCard
+                                                    key={course.id}
+                                                    id={course.id}
+                                                    coverImgUrl={course.cover_img_url}
+                                                    courseTitle={course.title}
+                                                    numModules={course.module_count ?? 0}
+                                                    duration={course.expected_completion_weeks}
+                                                    expiry={course.must_complete_in_weeks}
+                                                    progress={course.progress} // This is now the real weighted score %
+                                                    enrollmentStatus={course.enrollmentStatus}
+                                                    userType={userType}
+                                                    onPress={() => navigation.navigate('ParkGuideStack', {
+                                                        screen: 'UserModule', 
+                                                        params: { 
+                                                            id: course.id,
+                                                            enrollmentStatus: course.enrollmentStatus,
+                                                            enrollmentId: course.enrollmentId
+                                                        }
+                                                    })}
+                                                    style={{ width: '100%' }}
+                                                />
+                                            </View>
                                         ))
                                     ) : (
                                         <Text style={styles.emptyText}>No courses in progress.</Text>
@@ -143,26 +164,29 @@ const UserDashboard = ({ navigation }) => {
                                 completedCourses.map(course => {
                                     const numModules = course.module_count ? course.module_count.length : 0;
                                     return (
-                                        <CourseCard
-                                            key={course.id}
-                                            id={course.id}
-                                            coverImgUrl={course.cover_img_url}
-                                            courseTitle={course.title}
-                                            numModules={numModules}
-                                            duration={course.expected_completion_weeks}
-                                            expiry={course.must_complete_in_weeks}
-                                            progress={course.progress}
-                                            userType={userType}
-                                            // handlers
-                                            onPress={() => navigation.navigate('ParkGuideStack', {
-                                                screen: 'UserModule', 
-                                                params: { 
-                                                    id: course.id,
-                                                    enrollmentStatus: course.enrollmentStatus ?? null,
-                                                    enrollmentId: course.enrollmentId
-                                                }
-                                            })}
-                                        />
+                                        <View key={course.id} style={[styles.cardWrapper, { flexBasis: cardStyles.width, minWidth: cardStyles.width }]}>
+                                            <CourseCard
+                                                key={course.id}
+                                                id={course.id}
+                                                coverImgUrl={course.cover_img_url}
+                                                courseTitle={course.title}
+                                                numModules={numModules}
+                                                duration={course.expected_completion_weeks}
+                                                expiry={course.must_complete_in_weeks}
+                                                progress={course.progress}
+                                                userType={userType}
+                                                // handlers
+                                                onPress={() => navigation.navigate('ParkGuideStack', {
+                                                    screen: 'UserModule', 
+                                                    params: { 
+                                                        id: course.id,
+                                                        enrollmentStatus: course.enrollmentStatus ?? null,
+                                                        enrollmentId: course.enrollmentId
+                                                    }
+                                                })}
+                                                style={{ width: '100%' }}
+                                            />
+                                        </View>
                                     );
                                 })
                             }
@@ -358,12 +382,18 @@ const styles = StyleSheet.create({
         paddingHorizontal: 30,
         marginLeft: 20,
     },
-    cardContainer:{
-        flexDirection:'row',
-        flexWrap:'wrap',
-        justifyContent:'flex-start',
-        gap:30,
-        marginBottom:15
+    cardContainer: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'flex-start',
+        rowGap: 30,      
+        marginBottom: 20,
+        alignItems: 'stretch',
+    },
+    cardWrapper: {
+        flexGrow: 0, 
+        flexShrink: 1,
+        display: 'flex',
     },
     topRow:{
         flex: 1,

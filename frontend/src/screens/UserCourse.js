@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, ScrollView, Pressable, ImageBackground, TextInput, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, ImageBackground, TextInput, Platform, useWindowDimensions } from 'react-native';
 import { useMemo, useState, useEffect } from 'react';
 import { CircleX, ListFilter, SignalZero, SlidersHorizontal, Search } from 'lucide-react-native'
 import { useRoute } from '@react-navigation/native';
@@ -47,6 +47,26 @@ const UserCourse = ({ navigation }) => {
             setTempFilters(newFilter);
         }
     }, [filterCategory]);
+
+    const { width } = useWindowDimensions();
+    const cardStyles = useMemo(() => {
+        if (Platform.OS !== 'web') {
+            return { width: '100%', gap: 0 };
+        }
+
+        let columns = 4;
+        if (width < 600) columns = 1;
+        else if (width < 900) columns = 2;
+        else if (width < 1200) columns = 3;
+
+        const gapPercent = 2; 
+        const calculatedWidth = (100 - (gapPercent * (columns - 1))) / columns;
+
+        return {
+            width: `${calculatedWidth}%`,
+            gap: `${gapPercent}%`
+        };
+    }, [width]);
 
     return (
         <View style={{ flex: 1 }}>
@@ -125,7 +145,7 @@ const UserCourse = ({ navigation }) => {
                             </View>
                                   ))}
                     </View>
-                    <View style={styles.cardContainer}>
+                    <View style={[styles.cardContainer, { columnGap: cardStyles.gap }]}>
                         {filteredCourses.length === 0?(
                             
                             <View style={styles.emptyContainer}>
@@ -134,7 +154,7 @@ const UserCourse = ({ navigation }) => {
                         ) : ( filteredCourses.map(course => {
                             const numModules = course.module_count ? course.module_count : 0;
                             return(
-                            <View key={course.id} style={styles.cardWrapper}>
+                            <View key={course.id} style={[styles.cardWrapper, { flexBasis: cardStyles.width, minWidth: cardStyles.width }]}>
                                 <CourseCard
                                     key={course.id}
                                     id={course.id}
@@ -228,16 +248,15 @@ const styles = StyleSheet.create({
     cardContainer: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        paddingHorizontal: Platform.OS === 'web' ? 60 : 15, 
+        marginHorizontal: Platform.OS === 'web' ? 60 : 15, 
         justifyContent: 'flex-start',
-        columnGap: '2%', 
         rowGap: 30,      
         marginBottom: 20,
         alignItems: 'stretch',
     },
     cardWrapper: {
-        width: Platform.OS === 'web' ? '23.5%' : '100%', 
-        minWidth: Platform.OS === 'web' ? 200 : '100%', 
+        flexGrow: 0, 
+        flexShrink: 1,
         display: 'flex',
     },
     filterContainer:{
@@ -304,13 +323,13 @@ const styles = StyleSheet.create({
         flex: 1,
         paddingVertical: 2,
         outlineStyle: "none",
-  },
-  toolbar: {
-    justifyContent: "space-between",
-    flexDirection: "row",
-    marginHorizontal:60,
-    marginBottom:10
-  },
+    },
+    toolbar: {
+        justifyContent: "space-between",
+        flexDirection: "row",
+        marginHorizontal:60,
+        marginBottom:10
+    },
 });
 
 export default UserCourse;
