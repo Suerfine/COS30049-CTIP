@@ -89,17 +89,14 @@ const Calendar=({route,navigation})=>{
                     direction==='left' ? <ChevronLeft size={24} color="#32750e"/> : <ChevronRight size={24} color="#32750e"/>
                 )}
                 renderHeader={(date) => {
-                    const monthYear = new Date(date).toLocaleDateString('en-US', {
-                        month: 'long',
-                        year: 'numeric',
-                    });
-
-                    return (
-                        <View>
-                            <Text style={styles.customHeaderTitle}>{monthYear}</Text>
-                        </View>
-                    );
-                }}
+                    const monthYear = date.toString('MMMM yyyy');
+                        return (
+                            <View>
+                                <Text style={styles.customHeaderTitle}>{monthYear}</Text>
+                            </View>
+                        );
+                    }
+                }
                     current={new Date().toISOString().split('T')[0]}
                     onDayPress={day => {
                         if (selectedDate === day.dateString) {
@@ -213,11 +210,7 @@ const Calendar=({route,navigation})=>{
                     );
                 }}
                 renderHeader={(date) => {
-                    const monthYear = new Date(date).toLocaleDateString('en-US', {
-                        month: 'long',
-                        year: 'numeric',
-                    });
-
+                const monthYear = date.toString('MMMM yyyy');
                     return (
                         <View>
                             <Text style={styles.customHeaderTitle}>{monthYear}</Text>
