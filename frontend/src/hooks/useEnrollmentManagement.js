@@ -1,10 +1,15 @@
 import {useState, useEffect, useCallback} from 'react';
 import { enrollmentService } from '../services/EnrollmentService';
-import {submissionService} from '../services/SubmissionService';
+import { submissionService } from '../services/SubmissionService';
+import { paymentService } from '../services/PaymentService';
 
 export const useEnrollmentManagement=()=>{
     const [enrollments, setEnrollments]=useState([]);
     const [submissions, setSubmissions]=useState([]);
+    const [payments, setPayments]=useState([]);
+    const [paymentTotalPages, setPaymentTotalPages] = useState(1);
+    const [paymentTotalElements, setPaymentTotalElements] = useState(0);
+    const [currentPaymentPage, setPaymentCurrentPage] = useState(1);
     const [loading, setLoading]=useState(false);
     const [totalPages, setTotalPages]=useState(1);
     const [searchQuery, setSearchQuery]=useState('');
@@ -32,13 +37,24 @@ export const useEnrollmentManagement=()=>{
         setLoading(true);
         try {
             const [enrollData, submissionData] = await Promise.all([
-                enrollmentService.getAll(currentPage, 10, searchQuery, sortConfig, currentStatus),
+                enrollmentService.getAll(
+                    currentPage, 
+                    10, 
+                    searchQuery, 
+                    sortConfig, 
+                    currentStatus
+                ),
                 submissionService.getSummaries(
                     currentSubmissionPage,
                     10,
                     searchQuery,
                     currentSubmissionStatus,
                     sortSubmissionConfig
+                ),
+                paymentService.getAll(
+                    currentPaymentPage,
+                    10,
+                    searchQuery
                 )
             ]);
 
@@ -50,13 +66,17 @@ export const useEnrollmentManagement=()=>{
             setSubmissions(submissionData.data || []);
             setSubmissionTotalPages(submissionData.totalPages || 1);
             setSubmissionTotalElements(submissionData.totalElements || 0);
+
+            setPayments(paymentData.data || []);
+            setPaymentTotalPages(paymentData.totalPages || 1);
+            setPaymentTotalElements(paymentData.totalElements || 0);
         } catch (err) {
             console.error("Fetch Error:", err);
             setEnrollments([]);
         } finally {
             setLoading(false);
         }
-    }, [currentPage, searchQuery, sortConfig, currentStatus, currentSubmissionPage, sortSubmissionConfig, currentSubmissionStatus]);
+    }, [currentPage, searchQuery, sortConfig, currentStatus, currentSubmissionPage, sortSubmissionConfig, currentSubmissionStatus, currentPaymentPage]);
 
     const handleUpdateStatus = async (enrollmentId, newStatus) => {
         try {
@@ -136,6 +156,7 @@ export const useEnrollmentManagement=()=>{
         courses,
         submissionTotalPages, submissionTotalElements,
         currentSubmissionPage, setSubmissionCurrentPage,
-        auditData, auditLoading, fetchEnrollmentAudit
+        auditData, auditLoading, fetchEnrollmentAudit,
+        payments, paymentTotalPages, paymentTotalElements, currentPaymentPage, setPaymentCurrentPage,
     };
 };
