@@ -17,6 +17,7 @@ import * as ElementController from "../controllers/ElementController";
 import { auth } from "../middelware/Auth";
 import sensorRouter from "./SensorRoute";
 import discussionRouter from "./DiscussionRoute";
+import paymentRouter from "./PaymentRoute";
 const router = Router();
 
 /*=============================
@@ -109,6 +110,12 @@ router.use("/notifications", NotificationRouter);
 =     Event ROUTES      =
 ===============================*/
 router.use("/events", eventRouter);
+
+/*===============================
+=        PAYMENT ROUTES        =
+===============================*/
+router.use("/payments", paymentRouter);
+
 
 /**
  * @swagger

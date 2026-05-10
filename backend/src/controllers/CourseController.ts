@@ -115,6 +115,7 @@ function toCourseResponse(course: Course, req?: Request<any>): CourseResponse {
     description: course.description,
     status: course.status,
     released_at: course.released_at,
+    cost: Number(course.cost || 0),
     expected_completion_weeks: course.expected_completion_weeks,
     must_complete_in_weeks: course.must_complete_in_weeks,
     badge_expire_in_months: course.badge_expire_in_months,
@@ -493,6 +494,7 @@ export const createCourse = async (
         description: req.body.description ?? null,
         status: CourseStatus.UNRELEASED,
         released_at: null,
+        cost: req.body.cost ? parseFloat(String(req.body.cost)) : 0,
         expected_completion_weeks: req.body.expected_completion_weeks ?? null,
         must_complete_in_weeks: req.body.must_complete_in_weeks ?? null,
         badge_expire_in_months:
@@ -633,6 +635,7 @@ export const getAllCourses = async (
       },
       group:[
         "Course.id",
+        "Course.cost",
         "tags.id",
         "prerequisite_groups.id",
         "prerequisite_groups->prerequisites.id",
@@ -814,6 +817,9 @@ export const upsertCourse = async (
 
     // Validate and apply the updates from the request body and file
     const updates: Partial<Course> = {};
+    if (req.body.cost !== undefined) {
+      updates.cost = parseFloat(String(req.body.cost));
+    }
     const status = parseCourseStatus(req.body.status);
     const releasedAtInput = parseCourseReleasedAt(req.body.released_at);
     if (typeof req.body.title === "string" && req.body.title.trim() !== "") {

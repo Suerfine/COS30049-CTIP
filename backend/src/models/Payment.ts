@@ -5,34 +5,36 @@ import {
   InferAttributes,
   InferCreationAttributes,
   Model,
-  NonAttribute,
 } from "sequelize";
 import sequelize from "../config/Database";
-import { EnrollmentStatus } from "../enum/EnrollmentStatus";
+import { PaymentStatus } from "../enum/PaymentStatus";
 import User from "./User";
 import Course from "./Course";
+import Enrollment from "./Enrollment";
 
-class Enrollment extends Model<
-  InferAttributes<Enrollment>,
-  InferCreationAttributes<Enrollment>
+class Payment extends Model<
+  InferAttributes<Payment>,
+  InferCreationAttributes<Payment>
 > {
   declare id: CreationOptional<number>;
   declare user_id: ForeignKey<User["id"]>;
   declare course_id: ForeignKey<Course["id"]>;
-  declare status: EnrollmentStatus;
-  declare course?: NonAttribute<Course>;
-  declare enrolled_at: CreationOptional<Date>;
-  declare completed_at: CreationOptional<Date | null>;
-  declare reviewed_by_user_id: CreationOptional<ForeignKey<User["id"]> | null>;
-  declare reviewed_at: CreationOptional<Date | null>;
-  declare reviewed_comment: CreationOptional<string | null>;
-  declare badge_expire_at: CreationOptional<Date | null>;
+  declare enrollment_id: ForeignKey<Enrollment["id"]>;
+  
+  declare amount: number;
+  declare receipt_filepath: string;
+  declare status: PaymentStatus;
+  
+  declare admin_remark: CreationOptional<string | null>;
+  declare processed_by_user_id: CreationOptional<ForeignKey<User["id"]> | null>;
+  declare processed_at: CreationOptional<Date | null>;
+
   declare created_at: CreationOptional<Date>;
   declare updated_at: CreationOptional<Date>;
   declare deleted_at: CreationOptional<Date | null>;
 }
 
-Enrollment.init(
+Payment.init(
   {
     id: {
       type: DataTypes.INTEGER,
@@ -46,8 +48,6 @@ Enrollment.init(
         model: "users",
         key: "id",
       },
-      onUpdate: "CASCADE",
-      onDelete: "CASCADE",
     },
     course_id: {
       type: DataTypes.INTEGER,
@@ -56,44 +56,43 @@ Enrollment.init(
         model: "courses",
         key: "id",
       },
-      onUpdate: "CASCADE",
-      onDelete: "CASCADE",
+    },
+    enrollment_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: "enrollments",
+        key: "id",
+      },
+    },
+    amount: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: false,
+    },
+    receipt_filepath: {
+      type: DataTypes.STRING(1024),
+      allowNull: false,
     },
     status: {
-      type: DataTypes.ENUM(...Object.values(EnrollmentStatus)),
+      type: DataTypes.ENUM(...Object.values(PaymentStatus)),
       allowNull: false,
-      defaultValue: EnrollmentStatus.IN_PROGRESS,
+      defaultValue: PaymentStatus.PENDING,
     },
-    enrolled_at: {
-      type: DataTypes.DATE,
-      allowNull: false,
-      defaultValue: DataTypes.NOW,
-    },
-    completed_at: {
-      type: DataTypes.DATE,
+    admin_remark: {
+      type: DataTypes.TEXT,
       allowNull: true,
     },
-    reviewed_by_user_id: {
+    processed_by_user_id: {
       type: DataTypes.INTEGER,
       allowNull: true,
       references: {
         model: "users",
         key: "id",
       },
-      onUpdate: "CASCADE",
-      onDelete: "SET NULL",
     },
-    reviewed_at: {
+    processed_at: {
       type: DataTypes.DATE,
       allowNull: true,
-    },
-    reviewed_comment: {
-      type: DataTypes.TEXT,
-      allowNull: true,
-    },
-    badge_expire_at: {
-      type: DataTypes.DATE,
-      allowNull: true, // Set to null if it wont ever expire
     },
     created_at: {
       type: DataTypes.DATE,
@@ -112,13 +111,13 @@ Enrollment.init(
   },
   {
     sequelize,
-    tableName: "enrollments",
+    tableName: "payments",
     timestamps: true,
     createdAt: "created_at",
     updatedAt: "updated_at",
     paranoid: true,
     deletedAt: "deleted_at",
-  },
+  }
 );
 
-export default Enrollment;
+export default Payment;

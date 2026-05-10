@@ -28,6 +28,7 @@ export interface CourseResponse {
   id: number;
   title: string;
   description: string | null;
+  cost: number;
   status: CourseStatus;
   released_at: Date | null;
   expected_completion_weeks: number | null;
@@ -47,6 +48,7 @@ export interface CourseResponse {
 export interface CreateCourseRequest {
   title: string;
   description?: string | null;
+  cost: number | string;
   status?: CourseStatus;
   released_at?: string | Date | null;
   expected_completion_weeks?: number;
@@ -61,6 +63,7 @@ export interface UpdateCourseRequest {
   description?: string | null;
   status?: CourseStatus;
   released_at?: string | Date | null;
+  cost?: number | string;
   expected_completion_weeks?: number | null;
   must_complete_in_weeks?: number | null;
   badge_expire_in_months?: number;

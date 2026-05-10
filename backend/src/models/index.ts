@@ -18,6 +18,7 @@ import PrerequisiteGroup from "./PrerequisiteGroup";
 import Prerequisite from "./Prerequisite";
 import AnomalyEvent from "./AnomalyEvent";
 import ArModel from "./ArModel";
+import Payment from "./Payment";
 import { RegistrationStatus } from "../enum/RegistrationStatus";
 
 // Associations
@@ -164,6 +165,18 @@ AnomalyEvent.belongsTo(User, { foreignKey: "user_id", as: "user" });
 User.hasMany(ArModel, { foreignKey: "created_by_user_id", as: "ar_models" });
 ArModel.belongsTo(User, { foreignKey: "created_by_user_id", as: "created_by" });
 
+User.hasMany(Payment, { foreignKey: "user_id", as: "payments" });
+Payment.belongsTo(User, { foreignKey: "user_id", as: "user" });
+
+Course.hasMany(Payment, { foreignKey: "course_id", as: "payments" });
+Payment.belongsTo(Course, { foreignKey: "course_id", as: "course" });
+
+Enrollment.hasOne(Payment, { foreignKey: "enrollment_id", as: "payment" });
+Payment.belongsTo(Enrollment, { foreignKey: "enrollment_id", as: "enrollment" });
+
+User.hasMany(Payment, { foreignKey: "processed_by_user_id", as: "processed_payments" });
+Payment.belongsTo(User, { foreignKey: "processed_by_user_id", as: "processed_by" });
+
 export {
   User,
   Course,
@@ -185,4 +198,5 @@ export {
   SensorLog,
   AnomalyEvent as AnomalyEvent,
   ArModel,
+  Payment,
 };

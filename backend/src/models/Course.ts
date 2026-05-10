@@ -30,6 +30,7 @@ class Course extends Model<
   declare description: CreationOptional<string | null>;
   declare status: CreationOptional<CourseStatus>;
   declare released_at: CreationOptional<Date | null>;
+  declare cost: number;
   declare expected_completion_weeks: CreationOptional<number | null>;
   declare must_complete_in_weeks: CreationOptional<number | null>;
   declare badge_expire_in_months: number;
@@ -64,6 +65,11 @@ Course.init(
       type: DataTypes.DATE,
       allowNull: true,
       defaultValue: null,
+    },
+    cost: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: false,
+      defaultValue: 0.00,
     },
     expected_completion_weeks: {
       type: DataTypes.INTEGER,
