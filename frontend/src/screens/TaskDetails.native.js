@@ -1,8 +1,7 @@
-import { View, Text, StyleSheet, ScrollView, Pressable, StatusBar } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, StatusBar, TextInput } from 'react-native';
 import { useState } from 'react';
 import { ChevronLeft, CheckCircle, Circle, Calendar, Clock, BookOpen, SquarePen, Check } from 'lucide-react-native';
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
-import { TextInput } from 'react-native-gesture-handler';
 
 const TaskDetails=({navigation, route})=>{
     const {task} =route.params;
