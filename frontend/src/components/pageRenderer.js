@@ -25,13 +25,14 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
     const [finalSummary, setFinalSummary] = useState(null);
     const [showFinalResults, setShowFinalResults] = useState(false);
     const [localAnswers, setLocalAnswers] = useState({});
+    const [submissionCount, setSubmissionCount] = useState(0);
 
     useEffect(() => {
         if (!isFinalQuiz || !userMarks || elements.length === 0) return;
         const restoredAnswers = {};
         const restoredQuizStates = {};
-        elements.forEach(el => {
-            if (el.type !== 'quiz_objective') return;
+        const quizElements = elements.filter(el => el.type === 'quiz_objective');
+        quizElements.forEach(el => {
             const submission = userMarks?.[el.id];
             if (submission?.content?.selected !== undefined) {
                 const selectedAnswer = submission.content.selected;
@@ -48,27 +49,22 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
         setLocalAnswers(restoredAnswers);
         setQuizStates(restoredQuizStates);
         if (Object.keys(restoredAnswers).length > 0) {
-            const totalScore = elements.reduce(
-                (acc, el) => acc + (el.score || 0),
-                0
-            );
+            let totalPossibleScore = 0;
+            let earnedTotalScore = 0;
+            quizElements.forEach(el => {
+                totalPossibleScore += (el.score || 0);
+                const savedAttempt = restoredQuizStates[el.id];
+                if (savedAttempt && savedAttempt.isCorrect) {
+                    earnedTotalScore += (el.score || 0);
+                }
+            });
+            const requiredCorrectAnswers = pageMetadata.page?.passing_score || 12;
+            const isPass = earnedTotalScore >= requiredCorrectAnswers;
 
-            const earnedScore = Object.values(restoredQuizStates).reduce(
-                (acc, q) => {
-                    const question = elements.find(e => e.id === Object.keys(restoredQuizStates).find(
-                        key => restoredQuizStates[key] === q
-                    ));
-
-                    return acc + (q.isCorrect ? (question?.score || 0) : 0);
-                },
-                0
-            );
-            const percentage = (earnedScore / totalScore) * 100;
             setFinalSummary({
-                score: earnedScore,
-                total: totalScore,
-                percentage,
-                status: earnedScore>=pageMetadata.passing_score  ? 'PASS' : 'FAIL'
+                score: earnedTotalScore,
+                total: totalPossibleScore,
+                status: isPass ? 'PASS' : 'FAIL'
             });
 
             setShowFinalResults(true);
@@ -86,6 +82,13 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
 
     const handleFinalSubmit = async () => {
         const quizElements = elements.filter(el => el.type === 'quiz_objective');
+        const maxAllowed = pageMetadata.page?.max_tries || 1;
+        const firstQuizId = quizElements[0]?.id;
+        const currentAttemptCount = fullHistoryMap?.[firstQuizId]?.length || 0;
+        if (currentAttemptCount >= maxAllowed) {
+            window.alert(`You have reached the maximum limit of ${maxAllowed} attempts for this assessment.`);
+            return;
+        }
         const unansweredQuestions = quizElements.filter(el => localAnswers[el.id] === undefined);
 
         if (unansweredQuestions.length > 0) {
@@ -94,24 +97,28 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
         }
         setIsSubmitting(true);
         try {
-            for (const el of quizElements) {
+            const submissionPromises = quizElements.map(el => {
                 const userAnswer = localAnswers[el.id];
                 const isCorrect = userAnswer === el.content.answer;
                 const points = isCorrect ? el.score : 0;
-
-                await onProgressUpdate(el.id, points, {
+                
+                return onProgressUpdate(el.id, points, {
                     selected: userAnswer,
                     isCorrect
                 });
-            }
+            });
+            await Promise.all(submissionPromises);
+            setSubmissionCount(prev => prev + 1);
             if (onRefreshHistory) await onRefreshHistory();
-            const finalPercent = (currentStats.potentialScore / currentStats.potentialMax) * 100;
+            const requiredCorrectAnswers = pageMetadata.page?.passing_score || 12;
+            const isPass = currentStats.potentialScore >= requiredCorrectAnswers;
+
             setFinalSummary({
                 score: currentStats.potentialScore,
                 total: currentStats.potentialMax,
-                percentage: finalPercent,
-                status: finalPercent >= (pageMetadata.page?.passing_score || 80) ? 'PASS' : 'FAIL'
+                status: isPass ? 'PASS' : 'FAIL'
             });
+            
             setShowFinalResults(true);
 
         } catch (err) {
@@ -122,11 +129,34 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
         }
     };
 
+    const currentAttemptCount = useMemo(() => {
+        const quizIds = elements.filter(el => el.type === 'quiz_objective').map(el => el.id);
+        if (quizIds.length === 0) return 0;
+
+        const allSubs = [];
+        quizIds.forEach(id => {
+            if (fullHistoryMap?.[id]) {
+                allSubs.push(...fullHistoryMap[id]);
+            }
+        });
+
+        const sessions = [];
+        allSubs.forEach(sub => {
+            const subTime = new Date(sub.created_at).getTime();
+            let existing = sessions.find(s => Math.abs(s - subTime) < 10000); 
+            if (!existing) sessions.push(subTime);
+        });
+
+        const dbCount = sessions.length;
+        return dbCount + submissionCount;
+    }, [fullHistoryMap, elements, submissionCount]);
+
     const handleTryAgain = () => {
         setLocalAnswers({});
         setQuizStates({});
-        setShowFinalResults(false);
         setFinalSummary(null);
+        setShowFinalResults(false);
+        setFinalQuizAnswers({});
     };
 
     const currentStats = useMemo(() => {
@@ -162,10 +192,10 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
             const observer = new IntersectionObserver(
                 ([entry]) => {
                     if (entry.isIntersecting && entry.intersectionRatio >= 0.7) {
+                        observer.disconnect();
                         setTimeout(() => {
                             markAsComplete(id, score);
                         }, 5000);
-                        observer.disconnect();
                     }
                 },
                 { threshold: [0.7] }
@@ -176,7 +206,7 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
             }
 
             return () => observer.disconnect();
-        }, [id]);
+        }, [id, isAlreadyComplete]);
 
         return (
             <View ref={elementRef} style={{ width: '100%' }}>
@@ -190,36 +220,6 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
         setViewedElements(prev => ({ ...prev, [id]: true }));
         if (onProgressUpdate) {
             onProgressUpdate(id, score);
-        }
-    };
-
-    const handleSubmitFinalQuiz = async () => {
-        setIsSubmitting(true);
-        const totalPossible = elements.reduce((acc, el) => acc + (el.score || 0), 0);
-        const totalEarned = Object.values(finalQuizAnswers).reduce((acc, curr) => acc + curr.earned, 0);
-        const passPercentage = (totalEarned / totalPossible) * 100;
-        const isPass = passPercentage >= 80; 
-        
-
-        const finalSubmission = {
-            total_score: totalEarned,
-            max_score: totalPossible,
-            percentage: passPercentage,
-            status: isPass ? 'PASS' : 'FAIL',
-            submitted_at: new Date().toISOString()
-        };
-
-        try {
-            await onProgressUpdate('final_quiz_submission', totalEarned, finalSubmission);
-            setFinalSummary({
-                score: totalEarned,
-                total: totalPossible,
-                status: isPass ? 'PASS' : 'FAIL'
-            });
-        } catch (err) {
-            alert("Failed to submit results. Please try again.");
-        } finally {
-            setIsSubmitting(false);
         }
     };
 
@@ -418,9 +418,15 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
                 <View style={styles.masterWrapper}>
                     <View style={styles.userScoreHeader}>
                         <Text style={styles.userScoreText}>
-                            {isAdmin ? "" : (isViewed || quiz.isCorrect ? `${score}/${score} pts` : `${earnedScore}/${score} pts`)}
+                            {isAdmin ? "" : (
+                                (!isFinalQuiz || showFinalResults) 
+                                    ? (isViewed || quiz.isCorrect ? `${score}/${score} pts` : `${earnedScore}/${score} pts`)
+                                    : `- / ${score} pts` 
+                            )}
                         </Text>
-                        {!isAdmin && (isViewed || quiz.isCorrect) && <CheckCircle2 size={14} color="#0a6340" />}
+                        {!isAdmin && ((!isFinalQuiz || showFinalResults) && (isViewed || quiz.isCorrect)) && (
+                            <CheckCircle2 size={14} color="#0a6340" />
+                        )}
                     </View>
 
                     {isAdmin && (
@@ -483,7 +489,7 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
                                     );
                                 case 'quiz_objective':
                                     const revealFeedback = !isFinalQuiz || showFinalResults;
-
+                                    
                                     return (
                                         <View style={[
                                             styles.quizCard, 
@@ -494,21 +500,6 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
                                                     <HelpCircle color="#0a6340" size={13}/>
                                                     <Text style={styles.quizTitle}>Knowledge Check</Text>
                                                 </View>
-
-                                                {/* INTEGRATED HISTORY PILL
-                                                {!isAdmin && attemptCount > 0 && (
-                                                    <TouchableOpacity 
-                                                        onPress={() => {
-                                                            onFetchHistory(id);
-                                                        }
-                                                            
-                                                        }
-                                                        style={styles.historyPill}
-                                                    >
-                                                        <Clock size={10} color="#64748b" />
-                                                        <Text style={styles.historyPillText}>{attemptCount} Attempts</Text>
-                                                    </TouchableOpacity>
-                                                )} */}
                                             </View>
                                             
                                             <Text style={styles.question}>{content.question}</Text>
@@ -734,24 +725,53 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
                             <Text style={styles.resScoreValue}>
                                 {finalSummary?.score} <Text style={styles.resScoreTotal}>/ {finalSummary?.total}</Text>
                             </Text>
-                            <TouchableOpacity onPress={handleTryAgain} style={styles.tryAgainBtn}>
-                                <RotateCcw size={14} color="#64748b" />
-                                <Text style={styles.tryAgainText}>Try Again</Text>
-                            </TouchableOpacity>
+                            {((pageMetadata.page?.max_tries || 1) - (fullHistoryMap?.[elements.find(e => e.type === 'quiz_objective')?.id]?.length || 0) !== 0) 
+                                ? (
+                                    <TouchableOpacity
+                                        style={styles.redoBtn}
+                                        onPress={handleTryAgain}
+                                    >
+                                        <RotateCcw size={14} color="#0a6340" />
+                                        <Text style={styles.redoText}>Try Again</Text>
+                                    </TouchableOpacity>
+                                ) 
+                                : (
+                                    <View style={styles.failureNotice}>
+                                        <Text style={styles.failureNoticeText}>
+                                            You have failed this assessment. Max attempts ({pageMetadata.page?.max_tries}) reached.
+                                        </Text>
+                                    </View>
+                                )}
                         </View>
                         <Text style={[styles.miniBadgeText, { color: finalSummary?.status === 'PASS' ? '#0a6340' : '#dc2626' }]}>
                             {finalSummary?.status === 'PASS' ? "Requirement Met" : "Re-attempt Required"}
-                            {console.log(finalSummary?.status)}
                         </Text>
                     </View>
                 </View>
             )}
-            <View style={styles.quizHeader}>
-                <Text style={styles.quizTitle}>Knowledge Check</Text>
-                <TouchableOpacity onPress={() => onFetchHistory(id)}>
-                    <Clock size={16} color="#0a6340" />
-                </TouchableOpacity>
-            </View>
+            {!isAdmin && isFinalQuiz && (
+                <View style={styles.assessmentFooter}>
+                    <View style={styles.footerInfo}>
+                        <View style={styles.attemptBadge}>
+                            <Clock size={14} color="#0a6340" />
+                            <Text style={styles.attemptText}>
+                                Attempt {currentAttemptCount} of {pageMetadata.page?.max_tries || 1}
+                            </Text>
+                        </View>
+                        <Text style={styles.footerHint}>
+                            {Math.max(0, (pageMetadata.page?.max_tries || 1) - currentAttemptCount)} retries remaining
+                        </Text>
+                    </View>
+
+                    <TouchableOpacity 
+                        onPress={() => onFetchHistory(elements.filter(el => el.type === 'quiz_objective').map(el => el.id))} 
+                        style={styles.historyLinkBtn}
+                    >
+                        <FileText size={16} color="#64748b" />
+                        <Text style={styles.historyLinkText}>View Performance History</Text>
+                    </TouchableOpacity>
+                </View>
+            )}
         </View>
     );
 };
@@ -1349,6 +1369,69 @@ const styles = StyleSheet.create({
         fontSize: 12,
         color: '#64748b',
         fontWeight: '600',
+    },
+    assessmentFooter: {
+        marginTop: 30,
+        padding: 20,
+        backgroundColor: '#fff',
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#e2e8f0',
+        borderStyle: 'dashed',
+        alignItems: 'center',
+    },
+    footerInfo: {
+        alignItems: 'center',
+        marginBottom: 15,
+    },
+    attemptBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#f0fdf4',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 20,
+        gap: 6,
+        marginBottom: 4,
+    },
+    attemptText: {
+        fontSize: 13,
+        fontWeight: '700',
+        color: '#0a6340',
+    },
+    footerHint: {
+        fontSize: 11,
+        color: '#94a3b8',
+        fontWeight: '500',
+    },
+    historyLinkBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        paddingVertical: 8,
+        paddingHorizontal: 16,
+        borderWidth: 1,
+        borderColor: '#cbd5e1',
+        borderRadius: 8,
+    },
+    historyLinkText: {
+        fontSize: 13,
+        color: '#64748b',
+        fontWeight: '600',
+    },
+    failureNotice: {
+        marginTop: 10,
+        padding: 10,
+        backgroundColor: '#fef2f2',
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: '#fee2e2',
+    },
+    failureNoticeText: {
+        color: '#dc2626',
+        fontSize: 12,
+        fontWeight: '700',
+        textAlign: 'center',
     },
 });
 

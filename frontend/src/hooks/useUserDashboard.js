@@ -27,7 +27,6 @@ export const useUserDashboard = () => {
 
     const weekLabels=[t('Fri'), t('Sat'),t('Sun'), t('Mon'), t('Tue'), t('Wed'), t('Thu')];
 
-    // Upcoming (normal, pending), Completed (normal, completed), workshop (workshop) 
     const eventTab= useMemo(() => ([
         {id: 'upcoming', label:t('upcoming')},
         {id: 'completed', label:t('status.completed')},
