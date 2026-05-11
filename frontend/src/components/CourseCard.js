@@ -46,13 +46,6 @@ const CourseCard = ({
   const isWeb = Platform.OS === "web";
   const isAdmin = userType === "admin";
   const handleEnrollPress = () => {
-    if (!isEnrollable) {
-      const msg = "You need to pass the prerequisite(s) before enrolling in this course.";
-      Platform.OS === "web"
-        ? window.alert(msg)
-        : Alert.alert("Prerequisites Not Met", msg);
-      return;
-    }
     onEnroll?.();
   };
 
@@ -63,17 +56,15 @@ const CourseCard = ({
       if (isEnrollable) {
         return (
           <Pressable style={styles.enrollBtn} onPress={handleEnrollPress}>
-            <Text style={styles.enrollText}>{t("enroll") || "Enroll"}</Text>
+            <Text style={styles.enrollText}>{t("enroll"),"Enroll"}</Text>
           </Pressable>
         );
       }
       // prerequisites not met
       return (
-        <View style={[styles.statusBadge, styles.badgeLocked]}>
-          <Text style={styles.statusBadgeText}>
-            {t("status.prerequisites_required") || "Prerequisites Required"}
-          </Text>
-        </View>
+        <Pressable style={styles.enrollBtn} onPress={handleEnrollPress}>
+          <Text style={styles.enrollText}>{t("enroll"),"Enroll"}</Text>
+        </Pressable>
       );
     }
 
@@ -81,7 +72,7 @@ const CourseCard = ({
       return (
         <View style={[styles.statusBadge, styles.badgeApplied]}>
           <Text style={styles.statusBadgeText}>
-            {t("status.pending_approval") || "Pending Approval"}
+            {t("status.pending_approval"),"Pending Approval"}
           </Text>
         </View>
       );
@@ -96,33 +87,29 @@ const CourseCard = ({
       return (
         <View style={[styles.statusBadge, styles.badgeInReview]}>
           <Text style={styles.statusBadgeText}>
-            {t("status.in_review") || "In Review"}
+            {t("status.in_review"),"In Review"}
           </Text>
         </View>
       );
     }
 
     if (enrollmentStatus === EnrollmentStatus.COMPLETED) {
-      return <ProgressBar progress={progress} />;
+      return <ProgressBar progress={progress} />
     }
     
     if (enrollmentStatus === EnrollmentStatus.FAILED) {
       return (
-        <View style={[styles.statusBadge, styles.badgeFailed]}>
-          <Text style={styles.statusBadgeText}>
-            {t("status.failed") || "Failed"}
-          </Text>
-        </View>
+        <Pressable style={styles.enrollBtn} onPress={handleEnrollPress}>
+          <Text style={styles.enrollText}>{t("enroll"),"Enroll"}</Text>
+        </Pressable>
       );
     }
     
     if (enrollmentStatus === EnrollmentStatus.REJECTED) {
       return (
-        <View style={[styles.statusBadge, styles.badgeRejected]}>
-          <Text style={styles.statusBadgeText}>
-            {t("status.rejected") || "Rejected"}
-          </Text>
-        </View>
+        <Pressable style={styles.enrollBtn} onPress={handleEnrollPress}>
+          <Text style={styles.enrollText}>{t("enroll"),"Enroll"}</Text>
+        </Pressable>
       );
     }
 
@@ -338,15 +325,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#ffc107",
   },
-  badgeCompleted: {
-    backgroundColor: "#d4edda",
+  badgeApplied: {
+    backgroundColor: "#fff3cd",
     borderWidth: 1,
-    borderColor: "#28a745",
-  },
-  badgeFailed:{
-    backgroundColor: "#ffb7b3",
-    borderWidth: 1,
-    borderColor: "red",
+    borderColor: "#ffc107",
   },
   statusBadgeText: {
     fontSize: Platform.select({ web: 13, default: 10 }),
@@ -387,21 +369,6 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 12,
     fontWeight: '600',
-  },
-  badgeApplied: {
-    backgroundColor: "#F59E0B",   // amber — submitted, awaiting action
-  },
-  badgeInReview: {
-    backgroundColor: "#3B82F6",   // blue — under admin review
-  },
-  badgeFailed: {
-    backgroundColor: "#EF4444",   // red — did not pass
-  },
-  badgeRejected: {
-    backgroundColor: "#6B7280",   // grey — admin rejected
-  },
-  badgeLocked: {
-    backgroundColor: "#D1D5DB",   // light grey — prerequisites not met
   },
 });
 

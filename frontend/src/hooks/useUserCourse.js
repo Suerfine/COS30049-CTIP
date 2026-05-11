@@ -62,46 +62,46 @@ export const useUserCourse = () => {
 
   // course.status = enrollment status
   useEffect(() => {
-  const enrichCourses = async () => {
-    if (userCourses.length === 0) return;
+    const enrichCourses = async () => {
+      if (userCourses.length === 0) return;
 
-    const enriched = await Promise.all(
-      userCourses.map(async (course) => {
-        const enrollmentStatus = course.status;
+      const enriched = await Promise.all(
+        userCourses.map(async (course) => {
+          const enrollmentStatus = course.status;
 
-        let progressValue = 0;
+          let progressValue = 0;
 
-        if (enrollmentStatus === "in_progress") {
-          try {
-            const res = await progressService.getCourseProgress(course.id);
-            const earned = Number(res.score) || 0;
-            const total = Number(res.maxScore) || 0;
+          if (enrollmentStatus === "in_progress") {
+            try {
+              const res = await progressService.getCourseProgress(course.id);
+              const earned = Number(res.score) || 0;
+              const total = Number(res.maxScore) || 0;
 
-            // Check if total is 0 to avoid division by zero
-            progressValue = total > 0 ? earned / total : 0;
-            
-            console.log(`Course ${course.id} Progress Calc:`, earned, "/", total, "=", progressValue);
-          } catch (err) {
-            console.error(`Progress fetch failed for course ${course.id}`, err);
-            progressValue = 0;
+              // Check if total is 0 to avoid division by zero
+              progressValue = total > 0 ? earned / total : 0;
+              
+              console.log(`Course ${course.id} Progress Calc:`, earned, "/", total, "=", progressValue);
+            } catch (err) {
+              console.error(`Progress fetch failed for course ${course.id}`, err);
+              progressValue = 0;
+            }
+          } else if (enrollmentStatus === "completed") {
+            progressValue = 1;
           }
-        } else if (enrollmentStatus === "completed") {
-          progressValue = 1;
-        }
 
-        return {
-          ...course,
-          enrollmentStatus,
-          enrollmentId: course.enrollment?.id ?? null,
-          progress: progressValue, 
-        };
-      })
-    );
-    setCoursesWithStatus(enriched);
-  };
+          return {
+            ...course,
+            enrollmentStatus,
+            enrollmentId: course.enrollment?.id ?? null,
+            progress: progressValue, 
+          };
+        })
+      );
+      setCoursesWithStatus(enriched);
+    };
 
-  enrichCourses();
-}, [userCourses]); 
+    enrichCourses();
+  }, [userCourses]); 
 
   // called after confirm enroll
   const handleEnrollment = useCallback(
@@ -120,6 +120,35 @@ export const useUserCourse = () => {
           : Alert.alert("Enrollment failed", failMsg);
       }
     }, [loadInitialData]);
+
+    // check the unfulfilled prerequisites
+    const getUnfulfilledPrerequisites = useCallback((course) => {
+      if (!course.prerequisite_groups || course.prerequisite_groups.length === 0) return [];
+
+      const unfulfilled = [];
+
+      course.prerequisite_groups.forEach((group) => {
+        const prereqs = group.prerequisites || [];
+
+        const groupSatisfied = prereqs.some((prereq) => {
+          const prereqCourse = coursesWithStatus.find(
+            (c) => Number(c.id) === Number(prereq.course_id)
+          );
+          return prereqCourse?.enrollmentStatus === "completed";
+        });
+
+        if (!groupSatisfied) {
+          prereqs.forEach((prereq) => {
+            const prereqCourse = coursesWithStatus.find(
+              (c) => Number(c.id) === Number(prereq.course_id)
+            );
+            if (prereqCourse) unfulfilled.push(prereqCourse.title);
+          });
+        }
+      });
+
+      return unfulfilled;
+    }, [coursesWithStatus]);
 
     // filter applied courses
     const appliedCourses = useMemo(() =>
@@ -266,6 +295,7 @@ export const useUserCourse = () => {
     coursesWithStatus,
     filteredCourses,
     handleEnrollment,
+    getUnfulfilledPrerequisites,
     removeFilter,
     courses: userCourses,
     allTagList,

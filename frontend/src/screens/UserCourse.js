@@ -28,6 +28,7 @@ const UserCourse = ({ navigation }) => {
         coursesWithStatus,
         filteredCourses, courses,
         handleEnrollment, 
+        getUnfulfilledPrerequisites,
         handleApply,
         removeFilter,allTagList, addTag,
         searchText, setSearchText,
@@ -177,10 +178,19 @@ const UserCourse = ({ navigation }) => {
                                         }
                                     })}
                                     onEnroll={() => {
-                                        const confirmed = window.confirm(`Are you sure you want to enroll in ${course.title}?`);
-                                        if (confirmed) {
-                                            handleEnrollment(course.id);
-                                        }
+                                        console.log("onEnroll fired, is_enrollable:", course.is_enrollable);
+                                        console.log("getUnfulfilledPrerequisites:", getUnfulfilledPrerequisites); // should be a function, not undefined
+                                    if (!course.is_enrollable) {
+                                        const unfulfilled = getUnfulfilledPrerequisites(course);
+                                        console.log("unfulfilled result:", unfulfilled);
+                                        const prereqList = unfulfilled.length > 0
+                                        ? unfulfilled.join(", ")
+                                        : "Unknown prerequisite(s)";
+                                        window.alert(`The following prerequisite(s) has not been fulfilled: ${prereqList}`);
+                                        return;
+                                    }
+                                    const confirmed = window.confirm(`Are you sure you want to enroll in ${course.title}?`);
+                                    if (confirmed) handleEnrollment(course.id);
                                     }}
                                     style={{ width: '100%' }}
                                 />
