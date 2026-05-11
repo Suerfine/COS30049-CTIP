@@ -206,7 +206,7 @@ const styles = StyleSheet.create({
     overflow: "hidden", 
     borderColor: "#897474",
     width: Platform.select({
-      web: 320,
+      web: 300,
       default: 200,
     }),
   },
