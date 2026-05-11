@@ -533,7 +533,7 @@ const EnrollmentManagement = () => {
                 onRequestClose={() => setPaymentModalVisible(false)}
             >
                 <View style={styles.modalOverlay}>
-                    <View style={styles.auditModalContent}>
+                    <View style={styles.paymentModalContent}>
                         <View style={styles.modalHeader}>
                             <Text style={styles.modalTitle}>
                                 Payment Details
@@ -568,51 +568,6 @@ const EnrollmentManagement = () => {
                                         <Text style={styles.paymentUserName}>
                                             {selectedPayment.user_fullname}
                                         </Text>
-                                    </View>
-                                </View>
-                                <View style={styles.paymentInfoCard}>
-                                    <View style={styles.paymentInfoRow}> 
-                                        <Text style={styles.paymentValue}>
-                                            RM {selectedPayment.amount}
-                                        </Text>
-                                    </View>
-
-                                    <View style={styles.paymentInfoRow}>
-                                        <View
-                                            style={[
-                                                styles.row,
-                                                styles.badge
-                                            ]}
-                                        >
-                                            <Circle
-                                                size={8}
-                                                stroke={
-                                                    Status_Config[
-                                                        selectedPayment.status?.toLowerCase()
-                                                    ]?.color || "#999"
-                                                }
-                                                fill={
-                                                    Status_Config[
-                                                        selectedPayment.status?.toLowerCase()
-                                                    ]?.color || "#999"
-                                                }
-                                            />
-
-                                            <Text
-                                                style={{
-                                                    color:
-                                                        Status_Config[
-                                                            selectedPayment.status?.toLowerCase()
-                                                        ]?.color || "#999"
-                                                }}
-                                            >
-                                                {
-                                                    Status_Config[
-                                                        selectedPayment.status?.toLowerCase()
-                                                    ]?.label
-                                                }
-                                            </Text>
-                                        </View>
                                     </View>
                                 </View>
                                 <View style={styles.receiptSection}>
@@ -927,7 +882,73 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         padding: 40, 
         color: '#666' 
-    }
+    },
+    paymentModalContent: {
+        width: '60%',
+        maxHeight: '90%',
+        backgroundColor: '#fff',
+        borderRadius: 20,
+        padding: 25,
+    },
+    paymentUserSection: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 15,
+        marginBottom: 25,
+    },
+    paymentAvatar: {
+        width: 65,
+        height: 65,
+        borderRadius: 50,
+    },
+    paymentAvatarPlaceholder: {
+        width: 65,
+        height: 65,
+        borderRadius: 50,
+        backgroundColor: '#2c5c189d',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    paymentAvatarInitial: {
+        color: 'white',
+        fontWeight: 'bold',
+        fontSize: 24,
+    },
+    paymentUserName: {
+        fontSize: 18,
+        fontWeight: '700',
+        color: '#222',
+    },
+    receiptSection: {
+        marginTop: 10,
+    },
+
+    receiptTitle: {
+        fontSize: 16,
+        fontWeight: '700',
+        marginBottom: 15,
+        color: '#333',
+    },
+    receiptImage: {
+        width: '100%',
+        height: 450,
+        borderRadius: 16,
+        resizeMode: 'contain',
+        backgroundColor: '#f5f5f5',
+    },
+    noReceiptBox: {
+        height: 180,
+        borderRadius: 14,
+        borderWidth: 1,
+        borderColor: '#ddd',
+        borderStyle: 'dashed',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    noReceiptText: {
+        color: '#888',
+        fontSize: 14,
+    },
 });
 export default EnrollmentManagement;
 
