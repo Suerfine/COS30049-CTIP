@@ -35,6 +35,8 @@ const EnrollmentManagement = () => {
     const {
         submissions,
         currentSubmissionPage,
+        searchQuery:submissionSearchQuery,
+        setSearchQuery:setSubmissionSearchQuery,
         setSubmissionCurrentPage,
         submissionTotalPages,
         submissionTotalElements,
@@ -104,6 +106,19 @@ const EnrollmentManagement = () => {
         isEnrollment ? setCurrentPage :
         isSubmission ? setSubmissionCurrentPage :
         setPaymentCurrentPage;
+
+    const activeSearchQuery =
+        isEnrollment
+            ? searchQuery
+            : isSubmission
+            ? submissionSearchQuery
+            : '';
+    const setActiveSearchQuery =
+        isEnrollment
+            ? setSearchQuery
+            : isSubmission
+            ? setSubmissionSearchQuery
+            : () => {};
 
     const getActiveStatus=()=>{
         if (isPayment) {
@@ -332,7 +347,15 @@ const EnrollmentManagement = () => {
                     <Pressable onPress={resetSort} style={styles.iconBtn}><RotateCcw size={20} /></Pressable>
                     <View style={[styles.search, styles.row]}>
                         <Search size={18} color="#8f8f8f" />
-                        <TextInput style={styles.input} placeholder='Search...' value={searchQuery} onChangeText={(text) => { setSearchQuery(text); setActivePage(1); }} />
+                        <TextInput
+                            style={styles.input}
+                            placeholder='Search...'
+                            value={activeSearchQuery}
+                            onChangeText={(text) => {
+                                setActiveSearchQuery(text);
+                                setActivePage(1);
+                            }}
+                        />
                     </View>
                     <View style={styles.dropdownWrapper}>
                         <Pressable style={styles.pillTrigger} onPress={() => setIsOpen(!isOpen)}>
