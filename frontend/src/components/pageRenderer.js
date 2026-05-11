@@ -726,23 +726,25 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
                             <Text style={styles.resScoreValue}>
                                 {finalSummary?.score} <Text style={styles.resScoreTotal}>/ {finalSummary?.total}</Text>
                             </Text>
-                            {((pageMetadata.page?.max_tries || 1) - (fullHistoryMap?.[elements.find(e => e.type === 'quiz_objective')?.id]?.length || 0) !== 0) 
-                                ? (
-                                    <TouchableOpacity
-                                        style={styles.redoBtn}
-                                        onPress={handleTryAgain}
-                                    >
-                                        <RotateCcw size={14} color="#0a6340" />
-                                        <Text style={styles.redoText}>Try Again</Text>
-                                    </TouchableOpacity>
-                                ) 
-                                : (
-                                    <View style={styles.failureNotice}>
-                                        <Text style={styles.failureNoticeText}>
-                                            You have failed this assessment. Max attempts ({pageMetadata.page?.max_tries}) reached.
-                                        </Text>
-                                    </View>
-                                )}
+                            {finalSummary?.status === 'PASS' ? (
+                                <View style={styles.successBadge}>
+                                    <CheckCircle2 size={16} color="#0a6340" />
+                                    <Text style={styles.successBadgeText}>Passed</Text>
+                                </View>
+                            ) : currentAttemptCount < (pageMetadata.page?.max_tries || 1) ? (
+                                <TouchableOpacity
+                                    style={styles.redoBtn}
+                                    onPress={handleTryAgain}
+                                >
+                                    <RotateCcw size={14} color="#0a6340" />
+                                    <Text style={styles.redoText}>Try Again</Text>
+                                </TouchableOpacity>
+                            ) : (
+                                <View style={styles.failureNotice}>
+                                    <AlertCircle size={14} color="#dc2626" />
+                                    <Text style={styles.failureText}>No retries left</Text>
+                                </View>
+                            )}
                         </View>
                         <Text style={[styles.miniBadgeText, { color: finalSummary?.status === 'PASS' ? '#0a6340' : '#dc2626' }]}>
                             {finalSummary?.status === 'PASS' ? "Requirement Met" : "Re-attempt Required"}
@@ -753,12 +755,6 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
             {!isAdmin && isFinalQuiz && (
                 <View style={styles.assessmentFooter}>
                     <View style={styles.footerInfo}>
-                        <View style={styles.attemptBadge}>
-                            <Clock size={14} color="#0a6340" />
-                            <Text style={styles.attemptText}>
-                                Attempt {currentAttemptCount} of {pageMetadata.page?.max_tries || 1}
-                            </Text>
-                        </View>
                         <Text style={styles.footerHint}>
                             {Math.max(0, (pageMetadata.page?.max_tries || 1) - currentAttemptCount)} retries remaining
                         </Text>
@@ -1385,21 +1381,6 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginBottom: 15,
     },
-    attemptBadge: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#f0fdf4',
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 20,
-        gap: 6,
-        marginBottom: 4,
-    },
-    attemptText: {
-        fontSize: 13,
-        fontWeight: '700',
-        color: '#0a6340',
-    },
     footerHint: {
         fontSize: 11,
         color: '#94a3b8',
@@ -1427,6 +1408,8 @@ const styles = StyleSheet.create({
         borderRadius: 8,
         borderWidth: 1,
         borderColor: '#fee2e2',
+        flexDirection:'row',
+        gap:10,
     },
     failureNoticeText: {
         color: '#dc2626',
@@ -1437,3 +1420,5 @@ const styles = StyleSheet.create({
 });
 
 export default PageRenderer;
+
+// Try final quiz if pass and still has left attempt can redo or not

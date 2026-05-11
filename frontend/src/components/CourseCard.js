@@ -18,29 +18,13 @@ import ProgressBar from "./ProgressBar.js";
 import { useTranslation } from "react-i18next";
 
 const EnrollmentStatus = {
+  APPLIED: "applied",
   IN_PROGRESS: "in_progress",
   IN_REVIEW: "in_review",
   COMPLETED: "completed",
   FAILED: "failed",
-  EXPIRED: "expired",
-};
-
-// Checks if the user satisfies at least one prerequisite group for the course.
-// A group is satisfied when ALL prerequisites within it are completed.
-const checkPrerequisitesMet = (prerequisiteGroups, myEnrollments) => {
-  if (!prerequisiteGroups || prerequisiteGroups.length === 0) return true;
- 
-  return prerequisiteGroups.some((group) => {
-    const prereqs = group.prerequisites || [];
-    if (prereqs.length === 0) return true;
- 
-    return prereqs.every((prereq) => {
-      const enrollment = myEnrollments.find(
-        (e) => Number(e.course_id) === Number(prereq.course_id)
-      );
-      return enrollment?.status === EnrollmentStatus.COMPLETED;
-    });
-  });
+  // EXPIRED: "expired",
+  REJECTED: "rejected",
 };
 
 const CourseCard = ({
@@ -52,87 +36,86 @@ const CourseCard = ({
   userType,
   progress,
   enrollmentStatus,
-  prerequisiteGroups,
-  myEnrollments,
+  isEnrollable,
   onPress,
   onEdit,
   onDelete,
   onEnroll,
-  // onDrop,
 }) => {
   const { t, i18n } = useTranslation();
   const isWeb = Platform.OS === "web";
-
   const isAdmin = userType === "admin";
-  const isNotEnrolled = !enrollmentStatus;
-  const isInProgress = enrollmentStatus === EnrollmentStatus.IN_PROGRESS;
-  const isInReview = enrollmentStatus === EnrollmentStatus.IN_REVIEW;
-  const isCompleted = enrollmentStatus === EnrollmentStatus.COMPLETED;
-  const isFailed = enrollmentStatus === EnrollmentStatus.FAILED;
-
-  const cardPressable = isInProgress;
-
-  // HANDLERS
-  // check prerequisites
   const handleEnrollPress = () => {
-    const prereqsMet = checkPrerequisitesMet(prerequisiteGroups, myEnrollments || []);
- 
-    if (!prereqsMet) {
-      if (Platform.OS === "web") {
-        window.alert("You need to pass the prerequisite(s) before enrolling in this course.");
-      } else {
-        Alert.alert(
-          "Prerequisites Not Met",
-          "You need to pass the prerequisite(s) before enrolling in this course."
-        );
-      }
-      return;
-    }
- 
-    // if prerequisites satisfied or no prerequisites then set status = in review
     onEnroll?.();
   };
 
-  // show status (enroll, progress bar, in review, completed)
+  // show status
   const renderEnrollmentWidget = () => {
-    if (isNotEnrolled) {
+    if (!enrollmentStatus) {
+      // if can enroll show enroll button
+      if (isEnrollable) {
+        return (
+          <Pressable style={styles.enrollBtn} onPress={handleEnrollPress}>
+            <Text style={styles.enrollText}>{t("enroll"),"Enroll"}</Text>
+          </Pressable>
+        );
+      }
+      // prerequisites not met
       return (
         <Pressable style={styles.enrollBtn} onPress={handleEnrollPress}>
-          <Text style={styles.enrollText}>{t("enroll") || "Enroll"}</Text>
+          <Text style={styles.enrollText}>{t("enroll"),"Enroll"}</Text>
         </Pressable>
       );
     }
 
-    if (isInProgress) {
+    if (enrollmentStatus === EnrollmentStatus.APPLIED) {
+      return (
+        <View style={[styles.statusBadge, styles.badgeApplied]}>
+          <Text style={styles.statusBadgeText}>
+            {t("status.pending_approval"),"Pending Approval"}
+          </Text>
+        </View>
+      );
+    }
+
+    // show progress bar
+    if (enrollmentStatus === EnrollmentStatus.IN_PROGRESS) {
       return <ProgressBar progress={progress} />;
     }
 
-    if (isInReview) {
+    if (enrollmentStatus === EnrollmentStatus.IN_REVIEW) {
       return (
         <View style={[styles.statusBadge, styles.badgeInReview]}>
-          <Text style={styles.statusBadgeText}>{t("in review")}</Text>
+          <Text style={styles.statusBadgeText}>
+            {t("status.in_review"),"In Review"}
+          </Text>
         </View>
       );
     }
 
-    if (isCompleted) {
+    if (enrollmentStatus === EnrollmentStatus.COMPLETED) {
+      return <ProgressBar progress={progress} />
+    }
+    
+    if (enrollmentStatus === EnrollmentStatus.FAILED) {
       return (
-        <View style={[styles.statusBadge, styles.badgeCompleted]}>
-          <Text style={styles.statusBadgeText}>{t("completed")}</Text>
-        </View>
+        <Pressable style={styles.enrollBtn} onPress={handleEnrollPress}>
+          <Text style={styles.enrollText}>{t("enroll"),"Enroll"}</Text>
+        </Pressable>
       );
     }
-
-    if (isFailed) {
+    
+    if (enrollmentStatus === EnrollmentStatus.REJECTED) {
       return (
-        <View style={[styles.statusBadge, styles.badgeFailed]}>
-          <Text style={styles.statusBadgeText}>{t("failed")}</Text>
-        </View>
+        <Pressable style={styles.enrollBtn} onPress={handleEnrollPress}>
+          <Text style={styles.enrollText}>{t("enroll"),"Enroll"}</Text>
+        </Pressable>
       );
     }
 
     return null;
   };
+
 
   return (
     <Pressable
@@ -342,21 +325,53 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#ffc107",
   },
-  badgeCompleted: {
-    backgroundColor: "#d4edda",
+  badgeApplied: {
+    backgroundColor: "#fff3cd",
     borderWidth: 1,
-    borderColor: "#28a745",
-  },
-  badgeFailed:{
-    backgroundColor: "#ffb7b3",
-    borderWidth: 1,
-    borderColor: "red",
+    borderColor: "#ffc107",
   },
   statusBadgeText: {
     fontSize: Platform.select({ web: 13, default: 10 }),
     fontWeight: "600",
     color: "#3e3e3e",
   },
+  failedContainer: {
+    marginTop: 10,
+    width: '100%',
+  },
+  failedActions: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 8,
+  },
+  viewRecordBtn: {
+    flex: 1,
+    padding: 8,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#64748b',
+    backgroundColor: 'white',
+  },
+  viewRecordText: {
+    textAlign: 'center',
+    color: '#64748b',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  retryBtn: {
+    flex: 1,
+    padding: 8,
+    borderRadius: 6,
+    backgroundColor: '#dc2626',
+  },
+  retryText: {
+    textAlign: 'center',
+    color: 'white',
+    fontSize: 12,
+    fontWeight: '600',
+  },
 });
 
 export default CourseCard;
+
+// When quiz does not pass but complete the course progress will 100%

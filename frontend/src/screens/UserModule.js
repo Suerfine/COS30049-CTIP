@@ -12,6 +12,7 @@ import {
   TextInput,
   Modal,
   FlatList,
+  Platform,
 } from "react-native";
 import { useRoute } from "@react-navigation/native";
 import {
@@ -42,7 +43,14 @@ import DiscussionSection from "../components/DiscussionSection.js";
 
 const UserModule = ({ navigation }) => {
   const route = useRoute();
-  const { id, enrollmentStatus, enrollmentId } = route.params;
+  const {
+    id,
+    enrollmentStatus,
+    enrollmentId,
+    enrollmentStatus: initialStatus,
+  } = route.params;
+  const [localStatus, setLocalStatus] = useState(initialStatus);
+  const hasfailedRef = useRef(false);
 
   const isLocked =
     enrollmentStatus === null ||
@@ -66,11 +74,17 @@ const UserModule = ({ navigation }) => {
     setIsHistoryVisible,
     refreshHistory,
     handleFetchHistory,
+    failEnrollment,
   } = useCourseDetails(id, enrollmentId);
   const { allCourseList } = useCourses();
   const [chatOpen, setChatOpen] = useState(false);
 
-  const { progressMap } = useCourseProgress(course, userMarks, fullHistoryMap);
+  const { progressMap, isDeadEnd } = useCourseProgress(
+    course,
+    userMarks,
+    fullHistoryMap,
+  );
+  const isFailed = localStatus === "failed" || isDeadEnd;
   const [selectedPage, setSelectedPage] = useState({ type: "overview" });
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [activeTab, setActiveTab] = useState("Overview");
@@ -100,6 +114,30 @@ const UserModule = ({ navigation }) => {
       loadWorkshops();
     }
   }, [activeTab, loadWorkshops]);
+
+  useEffect(() => {
+    const handleFailure = async () => {
+      if (isDeadEnd && localStatus !== "failed" && !hasfailedRef.current) {
+        hasfailedRef.current = true;
+
+        setLocalStatus("failed");
+        const result = await failEnrollment(enrollmentId);
+
+        if (result.success) {
+          if (Platform.OS === "web") {
+            window.alert(
+              "Maximum attempts reached. This course is now marked as Failed.",
+            );
+          } else {
+            Alert.alert("Course Failed", "Maximum attempts reached.");
+          }
+          navigation.navigate("ParkGuideStack", { screen: "Courses" });
+        }
+      }
+    };
+
+    handleFailure();
+  }, [isDeadEnd, localStatus, failEnrollment]);
 
   const tabs = [
     { id: "Overview", label: "Overview" },
@@ -302,6 +340,7 @@ const UserModule = ({ navigation }) => {
         isCollapsed={isCollapsed}
         isLocked={isLocked}
         userMarks={userMarks}
+        isFailed={isFailed}
       />
       <ScrollView ref={scrollViewRef}>
         <View style={styles.container}>
@@ -411,6 +450,7 @@ const UserModule = ({ navigation }) => {
                     }}
                     onRefreshHistory={refreshHistory}
                     scrollToTop={scrollToTop}
+                    isFailed={isFailed}
                   />
                 )}
                 <Modal

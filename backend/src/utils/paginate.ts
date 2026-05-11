@@ -521,7 +521,9 @@ export async function paginateModel<T extends Model>(
   };
 
   const { rows, count } = await model.findAndCountAll(queryOptions);
-  const totalElements = Number(count);
+  const totalElements = Array.isArray(count)
+  ? count.length
+  : Number(count);
 
   return formatPaginateResponse(rows, params, true, {
     page,

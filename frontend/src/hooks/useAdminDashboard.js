@@ -22,6 +22,7 @@ export const useAdminDashboard = () => {
                 enrollmentService.getAll(),
                 AnomalyService.getAll(),
             ]);
+            console.log("courses response:", courses);
             setStats({
                 totalUsers: users?.totalElements || 0,
                 totalCourses: courses?.totalElements || 0,

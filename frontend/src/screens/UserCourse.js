@@ -25,15 +25,15 @@ const UserCourse = ({ navigation }) => {
         tempFilters, setTempFilters,
         statusLabels,
         tabs,
-        myEnrollments,
         coursesWithStatus,
         filteredCourses, courses,
         handleEnrollment, 
-        handleDrop,
+        getUnfulfilledPrerequisites,
         handleApply,
         removeFilter,allTagList, addTag,
         searchText, setSearchText,
     }=useUserCourse({progressData});
+    
 
     // sync parameter with filter from UserDashboard Explore Categories section
     useEffect(() => {
@@ -167,8 +167,7 @@ const UserCourse = ({ navigation }) => {
                                     progress={course.progress}
                                     // enrollment
                                     enrollmentStatus={course.enrollmentStatus}
-                                    prerequisiteGroups={course.prerequisiteGroups || []}
-                                    myEnrollments={myEnrollments}
+                                    isEnrollable={course.is_enrollable} 
                                     // handlers
                                     onPress={() => navigation.navigate('ParkGuideStack', {
                                         screen: 'UserModule', 
@@ -179,12 +178,20 @@ const UserCourse = ({ navigation }) => {
                                         }
                                     })}
                                     onEnroll={() => {
-                                        const confirmed = window.confirm(`Are you sure you want to enroll in ${course.title}?`);
-                                        if (confirmed) {
-                                            handleEnrollment(course.id);
-                                        }
+                                        console.log("onEnroll fired, is_enrollable:", course.is_enrollable);
+                                        console.log("getUnfulfilledPrerequisites:", getUnfulfilledPrerequisites); // should be a function, not undefined
+                                    if (!course.is_enrollable) {
+                                        const unfulfilled = getUnfulfilledPrerequisites(course);
+                                        console.log("unfulfilled result:", unfulfilled);
+                                        const prereqList = unfulfilled.length > 0
+                                        ? unfulfilled.join(", ")
+                                        : "Unknown prerequisite(s)";
+                                        window.alert(`The following prerequisite(s) has not been fulfilled: ${prereqList}`);
+                                        return;
+                                    }
+                                    const confirmed = window.confirm(`Are you sure you want to enroll in ${course.title}?`);
+                                    if (confirmed) handleEnrollment(course.id);
                                     }}
-                                    onDrop={() => handleDrop(course.id)}
                                     style={{ width: '100%' }}
                                 />
                             </View>)
