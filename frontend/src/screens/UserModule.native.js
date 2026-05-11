@@ -428,7 +428,7 @@ const UserModule = ({ navigation }) => {
                   role={currentUser.role}
                   courseId={id}
                   onProgressUpdate={async () => {
-                      await saveProgress(elementId, score, content);
+                    await saveProgress(elementId, score, content);
                   }}
                   onRegisterWorkshop={registerWorkshop}
                   registering={registering}
@@ -489,7 +489,11 @@ const UserModule = ({ navigation }) => {
       </ScrollView>
 
       {/* ai chatbot */}
-      <AIChatBot isOpen={chatOpen} onClose={() => setChatOpen(false)} />
+      <AIChatBot
+        isOpen={chatOpen}
+        onClose={() => setChatOpen(false)}
+        pageId={selectedPage?.page?.id}
+      />
       {!chatOpen && (
         <TouchableOpacity
           style={styles.floatingChatBtn}
@@ -505,369 +509,369 @@ const UserModule = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-    safeArea: {
-        flex: 1,
-        backgroundColor: "#f5f5f5",
-    },
-    drawerScrim: {
-        position: "absolute",
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: "rgba(0,0,0,0.45)",
-    },
-    drawerContainer: {
-        position: "absolute",
-        top: 0,
-        left: 0,
-        bottom: 0,
-        width: Math.min(SCREEN_WIDTH * 0.5, 300),
-        backgroundColor: "#fff",
-        shadowColor: "#000",
-        shadowOffset: { width: 4, height: 0 },
-        shadowOpacity: 0.2,
-        shadowRadius: 12,
-        elevation: 16,
-    },
-    drawerClose: {
-        alignSelf: "flex-end",
-        padding: 14,
-    },  
-    scrollView: {
-        flex: 1,
-    },
-    backgroundImage: {
-        width: "100%",
-        minHeight: 130,
-    },
-    backgroundImageStyle: {
-        borderBottomLeftRadius: 20,
-        borderBottomRightRadius: 20,
-    },
-    courseContainer: {
-        paddingVertical: 28,
-        paddingHorizontal: 16,
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 10,
-    },
-    title: {
-        fontSize: 20,
-        fontWeight: "bold",
-        color: "white",
-        marginLeft: 4,
-    },
-    description: {
-        fontSize: 12,
-        color: "rgba(255,255,255,0.85)",
-        marginLeft: 4,
-        marginBottom: 2,
-    },
-    backButton: {
-        width: 38,
-        height: 38,
-        backgroundColor: "rgba(168,168,168,0.35)",
-        padding: 7,
-        borderRadius: 50,
-        justifyContent: "center",
-        alignItems: "center",
-    },
-    btnPressed: {
-        opacity: 0.6,
-    },
-    contentWrapper: {
-        marginTop: 18,
-        paddingHorizontal: 16,
-    },
-    headerRow: {
-        marginBottom: 8,
-    },
-    courseTitle: {
-        fontSize: 20,
-        fontWeight: "700",
-        color: "#1a1a1a",
-    },
-    statsRow: {
-        flexDirection: "row",
-        flexWrap: "wrap",
-        gap: 8,
-        marginBottom: 16,
-    },
-    statChip: {
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 5,
-        paddingVertical: 6,
-        paddingHorizontal: 10,
-        borderRadius: 20,
-        backgroundColor: "#f0f0f0",
-    },
-    statLabel: {
-        color: "#363636",
-        fontSize: 12,
-    },
-    course_cover: {
-        width: "100%",
-        height: Math.round(SCREEN_WIDTH * 0.52),
-        borderRadius: 12,
-        backgroundColor: "#e0e0e0",
-    },
-    dynamicContent: {
-        // paddingBottom: 30,   
-    },
-    tabSection: {
-        paddingTop: 10,
-        gap: 16,
-    },
-    sectionTitle: {
-        fontSize: 17,
-        fontWeight: "650",
-        color: "#3d3d3d",
-        marginTop: 12,
-        marginBottom: 6,
-    },
-    bodyText: {
-        color: "#4A4A4A",
-        lineHeight: 22,
-        fontSize: 14,
-    },
-    pillContainer: {
-        flexDirection: "row",
-        gap: 10,
-        marginBottom: 14,
-        marginTop: 6,
-    },
-    pill: {
-        paddingHorizontal: 18,
-        paddingVertical: 7,
-        borderRadius: 25,
-        backgroundColor: "#ffffff6e",
-        borderWidth: 1,
-        borderColor: "#ddd",
-    },
-    activePill: {
-        backgroundColor: "#0a6340",
-        borderColor: "#0a6340",
-    },
-    pillText: {
-        fontSize: 13,
-        color: "#929292",
-        fontWeight: "500",
-    },
-    activePillText: {
-        color: "#fff",
-    },
-    forumContent: {
-        padding: 14,
-        backgroundColor: "#fff",
-        borderRadius: 12,
-        minHeight: 80,
-        borderWidth: 1,
-        borderColor: "#eee",
-    },
-    badgeAchievementCard: {
-        backgroundColor: "#f8fdfb",
-        borderRadius: 16,
-        padding: 18,
-        borderWidth: 1,
-        borderColor: "#e0f2f1",
-        marginTop: 8,
-        marginBottom: 20,
-    },
-    badgeTextContent: { 
-        flex: 1 
-    },
-    badgeSubtitle: {
-        fontSize: 11,
-        fontWeight: "700",
-        color: "#0a6340",
-        textTransform: "uppercase",
-        marginBottom: 4,
-        textAlign: "center",
-    },
-    badgeDescription: {
-        fontSize: 13,
-        color: "#444",
-        lineHeight: 20,
-        textAlign: "center",
-    },
-    badgePreviewContainer: {
-        alignItems: "center",
-        justifyContent: "center",
-        marginTop: 16,
-    },
-    largeAchievementBadge: {
-        width: 90,
-        height: 90,
-        borderRadius: 45,
-        backgroundColor: "#fff",
-        borderWidth: 2,
-        borderColor: "#FFD700",
-    },
-    verifiedBadge: {
-        backgroundColor: "#0a6340",
-        paddingHorizontal: 8,
-        paddingVertical: 2,
-        borderRadius: 4,
-        marginTop: -8,
-    },
-    verifiedText: {
-        color: "#fff",
-        fontSize: 8,
-        fontWeight: "900",
-    },
-    tagSectionContainer: { 
-        gap: 20, 
-        marginTop: 4 
-    },
-    tagGroup: { 
-        gap: 6 
-    },
-    tagLabel: {
-        fontSize: 11,
-        fontWeight: "700",
-        color: "#0a6340",
-        textTransform: "uppercase",
-        letterSpacing: 0.5,
-    },
-    tagList: { 
-        flexDirection: "row", 
-        flexWrap: "wrap", 
-        gap: 8 
-    },
-    tagPill: {
-        paddingHorizontal: 10,
-        paddingVertical: 5,
-        borderRadius: 14,
-        borderWidth: 1,
-    },
-    locationPill: {
-        backgroundColor: "#e8f5e9",
-        borderColor: "#c8e6c9",
-    },
-    categoryPill: {
-        backgroundColor: "#f1f8e9",
-        borderColor: "#dcedc8",
-    },
-    tagPillText: { 
-    fontSize: 12, 
-    color: "#2e7d32", 
-    fontWeight: "600"
-    },
+  safeArea: {
+    flex: 1,
+    backgroundColor: "#f5f5f5",
+  },
+  drawerScrim: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0,0,0,0.45)",
+  },
+  drawerContainer: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    bottom: 0,
+    width: Math.min(SCREEN_WIDTH * 0.5, 300),
+    backgroundColor: "#fff",
+    shadowColor: "#000",
+    shadowOffset: { width: 4, height: 0 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 16,
+  },
+  drawerClose: {
+    alignSelf: "flex-end",
+    padding: 14,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  backgroundImage: {
+    width: "100%",
+    minHeight: 130,
+  },
+  backgroundImageStyle: {
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+  },
+  courseContainer: {
+    paddingVertical: 28,
+    paddingHorizontal: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "white",
+    marginLeft: 4,
+  },
+  description: {
+    fontSize: 12,
+    color: "rgba(255,255,255,0.85)",
+    marginLeft: 4,
+    marginBottom: 2,
+  },
+  backButton: {
+    width: 38,
+    height: 38,
+    backgroundColor: "rgba(168,168,168,0.35)",
+    padding: 7,
+    borderRadius: 50,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  btnPressed: {
+    opacity: 0.6,
+  },
+  contentWrapper: {
+    marginTop: 18,
+    paddingHorizontal: 16,
+  },
+  headerRow: {
+    marginBottom: 8,
+  },
+  courseTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#1a1a1a",
+  },
+  statsRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginBottom: 16,
+  },
+  statChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 20,
+    backgroundColor: "#f0f0f0",
+  },
+  statLabel: {
+    color: "#363636",
+    fontSize: 12,
+  },
+  course_cover: {
+    width: "100%",
+    height: Math.round(SCREEN_WIDTH * 0.52),
+    borderRadius: 12,
+    backgroundColor: "#e0e0e0",
+  },
+  dynamicContent: {
+    // paddingBottom: 30,
+  },
+  tabSection: {
+    paddingTop: 10,
+    gap: 16,
+  },
+  sectionTitle: {
+    fontSize: 17,
+    fontWeight: "650",
+    color: "#3d3d3d",
+    marginTop: 12,
+    marginBottom: 6,
+  },
+  bodyText: {
+    color: "#4A4A4A",
+    lineHeight: 22,
+    fontSize: 14,
+  },
+  pillContainer: {
+    flexDirection: "row",
+    gap: 10,
+    marginBottom: 14,
+    marginTop: 6,
+  },
+  pill: {
+    paddingHorizontal: 18,
+    paddingVertical: 7,
+    borderRadius: 25,
+    backgroundColor: "#ffffff6e",
+    borderWidth: 1,
+    borderColor: "#ddd",
+  },
+  activePill: {
+    backgroundColor: "#0a6340",
+    borderColor: "#0a6340",
+  },
+  pillText: {
+    fontSize: 13,
+    color: "#929292",
+    fontWeight: "500",
+  },
+  activePillText: {
+    color: "#fff",
+  },
+  forumContent: {
+    padding: 14,
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    minHeight: 80,
+    borderWidth: 1,
+    borderColor: "#eee",
+  },
+  badgeAchievementCard: {
+    backgroundColor: "#f8fdfb",
+    borderRadius: 16,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: "#e0f2f1",
+    marginTop: 8,
+    marginBottom: 20,
+  },
+  badgeTextContent: {
+    flex: 1,
+  },
+  badgeSubtitle: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#0a6340",
+    textTransform: "uppercase",
+    marginBottom: 4,
+    textAlign: "center",
+  },
+  badgeDescription: {
+    fontSize: 13,
+    color: "#444",
+    lineHeight: 20,
+    textAlign: "center",
+  },
+  badgePreviewContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 16,
+  },
+  largeAchievementBadge: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    backgroundColor: "#fff",
+    borderWidth: 2,
+    borderColor: "#FFD700",
+  },
+  verifiedBadge: {
+    backgroundColor: "#0a6340",
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+    marginTop: -8,
+  },
+  verifiedText: {
+    color: "#fff",
+    fontSize: 8,
+    fontWeight: "900",
+  },
+  tagSectionContainer: {
+    gap: 20,
+    marginTop: 4,
+  },
+  tagGroup: {
+    gap: 6,
+  },
+  tagLabel: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#0a6340",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  tagList: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  tagPill: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 14,
+    borderWidth: 1,
+  },
+  locationPill: {
+    backgroundColor: "#e8f5e9",
+    borderColor: "#c8e6c9",
+  },
+  categoryPill: {
+    backgroundColor: "#f1f8e9",
+    borderColor: "#dcedc8",
+  },
+  tagPillText: {
+    fontSize: 12,
+    color: "#2e7d32",
+    fontWeight: "600",
+  },
 
-    /* Prerequisite */
-    prereqSection: {
-        backgroundColor: "#fffbeb",
-        padding: 14,
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: "#fef3c7",
-        marginTop: 8,
-    },
-    prereqItem: { 
-        flexDirection: "row", 
-        alignItems: "center", 
-        marginBottom: 6 
-    },
-    prereqDot: {
-        width: 6,
-        height: 6,
-        borderRadius: 3,
-        backgroundColor: "#d97706",
-        marginRight: 10,
-    },
-    prereqText: { 
-        fontSize: 13, 
-        color: "#92400e", 
-        fontWeight: "500" 
-    },
-    editorContainer: { 
-        flex: 1, 
-        paddingBottom: 50 
-    },
-    editorLabel: {
-        color: "#0a6340",
-        fontWeight: "bold",
-        fontSize: 11,
-        textTransform: "uppercase",
-        marginBottom: 4,
-    },
-    pageTitle: {
-        fontSize: 24,
-        fontWeight: "bold",
-        color: "#1a1a1a",
-        marginBottom: 16,
-    },
-    elementLoader: {
-        marginTop: 40,
-        alignItems: "center",
-    },
-    loaderText: {
-        marginTop: 10,
-        color: "#666",
-        fontSize: 13,
-    },
-    guideInfoCard: {
-        paddingVertical: 14,
-        paddingHorizontal: 16,
-        borderWidth: 2,
-        borderColor: "#e5e7eb",
-        borderRadius: 8,
-        marginBottom: 20,
-    },
-    guideInfoHeader: {
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 8,
-        marginBottom: 12,
-    },
-    guideInfoTitle: {
-        fontSize: 13,
-        fontWeight: "700",
-        color: "#374151",
-        textTransform: "uppercase",
-        letterSpacing: 0.5,
-    },
-    guideStatChip: { 
-        flexDirection: "column", 
-        gap: 3 
-    },
-    statValue: { 
-        fontSize: 18, 
-        fontWeight: "800", 
-        color: "#111827" 
-    },
-    guideNotice: {
-        fontSize: 12,
-        color: "#4b5563",
-        lineHeight: 18,
-        borderTopWidth: 1,
-        borderTopColor: "#f3f4f6",
-        paddingTop: 10,
-        marginTop: 4,
-    },
-    markdownContainer: {
-        marginTop: 4,
-    },
-    floatingChatBtn: {
-        position: "absolute",
-        bottom: 24,
-        right: 20,
-        backgroundColor: "#0a6340",
-        flexDirection: "row",
-        alignItems: "center",
-        paddingHorizontal: 18,
-        paddingVertical: 11,
-        borderRadius: 28,
-        gap: 7,
-        elevation: 6,
-    },
-    chatBtnText: {
-        color: "white",
-        fontWeight: "bold",
-        fontSize: 14,
-    },
+  /* Prerequisite */
+  prereqSection: {
+    backgroundColor: "#fffbeb",
+    padding: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#fef3c7",
+    marginTop: 8,
+  },
+  prereqItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 6,
+  },
+  prereqDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: "#d97706",
+    marginRight: 10,
+  },
+  prereqText: {
+    fontSize: 13,
+    color: "#92400e",
+    fontWeight: "500",
+  },
+  editorContainer: {
+    flex: 1,
+    paddingBottom: 50,
+  },
+  editorLabel: {
+    color: "#0a6340",
+    fontWeight: "bold",
+    fontSize: 11,
+    textTransform: "uppercase",
+    marginBottom: 4,
+  },
+  pageTitle: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#1a1a1a",
+    marginBottom: 16,
+  },
+  elementLoader: {
+    marginTop: 40,
+    alignItems: "center",
+  },
+  loaderText: {
+    marginTop: 10,
+    color: "#666",
+    fontSize: 13,
+  },
+  guideInfoCard: {
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderWidth: 2,
+    borderColor: "#e5e7eb",
+    borderRadius: 8,
+    marginBottom: 20,
+  },
+  guideInfoHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 12,
+  },
+  guideInfoTitle: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#374151",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  guideStatChip: {
+    flexDirection: "column",
+    gap: 3,
+  },
+  statValue: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: "#111827",
+  },
+  guideNotice: {
+    fontSize: 12,
+    color: "#4b5563",
+    lineHeight: 18,
+    borderTopWidth: 1,
+    borderTopColor: "#f3f4f6",
+    paddingTop: 10,
+    marginTop: 4,
+  },
+  markdownContainer: {
+    marginTop: 4,
+  },
+  floatingChatBtn: {
+    position: "absolute",
+    bottom: 24,
+    right: 20,
+    backgroundColor: "#0a6340",
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 18,
+    paddingVertical: 11,
+    borderRadius: 28,
+    gap: 7,
+    elevation: 6,
+  },
+  chatBtnText: {
+    color: "white",
+    fontWeight: "bold",
+    fontSize: 14,
+  },
 });
 
 export default UserModule;

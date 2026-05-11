@@ -93,6 +93,7 @@ export const API_ENDPOINTS = {
       `/payments/${paymentId}/status/${status}`,
   },
   CHATBOT: {
-    SEND: "/chatbot",
+    SEND_MESSAGE: "/chatbot",
+    CREATE_SESSION: "/chatbot/create-session",
   },
 };

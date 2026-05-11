@@ -13,7 +13,7 @@ import { Send, Bot, X } from "lucide-react-native";
 import chatbotService from "../services/chatbotService";
 import Markdown from "react-native-markdown-display";
 
-const AIChatBot = ({ isOpen, onClose }) => {
+const AIChatBot = ({ isOpen, onClose, pageId }) => {
   const [messages, setMessages] = useState([
     {
       id: 1,
@@ -25,7 +25,12 @@ const AIChatBot = ({ isOpen, onClose }) => {
   const [inputText, setInputText] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [thinkingDots, setThinkingDots] = useState("");
+  const [sessionInitialized, setSessionInitialized] = useState(false);
   const scrollViewRef = useRef();
+
+  useEffect(() => {
+    setSessionInitialized(false);
+  }, [pageId]);
 
   useEffect(() => {
     if (!isSending) {
@@ -64,7 +69,16 @@ const AIChatBot = ({ isOpen, onClose }) => {
     setIsSending(true);
 
     try {
-      const response = await chatbotService.sendMessage(message);
+      const shouldCreateSession =
+        !sessionInitialized && Number.isInteger(pageId);
+      const response = shouldCreateSession
+        ? await chatbotService.createSession(pageId, message)
+        : await chatbotService.sendMessage(message);
+
+      if (shouldCreateSession) {
+        setSessionInitialized(true);
+      }
+
       const aiResponse = {
         id: Date.now() + 1,
         text: response?.data || "I couldn't generate a response right now.",
