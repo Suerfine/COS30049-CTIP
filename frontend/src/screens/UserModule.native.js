@@ -314,7 +314,7 @@ const UserModule = ({ navigation }) => {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['left', 'right']}>
       {/* outline bar using modal */}
       <Modal
         visible={drawerOpen}

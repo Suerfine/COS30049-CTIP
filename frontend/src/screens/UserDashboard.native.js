@@ -138,7 +138,7 @@ const UserDashboard=({navigation})=>{
                                         progress={courseProgress?.progress ?? 1}
                                         userType={userType}
                                         // handlers
-                                        onPress={() => navigation.navigate('ParkGuideStack', {
+                                        onPress={() => navigation.navigate('ParkGuideMobileRoot', {
                                             screen: 'UserModule', 
                                             params: { 
                                                 id: course.id,

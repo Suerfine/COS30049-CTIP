@@ -60,7 +60,6 @@ const EnrollmentManagement = () => {
         'in_review',
         'completed',
         'failed',
-        'dropped',
         'expired',
         'pending_payment',
     ];
@@ -441,8 +440,8 @@ const EnrollmentManagement = () => {
                         if (res.success) setDetailModalVisible(false);
                     }
                 }}
+                status={selectedUserEnrollment?.status}
             />
-            
             <Modal animationType="fade" transparent visible={auditModalVisible} onRequestClose={() => setAuditModalVisible(false)}>
                 <View style={styles.modalOverlay}>
                     <View style={styles.auditModalContent}>

@@ -105,6 +105,14 @@ function MobileTabNavigator() {
           }}
         />
         <Tab.Screen
+          name="UserModule"
+          component={UserModule}
+          options={{
+            tabBarButton: () => null,
+            tabBarItemStyle: { display: "none" },
+          }}
+        />
+        <Tab.Screen
           name="Profile"
           component={UserProfile}
           options={{
@@ -139,7 +147,6 @@ export default function ParkGuideNavigator() {
           name="ParkGuideMobileRoot"
           component={MobileTabNavigator}
         />
-        <Stack.Screen name="UserModule" component={UserModule} />
       </Stack.Navigator>
     );
   }

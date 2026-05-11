@@ -12,7 +12,8 @@ const EnrollmentDetailModal = ({
     allCourses=[],
     onApprove, 
     onUnenroll, 
-    onDelete 
+    onDelete,
+    status,
 }) => {
     if (!data) return null;
     console.log(allCourses);
@@ -113,21 +114,25 @@ const EnrollmentDetailModal = ({
                     >
                         <Trash2 size={20} color="#dc2626" />
                     </Pressable>
-                    <View style={modalStyles.row}>
-                        <Pressable 
-                            style={[modalStyles.actionBtn, modalStyles.outlineBtn]}
-                            onPress={() => onUnenroll(data.id)}
-                        >
-                            <Text style={modalStyles.outlineBtnText}>Reject</Text>
-                        </Pressable>
+                    {
+                        status !== 'in_progress' && status !== 'pending_payment' && (
+                            <View style={modalStyles.row}>
+                                <Pressable 
+                                    style={[modalStyles.actionBtn, modalStyles.outlineBtn]}
+                                    onPress={() => onUnenroll(data.id)}
+                                >
+                                    <Text style={modalStyles.outlineBtnText}>Reject</Text>
+                                </Pressable>
 
-                        <Pressable 
-                            style={[modalStyles.actionBtn, modalStyles.solidApproveBtn]}
-                            onPress={() => onApprove(data.id)}
-                        >
-                            <Text style={modalStyles.solidBtnText}>Approve</Text>
-                        </Pressable>
-                    </View>
+                                <Pressable 
+                                    style={[modalStyles.actionBtn, modalStyles.solidApproveBtn]}
+                                    onPress={() => onApprove(data.id)}
+                                >
+                                    <Text style={modalStyles.solidBtnText}>Approve</Text>
+                                </Pressable>
+                            </View>
+                        )
+                    }
                 </View>
             </View>
         </ModalLayout>
