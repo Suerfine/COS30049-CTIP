@@ -154,6 +154,7 @@ const CourseCard = ({
               <ClockAlert size={isWeb ? 20 : 15} />
               <Text style={styles.DetailsText}>Valid for {expiry} Weeks</Text>
             </View>
+          </View>
 
           {/* mobile */}
           {!isAdmin && !isWeb && (
@@ -161,7 +162,7 @@ const CourseCard = ({
               {renderEnrollmentWidget()}
             </View>
           )}
-          </View>
+          
         </View>
 
         {isAdmin && (
@@ -203,15 +204,20 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     overflow: "hidden", 
     borderColor: "#897474",
-    flex: 1,
-    maxWidth:'320px'
+    width: Platform.select({
+      web: 320,
+      default: 200,
+    }),
   },
   imageWrapper: {
     width: "100%",
   },
   courseImg: {
     width: "100%", 
-    height: 180, 
+    height: Platform.select({
+      web:180,
+      default: 140,
+    }),
     resizeMode: "cover", 
     alignSelf: "center",
   },
@@ -286,8 +292,10 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   details: {
-    paddingTop: 5,
-    padding: 20, 
+    padding: Platform.select({
+      web: 20,
+      default: 10,
+    }),
     flex: 1,
     justifyContent: "space-between",
   },
