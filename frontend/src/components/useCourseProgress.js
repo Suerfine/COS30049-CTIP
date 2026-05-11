@@ -52,10 +52,9 @@ export const useCourseProgress = (course, userMarks, fullHistoryMap) => {
                         }
                     });
 
-                    isCompleted = attempts.some(
-                        a => a.score >= passingScore
-                    );
+                    isCompleted = attempts.some(a => a.score >= passingScore);
                     const attemptCount = attempts.length;
+
                     if (!isCompleted && attemptCount >= maxTries) {
                         deadEndDetected = true;
                     }

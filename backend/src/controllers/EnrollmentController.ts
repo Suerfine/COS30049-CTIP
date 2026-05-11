@@ -192,6 +192,7 @@ export const updateEnrollmentStatus = async (
     switch (newStatus) {
       case EnrollmentStatus.FAILED:
         if (
+          enrollment.status !== EnrollmentStatus.IN_PROGRESS &&
           enrollment.status !== EnrollmentStatus.IN_REVIEW
         ) {
           throw new HttpError(400, "Invalid enrollment status transition");
@@ -200,6 +201,7 @@ export const updateEnrollmentStatus = async (
         enrollment.reviewed_by_user_id = req.user?.id || null; //By right should be admin who approves
         enrollment.reviewed_comment = req.body.reviewed_comment || null;
         enrollment.status = newStatus;
+        break;
       case EnrollmentStatus.DROPPED:
         if (enrollment.status !== EnrollmentStatus.IN_PROGRESS) {
           throw new HttpError(400, "Invalid enrollment status transition");

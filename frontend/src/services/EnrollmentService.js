@@ -108,9 +108,13 @@ export const enrollmentService = {
      */
     updateStatus: async (enrollmentId, status) => {
         try {
+            const id = Number(enrollmentId);
+            
             const res = await apiClient.patch(
-                API_ENDPOINTS.ENROLLMENT.UPDATE_STATUS(enrollmentId, status,{})
+                API_ENDPOINTS.ENROLLMENT.UPDATE_STATUS(id, status),
+                {} 
             );
+            
             return res.data;
         } catch (error) {
             console.error("Update Status Error:", error);
@@ -119,8 +123,8 @@ export const enrollmentService = {
     },
 
     /**
- * DELETE: Permanently remove an enrollment record
- */
+     * DELETE: Permanently remove an enrollment record
+     */
     delete: async (enrollmentId) => {
         try {
             const res = await apiClient.delete(API_ENDPOINTS.ENROLLMENT.DETAIL(enrollmentId));

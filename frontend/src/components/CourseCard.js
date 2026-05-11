@@ -373,3 +373,5 @@ const styles = StyleSheet.create({
 });
 
 export default CourseCard;
+
+// When quiz does not pass but complete the course progress will 100%

@@ -5,6 +5,7 @@ import { pageService } from '../services/pageService';
 import {ElementService } from '../services/ElementService';
 import { submissionService } from '../services/SubmissionService';
 import { eventService } from '../services/eventService';
+import { enrollmentService } from '../services/EnrollmentService';
 
 export const useCourseDetails=(id, enrollmentId, initialMarks = {})=>{
     const [course,setCourse]=useState(null);
@@ -340,6 +341,18 @@ export const useCourseDetails=(id, enrollmentId, initialMarks = {})=>{
                     content: content,
                 });
 
+            setFullHistoryMap(prev => {
+                const existing = prev[elementId] || [];
+
+                return {
+                    ...prev,
+                    [elementId]: [
+                        ...existing,
+                        result
+                    ]
+                };
+            });
+
             if (content.auto_add_todo) {
 
                 const formatISO = (dateStr, timeStr) => {
@@ -476,6 +489,27 @@ export const useCourseDetails=(id, enrollmentId, initialMarks = {})=>{
         }
     };
 
+    const failEnrollment = useCallback(async (enrollmentId) => {
+        console.log("DEBUG:", enrollmentId);
+        if (!enrollmentId) return { success: false };
+
+        try {
+            await enrollmentService.updateStatus(
+                enrollmentId,
+                "failed"
+            );
+            return { success: true };
+
+        } catch (err) {
+            console.error("Failed to update enrollment status:", err);
+
+            return {
+                success: false,
+                error: err
+            };
+        }
+    }, [enrollmentId]);
+
     useEffect(() => {
         fetchCourse();
     }, [fetchCourse]);
@@ -495,6 +529,7 @@ export const useCourseDetails=(id, enrollmentId, initialMarks = {})=>{
         isHistoryVisible,
         fullHistoryMap,
         setIsHistoryVisible,
-        handleFetchHistory
+        handleFetchHistory,
+        failEnrollment,
     };
 }
