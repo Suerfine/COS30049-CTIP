@@ -4,7 +4,7 @@ import { Plus, ChevronRight, ChevronDown, Search, Trash2, Lock, CheckCircle2 } f
 import { useOutline } from '../hooks/useOutline';
 import * as Progress from 'react-native-progress';
 
-const OutlineBar = ({ course, progressMap = {}, onSelectPage, editable, isCollapsed, isLocked }) => {
+const OutlineBar = ({ course, progressMap = {}, onSelectPage, editable, isCollapsed, isLocked, isFailed }) => {
     const {
         allModules,
         expandedModule,
@@ -94,23 +94,40 @@ const OutlineBar = ({ course, progressMap = {}, onSelectPage, editable, isCollap
                 </Pressable>
             )}
 
-            {!isCollapsed && (
-                <Pressable
-                    disabled={isLocked}
-                    style={[styles.item, selectedItem?.type === 'forum' && styles.selected, isLocked && styles.lockedItem]}
-                    onPress={() => handleSelect({ type: 'forum', course })}
-                    onMouseEnter={() => setHoveredItem({ type: 'forum' })}
-                    onMouseLeave={() => setHoveredItem(null)}
-                >
-                    <Text style={styles.forum}>Discussion Forum</Text>
-                </Pressable>
-            )}
-
             {/* MODULES */}
             <FlatList
                 data={[...allModules].sort((a, b) => (a.order || 0) - (b.order || 0))}
                 keyExtractor={(m) => m.id.toString()}
                 extraData={progressMap}
+                ListHeaderComponent={
+                    <>
+                    {/* Forum */}
+                    {!isCollapsed && (
+                        <Pressable
+                            disabled={isLocked}
+                            style={[styles.item, selectedItem?.type === 'forum' && styles.selected, isLocked && styles.lockedItem]}
+                            onPress={() => handleSelect({ type: 'forum', course })}
+                            onMouseEnter={() => setHoveredItem({ type: 'forum' })}
+                            onMouseLeave={() => setHoveredItem(null)}
+                        >
+                            <Text style={styles.forum}>Discussion Forum</Text>
+                        </Pressable>
+                    )}
+                    
+                    {/* Workshop */}
+                    {!isCollapsed && !editable && (
+                        <Pressable
+                            disabled={isLocked}
+                            style={[styles.item, selectedItem?.type === 'workshops' && styles.selected, isLocked && styles.lockedItem]}
+                            onPress={() => handleSelect({ type: 'workshops', course })}
+                            onMouseEnter={() => setHoveredItem({ type: 'workshops' })}
+                            onMouseLeave={() => setHoveredItem(null)}
+                        >
+                            <Text style={styles.forum}>Course Workshops</Text>
+                        </Pressable>
+                    )}
+                    </>
+                }
                 renderItem={({ item: module, index }) => {
                     const mid = module.id;
                     const displayModuleNum = index + 1;
@@ -144,7 +161,6 @@ const OutlineBar = ({ course, progressMap = {}, onSelectPage, editable, isCollap
                                     style={[styles.moduleBlock, isSelected && styles.selected, isLocked && styles.lockedItem]}
                                     onPress={() => {
                                         if (isLocked || isEditing) return;
-                                        handleSelect({ type: 'module', module });
                                         toggleModule(mid);
                                         if (editable && expandedModule !== mid) {
                                             setEditingItem({
@@ -189,9 +205,9 @@ const OutlineBar = ({ course, progressMap = {}, onSelectPage, editable, isCollap
                                         const displayPageNum = `${displayModuleNum}.${i + 1}`;
 
                                         const status = progressMap[page.id] || {
-                                            isLocked: true, 
-                                            percent: 0,
-                                            isCompleted: false
+                                            isLocked: page.isLocked, 
+                                            percent: page.percent,
+                                            isCompleted: page.isCompleted
                                         };
 
                                         const isPageLocked = isLocked || (!editable && status.isLocked);
@@ -242,19 +258,22 @@ const OutlineBar = ({ course, progressMap = {}, onSelectPage, editable, isCollap
                                                             getHighlightedText(page.title, localSearch)
                                                         )}
                                                     </Text>
-
-                                                    {!editable && !isLocked && (
-                                                        status.isCompleted
-                                                            ? <CheckCircle2 size={18} color="#0a6340"/>
-                                                            : status.isLocked
-                                                                ? <Lock size={14}/>
-                                                                : <Progress.Circle 
-                                                                    color="#0a6340" 
-                                                                    progress={Math.min(Number(status.percent || 0) / 100, 1)} 
-                                                                    size={20} 
-                                                                    thickness={2}
-                                                                />
-                                                    )}
+                                                   <View>
+                                                        {!editable && !isLocked && (
+                                                            status.isCompleted
+                                                                ? <CheckCircle2 size={20} color="#0a6340"/>
+                                                                : isFailed 
+                                                                    ? <XCircle size={20} color="#dc2626"/> 
+                                                                    : status.isLocked
+                                                                        ? <Lock size={14}/>
+                                                                        : <Progress.Circle 
+                                                                            color="#0a6340" 
+                                                                            progress={Math.min(Number(status.percent || 0) / 100, 1)} 
+                                                                            size={20} 
+                                                                            thickness={2}
+                                                                        />
+                                                        )}
+                                                    </View>
                                                     
                                                     {editable && isHoveringPage && !isEditingPage && (
                                                         <Pressable onPress={() => deletePage(mid, page.id)}>
@@ -324,7 +343,8 @@ const styles=StyleSheet.create({
         alignItems:"center",
         marginBottom:10,
         marginHorizontal:15,
-        paddingHorizontal:5
+        paddingHorizontal:5,
+        border:'1px solid red'
     },
     input:{
         flex:1,
@@ -353,9 +373,8 @@ const styles=StyleSheet.create({
         alignItems:'center'
     },
     pageItem:{
-        paddingLeft:30,
-        paddingRight:10,
         paddingVertical:10,
+        paddingHorizontal:15
     },
     section:{
         borderWidth: 1,
@@ -376,7 +395,8 @@ const styles=StyleSheet.create({
     pageBlock:{
         flexDirection:'row',
         justifyContent:"space-between",
-        width:'160px'
+        flex:1,
+        gap:5
     },
     highlight: {
         backgroundColor: '#ffd07d', 
