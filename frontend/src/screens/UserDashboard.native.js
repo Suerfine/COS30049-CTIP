@@ -137,15 +137,14 @@ const UserDashboard=({navigation})=>{
                                         expiry={course.expiryDate}
                                         progress={courseProgress?.progress ?? 1}
                                         userType={userType}
-                                        // handlers
                                         onPress={() => navigation.navigate('ParkGuideMobileRoot', {
-                                            screen: 'UserModule', 
-                                            params: { 
-                                                id: course.id,
-                                                enrollmentStatus: course.enrollmentStatus ?? null,
-                                                enrollmentId: course.enrollmentId
-                                            }
-                                        })}
+                                        screen: 'UserModule', 
+                                        params: { 
+                                            id: course.id,
+                                            enrollmentStatus: course.enrollmentStatus ?? null,
+                                            enrollmentId: course.enrollmentId
+                                        }
+                                    })}
                                     />
                                 );
                             })
