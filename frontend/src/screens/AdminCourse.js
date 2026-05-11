@@ -291,7 +291,8 @@ const styles = StyleSheet.create({
     marginHorizontal: Platform.OS === 'web' ? 50 : 15,
     flexDirection: 'row',           
     justifyContent: 'space-between', 
-    alignItems: 'center',  
+    alignItems: 'center', 
+    flexWrap:'wrap' 
   },
   backgroundImage: {
     width: "100%",

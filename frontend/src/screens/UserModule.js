@@ -7,7 +7,6 @@ import Markdown from 'react-native-markdown-display';
 // Import Components
 import OutlineBar from '../components/OutlineBar.js';
 import { useCourseDetails } from '../hooks/useCourseDetails.js';
-import SlidingTabs from '../components/SlidingTabs.js';
 import { useElements } from '../hooks/useElements.js';
 import PageRenderer from '../components/pageRenderer.js';
 import { useAuth } from '../context/AuthContext.js';

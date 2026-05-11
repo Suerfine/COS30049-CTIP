@@ -8,7 +8,7 @@ import { ModalStyle as styles } from './ModalStyle';
 import { isValidCourseTitle, isValidDuration, isValidExpiryWeeks, isValidBadgeExpiry } from '../utils/Validation';
 
 const CourseFormContent = ({ onSubmit, onCancel, isLoading, initialData, allCourseList = [], allTagList = [] }) => {
-
+    console.log(initialData);
     const getInitialTagsByType = (type) => {
         if (!initialData?.tags) return [];
         return initialData.tags
@@ -165,6 +165,7 @@ const CourseFormContent = ({ onSubmit, onCancel, isLoading, initialData, allCour
             prerequisite_course_ids: form.prerequisites.map(p => p.id),
             tags: [...form.locationTags, ...form.categoryTags].map(t => t.id),
         };
+        
     };
 
     const handleSubmit = () => {
@@ -362,6 +363,7 @@ const CourseFormContent = ({ onSubmit, onCancel, isLoading, initialData, allCour
                                         </Pressable>
                                     </View>
                                 ))}
+                                
                                 <Pressable style={localStyles.addPrereqBtn} onPress={() => setShowPrereqDropdown(!showPrereqDropdown)}>
                                     <Plus size={16} color="#217837" />
                                     <Text style={localStyles.addPrereqText}>Add Course</Text>

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
-import { Circle, CircleCheckBig, MapPin, Tag } from 'lucide-react-native';
+import { Circle, CircleCheckBig, MapPin, Tag, LoaderCircle} from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { UserRoles } from '../enum/UserRoles';
 
@@ -15,6 +15,9 @@ const FilterSidebar = ({ visible, tempFilters, setTempFilters, onApply, onReset,
         inProgress: t('status.in progress'),
         completed: t('status.completed'),
         notEnrolled: t('status.not enrolled'),
+        inReview: t('status.in review'),
+        applied: t('status.applied'),
+        pendingPayment: t('status.pending payment'),
     };
 
     useEffect(() => {
@@ -65,22 +68,25 @@ const FilterSidebar = ({ visible, tempFilters, setTempFilters, onApply, onReset,
                 {role===UserRoles.ADMIN ? (
                     null
                 ) : (
-                    <>
-                    <Text style={styles.section}>{t('progress')}</Text>
-                    {['inProgress', 'completed', 'notEnrolled'].map(status => (
+                    <View style={styles.sectionGroup}>
+                        <View style={styles.row}>
+                            <LoaderCircle size={16} color="#0a6340"/>
+                            <Text style={styles.sectionTitle}>{t('progress')}</Text>
+                        </View>
+                        {['inProgress', 'completed', 'notEnrolled', 'inReview', 'applied', 'pendingPayment'].map(status => (
+                            <FilterItem
+                                key={status}
+                                label={statusLabels[status]}
+                                isSelected={tempFilters.status === status}
+                                onPress={() => toggle('status', status)}
+                            />
+                        ))}
                         <FilterItem
-                            key={status}
-                            label={statusLabels[status]}
-                            isSelected={tempFilters.status === status}
-                            onPress={() => toggle('status', status)}
+                            label="All"
+                            isSelected={tempFilters.status === 'all'}
+                            onPress={() => setTempFilters(prev => ({ ...prev, status: 'all' }))}
                         />
-                    ))}
-                    <FilterItem
-                        label="All"
-                        isSelected={tempFilters.status === 'all'}
-                        onPress={() => setTempFilters(prev => ({ ...prev, status: 'all' }))}
-                    />
-                    </>
+                    </View>
                 )}
 
                 {/* Location Filters */}

@@ -35,8 +35,6 @@ const UserCourse = ({ navigation }) => {
         searchText, setSearchText,getPreviousEnrollments, openHistory,historyModalVisible,selectedHistory,setHistoryModalVisible
     }=useUserCourse({progressData});
 
-    console.log(getPreviousEnrollments(14));
-
     // sync parameter with filter from UserDashboard Explore Categories section
     useEffect(() => {
         if (filterCategory) {
@@ -276,6 +274,7 @@ const styles = StyleSheet.create({
         overflow:'hidden',
         resizeMode:'fill',
         marginTop:10,
+        flexDirection: 'row'
     },
     cardContainer: {
         flexDirection: 'row',

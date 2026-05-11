@@ -27,12 +27,13 @@ export const useUserCourse = () => {
   const statusLabels = useMemo(() => ({
     all: t("status.all"),
     applied: t("status.applied"), // waiting for admin to approve enrollment
-    inProgress: t("status.in_progress"),
-    inReview: t("status.in_review"),     // course completed, waiting for admin approve -> issue badge
+    inProgress: t("status.in progress"),
+    inReview: t("status.in review"),     // course completed, waiting for admin approve -> issue badge
     completed: t("status.completed"),
     failed: t("status.failed"),
     rejected: t("status.rejected"), // admin rejected the enrollment
-    notEnrolled: t("status.not_enrolled"),
+    notEnrolled: t("status.not enrolled"),
+    pendingPayment: t("status.pending payment"),
   }), [t]);
 
   const tabs = useMemo(() => ([
@@ -67,7 +68,6 @@ export const useUserCourse = () => {
   useEffect(() => {
     const enrichCourses = async () => {
       if (userCourses.length === 0) return;
-
       const enriched = await Promise.all(
         userCourses.map(async (course) => {
           const enrollmentStatus = course.status;
@@ -110,7 +110,7 @@ export const useUserCourse = () => {
   const handleEnrollment = useCallback(
     async (courseId) => {
       try {
-        await enrollmentService.enroll(courseId); 
+        await enrollmentService.enroll(courseId, currentUser.id); 
         await loadInitialData();
         const successMsg = "Enrollment request sent for approval.";
         Platform.OS === "web"
@@ -183,6 +183,11 @@ export const useUserCourse = () => {
       coursesWithStatus.filter(c => c.enrollmentStatus === "rejected"),
     [coursesWithStatus]);
 
+    // filter pending payment courses
+    const pendingPayment = useMemo(() =>
+      coursesWithStatus.filter(c => c.enrollmentStatus === "pending_payment"),
+    [coursesWithStatus])
+
   // merge enrollment status first via courses with status, then apply filters based on tag
   const filteredCourses = useMemo(() => {
     return coursesWithStatus.filter((course) => {
@@ -209,6 +214,7 @@ export const useUserCourse = () => {
         (filters.status === "completed" && course.enrollmentStatus === "completed") ||
         (filters.status === "failed" && course.enrollmentStatus === "failed") ||
         (filters.status === "rejected" && course.enrollmentStatus === "rejected") ||
+        (filters.status === "pendingPayment" && course.enrollmentStatus === "pending_payment") ||
         (filters.status === "notEnrolled" && !course.enrollmentStatus);
 
       const matchesLocation =

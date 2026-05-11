@@ -23,8 +23,9 @@ const EnrollmentStatus = {
   IN_REVIEW: "in_review",
   COMPLETED: "completed",
   FAILED: "failed",
-  // EXPIRED: "expired",
+  EXPIRED: "expired",
   REJECTED: "rejected",
+  PENDING_PAYMENT: "pending_payment"
 };
 
 const CourseCard = ({
@@ -59,6 +60,16 @@ const CourseCard = ({
         <View style={[styles.statusBadge, styles.badgeApplied]}>
           <Text style={styles.statusBadgeText}>
             {t("status.pending_approval", "Pending Approval")}
+          </Text>
+        </View>
+      );
+    }
+
+    if (enrollmentStatus === EnrollmentStatus.PENDING_PAYMENT) {
+      return (
+        <View style={[styles.statusBadge, styles.badgePendingPayment]}>
+          <Text style={styles.statusBadgeText}>
+            {t("status.pending_payment", "Pending Payment")}
           </Text>
         </View>
       );
@@ -205,7 +216,7 @@ const styles = StyleSheet.create({
     overflow: "hidden", 
     borderColor: "#897474",
     width: Platform.select({
-      web: 320,
+      web: 300,
       default: 200,
     }),
   },
@@ -337,6 +348,11 @@ const styles = StyleSheet.create({
     borderColor: "#ffc107",
   },
   badgeApplied: {
+    backgroundColor: "#fff3cd",
+    borderWidth: 1,
+    borderColor: "#ffc107",
+  },
+  badgePendingPayment:{
     backgroundColor: "#fff3cd",
     borderWidth: 1,
     borderColor: "#ffc107",
