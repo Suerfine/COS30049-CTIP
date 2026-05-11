@@ -65,6 +65,16 @@ const CourseCard = ({
       );
     }
 
+    if (enrollmentStatus === EnrollmentStatus.PENDING_PAYMENT) {
+      return (
+        <View style={[styles.statusBadge, styles.badgePendingPayment]}>
+          <Text style={styles.statusBadgeText}>
+            {t("status.pending_payment", "Pending Payment")}
+          </Text>
+        </View>
+      );
+    }
+
     if (enrollmentStatus === EnrollmentStatus.IN_PROGRESS) {
       return <ProgressBar progress={progress} />;
     }
@@ -338,6 +348,11 @@ const styles = StyleSheet.create({
     borderColor: "#ffc107",
   },
   badgeApplied: {
+    backgroundColor: "#fff3cd",
+    borderWidth: 1,
+    borderColor: "#ffc107",
+  },
+  badgePendingPayment:{
     backgroundColor: "#fff3cd",
     borderWidth: 1,
     borderColor: "#ffc107",
