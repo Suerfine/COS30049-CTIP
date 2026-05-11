@@ -755,12 +755,6 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
             {!isAdmin && isFinalQuiz && (
                 <View style={styles.assessmentFooter}>
                     <View style={styles.footerInfo}>
-                        <View style={styles.attemptBadge}>
-                            <Clock size={14} color="#0a6340" />
-                            <Text style={styles.attemptText}>
-                                Attempt {currentAttemptCount} of {pageMetadata.page?.max_tries || 1}
-                            </Text>
-                        </View>
                         <Text style={styles.footerHint}>
                             {Math.max(0, (pageMetadata.page?.max_tries || 1) - currentAttemptCount)} retries remaining
                         </Text>
@@ -1386,21 +1380,6 @@ const styles = StyleSheet.create({
     footerInfo: {
         alignItems: 'center',
         marginBottom: 15,
-    },
-    attemptBadge: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#f0fdf4',
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 20,
-        gap: 6,
-        marginBottom: 4,
-    },
-    attemptText: {
-        fontSize: 13,
-        fontWeight: '700',
-        color: '#0a6340',
     },
     footerHint: {
         fontSize: 11,

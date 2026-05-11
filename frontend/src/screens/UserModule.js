@@ -1,5 +1,5 @@
 import React,{useEffect,useState, useRef} from 'react';
-import { View, Text, StyleSheet, ScrollView, ImageBackground, Pressable, ActivityIndicator, Image, TouchableOpacity, TextInput, Modal, FlatList} from 'react-native';
+import { View, Text, StyleSheet, ScrollView, ImageBackground, Pressable, ActivityIndicator, Image, TouchableOpacity, TextInput, Modal, FlatList, Platform} from 'react-native';
 import {useRoute} from '@react-navigation/native';
 import { Award, Calendar, Clock, Menu, ChevronLeft, Bot, Lock, ShieldCheck } from 'lucide-react-native';
 import Markdown from 'react-native-markdown-display';
@@ -20,7 +20,9 @@ import DiscussionSection from '../components/DiscussionSection.js';
 
 const UserModule = ({navigation}) => {
     const route=useRoute();
-    const {id, enrollmentStatus, enrollmentId}=route.params;
+    const {id, enrollmentStatus, enrollmentId, enrollmentStatus:initialStatus}=route.params;
+    const [localStatus, setLocalStatus] = useState(initialStatus);
+    const hasfailedRef = useRef(false);
 
     const isLocked = enrollmentStatus === null ||
         enrollmentStatus === undefined ||
@@ -29,12 +31,12 @@ const UserModule = ({navigation}) => {
         enrollmentStatus === 'expired';
 
     const {currentUser}=useAuth();
-    const {course, loading, error,locationTags, categoryTags, saveProgress, userMarks, historyData, isHistoryVisible, fullHistoryMap, setIsHistoryVisible, refreshHistory,handleFetchHistory}=useCourseDetails(id, enrollmentId);
+    const {course, loading, error,locationTags, categoryTags, saveProgress, userMarks, historyData, isHistoryVisible, fullHistoryMap, setIsHistoryVisible, refreshHistory,handleFetchHistory, failEnrollment}=useCourseDetails(id, enrollmentId);
     const {allCourseList}=useCourses();
     const [chatOpen, setChatOpen] = useState(false);
     
     const { progressMap, isDeadEnd} = useCourseProgress(course, userMarks, fullHistoryMap);
-    const isFailed = enrollmentStatus === 'failed' || isDeadEnd;
+    const isFailed = localStatus === 'failed' || isDeadEnd;
     const [selectedPage, setSelectedPage]=useState({type:'overview'});
     const [isCollapsed, setIsCollapsed]=useState(false);
     const [activeTab,setActiveTab]=useState('Overview');
@@ -58,6 +60,32 @@ const UserModule = ({navigation}) => {
             loadWorkshops();
         }
     }, [activeTab, loadWorkshops]);
+
+    useEffect(() => {
+        const handleFailure = async () => {
+            if (
+                isDeadEnd &&
+                localStatus !== 'failed' &&
+                !hasfailedRef.current
+            ) {
+                hasfailedRef.current = true; 
+                
+                setLocalStatus('failed');
+                const result = await failEnrollment(enrollmentId);
+
+                if (result.success) {
+                    if (Platform.OS === 'web') {
+                        window.alert("Maximum attempts reached. This course is now marked as Failed.");
+                    } else {
+                        Alert.alert("Course Failed", "Maximum attempts reached.");
+                    }
+                    navigation.navigate('ParkGuideStack', { screen: 'Courses' });
+                }
+            }
+        };
+        
+        handleFailure();
+    }, [isDeadEnd, localStatus, failEnrollment]); 
 
     const tabs=[
         {id: 'Overview', label:'Overview'},
