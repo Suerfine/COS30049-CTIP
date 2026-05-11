@@ -276,6 +276,7 @@ const styles = StyleSheet.create({
         overflow:'hidden',
         resizeMode:'fill',
         marginTop:10,
+        flexDirection: 'row'
     },
     cardContainer: {
         flexDirection: 'row',

@@ -27,12 +27,12 @@ export const useUserCourse = () => {
   const statusLabels = useMemo(() => ({
     all: t("status.all"),
     applied: t("status.applied"), // waiting for admin to approve enrollment
-    inProgress: t("status.in_progress"),
-    inReview: t("status.in_review"),     // course completed, waiting for admin approve -> issue badge
+    inProgress: t("status.in progress"),
+    inReview: t("status.in review"),     // course completed, waiting for admin approve -> issue badge
     completed: t("status.completed"),
     failed: t("status.failed"),
     rejected: t("status.rejected"), // admin rejected the enrollment
-    notEnrolled: t("status.not_enrolled"),
+    notEnrolled: t("status.not enrolled"),
   }), [t]);
 
   const tabs = useMemo(() => ([
