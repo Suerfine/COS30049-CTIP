@@ -30,7 +30,13 @@ export const usePayment = (searchQuery = '') => {
                 paymentStatus
             );
 
-            setPayments(res?.data || res || []);
+            setPayments(
+                (res?.data || res || []).map(p => ({
+                    ...p,
+                    fullName: p.user_fullname,
+                    profileImage: p.user_profile_image
+                }))
+            );
             setPaymentTotalPages(res?.totalPages || 1);
             setPaymentTotalElements(res?.totalElements || 0);
 

@@ -50,11 +50,23 @@ const EnrollmentManagement = () => {
         fetchEnrollmentAudit,
     } = useSubmissionManagement();
 
+    const {
+        payments,
+        paymentTotalPages,
+        paymentTotalElements,
+        currentPaymentPage,
+        setPaymentCurrentPage,
+        paymentStatus,
+        setPaymentStatus,
+    } = usePayment();
+
     const [activeTab, setActiveTab] = useState('enrollment');
     const [isOpen, setIsOpen] = useState(false);
     const [detailModalVisible, setDetailModalVisible] = useState(false);
     const [selectedUserEnrollment, setSelectedUserEnrollment] = useState(null);
     const [selectedUserHistory, setSelectedUserHistory] = useState([]);
+    const [paymentModalVisible, setPaymentModalVisible] = useState(false);
+    const [selectedPayment, setSelectedPayment] = useState(null);
     const enrollmentStatusOptions = [
         'All',
         'in_progress',
@@ -221,11 +233,11 @@ const EnrollmentManagement = () => {
 
     const renderPaymentHeader = () => (
         <View style={[styles.tableHeader, styles.row]}>
-            <Text style={[styles.headerText, { flex: 3 }]}>Full Name</Text>
-            <Text style={[styles.headerText, { flex: 2 }]}>Amount</Text>
-            <Text style={[styles.headerText, { flex: 2 }]}>Method</Text>
+            <Text style={[styles.headerText, { flex: 4 }]}>Full Name</Text>
+            <Text style={[styles.headerText, { flex: 3 }]}>Amount</Text>
             <Text style={[styles.headerText, { flex: 2 }]}>Status</Text>
-            <Text style={[styles.headerText, { flex: 3 }]}>Paid On</Text>
+            <Text style={[styles.headerText, { flex: 2 }]}>Paid On</Text>
+            <Text style={[styles.headerText, { flex: 2 }]}>Receipt</Text>
         </View>
     );
 
@@ -279,18 +291,55 @@ const EnrollmentManagement = () => {
         );
     };
 
-    const renderPaymentItem = ({ item }) => (
-        <View style={[styles.row, styles.tableRow]}>
-            <View style={[{ flex: 3 }, styles.userInfo, styles.row]}>
-                <Text>{item.fullName}</Text>
-            </View>
+    const renderPaymentItem = ({ item }) => {
+        const statusConfig = Status_Config[item.status?.toLowerCase()] || {
+            color: "#8f8f8f",
+            label: item.status || 'Unknown'
+        };
 
-            <Text style={{ flex: 2 }}>RM {item.amount}</Text>
-            <Text style={{ flex: 2 }}>{item.method}</Text>
-            <Text style={{ flex: 2 }}>{item.status}</Text>
-            <Text style={{ flex: 3 }}>{formatDate(item.paid_at)}</Text>
-        </View>
-    );
+        return (
+            <Pressable
+                onPress={() => {
+                    setSelectedPayment(item);
+                    setPaymentModalVisible(true);
+                }}
+                style={({ hovered }) => [
+                    styles.row,
+                    styles.tableRow,
+                    hovered && { backgroundColor: '#f9f9f9' }
+                ]}
+            >
+                <View style={[{ flex: 4 }, styles.userInfo, styles.row]}>
+                    {item.user_profile_image ? (
+                        <Image source={{ uri: item.user_profile_image }} style={styles.avatar} />
+                    ) : (
+                        <View style={styles.pfpPlaceholder}>
+                            <Text style={styles.pfpInitials}>
+                                {item.user_fullname ? item.user_fullname[0].toUpperCase() : '?'}
+                            </Text>
+                        </View>
+                    )}
+                    <Text>{item.user_fullname}</Text>
+                </View>
+
+                <Text style={{ flex: 3 }}>RM {item.amount ?? 0}</Text>
+                <View style={[styles.row, styles.badge, { flex: 2 }]}>
+                    <Circle size={8} stroke={statusConfig.color} fill={statusConfig.color} />
+                    <Text style={[styles.badgeText, { color: statusConfig.color }]}>
+                        {statusConfig.label}
+                    </Text>
+                </View>
+                <Text style={{ flex: 2 }}>
+                    {item.processed_at
+                        ? formatDate(item.processed_at)
+                        : 'N/A'}
+                </Text>
+                <Text style={{ flex: 2, color: '#2563eb' }}>
+                    View Receipt
+                </Text>
+            </Pressable> 
+        );
+    };
 
     const renderPagination = () => {
         const pageNumbers = [];
@@ -473,6 +522,117 @@ const EnrollmentManagement = () => {
                                 </View>
                             ))}
                         </ScrollView>
+                    </View>
+                </View>
+            </Modal>
+
+            <Modal
+                animationType='fade'
+                transparent
+                visible={paymentModalVisible}
+                onRequestClose={() => setPaymentModalVisible(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.auditModalContent}>
+                        <View style={styles.modalHeader}>
+                            <Text style={styles.modalTitle}>
+                                Payment Details
+                            </Text>
+
+                            <Pressable
+                                onPress={() => setPaymentModalVisible(false)}
+                            >
+                                <Text style={styles.closeBtn}>✕</Text>
+                            </Pressable>
+                        </View>
+
+                        {selectedPayment && (
+                            <ScrollView showsVerticalScrollIndicator={false}>
+                                <View style={styles.paymentUserSection}>
+                                    {selectedPayment.user_profile_image? (
+                                        <Image
+                                            source={{
+                                                uri: selectedPayment.user_profile_image
+                                            }}
+                                            style={styles.paymentAvatar}
+                                        />
+                                    ) : (
+                                        <View style={styles.paymentAvatarPlaceholder}>
+                                            <Text style={styles.paymentAvatarInitial}>
+                                                {selectedPayment.user_fullname?.[0]?.toUpperCase()}
+                                            </Text>
+                                        </View>
+                                    )}
+
+                                    <View>
+                                        <Text style={styles.paymentUserName}>
+                                            {selectedPayment.user_fullname}
+                                        </Text>
+                                    </View>
+                                </View>
+                                <View style={styles.paymentInfoCard}>
+                                    <View style={styles.paymentInfoRow}> 
+                                        <Text style={styles.paymentValue}>
+                                            RM {selectedPayment.amount}
+                                        </Text>
+                                    </View>
+
+                                    <View style={styles.paymentInfoRow}>
+                                        <View
+                                            style={[
+                                                styles.row,
+                                                styles.badge
+                                            ]}
+                                        >
+                                            <Circle
+                                                size={8}
+                                                stroke={
+                                                    Status_Config[
+                                                        selectedPayment.status?.toLowerCase()
+                                                    ]?.color || "#999"
+                                                }
+                                                fill={
+                                                    Status_Config[
+                                                        selectedPayment.status?.toLowerCase()
+                                                    ]?.color || "#999"
+                                                }
+                                            />
+
+                                            <Text
+                                                style={{
+                                                    color:
+                                                        Status_Config[
+                                                            selectedPayment.status?.toLowerCase()
+                                                        ]?.color || "#999"
+                                                }}
+                                            >
+                                                {
+                                                    Status_Config[
+                                                        selectedPayment.status?.toLowerCase()
+                                                    ]?.label
+                                                }
+                                            </Text>
+                                        </View>
+                                    </View>
+                                </View>
+                                <View style={styles.receiptSection}>
+                                    {selectedPayment.receipt_filepath ? (
+                                        <Image
+                                            source={{
+                                                uri: selectedPayment.receipt_filepath
+                                            }}
+                                            style={styles.receiptImage}
+                                        />
+                                    ) : (
+                                        <View style={styles.noReceiptBox}>
+                                            <Text style={styles.noReceiptText}>
+                                                No Receipt Uploaded
+                                            </Text>
+                                        </View>
+                                    )}
+                                </View>
+                            </ScrollView>
+                        )}
                     </View>
                 </View>
             </Modal>
