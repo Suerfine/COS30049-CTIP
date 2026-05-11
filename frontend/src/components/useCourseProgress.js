@@ -2,11 +2,13 @@ import { useState, useEffect } from 'react';
 
 export const useCourseProgress = (course, userMarks, fullHistoryMap) => {
     const [progressMap, setProgressMap] = useState({});
+    const [isDeadEnd, setIsDeadEnd] = useState(false);
 
     useEffect(() => {
         if (!course || !course.modules) return;
 
         const map = {};
+        let deadEndDetected = false;
         let previousPageCompleted = true;
 
         course.modules.forEach((module) => {
@@ -26,7 +28,7 @@ export const useCourseProgress = (course, userMarks, fullHistoryMap) => {
 
                 if (page.final_quiz === true && quizIds.length > 0) {
                     const passingScore = page.passing_score || 12;
-
+                    const maxTries=page.max_tries || 3;
                     const attempts = [];
 
                     quizIds.forEach(id => {
@@ -53,7 +55,10 @@ export const useCourseProgress = (course, userMarks, fullHistoryMap) => {
                     isCompleted = attempts.some(
                         a => a.score >= passingScore
                     );
-
+                    const attemptCount = attempts.length;
+                    if (!isCompleted && attemptCount >= maxTries) {
+                        deadEndDetected = true;
+                    }
                     visualPercent = isCompleted ? 100 : 0;
                 } else {
                     const totalPageElements =
@@ -97,9 +102,9 @@ export const useCourseProgress = (course, userMarks, fullHistoryMap) => {
                         : 0
             };
         });
-
+        setIsDeadEnd(deadEndDetected);
         setProgressMap(map);
     }, [course, userMarks, fullHistoryMap]);
 
-    return { progressMap };
+    return { progressMap, isDeadEnd };
 };

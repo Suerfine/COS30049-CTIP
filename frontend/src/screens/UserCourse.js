@@ -34,6 +34,7 @@ const UserCourse = ({ navigation }) => {
         removeFilter,allTagList, addTag,
         searchText, setSearchText,
     }=useUserCourse({progressData});
+    
 
     // sync parameter with filter from UserDashboard Explore Categories section
     useEffect(() => {

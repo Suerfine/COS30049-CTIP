@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Pressable, FlatList, TextInput } from 'react-native';
-import { Plus, ChevronRight, ChevronDown, Search, Trash2, Lock, CheckCircle2 } from 'lucide-react-native';
+import { Plus, ChevronRight, ChevronDown, Search, Trash2, Lock, CheckCircle2, XCircle } from 'lucide-react-native';
 import { useOutline } from '../hooks/useOutline';
 import * as Progress from 'react-native-progress';
 
-const OutlineBar = ({ course, progressMap = {}, onSelectPage, editable, isCollapsed, isLocked }) => {
+const OutlineBar = ({ course, progressMap = {}, onSelectPage, editable, isCollapsed, isLocked, isFailed }) => {
     const {
         allModules,
         expandedModule,
@@ -258,18 +258,20 @@ const OutlineBar = ({ course, progressMap = {}, onSelectPage, editable, isCollap
                                                             getHighlightedText(page.title, localSearch)
                                                         )}
                                                     </Text>
-                                                    <View>
+                                                   <View>
                                                         {!editable && !isLocked && (
                                                             status.isCompleted
                                                                 ? <CheckCircle2 size={20} color="#0a6340"/>
-                                                                : status.isLocked
-                                                                    ? <Lock size={14}/>
-                                                                    : <Progress.Circle 
-                                                                        color="#0a6340" 
-                                                                        progress={Math.min(Number(status.percent || 0) / 100, 1)} 
-                                                                        size={20} 
-                                                                        thickness={2}
-                                                                    />
+                                                                : isFailed 
+                                                                    ? <XCircle size={20} color="#dc2626"/> 
+                                                                    : status.isLocked
+                                                                        ? <Lock size={14}/>
+                                                                        : <Progress.Circle 
+                                                                            color="#0a6340" 
+                                                                            progress={Math.min(Number(status.percent || 0) / 100, 1)} 
+                                                                            size={20} 
+                                                                            thickness={2}
+                                                                        />
                                                         )}
                                                     </View>
                                                     

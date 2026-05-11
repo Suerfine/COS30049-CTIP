@@ -124,11 +124,27 @@ const CourseCard = ({
     }
 
     if (isFailed) {
-      return (
-        <View style={[styles.statusBadge, styles.badgeFailed]}>
-          <Text style={styles.statusBadgeText}>{t("failed")}</Text>
-        </View>
-      );
+        return (
+            <View style={styles.failedContainer}>
+                <View style={[styles.statusBadge, styles.badgeFailed]}>
+                    <Text style={styles.statusBadgeText}>{t("failed")}</Text>
+                </View>
+                <View style={styles.failedActions}>
+                    <Pressable 
+                        style={styles.viewRecordBtn} 
+                        onPress={onPress} 
+                    >
+                        <Text style={styles.viewRecordText}>{t("view record")}</Text>
+                    </Pressable>
+                    <Pressable 
+                        style={styles.retryBtn} 
+                        onPress={handleEnrollPress} 
+                    >
+                        <Text style={styles.retryText}>{t("retry course")}</Text>
+                    </Pressable>
+                </View>
+            </View>
+        );
     }
 
     return null;
@@ -356,6 +372,41 @@ const styles = StyleSheet.create({
     fontSize: Platform.select({ web: 13, default: 10 }),
     fontWeight: "600",
     color: "#3e3e3e",
+  },
+  failedContainer: {
+    marginTop: 10,
+    width: '100%',
+  },
+  failedActions: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 8,
+  },
+  viewRecordBtn: {
+    flex: 1,
+    padding: 8,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#64748b',
+    backgroundColor: 'white',
+  },
+  viewRecordText: {
+    textAlign: 'center',
+    color: '#64748b',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  retryBtn: {
+    flex: 1,
+    padding: 8,
+    borderRadius: 6,
+    backgroundColor: '#dc2626',
+  },
+  retryText: {
+    textAlign: 'center',
+    color: 'white',
+    fontSize: 12,
+    fontWeight: '600',
   },
 });
 

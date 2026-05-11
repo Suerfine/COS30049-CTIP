@@ -33,7 +33,8 @@ const UserModule = ({navigation}) => {
     const {allCourseList}=useCourses();
     const [chatOpen, setChatOpen] = useState(false);
     
-    const { progressMap} = useCourseProgress(course, userMarks, fullHistoryMap);
+    const { progressMap, isDeadEnd} = useCourseProgress(course, userMarks, fullHistoryMap);
+    const isFailed = enrollmentStatus === 'failed' || isDeadEnd;
     const [selectedPage, setSelectedPage]=useState({type:'overview'});
     const [isCollapsed, setIsCollapsed]=useState(false);
     const [activeTab,setActiveTab]=useState('Overview');
@@ -225,7 +226,8 @@ const UserModule = ({navigation}) => {
             <OutlineBar course={course} onSelectPage={setSelectedPage}
             progressMap={progressMap}
             editable={false} isCollapsed={isCollapsed} isLocked={isLocked}
-            userMarks={userMarks}/>
+            userMarks={userMarks}
+            isFailed={isFailed}/>
             <ScrollView ref={scrollViewRef}>
                 <View style={styles.container}>
                     {/* Background Image */}
@@ -306,6 +308,7 @@ const UserModule = ({navigation}) => {
                                         }}
                                         onRefreshHistory={refreshHistory}
                                         scrollToTop={scrollToTop}
+                                        isFailed={isFailed}
                                     />
                                 )}
                                 <Modal visible={isHistoryVisible} transparent animationType="slide">

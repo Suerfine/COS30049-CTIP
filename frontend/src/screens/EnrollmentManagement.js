@@ -6,24 +6,46 @@ import { RotateCcw, Search, ChevronDown, ChevronUp, ArrowUpNarrowWide, ArrowDown
 import SlidingTabs from '../components/SlidingTabs';
 import { formatDate } from '../utils/formatDate';
 import { useEnrollmentManagement } from '../hooks/useEnrollmentManagement';
+import { useSubmissionManagement } from '../hooks/useSubmissionManagement';
 import EnrollmentDetailModal from '../components/EnrollmentDetailModal';
 import { Status_Config } from '../utils/status_config';
 
 const EnrollmentManagement = () => {
+    // Enrollment management
     const {
-        enrollments, submissions, loading, 
-        currentPage, setCurrentPage,
-        totalPages, totalElements,
-        currentSubmissionPage, setSubmissionCurrentPage,
-        submissionTotalPages, submissionTotalElements,
-        searchQuery, setSearchQuery,
-        currentStatus, setCurrentStatus,
-        sortConfig, requestSort, resetSort,
-        handleUpdateStatus, deleteRecord, courses,
-        auditData, auditLoading, fetchEnrollmentAudit,
-        payments, currentPaymentPage, setPaymentCurrentPage,
-        paymentTotalPages, paymentTotalElements
+        enrollments,
+        loading,
+        currentPage,
+        setCurrentPage,
+        totalPages,
+        totalElements,
+        searchQuery,
+        setSearchQuery,
+        currentStatus,
+        setCurrentStatus,
+        sortConfig,
+        requestSort,
+        resetSort,
+        handleUpdateStatus,
+        deleteRecord,
+        courses,
     } = useEnrollmentManagement();
+
+    // Progress
+    const {
+        submissions,
+        currentSubmissionPage,
+        setSubmissionCurrentPage,
+        submissionTotalPages,
+        submissionTotalElements,
+        submissionStatus,
+        setSubmissionStatus,
+        sortSubmissionConfig,
+        requestSubmissionSort,
+        auditData,
+        auditLoading,
+        fetchEnrollmentAudit,
+    } = useSubmissionManagement();
 
     const [activeTab, setActiveTab] = useState('enrollment');
     const [isOpen, setIsOpen] = useState(false);
@@ -34,6 +56,16 @@ const EnrollmentManagement = () => {
         'All',
         'in_progress',
         'in_review',
+        'completed',
+        'failed',
+        'dropped',
+        'expired',
+        'pending_payment',
+    ];
+
+    const ProgressStatusOptions = [
+        'All',
+        'in_progress',
         'completed',
         'failed',
         'dropped',
@@ -49,8 +81,9 @@ const EnrollmentManagement = () => {
     ];
 
     const isEnrollment = activeTab === 'enrollment';
-    const isSubmission = activeTab === 'submission';
+    const isSubmission = activeTab === 'progress';
     const isPayment = activeTab === 'payment';
+
     const displayData =
         isEnrollment ? enrollments :
         isSubmission ? submissions :
@@ -71,6 +104,30 @@ const EnrollmentManagement = () => {
         isEnrollment ? setCurrentPage :
         isSubmission ? setSubmissionCurrentPage :
         setPaymentCurrentPage;
+
+    const getActiveStatus=()=>{
+        if (isPayment) {
+            return paymentStatus;
+        }
+
+        if (isSubmission) {
+            return submissionStatus;
+        }
+
+        return currentStatus;
+    }
+
+    const getActiveStatusOptions = () => {
+        if (isPayment) {
+            return paymentStatusOptions;
+        }
+
+        if (isSubmission) {
+            return ProgressStatusOptions;
+        }
+
+        return enrollmentStatusOptions;
+    };
 
     const itemsPerPage = 10;
     const indexOfFirstItem = (activeCurrentPage - 1) * itemsPerPage;
@@ -102,7 +159,7 @@ const EnrollmentManagement = () => {
 
     const tabs = [
         { id: 'enrollment', label: 'Enrollment' },
-        { id: 'submission', label: 'Submission' },
+        { id: 'progress', label: 'Progress' },
         { id: 'payment', label: 'Payment' },
     ];
 
@@ -263,7 +320,7 @@ const EnrollmentManagement = () => {
                     setActiveTab(id);  
                     if (id === 'enrollment') {
                         setCurrentPage(1);
-                    } else if (id === 'submission') {
+                    } else if (id === 'progress') {
                         setSubmissionCurrentPage(1);
                     } else {
                         setPaymentCurrentPage(1);
@@ -279,15 +336,21 @@ const EnrollmentManagement = () => {
                     </View>
                     <View style={styles.dropdownWrapper}>
                         <Pressable style={styles.pillTrigger} onPress={() => setIsOpen(!isOpen)}>
-                            <Text style={styles.pillText}>{currentStatus === 'All' ? 'Status' : formatted(currentStatus)}</Text>
+                            <Text numberOfLines={1} ellipsizeMode='tail' style={styles.pillText}>
+                                    {
+                                        getActiveStatus() === 'All'
+                                            ? 'Status'
+                                            : formatted(getActiveStatus())
+                                    }
+                                </Text>
                             {isOpen ? <ChevronUp size={16} color="#4b5563" /> : <ChevronDown size={16} color="#4b5563" />}
                         </Pressable>
                         {isOpen && (
                             <View style={styles.dropdownMenu}>
-                                {(isPayment ? paymentStatusOptions : enrollmentStatusOptions).map((status) => (
+                                {(getActiveStatusOptions()).map((status) => (
                                     <Pressable 
                                     key={status} 
-                                    style={[styles.menuItem, currentStatus === status && styles.menuItemActive]} 
+                                    style={[styles.menuItem, getActiveStatus() === status && styles.menuItemActive]} 
                                     onPress={() => { 
                                         if (isPayment) {
                                             setPaymentStatus(status);
@@ -299,7 +362,7 @@ const EnrollmentManagement = () => {
                                         setActivePage(1); 
                                         setIsOpen(false); 
                                         }}>
-                                        <Text style={[currentStatus === status && styles.menuItemTextActive]}>{formatted(status)}</Text>
+                                        <Text numberOfLines={1} ellipsizeMode='tail' style={[getActiveStatus() === status && styles.menuItemTextActive]}>{formatted(status)}</Text>
                                     </Pressable>
                                 ))}
                             </View>
@@ -362,7 +425,7 @@ const EnrollmentManagement = () => {
                     <View style={styles.auditModalContent}>
                         <View style={styles.modalHeader}>
                             <Text style={styles.modalTitle}>
-                                {auditLoading ? "Syncing..." : `Audit: ${auditData?.course?.title}`}
+                                {auditLoading ? "Syncing..." : `Progress: ${auditData?.course?.title}`}
                             </Text>
                             <Pressable onPress={() => setAuditModalVisible(false)}><Text style={styles.closeBtn}>✕</Text></Pressable>
                         </View>
