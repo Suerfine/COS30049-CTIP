@@ -18,29 +18,13 @@ import ProgressBar from "./ProgressBar.js";
 import { useTranslation } from "react-i18next";
 
 const EnrollmentStatus = {
+  APPLIED: "applied",
   IN_PROGRESS: "in_progress",
   IN_REVIEW: "in_review",
   COMPLETED: "completed",
   FAILED: "failed",
-  EXPIRED: "expired",
-};
-
-// Checks if the user satisfies at least one prerequisite group for the course.
-// A group is satisfied when ALL prerequisites within it are completed.
-const checkPrerequisitesMet = (prerequisiteGroups, myEnrollments) => {
-  if (!prerequisiteGroups || prerequisiteGroups.length === 0) return true;
- 
-  return prerequisiteGroups.some((group) => {
-    const prereqs = group.prerequisites || [];
-    if (prereqs.length === 0) return true;
- 
-    return prereqs.every((prereq) => {
-      const enrollment = myEnrollments.find(
-        (e) => Number(e.course_id) === Number(prereq.course_id)
-      );
-      return enrollment?.status === EnrollmentStatus.COMPLETED;
-    });
-  });
+  // EXPIRED: "expired",
+  REJECTED: "rejected",
 };
 
 const CourseCard = ({
@@ -52,103 +36,99 @@ const CourseCard = ({
   userType,
   progress,
   enrollmentStatus,
-  prerequisiteGroups,
-  myEnrollments,
+  isEnrollable,
   onPress,
   onEdit,
   onDelete,
   onEnroll,
-  // onDrop,
 }) => {
   const { t, i18n } = useTranslation();
   const isWeb = Platform.OS === "web";
-
   const isAdmin = userType === "admin";
-  const isNotEnrolled = !enrollmentStatus;
-  const isInProgress = enrollmentStatus === EnrollmentStatus.IN_PROGRESS;
-  const isInReview = enrollmentStatus === EnrollmentStatus.IN_REVIEW;
-  const isCompleted = enrollmentStatus === EnrollmentStatus.COMPLETED;
-  const isFailed = enrollmentStatus === EnrollmentStatus.FAILED;
-
-  const cardPressable = isInProgress;
-
-  // HANDLERS
-  // check prerequisites
   const handleEnrollPress = () => {
-    const prereqsMet = checkPrerequisitesMet(prerequisiteGroups, myEnrollments || []);
- 
-    if (!prereqsMet) {
-      if (Platform.OS === "web") {
-        window.alert("You need to pass the prerequisite(s) before enrolling in this course.");
-      } else {
-        Alert.alert(
-          "Prerequisites Not Met",
-          "You need to pass the prerequisite(s) before enrolling in this course."
-        );
-      }
+    if (!isEnrollable) {
+      const msg = "You need to pass the prerequisite(s) before enrolling in this course.";
+      Platform.OS === "web"
+        ? window.alert(msg)
+        : Alert.alert("Prerequisites Not Met", msg);
       return;
     }
- 
-    // if prerequisites satisfied or no prerequisites then set status = in review
     onEnroll?.();
   };
 
-  // show status (enroll, progress bar, in review, completed)
+  // show status
   const renderEnrollmentWidget = () => {
-    if (isNotEnrolled) {
+    if (!enrollmentStatus) {
+      // if can enroll show enroll button
+      if (isEnrollable) {
+        return (
+          <Pressable style={styles.enrollBtn} onPress={handleEnrollPress}>
+            <Text style={styles.enrollText}>{t("enroll") || "Enroll"}</Text>
+          </Pressable>
+        );
+      }
+      // prerequisites not met
       return (
-        <Pressable style={styles.enrollBtn} onPress={handleEnrollPress}>
-          <Text style={styles.enrollText}>{t("enroll") || "Enroll"}</Text>
-        </Pressable>
+        <View style={[styles.statusBadge, styles.badgeLocked]}>
+          <Text style={styles.statusBadgeText}>
+            {t("status.prerequisites_required") || "Prerequisites Required"}
+          </Text>
+        </View>
       );
     }
 
-    if (isInProgress) {
+    if (enrollmentStatus === EnrollmentStatus.APPLIED) {
+      return (
+        <View style={[styles.statusBadge, styles.badgeApplied]}>
+          <Text style={styles.statusBadgeText}>
+            {t("status.pending_approval") || "Pending Approval"}
+          </Text>
+        </View>
+      );
+    }
+
+    // show progress bar
+    if (enrollmentStatus === EnrollmentStatus.IN_PROGRESS) {
       return <ProgressBar progress={progress} />;
     }
 
-    if (isInReview) {
+    if (enrollmentStatus === EnrollmentStatus.IN_REVIEW) {
       return (
         <View style={[styles.statusBadge, styles.badgeInReview]}>
-          <Text style={styles.statusBadgeText}>{t("in review")}</Text>
+          <Text style={styles.statusBadgeText}>
+            {t("status.in_review") || "In Review"}
+          </Text>
         </View>
       );
     }
 
-    if (isCompleted) {
+    if (enrollmentStatus === EnrollmentStatus.COMPLETED) {
+      return <ProgressBar progress={progress} />;
+    }
+    
+    if (enrollmentStatus === EnrollmentStatus.FAILED) {
       return (
-        <View style={[styles.statusBadge, styles.badgeCompleted]}>
-          <Text style={styles.statusBadgeText}>{t("completed")}</Text>
+        <View style={[styles.statusBadge, styles.badgeFailed]}>
+          <Text style={styles.statusBadgeText}>
+            {t("status.failed") || "Failed"}
+          </Text>
         </View>
       );
     }
-
-    if (isFailed) {
-        return (
-            <View style={styles.failedContainer}>
-                <View style={[styles.statusBadge, styles.badgeFailed]}>
-                    <Text style={styles.statusBadgeText}>{t("failed")}</Text>
-                </View>
-                <View style={styles.failedActions}>
-                    <Pressable 
-                        style={styles.viewRecordBtn} 
-                        onPress={onPress} 
-                    >
-                        <Text style={styles.viewRecordText}>{t("view record")}</Text>
-                    </Pressable>
-                    <Pressable 
-                        style={styles.retryBtn} 
-                        onPress={handleEnrollPress} 
-                    >
-                        <Text style={styles.retryText}>{t("retry course")}</Text>
-                    </Pressable>
-                </View>
-            </View>
-        );
+    
+    if (enrollmentStatus === EnrollmentStatus.REJECTED) {
+      return (
+        <View style={[styles.statusBadge, styles.badgeRejected]}>
+          <Text style={styles.statusBadgeText}>
+            {t("status.rejected") || "Rejected"}
+          </Text>
+        </View>
+      );
     }
 
     return null;
   };
+
 
   return (
     <Pressable
@@ -407,6 +387,21 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 12,
     fontWeight: '600',
+  },
+  badgeApplied: {
+    backgroundColor: "#F59E0B",   // amber — submitted, awaiting action
+  },
+  badgeInReview: {
+    backgroundColor: "#3B82F6",   // blue — under admin review
+  },
+  badgeFailed: {
+    backgroundColor: "#EF4444",   // red — did not pass
+  },
+  badgeRejected: {
+    backgroundColor: "#6B7280",   // grey — admin rejected
+  },
+  badgeLocked: {
+    backgroundColor: "#D1D5DB",   // light grey — prerequisites not met
   },
 });
 
