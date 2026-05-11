@@ -13,14 +13,22 @@ import { Status_Config } from '../utils/status_config';
 const EnrollmentManagement = () => {
     // Enrollment management
     const {
-        enrollments, loading, 
-        currentPage, setCurrentPage,
-        totalPages, totalElements,
-        searchQuery, setSearchQuery,
-        currentStatus, setCurrentStatus,
-        sortConfig, requestSort, resetSort,
-        handleUpdateStatus, deleteRecord, courses,
-        fetchEnrollmentAudit
+        enrollments,
+        loading,
+        currentPage,
+        setCurrentPage,
+        totalPages,
+        totalElements,
+        searchQuery,
+        setSearchQuery,
+        currentStatus,
+        setCurrentStatus,
+        sortConfig,
+        requestSort,
+        resetSort,
+        handleUpdateStatus,
+        deleteRecord,
+        courses,
     } = useEnrollmentManagement();
 
     // Progress
@@ -44,14 +52,58 @@ const EnrollmentManagement = () => {
     const [detailModalVisible, setDetailModalVisible] = useState(false);
     const [selectedUserEnrollment, setSelectedUserEnrollment] = useState(null);
     const [selectedUserHistory, setSelectedUserHistory] = useState([]);
-    const status_options=['All', 'in_progress', 'in_review', 'completed', 'failed', 'dropped', 'expired'];
+    const enrollmentStatusOptions = [
+        'All',
+        'in_progress',
+        'in_review',
+        'completed',
+        'failed',
+        'dropped',
+        'expired',
+        'pending_payment',
+    ];
+
+    const ProgressStatusOptions = [
+        'All',
+        'in_progress',
+        'completed',
+        'failed',
+        'dropped',
+        'expired'
+    ];
+
+    const paymentStatusOptions = [
+        'All',
+        'pending',
+        'paid',
+        'failed',
+        'refunded'
+    ];
 
     const isEnrollment = activeTab === 'enrollment';
-    const displayData = (isEnrollment ? enrollments : submissions) || [];
-    const activeTotalPages = isEnrollment ? totalPages : submissionTotalPages;
-    const activeTotalElements = isEnrollment ? totalElements : submissionTotalElements;
-    const activeCurrentPage = isEnrollment ? currentPage : currentSubmissionPage;
-    const setActivePage = isEnrollment ? setCurrentPage : setSubmissionCurrentPage;
+    const isSubmission = activeTab === 'progress';
+    const isPayment = activeTab === 'payment';
+
+    const displayData =
+        isEnrollment ? enrollments :
+        isSubmission ? submissions :
+        (payments || []);
+    const activeTotalPages =
+        isEnrollment ? totalPages :
+        isSubmission ? submissionTotalPages :
+        paymentTotalPages;
+    const activeTotalElements =
+        isEnrollment ? totalElements :
+        isSubmission ? submissionTotalElements :
+        paymentTotalElements;
+    const activeCurrentPage =
+        isEnrollment ? currentPage :
+        isSubmission ? currentSubmissionPage :
+        currentPaymentPage;
+    const setActivePage =
+        isEnrollment ? setCurrentPage :
+        isSubmission ? setSubmissionCurrentPage :
+        setPaymentCurrentPage;
 
     const getActiveStatus=()=>{
         if (isPayment) {
@@ -81,13 +133,11 @@ const EnrollmentManagement = () => {
     const indexOfFirstItem = (activeCurrentPage - 1) * itemsPerPage;
     const indexOfLastItem = indexOfFirstItem + displayData.length;
     const [auditModalVisible, setAuditModalVisible] = useState(false);
-    const [selectedAudit, setSelectedAudit] = useState(null);
 
     const handleOpenAudit = async (id) => {
         try {
             setAuditModalVisible(true);
-            const data = await getEnrollmentAudit(id);
-            setSelectedAudit(data);
+            const data = await fetchEnrollmentAudit(id);
         } catch (err) {
             console.error(err);
             setAuditModalVisible(false);
@@ -109,7 +159,8 @@ const EnrollmentManagement = () => {
 
     const tabs = [
         { id: 'enrollment', label: 'Enrollment' },
-        { id: 'submission', label: 'Submission' },
+        { id: 'progress', label: 'Progress' },
+        { id: 'payment', label: 'Payment' },
     ];
 
     const formatted = (status) => {
@@ -150,6 +201,16 @@ const EnrollmentManagement = () => {
             <Text style={[styles.headerText, { flex: 1 }]}>Badge</Text>
             <Text style={[styles.headerText, { flex: 2 }]}>Issued On</Text>
             <Text style={[styles.headerText, { flex: 2 }]}>Expiry On</Text>
+        </View>
+    );
+
+    const renderPaymentHeader = () => (
+        <View style={[styles.tableHeader, styles.row]}>
+            <Text style={[styles.headerText, { flex: 3 }]}>Full Name</Text>
+            <Text style={[styles.headerText, { flex: 2 }]}>Amount</Text>
+            <Text style={[styles.headerText, { flex: 2 }]}>Method</Text>
+            <Text style={[styles.headerText, { flex: 2 }]}>Status</Text>
+            <Text style={[styles.headerText, { flex: 3 }]}>Paid On</Text>
         </View>
     );
 
@@ -203,6 +264,19 @@ const EnrollmentManagement = () => {
         );
     };
 
+    const renderPaymentItem = ({ item }) => (
+        <View style={[styles.row, styles.tableRow]}>
+            <View style={[{ flex: 3 }, styles.userInfo, styles.row]}>
+                <Text>{item.fullName}</Text>
+            </View>
+
+            <Text style={{ flex: 2 }}>RM {item.amount}</Text>
+            <Text style={{ flex: 2 }}>{item.method}</Text>
+            <Text style={{ flex: 2 }}>{item.status}</Text>
+            <Text style={{ flex: 3 }}>{formatDate(item.paid_at)}</Text>
+        </View>
+    );
+
     const renderPagination = () => {
         const pageNumbers = [];
         for (let i = 1; i <= activeTotalPages; i++) {
@@ -239,7 +313,19 @@ const EnrollmentManagement = () => {
     return (
         <ScrollView style={styles.container}>
             <Text style={styles.title}>Enrollment Management</Text>
-            <SlidingTabs tabs={tabs} activeTab={activeTab} onTabChange={(id) => { setActiveTab(id); isEnrollment ? setCurrentPage(1) : setSubmissionCurrentPage(1); }} />
+            <SlidingTabs 
+                tabs={tabs} 
+                activeTab={activeTab} 
+                onTabChange={(id) => { 
+                    setActiveTab(id);  
+                    if (id === 'enrollment') {
+                        setCurrentPage(1);
+                    } else if (id === 'progress') {
+                        setSubmissionCurrentPage(1);
+                    } else {
+                        setPaymentCurrentPage(1);
+                    }
+                }} />
 
             <View style={[styles.toolbar, styles.row]}>
                 <View style={styles.row}>
@@ -261,9 +347,22 @@ const EnrollmentManagement = () => {
                         </Pressable>
                         {isOpen && (
                             <View style={styles.dropdownMenu}>
-                                {status_options.map((status) => (
-                                    <Pressable key={status} style={[styles.menuItem, currentStatus === status && styles.menuItemActive]} onPress={() => { setCurrentStatus(status); setActivePage(1); setIsOpen(false); }}>
-                                        <Text style={[currentStatus === status && styles.menuItemTextActive]}>{formatted(status)}</Text>
+                                {(getActiveStatusOptions()).map((status) => (
+                                    <Pressable 
+                                    key={status} 
+                                    style={[styles.menuItem, getActiveStatus() === status && styles.menuItemActive]} 
+                                    onPress={() => { 
+                                        if (isPayment) {
+                                            setPaymentStatus(status);
+                                        } else if (isSubmission) {
+                                            setSubmissionStatus(status);
+                                        } else {
+                                            setCurrentStatus(status);
+                                        }
+                                        setActivePage(1); 
+                                        setIsOpen(false); 
+                                        }}>
+                                        <Text numberOfLines={1} ellipsizeMode='tail' style={[getActiveStatus() === status && styles.menuItemTextActive]}>{formatted(status)}</Text>
                                     </Pressable>
                                 ))}
                             </View>
@@ -277,8 +376,20 @@ const EnrollmentManagement = () => {
                     style={styles.table}
                     data={displayData}
                     loading={loading}
-                    ListHeaderComponent={isEnrollment ? renderEnrollmentHeader : renderSubmissionsHeader}
-                    renderItem={isEnrollment ? renderEnrollmentItem : renderSubmissionsItem}
+                    ListHeaderComponent={
+                        isEnrollment
+                            ? renderEnrollmentHeader
+                            : isSubmission
+                            ? renderSubmissionsHeader
+                            : renderPaymentHeader
+                    }
+                    renderItem={
+                        isEnrollment
+                            ? renderEnrollmentItem
+                            : isSubmission
+                            ? renderSubmissionsItem
+                            : renderPaymentItem
+                    }
                     keyExtractor={item => item.id.toString()}
                     ListEmptyComponent={<View style={styles.tableRow}><Text>{loading ? "Loading..." : "No Record Found."}</Text></View>}
                 />
