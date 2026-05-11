@@ -123,8 +123,8 @@ export const enrollmentService = {
     },
 
     /**
- * DELETE: Permanently remove an enrollment record
- */
+     * DELETE: Permanently remove an enrollment record
+     */
     delete: async (enrollmentId) => {
         try {
             const res = await apiClient.delete(API_ENDPOINTS.ENROLLMENT.DETAIL(enrollmentId));
