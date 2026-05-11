@@ -23,8 +23,9 @@ const EnrollmentStatus = {
   IN_REVIEW: "in_review",
   COMPLETED: "completed",
   FAILED: "failed",
-  // EXPIRED: "expired",
+  EXPIRED: "expired",
   REJECTED: "rejected",
+  PENDING_PAYMENT: "pending_payment"
 };
 
 const CourseCard = ({
