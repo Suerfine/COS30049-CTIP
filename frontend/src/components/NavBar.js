@@ -7,8 +7,10 @@ import {
   Image,
   TextInput,
   Animated,
+  Platform,
+  useWindowDimensions
 } from "react-native";
-import { Bell, Search, LogOut, ChevronDown, ChevronUp} from "lucide-react-native";
+import { Bell, Search, LogOut, ChevronDown, ChevronUp, Menu, X } from "lucide-react-native";
 import {
   CommonActions,
   useNavigation,
@@ -62,6 +64,10 @@ const NavBar = () => {
   const { logout } = useAuth();
   const [dropdownVisible, setDropdownVisible] = useState(false);
   const dropdownRef = useRef(null);
+  const { width } = useWindowDimensions();
+  const isMobile = width < 1024;
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const currentRoute = useNavigationState((state) => {
     let route = state.routes[state.index];
@@ -79,6 +85,7 @@ const NavBar = () => {
 
   // close dropdown when click anywhere else
   useEffect(() => {
+    if (Platform.OS !== "web") return;
     const handleClickOutside = (event) => {
       if (!dropdownVisible) return;
 
@@ -102,6 +109,7 @@ const NavBar = () => {
           : currentRoute;
           
   const handleLogout = async () => {
+    setMobileMenuOpen(false);
     await logout();
     navigation.dispatch(
       CommonActions.reset({
@@ -117,6 +125,127 @@ const NavBar = () => {
     { name: "Badge", route: "Badge" },
     { name: "Anomaly", route: "UserAnomaly" },
   ];
+
+  if (isMobile) {
+    return (
+      <>
+        <View style={styles.navbar}>
+          <View style={styles.left}>
+            <Pressable
+              onPress={() => {
+                  navigation.navigate('ParkGuideStack',{
+                      screen:"Dashboard"
+                  })
+
+              }}
+            >
+              <Image
+                source={require("../../assets/sfc_logo.png")}
+                style={styles.logo}
+                accessibilityLabel="Logo of SFC"
+              />
+            </Pressable>
+          </View>
+
+          <View style={styles.right}>
+            <View style={styles.search}>
+              <Search size={18} />
+              <TextInput
+                style={styles.input}
+                placeholder="Search..."
+                placeholderTextColor="#8f8f8f"
+              />
+            </View>
+            <Pressable
+              onPress={() => setMobileMenuOpen((prev) => !prev)}
+              style={styles.hamburgerBtn}
+            >
+              {mobileMenuOpen ? <X size={28} /> : <Menu size={28} />}
+            </Pressable>
+          </View>
+        </View>
+
+        {mobileMenuOpen && (
+          <Pressable
+            style={styles.overlay}
+            onPress={() => setMobileMenuOpen(false)}
+          />
+        )}
+
+        {mobileMenuOpen && (
+          <>
+            <View style={styles.mobileMenu}>
+              {navLinks.map((item) => (
+                <Pressable
+                  key={item.name}
+                  style={styles.mobileMenuItem}
+                  onPress={() => {
+                    setMobileMenuOpen(false);
+
+                    navigation.navigate("ParkGuideStack", {
+                      screen: item.route,
+                    });
+                  }}
+                >
+                  <Text
+                    style={[
+                      styles.mobileMenuText,
+                      displayRoute === item.route && styles.activeText,
+                    ]}
+                  >
+                    {item.name}
+                  </Text>
+                </Pressable>
+              ))}
+
+              <Pressable
+                style={styles.mobileMenuItem}
+                onPress={() => {
+                  setMobileMenuOpen(false);
+
+                  navigation.navigate("ParkGuideStack", {
+                    screen: "Notification",
+                  });
+                }}
+              >
+                <Text style={styles.mobileMenuText}>Notifications</Text>
+              </Pressable>
+
+              <Pressable
+                style={styles.mobileMenuItem}
+                onPress={() => {
+                  setMobileMenuOpen(false);
+
+                  navigation.navigate("ParkGuideStack", {
+                    screen: "ProfileStack",
+                    params: {
+                      screen: "UserProfile",
+                    },
+                  });
+                }}
+              >
+                <Text style={styles.mobileMenuText}>Profile</Text>
+              </Pressable>
+
+              <Pressable
+                style={styles.mobileMenuItem}
+                onPress={handleLogout}
+              >
+                <Text
+                  style={[
+                    styles.mobileMenuText,
+                    { color: "red" },
+                  ]}
+                >
+                  Logout
+                </Text>
+              </Pressable>
+            </View>
+          </>
+        )}
+      </>
+    );
+  }
 
   return (
     <View style={styles.navbar}>
@@ -136,7 +265,7 @@ const NavBar = () => {
           />
         </Pressable>
       </View>
-
+      
       <View style={styles.center}>
         {navLinks.map((item) => (
           <NavItem
@@ -149,7 +278,6 @@ const NavBar = () => {
                 navigation.navigate('ParkGuideStack',{
                     screen:item.route
                 })
-
             }}
           />
         ))}
@@ -164,16 +292,15 @@ const NavBar = () => {
             placeholderTextColor="#8f8f8f"
           />
         </View>
-
-        <Pressable style={styles.notificationBtn}
-        onPress={()=>navigation.navigate(
-          'ParkGuideStack',{
-            screen:'Notification'
-          }
+        <Pressable 
+          style={styles.notificationBtn}
+          onPress={()=>navigation.navigate(
+            'ParkGuideStack',{
+              screen:'Notification'
+            }
         )}>
           <Bell size={20} />
         </Pressable>
-
         <View style={styles.profileWrapper}>
           <Pressable style={styles.profileBtn} onPress={() => setDropdownVisible((prev) => !prev)} >
               <View style={styles.profileRow}>
@@ -249,15 +376,16 @@ const NavBar = () => {
                 <Text>Security</Text>
               </Pressable>
 
-              {/* logout */}
-              <Pressable style={({ hovered }) => [
-                  styles.dropdownItem,
-                  hovered && styles.dropdownItemHover,
-                ]} onPress={handleLogout}
+              <Pressable
+                style={styles.dropdownItem}
+                onPress={handleLogout}
               >
                 <View style={styles.logoutBtn}>
-                    <LogOut size={16} />
-                    <Text style={{ color: 'red'}}>Logout</Text>
+                  <LogOut size={16} />
+
+                  <Text style={{ color: "red" }}>
+                    Logout
+                  </Text>
                 </View>
               </Pressable>
             </View>
@@ -267,6 +395,7 @@ const NavBar = () => {
     </View>
   );
 };
+
 const styles = StyleSheet.create({
   navbar: {
     width: "100%",
@@ -279,6 +408,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "#ccc",
     overflow: 'visible',
+    zIndex: 1000,
   },
   left: {
     flex: 1,
@@ -424,6 +554,44 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     color: 'white',
+  },
+  hamburgerBtn: {
+    padding: 5,
+  },
+  mobileMenu: {
+    position: "absolute",
+    top: 60,
+    left: 0,
+    right: 0,
+    backgroundColor: "white",
+    borderBottomWidth: 1,
+    borderBottomColor: "#ddd",
+    zIndex: 9999,
+    paddingVertical: 10,
+
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  mobileMenuItem: {
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+  },
+  mobileMenuText: {
+    fontSize: 16,
+    fontWeight: "500",
+    color: "#333",
+  },
+  overlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0,0,0,0.4)",
+    zIndex: 9998,
+    elevation: 5,
   },
 });
 
