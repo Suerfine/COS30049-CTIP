@@ -8,18 +8,47 @@ import {
   User,
 } from "../models";
 
+/**
+ * Utility function to check if a user can enroll in a course based on their
+ * enrollment history and course prerequisites.
+ *
+ * It firsct checks if the user has a previous enrollment for the course. If
+ * they do, it only allows them to enroll again if their latest enrollment is
+ * in a final state (expired, dropped, failed, rejected). After that, it makes
+ * the prerequisite checks to make sure that the user has completed the
+ * necessary courses to enroll in the course.
+ * @param user
+ * @param course
+ * @returns
+ */
 export async function canUserEnrollCourse(
   user: User,
   course: Course,
 ): Promise<boolean> {
-  // Check if the user has already enrolled in the course
+  // Get the latest enrollment of the user for this course
   const enrollment = await Enrollment.findOne({
     where: {
       user_id: user.id,
       course_id: course.id,
     },
+    order: [["created_at", "DESC"]],
   });
-  if (enrollment) return false;
+
+  // Check if the user has previous enrollment. If they have only let them reenroll if their latest enrollment is in a final state (expired, dropped, failed, rejected)
+  if (
+    enrollment &&
+    !(
+      enrollment.status in
+      [
+        EnrollmentStatus.EXPIRED,
+        EnrollmentStatus.DROPPED,
+        EnrollmentStatus.FAILED,
+        EnrollmentStatus.REJECTED,
+      ]
+    )
+  ) {
+    return false;
+  }
 
   // Get Prerequisites for the course
   const prerequisiteGroups = await PrerequisiteGroup.findAll({
