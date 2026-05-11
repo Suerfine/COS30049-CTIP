@@ -13,16 +13,14 @@ import { Status_Config } from '../utils/status_config';
 const EnrollmentManagement = () => {
     // Enrollment management
     const {
-        enrollments, submissions, loading, 
+        enrollments, loading, 
         currentPage, setCurrentPage,
         totalPages, totalElements,
-        currentSubmissionPage, setSubmissionCurrentPage,
-        submissionTotalPages, submissionTotalElements,
         searchQuery, setSearchQuery,
         currentStatus, setCurrentStatus,
         sortConfig, requestSort, resetSort,
         handleUpdateStatus, deleteRecord, courses,
-        auditData, auditLoading, fetchEnrollmentAudit
+        fetchEnrollmentAudit
     } = useEnrollmentManagement();
 
     // Progress
