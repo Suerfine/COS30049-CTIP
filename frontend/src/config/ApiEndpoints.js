@@ -23,6 +23,7 @@ export const API_ENDPOINTS = {
       `/courses/${courseId}/modules/${moduleId}/pages/${pageId}/elements`,
     ELEMENT_DETAIL: (courseId, moduleId, pageId, elementId) =>
       `/courses/${courseId}/modules/${moduleId}/pages/${pageId}/elements/${elementId}`,
+    USER_COURSES: "/courses/user",
   },
   DISCUSSION: {
     LIST: (courseId) => `/courses/${courseId}/discussion`,

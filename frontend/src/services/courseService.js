@@ -157,4 +157,24 @@ export const courseService = {
         }
     },
     
+    // GET: fetch courses with enrollment status + can enroll courses for the current user
+    getUserCourses: async (params = {}) => {
+    try {
+        const response = await apiClient.get(API_ENDPOINTS.COURSE.USER_COURSES, {
+        params: {
+            page: params.page || 1,
+            size: params.size || 100,
+            orderBy: params.orderBy || "",
+            filter: params.filter || "",
+            tags: params.tags,
+        },
+        });
+        return response.data;
+    } catch (err) {
+        console.error("Fetch User Courses Error:", err);
+        return Promise.reject(
+        err.response?.data?.message || "Failed to fetch user courses."
+        );
+    }
+    },
 };
