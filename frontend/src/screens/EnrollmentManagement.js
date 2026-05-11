@@ -6,10 +6,12 @@ import { RotateCcw, Search, ChevronDown, ChevronUp, ArrowUpNarrowWide, ArrowDown
 import SlidingTabs from '../components/SlidingTabs';
 import { formatDate } from '../utils/formatDate';
 import { useEnrollmentManagement } from '../hooks/useEnrollmentManagement';
+import { useSubmissionManagement } from '../hooks/useSubmissionManagement';
 import EnrollmentDetailModal from '../components/EnrollmentDetailModal';
 import { Status_Config } from '../utils/status_config';
 
 const EnrollmentManagement = () => {
+    // Enrollment management
     const {
         enrollments, submissions, loading, 
         currentPage, setCurrentPage,
@@ -22,6 +24,22 @@ const EnrollmentManagement = () => {
         handleUpdateStatus, deleteRecord, courses,
         auditData, auditLoading, fetchEnrollmentAudit
     } = useEnrollmentManagement();
+
+    // Progress
+    const {
+        submissions,
+        currentSubmissionPage,
+        setSubmissionCurrentPage,
+        submissionTotalPages,
+        submissionTotalElements,
+        submissionStatus,
+        setSubmissionStatus,
+        sortSubmissionConfig,
+        requestSubmissionSort,
+        auditData,
+        auditLoading,
+        fetchEnrollmentAudit,
+    } = useSubmissionManagement();
 
     const [activeTab, setActiveTab] = useState('enrollment');
     const [isOpen, setIsOpen] = useState(false);
@@ -36,6 +54,30 @@ const EnrollmentManagement = () => {
     const activeTotalElements = isEnrollment ? totalElements : submissionTotalElements;
     const activeCurrentPage = isEnrollment ? currentPage : currentSubmissionPage;
     const setActivePage = isEnrollment ? setCurrentPage : setSubmissionCurrentPage;
+
+    const getActiveStatus=()=>{
+        if (isPayment) {
+            return paymentStatus;
+        }
+
+        if (isSubmission) {
+            return submissionStatus;
+        }
+
+        return currentStatus;
+    }
+
+    const getActiveStatusOptions = () => {
+        if (isPayment) {
+            return paymentStatusOptions;
+        }
+
+        if (isSubmission) {
+            return ProgressStatusOptions;
+        }
+
+        return enrollmentStatusOptions;
+    };
 
     const itemsPerPage = 10;
     const indexOfFirstItem = (activeCurrentPage - 1) * itemsPerPage;
@@ -210,7 +252,13 @@ const EnrollmentManagement = () => {
                     </View>
                     <View style={styles.dropdownWrapper}>
                         <Pressable style={styles.pillTrigger} onPress={() => setIsOpen(!isOpen)}>
-                            <Text style={styles.pillText}>{currentStatus === 'All' ? 'Status' : formatted(currentStatus)}</Text>
+                            <Text numberOfLines={1} ellipsizeMode='tail' style={styles.pillText}>
+                                    {
+                                        getActiveStatus() === 'All'
+                                            ? 'Status'
+                                            : formatted(getActiveStatus())
+                                    }
+                                </Text>
                             {isOpen ? <ChevronUp size={16} color="#4b5563" /> : <ChevronDown size={16} color="#4b5563" />}
                         </Pressable>
                         {isOpen && (
@@ -268,7 +316,7 @@ const EnrollmentManagement = () => {
                     <View style={styles.auditModalContent}>
                         <View style={styles.modalHeader}>
                             <Text style={styles.modalTitle}>
-                                {auditLoading ? "Syncing..." : `Audit: ${auditData?.course?.title}`}
+                                {auditLoading ? "Syncing..." : `Progress: ${auditData?.course?.title}`}
                             </Text>
                             <Pressable onPress={() => setAuditModalVisible(false)}><Text style={styles.closeBtn}>✕</Text></Pressable>
                         </View>

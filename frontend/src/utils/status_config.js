@@ -5,4 +5,6 @@ export const Status_Config = {
     failed:      { color: '#ef4444', label: 'Failed',      bg: '#fef2f2' }, // Red
     dropped:     { color: '#6b7280', label: 'Dropped',     bg: '#f3f4f6' }, // Gray
     expired:     { color: '#7c3aed', label: 'Expired',     bg: '#f5f3ff' }, // Purple
+    pending_payment: { color: '#565656', label: 'Pending Payment', bg: '#262626'
+    },
 };
