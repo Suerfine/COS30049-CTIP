@@ -25,11 +25,9 @@ const UserCourse = ({ navigation }) => {
         tempFilters, setTempFilters,
         statusLabels,
         tabs,
-        myEnrollments,
         coursesWithStatus,
         filteredCourses, courses,
         handleEnrollment, 
-        handleDrop,
         handleApply,
         removeFilter,allTagList, addTag,
         searchText, setSearchText,
@@ -168,8 +166,7 @@ const UserCourse = ({ navigation }) => {
                                     progress={course.progress}
                                     // enrollment
                                     enrollmentStatus={course.enrollmentStatus}
-                                    prerequisiteGroups={course.prerequisiteGroups || []}
-                                    myEnrollments={myEnrollments}
+                                    isEnrollable={course.is_enrollable} 
                                     // handlers
                                     onPress={() => navigation.navigate('ParkGuideStack', {
                                         screen: 'UserModule', 
@@ -185,7 +182,6 @@ const UserCourse = ({ navigation }) => {
                                             handleEnrollment(course.id);
                                         }
                                     }}
-                                    onDrop={() => handleDrop(course.id)}
                                     style={{ width: '100%' }}
                                 />
                             </View>)
