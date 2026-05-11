@@ -67,7 +67,6 @@ export const useUserCourse = () => {
   useEffect(() => {
     const enrichCourses = async () => {
       if (userCourses.length === 0) return;
-
       const enriched = await Promise.all(
         userCourses.map(async (course) => {
           const enrollmentStatus = course.status;

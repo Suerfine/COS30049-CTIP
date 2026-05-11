@@ -150,12 +150,14 @@ const UserCourse=({navigation})=>{
                             enrollmentStatus={course.enrollmentStatus}
                             prerequisiteGroups={course.prerequisiteGroups || []}
                             myEnrollments={myEnrollments}
-                            onPress={() => navigation.navigate('ParkGuideStack', {
-                                screen: 'UserModule', 
-                                params: { id: course.id,
-                                        enrollmentStatus: course.enrollmentStatus ?? null,
-                                        enrollmentId: course.enrollmentId ?? null}
-                            })}
+                            onPress={() => navigation.navigate('ParkGuideMobileRoot', {
+                                        screen: 'UserModule', 
+                                        params: { 
+                                            id: course.id,
+                                            enrollmentStatus: course.enrollmentStatus ?? null,
+                                            enrollmentId: course.enrollmentId
+                                        }
+                                    })}
                             onEnroll={() => {
                                 Alert.alert(
                                     "Confirm Enrollment",
