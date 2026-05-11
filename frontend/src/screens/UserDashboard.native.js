@@ -93,7 +93,6 @@ const UserDashboard=({navigation})=>{
                         {courseFilter === 'in progress' &&
                             inProgressCourses.map(course => {
                                 const courseProgress = progressData.find(p => p.courseId === course.id);
-                                const numModules = course.modules ? course.modules.length : 0;
 
                                 return (
                                     <CourseCard
@@ -101,7 +100,7 @@ const UserDashboard=({navigation})=>{
                                         id={course.id}
                                         coverImgUrl={course.cover_img_url}
                                         courseTitle={course.title}
-                                        numModules={numModules}
+                                        numModules={course.module_count ?? 0}
                                         duration={course.expected_completion_weeks}
                                         expiry={course.must_complete_in_weeks}
                                         progress={course.progress}
@@ -165,7 +164,7 @@ const UserDashboard=({navigation})=>{
                                     <Pressable 
                                         key={item.id} 
                                         style={styles.categoryTag}
-                                        onPress={() => navigation.navigate('ParkGuideStack', {
+                                        onPress={() => navigation.navigate('ParkGuideMobileRoot', {
                                             screen: 'Courses', 
                                             params: { 
                                                 filterCategory: item.title
