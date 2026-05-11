@@ -41,44 +41,29 @@ const CourseCard = ({
   onEdit,
   onDelete,
   onEnroll,
+  previousEnrollments = [],
+  onViewHistory,
 }) => {
   const { t, i18n } = useTranslation();
   const isWeb = Platform.OS === "web";
   const isAdmin = userType === "admin";
+  const hasHistory = previousEnrollments.length > 0;
   const handleEnrollPress = () => {
     onEnroll?.();
   };
 
   // show status
   const renderEnrollmentWidget = () => {
-    if (!enrollmentStatus) {
-      // if can enroll show enroll button
-      if (isEnrollable) {
-        return (
-          <Pressable style={styles.enrollBtn} onPress={handleEnrollPress}>
-            <Text style={styles.enrollText}>{t("enroll"),"Enroll"}</Text>
-          </Pressable>
-        );
-      }
-      // prerequisites not met
-      return (
-        <Pressable style={styles.enrollBtn} onPress={handleEnrollPress}>
-          <Text style={styles.enrollText}>{t("enroll"),"Enroll"}</Text>
-        </Pressable>
-      );
-    }
-
     if (enrollmentStatus === EnrollmentStatus.APPLIED) {
       return (
         <View style={[styles.statusBadge, styles.badgeApplied]}>
           <Text style={styles.statusBadgeText}>
-            {t("status.pending_approval"),"Pending Approval"}
+            {t("status.pending_approval", "Pending Approval")}
           </Text>
         </View>
       );
     }
 
-    // show progress bar
     if (enrollmentStatus === EnrollmentStatus.IN_PROGRESS) {
       return <ProgressBar progress={progress} />;
     }
@@ -87,29 +72,46 @@ const CourseCard = ({
       return (
         <View style={[styles.statusBadge, styles.badgeInReview]}>
           <Text style={styles.statusBadgeText}>
-            {t("status.in_review"),"In Review"}
+            {t("status.in_review", "In Review")}
           </Text>
         </View>
       );
     }
 
     if (enrollmentStatus === EnrollmentStatus.COMPLETED) {
-      return <ProgressBar progress={progress} />
+      return <ProgressBar progress={progress} />;
     }
     
-    if (enrollmentStatus === EnrollmentStatus.FAILED) {
+    // 2. Check for FAILED/REJECTED (This is where your history button lives)
+    if (enrollmentStatus === EnrollmentStatus.FAILED || enrollmentStatus === EnrollmentStatus.REJECTED) {
       return (
-        <Pressable style={styles.enrollBtn} onPress={handleEnrollPress}>
-          <Text style={styles.enrollText}>{t("enroll"),"Enroll"}</Text>
-        </Pressable>
+        <View style={styles.historyActionContainer}>
+          <Pressable style={[styles.enrollBtn, {marginTop: 8}]} onPress={handleEnrollPress}>
+            <Text style={styles.enrollText}>{t("enroll_again", "Enroll Again")}</Text>
+          </Pressable>
+          {hasHistory && (
+             <Pressable style={styles.historyBtn} onPress={onViewHistory}>
+               <Text style={styles.historyBtnText}>{t("view_history", "View History")}</Text>
+             </Pressable>
+          )}
+        </View>
       );
     }
-    
-    if (enrollmentStatus === EnrollmentStatus.REJECTED) {
+
+    // 3. Fallback for NO STATUS (New Users)
+    if (!enrollmentStatus) {
       return (
-        <Pressable style={styles.enrollBtn} onPress={handleEnrollPress}>
-          <Text style={styles.enrollText}>{t("enroll"),"Enroll"}</Text>
-        </Pressable>
+        <View style={styles.historyActionContainer}>
+          <Pressable style={styles.enrollBtn} onPress={handleEnrollPress}>
+            <Text style={styles.enrollText}>{t("enroll", "Enroll")}</Text>
+          </Pressable>
+          {/* Show history link even if they aren't currently enrolled but have past attempts */}
+          {hasHistory && (
+             <Pressable style={styles.historyBtnLink} onPress={onViewHistory}>
+               <Text style={styles.historyLinkText}>{t("view_past_records", "Show Past Records")}</Text>
+             </Pressable>
+          )}
+        </View>
       );
     }
 
@@ -202,6 +204,7 @@ const styles = StyleSheet.create({
     overflow: "hidden", 
     borderColor: "#897474",
     flex: 1,
+    maxWidth:'320px'
   },
   imageWrapper: {
     width: "100%",
@@ -369,6 +372,26 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 12,
     fontWeight: '600',
+  },
+  
+
+  historyActionContainer: {
+    flexDirection: 'column',
+    gap: 5,
+    width: '100%',
+  },
+  historyBtn: {
+    backgroundColor: "#f3f4f6",
+    padding: 6,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: "#d1d5db",
+  },
+  historyBtnText: {
+    color: "#374151",
+    textAlign: "center",
+    fontSize: 12,
+    fontWeight: "600",
   },
 });
 

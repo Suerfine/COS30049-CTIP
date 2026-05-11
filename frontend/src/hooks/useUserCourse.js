@@ -20,6 +20,9 @@ export const useUserCourse = () => {
   const [searchText, setSearchText] = useState("");
   const [filters, setFilters] = useState({ status: "all", category: [], location: [] });
   const [tempFilters, setTempFilters] = useState(filters);
+  const [historyModalVisible, setHistoryModalVisible] = useState(false);
+  const [selectedHistory, setSelectedHistory] = useState([]);
+  const [Enrollments, setEnrollments] = useState([]);
 
   const statusLabels = useMemo(() => ({
     all: t("status.all"),
@@ -277,6 +280,38 @@ export const useUserCourse = () => {
     }
   };
 
+  const openHistory = (enrollments) => {
+      setSelectedHistory(enrollments);
+      setHistoryModalVisible(true);
+  };
+
+  useEffect(() => {
+    const loadEnrollments = async () => {
+      try {
+        const res = await enrollmentService.getAll(1, 1000);
+        setEnrollments(res.data || []);
+      } catch (err) {
+        console.error("Failed to load enrollments", err);
+      }
+    };
+
+    loadEnrollments();
+  }, []);
+
+  const getPreviousEnrollments = useCallback((courseId) => {
+    if (!courseId || !Enrollments.length || !currentUser?.id) return [];
+
+    const result = Enrollments.filter((e) => {
+      return (
+        Number(e.course_id) === Number(courseId) &&
+        Number(e.user_id) === Number(currentUser.id)
+      );
+    });
+    console.log(Enrollments);
+
+    return result;
+  }, [Enrollments, currentUser]);
+
   return {
     selectedCourse,
     setSelectedCourse,
@@ -310,5 +345,7 @@ export const useUserCourse = () => {
     completedCourses,
     failedCourses,
     rejectedCourses,
+    getPreviousEnrollments, openHistory, historyModalVisible, selectedHistory,
+    setHistoryModalVisible
   };
 };
