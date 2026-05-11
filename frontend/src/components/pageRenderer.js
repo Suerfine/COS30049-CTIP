@@ -5,7 +5,8 @@ import Markdown from 'react-native-markdown-display';
 import * as Progress from 'react-native-progress';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import WebView from 'react-native-webview';
-import * as Linking from 'expo-linking';
+// import * as Linking from 'expo-linking';
+import { Linking } from 'react-native';
 
 // Import other hooks and component
 import { markdownStyles } from './markdownStyle';
