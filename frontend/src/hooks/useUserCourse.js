@@ -335,7 +335,6 @@ export const useUserCourse = () => {
     courses: userCourses,
     allTagList,
     addTag,
-    filteredCourses,
     handleApply,
     setSearchText,
     searchText,

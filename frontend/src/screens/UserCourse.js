@@ -168,6 +168,7 @@ const UserCourse = ({ navigation }) => {
                                     userType={userType}
                                     progress={course.progress}
                                     // enrollment
+                                    enrollmentStatus={course.enrollmentStatus}
                                     previousEnrollments={getPreviousEnrollments(course.id)}
                                     onViewHistory={() =>
                                     openHistory(getPreviousEnrollments(course.id))
