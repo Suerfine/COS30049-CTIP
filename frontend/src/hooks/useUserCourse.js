@@ -1,11 +1,9 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { Platform, Alert } from "react-native";
-// import { useUserDashboard } from "./useUserDashboard";
 import { useTranslation } from "react-i18next";
 import { courseService } from "../services/courseService";
 import { enrollmentService } from "../services/EnrollmentService";
 import { useAuth } from "../context/AuthContext";
-import { userDashboardService } from "../services/userDashboardService";
 import { progressService } from "../services/ProgressService";
 
 export const useUserCourse = () => {
@@ -14,22 +12,24 @@ export const useUserCourse = () => {
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [filterVisible, setFilterVisible] = useState(false);
-  const [courses, setCourses] = useState([]);
-  const [allCourseList, setAllCourseList] = useState([]);
+  const [userCourses, setUserCourses] = useState([]); 
   const [allTagList, setAllTagList] = useState([]);
   const [allcourseFilter, setAllCourseFilter] = useState("all");
   const [loading, setLoading] = useState(false);
-  const [myEnrollments, setMyEnrollments] = useState([]);  
   const [coursesWithStatus, setCoursesWithStatus] = useState([]);
   const [searchText, setSearchText] = useState("");
   const [filters, setFilters] = useState({ status: "all", category: [], location: [] });
   const [tempFilters, setTempFilters] = useState(filters);
 
   const statusLabels = useMemo(() => ({
-    inProgress: t("status.in progress"),
+    all: t("status.all"),
+    applied: t("status.applied"), // waiting for admin to approve enrollment
+    inProgress: t("status.in_progress"),
+    inReview: t("status.in_review"),     // course completed, waiting for admin approve -> issue badge
     completed: t("status.completed"),
-    notEnrolled: t("status.not enrolled"),
-    inReview: t('status.in review'),
+    failed: t("status.failed"),
+    rejected: t("status.rejected"), // admin rejected the enrollment
+    notEnrolled: t("status.not_enrolled"),
   }), [t]);
 
   const tabs = useMemo(() => ([
@@ -38,19 +38,17 @@ export const useUserCourse = () => {
     { id: "advanced", label: t("status.advanced") }
   ]), [t]);
 
-  // use GET /api/courses
+  // use GET /api/courses/user
   const loadInitialData = useCallback(async () => {
     setLoading(true);
     try {
-      const [courseRes, tagRes, enrollmentRes] = await Promise.all([
-        courseService.getAll({ size: 100 }),
+      const [courseRes, tagRes] = await Promise.all([
+        courseService.getUserCourses({ size: 100 }),
         courseService.getAllTags(),
-        enrollmentService.getMyEnrollments()
       ]);
       
-      setCourses(courseRes.data || courseRes || []);
+      setUserCourses(courseRes.data || courseRes || []);
       setAllTagList(tagRes.data || tagRes || []);
-      setMyEnrollments(Array.isArray(enrollmentRes) ? enrollmentRes : enrollmentRes?.data || []);
     } catch (err) {
       console.error("Initialization failed", err);
     } finally {
@@ -62,45 +60,39 @@ export const useUserCourse = () => {
     loadInitialData();
   }, [loadInitialData]);
 
+  // course.status = enrollment status
   useEffect(() => {
   const enrichCourses = async () => {
-    if (courses.length === 0) return;
+    if (userCourses.length === 0) return;
 
     const enriched = await Promise.all(
-      courses.map(async (course) => {
-        const enrollment = myEnrollments.find(
-          (e) => Number(e.course_id) === Number(course.id)
-        );
+      userCourses.map(async (course) => {
+        const enrollmentStatus = course.status;
 
         let progressValue = 0;
 
-        if (enrollment?.status === "in_progress") {
+        if (enrollmentStatus === "in_progress") {
           try {
             const res = await progressService.getCourseProgress(course.id);
-            try {
-              const res = await progressService.getCourseProgress(course.id);
-              const earned = Number(res.score) || 0;
-              const total = Number(res.maxScore) || 0;
+            const earned = Number(res.score) || 0;
+            const total = Number(res.maxScore) || 0;
 
-              // Check if total is 0 to avoid division by zero
-              progressValue = total > 0 ? earned / total : 0;
-              
-              console.log(`Course ${course.id} Progress Calc:`, earned, "/", total, "=", progressValue);
-          } catch (err) {
-              console.error(err);
-              progressValue = 0;
-          }
+            // Check if total is 0 to avoid division by zero
+            progressValue = total > 0 ? earned / total : 0;
+            
+            console.log(`Course ${course.id} Progress Calc:`, earned, "/", total, "=", progressValue);
           } catch (err) {
             console.error(`Progress fetch failed for course ${course.id}`, err);
+            progressValue = 0;
           }
-        } else if (enrollment?.status === "completed") {
+        } else if (enrollmentStatus === "completed") {
           progressValue = 1;
         }
 
         return {
           ...course,
-          enrollmentStatus: enrollment?.status ?? null,
-          enrollmentId: enrollment?.id ?? null,
+          enrollmentStatus,
+          enrollmentId: course.enrollment?.id ?? null,
           progress: progressValue, 
         };
       })
@@ -109,25 +101,12 @@ export const useUserCourse = () => {
   };
 
   enrichCourses();
-}, [courses, myEnrollments]); 
-
-  // // GET /api/enrollments/my-enrollments
-  // const loadMyEnrollments = useCallback(async () => {
-  //   try {
-  //     const data = await enrollmentService.getMyEnrollments();
-  //     setMyEnrollments(Array.isArray(data) ? data : data?.data || []);
-  //   } catch (err) {
-  //     console.error("Fetch my enrollments failed", err);
-  //   }
-  // }, []);
+}, [userCourses]); 
 
   // called after confirm enroll
   const handleEnrollment = useCallback(
     async (courseId) => {
       try {
-        const existingEnrollment = myEnrollments.find(
-          (e) => Number(e.course_id) === Number(courseId),
-        );
         await enrollmentService.enroll(courseId); 
         await loadInitialData();
         const successMsg = "Enrollment request sent for approval.";
@@ -140,74 +119,36 @@ export const useUserCourse = () => {
           ? window.alert(failMsg)
           : Alert.alert("Enrollment failed", failMsg);
       }
-    }, [currentUser, myEnrollments, loadInitialData]);
+    }, [loadInitialData]);
 
-  // drop courses
-  // finds the enrollment record for that specific course and deletes it
-  // const handleDrop = useCallback(
-  //   async (courseId) => {
-  //     try {
-  //       const enrollment = myEnrollments.find(
-  //         (e) => Number(e.course_id) === Number(courseId),
-  //       );
-
-  //       if (!enrollment) {
-  //         console.warn(
-  //           "No enrollment record found to drop for course",
-  //           courseId,
-  //         );
-  //         return;
-  //       }
-  //       await enrollmentService.updateStatus(enrollment.id, "dropped");
-  //       await loadMyEnrollments();
-  //     } catch (err) {
-  //       const message =
-  //         typeof err === "string"
-  //           ? err
-  //           : err?.message || "Failed to drop course. Please try again.";
-
-  //       if (Platform.OS === "web") {
-  //         window.alert(message);
-  //       } else {
-  //         Alert.alert("Drop Failed", message);
-  //       }
-  //     }
-  //   },
-  //   [myEnrollments, loadMyEnrollments],
-  // );
-
-  // use progressData from param
-  // const coursesWithStatus = useMemo(() => {
-  //   return courses.map((course) => {
-  //     const enrollment = myEnrollments.find(
-  //       (e) => Number(e.course_id) === Number(course.id),
-  //     );
-
-  //     const progressObj = progressData?.find((p) => p.courseId === course.id);
-  //     const progress = progressObj ? progressObj.progress : null;
-
-  //     return {
-  //       ...course,
-  //       progress: progressObj?.progress ?? null,
-  //       enrollmentStatus: enrollment?.status ?? null,
-  //       enrollmentId: enrollment?.id ?? null,
-  //     };
-  //   });
-  // }, [courses, myEnrollments, progressData]);
+    // filter applied courses
+    const appliedCourses = useMemo(() =>
+      coursesWithStatus.filter(c => c.enrollmentStatus === "applied"),
+    [coursesWithStatus]);
 
     // filter in progress courses
     const inProgressCourses = useMemo(() =>
-        coursesWithStatus.filter(c => c.enrollmentStatus === "in_progress"),
+      coursesWithStatus.filter(c => c.enrollmentStatus === "in_progress"),
     [coursesWithStatus]);
 
     // filter in review courses
     const inReviewCourses = useMemo(() =>
-        coursesWithStatus.filter(c => c.enrollmentStatus === "in_review"),
+      coursesWithStatus.filter(c => c.enrollmentStatus === "in_review"),
     [coursesWithStatus]);
 
     // filter completed courses
     const completedCourses = useMemo(() =>
-        coursesWithStatus.filter(c => c.enrollmentStatus === "completed"),
+      coursesWithStatus.filter(c => c.enrollmentStatus === "completed"),
+    [coursesWithStatus]);
+
+    // filter failed courses
+    const failedCourses = useMemo(() =>
+      coursesWithStatus.filter(c => c.enrollmentStatus === "failed"),
+    [coursesWithStatus]);
+
+    // filter rejected courses
+    const rejectedCourses = useMemo(() =>
+      coursesWithStatus.filter(c => c.enrollmentStatus === "rejected"),
     [coursesWithStatus]);
 
   // merge enrollment status first via courses with status, then apply filters based on tag
@@ -230,16 +171,13 @@ export const useUserCourse = () => {
         const matchesStatus =
         filters.status === "all" ||
 
-        (filters.status === "inProgress" &&
-            course.enrollmentStatus === "in_progress") ||
-        (filters.status === "inReview" &&
-            course.enrollmentStatus === "in_review") ||
-        (filters.status === "completed" &&
-            course.enrollmentStatus === "completed") ||
-        (filters.status === "notEnrolled" &&
-            !course.enrollmentStatus);
-        // (filters.status === "dropped" &&
-        //     course.enrollmentStatus === "dropped");
+        (filters.status === "applied" && course.enrollmentStatus === "applied") ||
+        (filters.status === "inProgress" && course.enrollmentStatus === "in_progress") ||
+        (filters.status === "inReview" && course.enrollmentStatus === "in_review") ||
+        (filters.status === "completed" && course.enrollmentStatus === "completed") ||
+        (filters.status === "failed" && course.enrollmentStatus === "failed") ||
+        (filters.status === "rejected" && course.enrollmentStatus === "rejected") ||
+        (filters.status === "notEnrolled" && !course.enrollmentStatus);
 
       const matchesLocation =
         !filters.location ||
@@ -310,11 +248,6 @@ export const useUserCourse = () => {
     }
   };
 
-  // useEffect(() => {
-  //   loadCourses();
-  //   loadMyEnrollments();
-  // }, [loadCourses, loadMyEnrollments]);
-
   return {
     selectedCourse,
     setSelectedCourse,
@@ -332,19 +265,20 @@ export const useUserCourse = () => {
     tabs,
     coursesWithStatus,
     filteredCourses,
-    myEnrollments,
     handleEnrollment,
-    // handleDrop,
     removeFilter,
-    courses,
+    courses: userCourses,
     allTagList,
     addTag,
     filteredCourses,
     handleApply,
     setSearchText,
     searchText,
+    appliedCourses,
     inProgressCourses,
     inReviewCourses,
     completedCourses,
+    failedCourses,
+    rejectedCourses,
   };
 };
