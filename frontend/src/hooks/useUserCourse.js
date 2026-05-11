@@ -33,6 +33,7 @@ export const useUserCourse = () => {
     failed: t("status.failed"),
     rejected: t("status.rejected"), // admin rejected the enrollment
     notEnrolled: t("status.not enrolled"),
+    pendingPayment: t("status.pending payment"),
   }), [t]);
 
   const tabs = useMemo(() => ([
@@ -182,6 +183,11 @@ export const useUserCourse = () => {
       coursesWithStatus.filter(c => c.enrollmentStatus === "rejected"),
     [coursesWithStatus]);
 
+    // filter pending payment courses
+    const pendingPayment = useMemo(() =>
+      coursesWithStatus.filter(c => c.enrollmentStatus === "pending_payment"),
+    [coursesWithStatus])
+
   // merge enrollment status first via courses with status, then apply filters based on tag
   const filteredCourses = useMemo(() => {
     return coursesWithStatus.filter((course) => {
@@ -208,6 +214,7 @@ export const useUserCourse = () => {
         (filters.status === "completed" && course.enrollmentStatus === "completed") ||
         (filters.status === "failed" && course.enrollmentStatus === "failed") ||
         (filters.status === "rejected" && course.enrollmentStatus === "rejected") ||
+        (filters.status === "pendingPayment" && course.enrollmentStatus === "pending_payment") ||
         (filters.status === "notEnrolled" && !course.enrollmentStatus);
 
       const matchesLocation =

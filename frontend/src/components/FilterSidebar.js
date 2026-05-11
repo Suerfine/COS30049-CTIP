@@ -15,6 +15,9 @@ const FilterSidebar = ({ visible, tempFilters, setTempFilters, onApply, onReset,
         inProgress: t('status.in progress'),
         completed: t('status.completed'),
         notEnrolled: t('status.not enrolled'),
+        inReview: t('status.in review'),
+        applied: t('status.applied'),
+        pendingPayment: t('status.pending payment'),
     };
 
     useEffect(() => {
@@ -70,7 +73,7 @@ const FilterSidebar = ({ visible, tempFilters, setTempFilters, onApply, onReset,
                             <LoaderCircle size={16} color="#0a6340"/>
                             <Text style={styles.sectionTitle}>{t('progress')}</Text>
                         </View>
-                        {['inProgress', 'completed', 'notEnrolled'].map(status => (
+                        {['inProgress', 'completed', 'notEnrolled', 'inReview', 'applied', 'pendingPayment'].map(status => (
                             <FilterItem
                                 key={status}
                                 label={statusLabels[status]}
