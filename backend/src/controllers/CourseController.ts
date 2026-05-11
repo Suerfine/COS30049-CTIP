@@ -638,13 +638,7 @@ export const getAllCourses = async (
       attributes:{
         include:[[fn("COUNT", col("modules.id")), "module_count"]],
       },
-      group:[
-        "Course.id",
-        "Course.cost",
-        "tags.id",
-        "prerequisite_groups.id",
-        "prerequisite_groups->prerequisites.id",
-      ],
+      group:["Course.id"],
       subQuery:false,
     });
 
