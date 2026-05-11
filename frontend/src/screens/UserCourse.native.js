@@ -95,7 +95,7 @@ const UserCourse=({navigation})=>{
                     <TextInput
                         style={styles.input}
                         value={searchText}
-                        onChangeText={handleSearch}
+                        onChangeText={setSearchText}
                         placeholder="Search..."
                         placeholderTextColor="#8f8f8f"
                     />
@@ -134,14 +134,14 @@ const UserCourse=({navigation})=>{
                             <Text style={styles.emptyText}>{t('no courses found')}</Text>
                         </View>
                     ) : ( filteredCourses.map(course => {
-                        const numModules = course.modules ? course.modules.length : 0;
+                         const numModules = course.module_count ? course.module_count : 0;
                         return(
                         <CourseCard
                             key={course.id}
                             id={course.id}
                             coverImgUrl={course.cover_img_url}
                             courseTitle={course.title}
-                            numModules={numModules || 16}
+                            numModules={numModules}
                             duration={course.expected_completion_weeks}
                             expiry={course.must_complete_in_weeks}
                             userType={userType}
@@ -209,6 +209,7 @@ const styles=StyleSheet.create({
         marginTop:10,
         borderTopLeftRadius: 15,
         borderTopRightRadius: 15,
+        flexDirection:'row',
     },
     courseHeader:{
         paddingHorizontal:15,
@@ -237,6 +238,7 @@ const styles=StyleSheet.create({
         padding:8,
         borderRadius:50,
         marginLeft:10,
+        alignSelf:'center'
     },
     cardContainer: {
         flexDirection: 'row',
