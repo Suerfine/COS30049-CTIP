@@ -186,31 +186,46 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
 
     const IntersectionWrapper = ({ children, id, score, type, isAlreadyComplete }) => {
         const elementRef = useRef(null);
+        const handleMobileLayout = () => {
+            if (type === 'quiz_objective' || type === 'workshop') return;
+
+            if (Platform.OS !== 'web' && !isAlreadyComplete && !viewedElements[id]) {
+                setTimeout(() => {
+                    markAsComplete(id, score);
+                }, 6000); 
+            }
+        };
 
         useEffect(() => {
-            if (isAdmin || type === 'quiz_objective' || type==='workshop' || viewedElements[id] || isAlreadyComplete) return;
+            if (isAdmin || type === 'quiz_objective' || type === 'workshop' || viewedElements[id] || isAlreadyComplete) return;
 
-            const observer = new IntersectionObserver(
-                ([entry]) => {
-                    if (entry.isIntersecting && entry.intersectionRatio >= 0.7) {
-                        observer.disconnect();
-                        setTimeout(() => {
-                            markAsComplete(id, score);
-                        }, 5000);
-                    }
-                },
-                { threshold: [0.7] }
-            );
+            if (Platform.OS === 'web') {
+                const observer = new IntersectionObserver(
+                    ([entry]) => {
+                        if (entry.isIntersecting && entry.intersectionRatio >= 0.7) {
+                            observer.disconnect();
+                            setTimeout(() => {
+                                markAsComplete(id, score);
+                            }, 5000);
+                        }
+                    },
+                    { threshold: [0.7] }
+                );
 
-            if (elementRef.current) {
-                observer.observe(elementRef.current);
+                if (elementRef.current) {
+                    observer.observe(elementRef.current);
+                }
+
+                return () => observer.disconnect();
             }
-
-            return () => observer.disconnect();
-        }, [id, isAlreadyComplete]);
+        }, [id, isAlreadyComplete, type]); 
 
         return (
-            <View ref={elementRef} style={{ width: '100%' }}>
+            <View 
+                ref={elementRef} 
+                onLayout={handleMobileLayout} 
+                style={{ width: '100%' }}
+            >
                 {children}
             </View>
         );
