@@ -30,6 +30,7 @@ const EnrollmentManagement = () => {
         handleUpdateStatus,
         deleteRecord,
         courses,
+        currentCourseId, setCurrentCourseId
     } = useEnrollmentManagement();
 
     // Progress
@@ -511,14 +512,16 @@ const EnrollmentManagement = () => {
                         )}
                     </View>
                 </View>
-                <Pressable 
-                    onPress={() => setFilterVisible(true)}
-                    style={() => [
-                        styles.iconBtn,
-                    ]}
-                >
-                    <Filter size={20} color={filterVisible ? "#0a6340" : "#666"} />
-                </Pressable>
+                {activeTab === "enrollment" && (
+                    <Pressable 
+                        onPress={() => setFilterVisible(true)}
+                        style={() => [
+                            styles.iconBtn,
+                        ]}
+                    >
+                        <Filter size={20} color={filterVisible ? "#0a6340" : "#666"} />
+                    </Pressable>
+                )}
             </View>
 
             <View style={styles.tableContainer}>
@@ -807,24 +810,14 @@ const EnrollmentManagement = () => {
                     <Pressable 
                         style={styles.sidebarApplyBtn} 
                         onPress={() => {
-                            setSelectedCourseFilter(tempCourseFilter);
+                            const selected=courses.find(c=>c.title === tempCourseFilter);
+                            setCurrentCourseId(selected ? selected.id : 'All')
                             setFilterVisible(false);
                             setActivePage(1);
                         }}
                     >
                         <Text style={styles.sidebarApplyText}>Apply Filters</Text>
                     </Pressable>
-                    {/* <View style={styles.buttons}>
-                        <Pressable style={styles.applyBtn} onPress={onApply}>
-                            <Text style={{ color: 'white' }}>{t("apply")}</Text>
-                        </Pressable>
-                        <Pressable
-                            style={styles.resetBtn}
-                            onPress={() => { onReset(); onClose(); }}
-                        >
-                            <Text style={{ color: 'white' }}>{t("reset")}</Text>
-                        </Pressable>
-                    </View> */}
                 </View>
             </View>
             </>

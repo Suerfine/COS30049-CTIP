@@ -5,13 +5,17 @@ export const enrollmentService = {
     /**
         * GET: Fetch all enrollments enriched with User names (Admin View)
     */
-    getAll: async (page = 1, size = 10, searchQuery = '', sortConfig, status = 'All') => {
+    getAll: async (page = 1, size = 10, searchQuery = '', sortConfig, status = 'All', courseId='All') => {
         try {
             const params = { page, size };
             let filters = [];
 
             if (status && status !== 'All') {
                 filters.push(`status eq "${status}"`);
+            }
+
+            if(courseId && courseId !== 'All'){
+                filters.push(`course_id eq ${Number(courseId)}`)
             }
 
             if (filters.length > 0) {
