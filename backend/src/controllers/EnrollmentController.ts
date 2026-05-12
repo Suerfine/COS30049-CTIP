@@ -325,11 +325,14 @@ export const getSubmissionSummaries = async (
         ? req.query.orderBy
         : "id ASC";
 
-    // ✅ Build WHERE like getAllEnrollments style
     const whereClause: any = {};
 
     if (status !== "All") {
       whereClause.status = status;
+    } else {
+      whereClause.status = {
+        [Op.notIn]: ["pending_payment", "in_review"]
+      };
     }
 
     if (search) {
