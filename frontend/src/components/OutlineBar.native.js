@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Pressable, FlatList, TextInput, Animated, Dimensions} from 'react-native';
-import { Plus, ChevronRight, ChevronDown, Search, Trash2, Lock, CheckCircle2, XCircle } from 'lucide-react-native';
+import { Plus, ChevronRight, ChevronDown, Search, Trash2, Lock, CheckCircle2, XCircle, X } from 'lucide-react-native';
 import { useOutline } from '../hooks/useOutline';
 import * as Progress from 'react-native-progress';
 
@@ -80,7 +80,7 @@ const OutlineBar = ({ course, progressMap = {}, onSelectPage, editable, isOpen, 
     };
 
     return (
-        <View style={StyleSheet.absoluteFill} pointerEvents={isOpen ? 'auto' : 'none'}>
+        <View style={[StyleSheet.absoluteFill, {zIndex: 99999, elevation: 99999, }]} pointerEvents={isOpen ? 'auto' : 'none'}>
 
             <Pressable style={styles.overlay} onPress={onClose} />
 
@@ -282,25 +282,17 @@ const OutlineBar = ({ course, progressMap = {}, onSelectPage, editable, isOpen, 
                                             );
                                         })}
 
-                                        {editable && (
+                                        {/* {editable && (
                                             <Pressable onPress={() => addPage(mid)} style={styles.pageItem}>
                                                 <Text style={styles.addPage}>+ Add New Page</Text>
                                             </Pressable>
-                                        )}
+                                        )} */}
                                     </View>
                                 )}
                             </View>
                         );
                     }}
                 />
-
-                {/* Add module button (editable only) */}
-                {/* {editable && (
-                    <Pressable style={styles.addModuleBtn} onPress={addModule}>
-                        <Plus size={16} color="#333" />
-                        <Text style={styles.addModuleText}>Add Module</Text>
-                    </Pressable>
-                )} */}
             </Animated.View>
         </View>
     );
@@ -310,6 +302,8 @@ const styles = StyleSheet.create({
     overlay: {
         ...StyleSheet.absoluteFillObject,
         backgroundColor: 'rgba(0,0,0,0.5)',
+        zIndex: 1,
+        elevation: 1,
     },
     sidebarContainer: {
         width: width * 0.82,
@@ -322,7 +316,8 @@ const styles = StyleSheet.create({
         elevation: 10,
         paddingTop: 60,
         paddingBottom: 20,
-        zIndex: 20000,
+        zIndex: 2,
+        elevation: 2,
     },
     search: {
         flexDirection: 'row',
@@ -359,7 +354,6 @@ const styles = StyleSheet.create({
     item: {
         paddingVertical: 10,
         flexDirection: 'row',
-        alignItems: 'center',
     },
     moduleBlock: {
         flexDirection: 'row',
@@ -394,22 +388,6 @@ const styles = StyleSheet.create({
         paddingVertical: 6,
         paddingHorizontal: 10,
         marginTop: 5,
-    },
-    addPage: {
-        color: '#3f3f3f',
-    },
-    addModuleBtn: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 8,
-        paddingHorizontal: 20,
-        paddingVertical: 14,
-        borderTopWidth: 1,
-        borderColor: '#eee',
-    },
-    addModuleText: {
-        fontSize: 15,
-        color: '#333',
     },
     progressBar: {
         height: 3,
