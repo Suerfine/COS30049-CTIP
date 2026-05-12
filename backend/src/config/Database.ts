@@ -1,3 +1,4 @@
+import path from "path";
 import { Sequelize } from "sequelize";
 
 const dialect = (process.env.DB_DIALECT || "sqlite").toLowerCase();
@@ -5,9 +6,15 @@ const dialect = (process.env.DB_DIALECT || "sqlite").toLowerCase();
 let sequelize: Sequelize;
 
 if (dialect === "sqlite") {
+  const storagePath = path.resolve(
+    __dirname,
+    "../../",
+    process.env.DB_STORAGE || "storage/dev_db.sqlite",
+  );
+
   sequelize = new Sequelize({
     dialect: "sqlite",
-    storage: process.env.DB_STORAGE || "./storage/dev_db.sqlite",
+    storage: storagePath,
   });
 } else if (dialect === "mysql") {
   sequelize = new Sequelize({

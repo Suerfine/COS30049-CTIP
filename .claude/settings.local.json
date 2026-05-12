@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node -e ' *)",
+      "Bash(node -e \"const p = require\\('d:/COS30049-CTIP/backend/package.json'\\); console.log\\(JSON.stringify\\(p.scripts, null, 2\\)\\)\")"
+    ]
+  }
+}
