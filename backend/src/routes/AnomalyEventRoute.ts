@@ -171,6 +171,8 @@ AnomalyEventRouter.get(
   AnomalyEventController.getUserAnomalyStats,
 );
 
+AnomalyEventRouter.get("/map", AnomalyEventController.getAnomalyMapEvents);
+
 AnomalyEventRouter.patch(
   "/:eventId/resolve",
   auth,

@@ -81,6 +81,7 @@ router.post("/token", AuthController.token);
 =     REGISTRATION ROUTES      =
 ===============================*/
 router.use("/registrations", registrationRouter);
+router.use("/anomaly-events", anomalyEventRouter);
 router.use("/Anomaly-events", anomalyEventRouter);
 router.use("/ar-models", arModelRouter);
 

@@ -356,9 +356,7 @@ export const resolveAnomalyEvent = async (
       return res.status(401).json({ message: "Unauthorized" });
     }
 
-    const event = await AnomalyEvent.findOne({
-      where: { id: eventId, user_id: authUser.id },
-    });
+    const event = await AnomalyEvent.findByPk(eventId);
 
     if (!event) {
       return res.status(404).json({ message: "Anomaly event not found" });
