@@ -9,7 +9,7 @@ import RegistrationManagement from "../screens/RegistrationManagement";
 import AccountsManagement from "../screens/AccountsManagement";
 import EnrollmentManagement from "../screens/EnrollmentManagement";
 import UserProfile from "../screens/UserProfile";
-import AdminDashboard from "../screens/AdminDashboard";
+// import AdminDashboard from "../screens/AdminDashboard";
 import AnomalyDetection from "../screens/AnomalyDetection";
 import AdminArModels from "../screens/AdminArModels";
 import Notification from "../screens/Notification";
@@ -45,7 +45,7 @@ export default function AdminNavigator() {
               name="Enrollment Management"
               component={EnrollmentManagement}
             />
-            <Stack.Screen name="Admin Dashboard" component={AdminDashboard} />
+            {/* <Stack.Screen name="Admin Dashboard" component={AdminDashboard} /> */}
             <Stack.Screen
               name="Anomaly Detection"
               component={AnomalyDetection}

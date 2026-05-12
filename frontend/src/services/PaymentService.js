@@ -180,8 +180,9 @@ export const paymentService = {
     ) => {
         try {
             const res = await apiClient.patch(
-                `/payments/${paymentId}/verify/${status}`,
+                `/payments/${paymentId}/verify`,
                 {
+                    status,
                     admin_id: 1,
                     admin_remark: adminRemark
                 }
