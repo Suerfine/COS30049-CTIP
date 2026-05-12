@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { createStackNavigator } from "@react-navigation/stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { View, Platform } from "react-native";
-import { LayoutDashboard, Book, Award, ListTodo } from "lucide-react-native";
+import { LayoutDashboard, Book, Award, ListTodo, Group} from "lucide-react-native";
 import { useNavigationState, useNavigation } from "@react-navigation/native";
 
 // Import screens
@@ -17,7 +17,7 @@ import UserAnomaly from "../screens/UserAnomaly";
 import Badge from "../screens/Badge";
 import Notification from "../screens/Notification";
 import Payment from "../screens/Payment";
-import AIDetection from "../screens/AIDetection";
+import AIDetection from "../screens/AIDetection.native";
 
 // Import components
 import MobileTopBar from "../components/MobileTopBar";
@@ -102,6 +102,13 @@ function MobileTabNavigator() {
           component={Badge}
           options={{
             tabBarIcon: ({ color }) => <Award color={color} size={20} />,
+          }}
+        />
+        <Tab.Screen
+          name="AI Detection"
+          component={AIDetection}
+          options={{
+            tabBarIcon: ({ color }) => <Group color={color} size={20} />,
           }}
         />
         <Tab.Screen
