@@ -1,6 +1,5 @@
 import React from "react";
 import { createStackNavigator } from "@react-navigation/stack";
-import { ActivityIndicator, View } from "react-native";
 
 // Import navigators
 import UnloggedInNavigator from "./UnloggedInNavigator";
@@ -9,6 +8,7 @@ import ParkGuideNavigator from "./ParkGuideNavigator";
 
 // Import screens that must be reachable regardless of auth state
 import ResetPassword from "../screens/ResetPassword";
+import ForceChangePassword from "../screens/ForceChangePassword";
 
 // Import auth context
 import { useAuth } from "../context/AuthContext";
@@ -19,14 +19,19 @@ import { UserRoles } from "../enum/UserRoles";
 const Stack = createStackNavigator();
 
 export default function RootNavigator() {
-  const { currentUser, isLoading, userToken } = useAuth();
-
-  {userToken == null && (
-    <Stack.Screen name="Auth" component={UnloggedInNavigator} />
-  )}
+  const { currentUser, isLoading, mustChangePassword } = useAuth();
 
   if (isLoading) {
     return null;
+  }
+
+  // Logged-in user who must change password — block all other navigation
+  if (currentUser && mustChangePassword) {
+    return (
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="ForceChangePassword" component={ForceChangePassword} />
+      </Stack.Navigator>
+    );
   }
 
   return (

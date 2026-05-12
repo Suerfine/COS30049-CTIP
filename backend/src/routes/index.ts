@@ -4,6 +4,7 @@ import registrationRouter from "./RegistrationRoute";
 import courseRouter from "./CourseRoute";
 import submissionRouter from "./SubmissionRoute";
 import * as AuthController from "../controllers/AuthController";
+import { auth } from "../middelware/Auth";
 const router = Router();
 
 /*=============================
@@ -124,6 +125,7 @@ router.post("/forgot-password", AuthController.forgotPassword);
  *         description: User not found
  */
 router.post("/reset-password", AuthController.resetPassword);
+router.post("/change-password", auth, AuthController.changePassword);
 
 /*===============================
 =     REGISTRATION ROUTES      =

@@ -8,6 +8,7 @@ export const AuthProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
   const [accessToken, setAccessToken] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [mustChangePassword, setMustChangePassword] = useState(false);
 
   // Initialize auth state on mount
   useEffect(() => {
@@ -15,9 +16,11 @@ export const AuthProvider = ({ children }) => {
       try {
         const storedUser=await AsyncStorage.getItem("currentUser");
         const storedToken=await AsyncStorage.getItem("accessToken");
+        const storedMustChange=await AsyncStorage.getItem("mustChangePassword");
         if(storedUser && storedToken){
           setCurrentUser(JSON.parse(storedUser));
           setAccessToken(storedToken);
+          setMustChangePassword(storedMustChange === "true");
 
           if(typeof document !== "undefined"){
             document.title="SFC";
@@ -39,13 +42,16 @@ export const AuthProvider = ({ children }) => {
       const payload=await authService.login(email,password);
       const user=payload?.user || null;
       const token=payload?.access_token || null;
+      const mustChange=payload?.must_change_password ?? false;
       if (!user || !token) {
         throw new Error("Login failed: Missing user data or token");
       }
       await AsyncStorage.setItem("currentUser", JSON.stringify(user));
       await AsyncStorage.setItem("accessToken", token);
+      await AsyncStorage.setItem("mustChangePassword", mustChange ? "true" : "false");
       setAccessToken(token);
       setCurrentUser(user);
+      setMustChangePassword(mustChange);
       return user;
     }catch(err){
       console.error("Auth Login Error: ", err);
@@ -54,9 +60,15 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = async () => {
-    await AsyncStorage.multiRemove(["currentUser", "accessToken"]);
+    await AsyncStorage.multiRemove(["currentUser", "accessToken", "mustChangePassword"]);
     setCurrentUser(null);
     setAccessToken(null);
+    setMustChangePassword(false);
+  };
+
+  const clearMustChangePassword = async () => {
+    await AsyncStorage.setItem("mustChangePassword", "false");
+    setMustChangePassword(false);
   };
 
   const value = useMemo(
@@ -64,10 +76,12 @@ export const AuthProvider = ({ children }) => {
       currentUser,
       accessToken,
       isLoading,
+      mustChangePassword,
       login,
       logout,
+      clearMustChangePassword,
     }),
-    [currentUser, accessToken, isLoading],
+    [currentUser, accessToken, isLoading, mustChangePassword],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
