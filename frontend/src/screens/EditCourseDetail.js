@@ -452,7 +452,7 @@ const EditCourseDetail = () => {
     return (
         <View style={styles.rowContainer}>
             {/* Outlinebar */}
-            <OutlineBar course={course} onSelectPage={setSelectedPage} editable={true} isCollapsed={isCollapsed}/>
+            <OutlineBar course={course} onSelectPage={setSelectedPage} editable={true} isCollapsed={isCollapsed} isPublished={course.status === 'released' ? true : false}/>
             <ScrollView style={{height:'100vh'}}>
                 <View style={styles.container}>
                     {/* Background Image */}
@@ -541,6 +541,7 @@ const EditCourseDetail = () => {
                                         onEditElement={handleOpenEdit}
                                         onDeleteElement={handleDelete}
                                         onMoveElement={moveElement}
+                                        isPublished={course.status === 'released' ? true : false}
                                     />
                                 )}
                             </View>
@@ -571,11 +572,13 @@ const EditCourseDetail = () => {
                                             </View>
                                         </View>
                                     </View>
-
-                                    <Pressable style={styles.editButton} onPress={() => setEditModalVisible(true)}>
-                                        <Edit size={16} color="#0a6340" />
-                                        <Text style={styles.editButtonText}> Edit Section</Text>
-                                    </Pressable>
+                                    {course.status === 'unreleased' && (
+                                        <Pressable style={styles.editButton} onPress={() => setEditModalVisible(true)}>
+                                            <Edit size={16} color="#0a6340" />
+                                            <Text style={styles.editButtonText}> Edit Section</Text>
+                                        </Pressable>
+                                    )}
+                                    
                                 </View>
                                 
                                 <Image 

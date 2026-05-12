@@ -4,7 +4,7 @@ import { Plus, ChevronRight, ChevronDown, Search, Trash2, Lock, CheckCircle2, XC
 import { useOutline } from '../hooks/useOutline';
 import * as Progress from 'react-native-progress';
 
-const OutlineBar = ({ course, progressMap = {}, onSelectPage, editable, isCollapsed, isLocked, isFailed }) => {
+const OutlineBar = ({ course, progressMap = {}, onSelectPage, editable, isCollapsed, isLocked, isFailed, isPublished }) => {
     const {
         allModules,
         expandedModule,
@@ -86,7 +86,7 @@ const OutlineBar = ({ course, progressMap = {}, onSelectPage, editable, isCollap
                 >
                     <Text style={styles.overview}>Course Overview</Text>
 
-                    {editable && hoveredItem?.type === 'overview' && (
+                    {editable && !isPublished && hoveredItem?.type === 'overview' && (
                         <Pressable onPress={addModule}>
                             <Plus size={16} />
                         </Pressable>
@@ -139,7 +139,7 @@ const OutlineBar = ({ course, progressMap = {}, onSelectPage, editable, isCollap
                         editingItem?.type === 'module' && editingItem.id === mid;
 
                     const isNewModule =
-                        editable && module.title === "";
+                        editable && !isPublished && module.title === "";
 
                     const isEditing = isEditingModule || isNewModule;
 
@@ -162,7 +162,7 @@ const OutlineBar = ({ course, progressMap = {}, onSelectPage, editable, isCollap
                                     onPress={() => {
                                         if (isLocked || isEditing) return;
                                         toggleModule(mid);
-                                        if (editable && expandedModule !== mid) {
+                                        if (editable && !isPublished && expandedModule !== mid) {
                                             setEditingItem({
                                                 type: 'module',
                                                 id: mid
@@ -190,7 +190,7 @@ const OutlineBar = ({ course, progressMap = {}, onSelectPage, editable, isCollap
 
                                     {expandedModule === mid ? <ChevronDown size={15}/> : <ChevronRight size={15}/>}
 
-                                    {editable && !isEditing && hoveredItem?.id === mid && (
+                                    {editable && !isPublished && !isEditing && hoveredItem?.id === mid && (
                                         <Pressable onPress={() => deleteModule(mid)}>
                                             <Trash2 size={16} />
                                         </Pressable>
@@ -232,7 +232,7 @@ const OutlineBar = ({ course, progressMap = {}, onSelectPage, editable, isCollap
                                                 onPress={() => {
                                                     if (isPageLocked) return;
                                                     handleSelect({ type: 'page', module, page });
-                                                    if (editable) {
+                                                    if (editable && !isPublished) {
                                                         setEditingItem({ type: 'page', moduleId: mid, pageId: page.id });
                                                     }
                                                 }}
@@ -275,7 +275,7 @@ const OutlineBar = ({ course, progressMap = {}, onSelectPage, editable, isCollap
                                                         )}
                                                     </View>
                                                     
-                                                    {editable && isHoveringPage && !isEditingPage && (
+                                                    {editable && !isPublished && isHoveringPage && !isEditingPage && (
                                                         <Pressable onPress={() => deletePage(mid, page.id)}>
                                                             <Trash2 size={16} color="red"/>
                                                         </Pressable>
@@ -285,7 +285,7 @@ const OutlineBar = ({ course, progressMap = {}, onSelectPage, editable, isCollap
                                         );
                                     })}
 
-                                    {editable && (
+                                    {editable && !isPublished && (
                                         <Pressable onPress={() => addPage(mid)} style={styles.pageItem}>
                                             <Text style={styles.addPage}>+ Add New Page</Text>
                                         </Pressable>

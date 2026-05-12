@@ -11,7 +11,7 @@ import { markdownStyles } from './markdownStyle';
 import { UserRoles } from '../enum/UserRoles';
 import { useAuth } from '../context/AuthContext';
 
-const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement, onMoveElement, onProgressUpdate, onRegisterWorkshop, userMarks,pageMetadata,currentAttempts,isPageFinished, isFinalQuiz, enrollmentId, fullHistoryMap, onFetchHistory, onRefreshHistory, scrollToTop}) => {
+const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement, onMoveElement, onProgressUpdate, onRegisterWorkshop, userMarks,pageMetadata,currentAttempts,isPageFinished, isFinalQuiz, enrollmentId, fullHistoryMap, onFetchHistory, onRefreshHistory, scrollToTop, isPublished}) => {
     const isAdmin = role === UserRoles.ADMIN;
     const [videoProgress, setVideoProgress]=useState({});
     const [quizStates, setQuizStates]=useState({});
@@ -479,7 +479,7 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
                         )}
                     </View>
 
-                    {isAdmin && (
+                    {isAdmin && !isPublished && (
                         <View style={styles.adminHeader}>
                             <View style={styles.orderGroup}>
                                 <TouchableOpacity 
