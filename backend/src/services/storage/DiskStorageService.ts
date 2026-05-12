@@ -44,6 +44,11 @@ export class DiskStorageService implements StorageService {
     }
   }
 
+  async retrieve(filePath: string) {
+    const fullPath = path.join(this.basePath, filePath);
+    return await fs.readFile(fullPath);
+  }
+
   fullPath(filePath: string) {
     return path.join(this.basePath, filePath);
   }

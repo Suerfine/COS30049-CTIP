@@ -90,6 +90,7 @@ export const API_ENDPOINTS = {
     SUBMIT: "/payments",
     BY_USER: (userId) => `/payments/user/${userId}`,
     DETAIL: (id) => `/payments/${id}`,
+    RECEIPT: (paymentId) => `/payments/${paymentId}/receipt`,
     UPDATE_STATUS: (paymentId, status) =>
       `/payments/${paymentId}/status/${status}`,
   },
