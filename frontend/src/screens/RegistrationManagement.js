@@ -274,7 +274,7 @@ const RegistrationManagement=()=>{
                                 </View>
                             )}
                             
-                            {/* CV Section */}
+                            {/* CV Section (dummy)*/}
                             <View style={styles.details}>
                                 <View style={styles.row}>
                                     <FileUser size={18} color="#4f4f4f"/>
@@ -285,6 +285,7 @@ const RegistrationManagement=()=>{
                                     <ExternalLink size={14} color="#666" />
                                 </Pressable>
                             </View>
+                            {console.log(users)}
                         </View>
                         {selectedUser.status=='pending' &&(
                         <View style={styles.actionContainer}>

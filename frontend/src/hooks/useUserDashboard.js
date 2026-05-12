@@ -172,7 +172,7 @@ export const useUserDashboard = () => {
         }
         if (filter === "upcoming") {
             return result.filter(event =>
-                event.type === "normal" && event.status === "pending"
+                event.status === "pending"
             );
         }
         if (filter === "completed") {
