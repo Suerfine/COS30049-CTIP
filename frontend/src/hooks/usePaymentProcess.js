@@ -4,10 +4,12 @@ import { Alert } from 'react-native';
 
 import { enrollmentService } from '../services/EnrollmentService';
 import { paymentService } from '../services/PaymentService';
+import { useAuth } from '../context/AuthContext';
 
 export const usePaymentProcess = (course, navigation) => {
     const [receipt, setReceipt] = useState(null);
     const [submitting, setSubmitting] = useState(false);
+    const {currentUser}=useAuth();
 
     const amount = `RM ${(Number(course?.price || course?.cost || 0)).toFixed(2)}`;
     const onUploadReceipt = async () => {
@@ -24,7 +26,7 @@ export const usePaymentProcess = (course, navigation) => {
         });
 
         if (!result.canceled) {
-            setReceipt(result.assets[0].uri);
+            setReceipt(result.assets[0]);
         }
     };
 
@@ -33,6 +35,7 @@ export const usePaymentProcess = (course, navigation) => {
     };
 
     const onConfirmPayment = async () => {
+        console.log(course);
         try {
             if (!receipt) {
                 Alert.alert("Upload receipt first");
@@ -41,11 +44,8 @@ export const usePaymentProcess = (course, navigation) => {
 
             setSubmitting(true);
 
-            const userId = 1; // replace later with auth
-
             const enrollmentRes = await enrollmentService.enroll(
-                course.id,
-                userId
+                course.id
             );
 
             const enrollmentId =
@@ -56,14 +56,9 @@ export const usePaymentProcess = (course, navigation) => {
                 course_id: course.id,
                 amount: Number(course.price || course.cost || 0),
                 payment_method: 'bank_transfer',
-                receipt_filepath: receipt,
+                receipt_filepath: receipt.uri,
                 status: 'pending'
             });
-
-            await enrollmentService.updateStatus(
-                enrollmentId,
-                'pending_payment'
-            );
 
             navigation.navigate('ParkGuideStack', {
                 screen: 'PaymentReview',
