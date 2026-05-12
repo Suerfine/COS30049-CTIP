@@ -7,6 +7,7 @@ import {
 } from "./ModuleFactory";
 import { PageFactoryInput } from "./PageFactory";
 import { ElementFactoryInput } from "./ElementFactory";
+import { CourseStatus } from "../../src/enum/CourseStatus";
 
 let courseTitleCache: Set<string> = new Set<string>();
 
@@ -29,6 +30,7 @@ export type CourseFactoryAttributes = {
   badge_expire_in_months: number;
   cover_img_path: string;
   badge_img_path: string;
+  status: CourseStatus;
   created_at?: Date;
   updated_at?: Date;
   deleted_at?: Date | null;
@@ -89,6 +91,9 @@ export const buildCourse = (
     must_complete_in_weeks: hardLimitWeeks,
     badge_expire_in_months: faker.number.int({ min: 6, max: 36 }),
     cost: parseFloat(faker.commerce.price({ min: 50, max: 500 })),
+    status: faker.datatype.boolean(0.7)
+    ? CourseStatus.RELEASED
+    : CourseStatus.UNRELEASED,
     cover_img_path: "public/dev/course_cover_placeholder.jpg",
     badge_img_path: "public/dev/course_badge_placeholder.png",
   };

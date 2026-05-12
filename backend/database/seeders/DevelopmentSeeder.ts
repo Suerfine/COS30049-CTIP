@@ -42,7 +42,7 @@ import { PaymentStatus } from "../../src/enum/PaymentStatus";
 export async function runSeeders(
   user_admin_count: number = 5,
   user_park_guide_count: number = 10,
-  course_count: number = 5,
+  course_count: number = 8,
 ): Promise<void> {
   // Clear existing data
   await sequelize.drop();
@@ -233,22 +233,48 @@ export async function runSeeders(
 
   if (courses.length > 0) {
     for (const parkGuideUser of createdParkGuideUsers) {
-      const maxCoursesForUser = Math.min(2, courses.length);
-      const courseCountForUser = faker.number.int({ min: 1, max: maxCoursesForUser });
-      const selectedCourses = faker.helpers.shuffle(courses).slice(0, courseCountForUser);
+
+      // Only get released courses
+      const releasedCourses: EnrollmentFactoryCourse[] = [];
+
+      for (const courseInfo of courses) {
+        const dbCourse = await Course.findByPk(courseInfo.id);
+
+        if (dbCourse?.status === "released") {
+          releasedCourses.push(courseInfo);
+        }
+      }
+
+      // Skip if no released courses
+      if (releasedCourses.length === 0) {
+        continue;
+      }
+
+      // Randomly assign released courses only
+      const maxCoursesForUser = Math.min(2, releasedCourses.length);
+
+      const courseCountForUser = faker.number.int({
+        min: 1,
+        max: maxCoursesForUser,
+      });
+
+      const selectedCourses = faker.helpers
+        .shuffle(releasedCourses)
+        .slice(0, courseCountForUser);
 
       for (const courseInfo of selectedCourses) {
         const dbCourse = await Course.findByPk(courseInfo.id);
+
         if (!dbCourse) continue;
 
-        const isApproved = faker.datatype.boolean(0.7); 
+        const isApproved = faker.datatype.boolean(0.7);
 
-        const finalEnrollmentStatus = isApproved 
-          ? EnrollmentStatus.IN_PROGRESS 
+        const finalEnrollmentStatus = isApproved
+          ? EnrollmentStatus.IN_PROGRESS
           : EnrollmentStatus.PENDING_PAYMENT;
 
-        const finalPaymentStatus = isApproved 
-          ? PaymentStatus.PAID 
+        const finalPaymentStatus = isApproved
+          ? PaymentStatus.PAID
           : PaymentStatus.PENDING;
 
         const enrollmentData = await buildEnrollment({
@@ -272,9 +298,15 @@ export async function runSeeders(
         await Payment.create({
           ...paymentData,
           status: finalPaymentStatus,
-          processed_by_user_id: isApproved ? createdAdminUser.id : null,
-          processed_at: isApproved ? new Date() : null,
-          admin_remark: isApproved ? "Automated seed approval" : null,
+          processed_by_user_id: isApproved
+            ? createdAdminUser.id
+            : null,
+          processed_at: isApproved
+            ? new Date()
+            : null,
+          admin_remark: isApproved
+            ? "Automated seed approval"
+            : null,
         });
       }
     }
