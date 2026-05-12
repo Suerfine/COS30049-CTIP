@@ -103,6 +103,7 @@ export const paymentService = {
      * POST: Create payment
      */
     create: async (payload) => {
+        console.log(payload);
         try {
             const res = await apiClient.post(
                 API_ENDPOINTS.PAYMENT.SUBMIT,

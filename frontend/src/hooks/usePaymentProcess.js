@@ -51,14 +51,32 @@ export const usePaymentProcess = (course, navigation) => {
             const enrollmentId =
                 enrollmentRes?.data?.id || enrollmentRes?.id;
 
-            await paymentService.create({
-                enrollment_id: enrollmentId,
-                course_id: course.id,
-                amount: Number(course.price || course.cost || 0),
-                payment_method: 'bank_transfer',
-                receipt_filepath: receipt.uri,
-                status: 'pending'
+            const formData = new FormData();
+
+            formData.append('enrollment_id', enrollmentId);
+            formData.append('course_id', course.id);
+            formData.append('amount', Number(course.price || course.cost || 0));
+            formData.append('payment_method', 'bank_transfer');
+            formData.append('status', 'pending');
+
+            formData.append('receipt', {
+                uri: receipt.uri,
+                name: receipt.fileName || 'receipt.jpg',
+                type: receipt.mimeType || 'image/jpeg',
             });
+            for (let pair of formData.entries()) {
+                console.log(pair[0], pair[1]);
+                }
+            await paymentService.create(formData);
+
+            // await paymentService.create({
+            //     enrollment_id: enrollmentId,
+            //     course_id: course.id,
+            //     amount: Number(course.price || course.cost || 0),
+            //     payment_method: 'bank_transfer',
+            //     receipt_filepath: receipt.uri,
+            //     status: 'pending'
+            // });
 
             navigation.navigate('ParkGuideStack', {
                 screen: 'PaymentReview',

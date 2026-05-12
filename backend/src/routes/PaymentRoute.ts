@@ -3,8 +3,17 @@ import * as PaymentController from "../controllers/PaymentController";
 import { auth } from "../middelware/Auth";
 import { validate } from "../middelware/Validate";
 import { body, param } from "express-validator";
+import { createUploader } from "../middelware/FileUpload";
 
 const paymentRouter = Router();
+
+const uploadReceipt = createUploader({
+  access: "private",
+  subfolder: "payments/receipts",
+  allowedMimeTypes: ["image/jpeg", "image/png", "image/webp"],
+  maxSizeMB: 10,
+});
+
 
 /**
  * @swagger
@@ -232,12 +241,15 @@ paymentRouter.get("/:id", auth, PaymentController.getPaymentById);
 paymentRouter.post(
   "/",
   auth,
+
+  uploadReceipt.single("receipt"),
+
   [
     body("enrollment_id").isInt().notEmpty(),
     body("course_id").isInt().notEmpty(),
     body("amount").isNumeric().notEmpty(),
-    body("receipt_filepath").isString().notEmpty(),
   ],
+
   validate,
   PaymentController.submitPayment
 );
