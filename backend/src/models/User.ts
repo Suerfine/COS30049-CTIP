@@ -30,6 +30,7 @@ class User extends Model<InferAttributes<User>, InferCreationAttributes<User>> {
   declare tel: string;
   declare role: UserRoles;
   declare password_hash: string;
+  declare must_change_password: CreationOptional<boolean>;
   declare last_login_at: CreationOptional<Date | null>;
   declare created_at: CreationOptional<Date>;
   declare updated_at: CreationOptional<Date>;
@@ -117,6 +118,11 @@ User.init(
     password_hash: {
       type: DataTypes.STRING,
       allowNull: false,
+    },
+    must_change_password: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
     },
     last_login_at: {
       type: DataTypes.DATE,

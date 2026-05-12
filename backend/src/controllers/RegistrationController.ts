@@ -357,7 +357,8 @@ export const approveRegistration = async (
       personal_email: registration.personal_email,
       tel: registration.tel,
       role: UserRoles.PARK_GUIDE,
-      password_hash: await hashPassword(temporary_password),
+      password_hash: hashPassword(temporary_password),
+      must_change_password: true,
     });
 
     // Update registration with user_id and approved status

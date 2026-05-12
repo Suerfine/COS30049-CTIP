@@ -13,6 +13,11 @@ type TokenRequestBody = {
   password?: string;
 };
 
+type ChangePasswordRequestBody = {
+  current_password?: string;
+  new_password?: string;
+};
+
 type ForgotPasswordRequestBody = {
   email?: string;
 };
@@ -83,18 +88,16 @@ export const token = async (
     const isValidPassword = verifyPassword(password, user.password_hash);
 
     if (!isValidPassword) {
-      console.log(`[Login] Password verification FAILED for user ${user.identification}. Password length: ${password.length}, Hash: ${user.password_hash.substring(0, 30)}...`);
       res.status(401).json({ message: "Incorrect username or password" });
       return;
     }
-    
-    console.log(`[Login] Password verification SUCCESS for user ${user.identification}`);
 
     if (!isBcryptHash(user.password_hash)) {
-      user.password_hash = await hashPassword(password);      await user.save();    }
+      user.password_hash = hashPassword(password);
+      await user.save();
+    }
 
     const jwtSecret = process.env.JWT_SECRET;
-    console.log("JWT Secret:", jwtSecret);
 
     if (!jwtSecret) {
       res.status(500).json({ message: "JWT is not configured" });
@@ -112,6 +115,7 @@ export const token = async (
     res.status(200).json({
       access_token: accessToken,
       token_type: "Bearer",
+      must_change_password: user.must_change_password ?? false,
     });
   } catch (error) {
     if (error instanceof DatabaseError) {
@@ -236,18 +240,17 @@ export const resetPassword = async (
       return;
     }
 
-    console.log(`[Password Reset] User ID: ${user.id}, Identification: ${user.identification}, Password length: ${password.length}`);
+    if (verifyPassword(password, user.password_hash)) {
+      res.status(400).json({ message: "New password must be different from your current password" });
+      return;
+    }
 
     user.password_hash = hashPassword(password);
-    console.log(`[Password Reset] New hash created: ${user.password_hash.substring(0, 30)}...`);
-
     user.updated_at = new Date();
     await user.save();
 
     tokenRecord.used_at = new Date();
     await tokenRecord.save();
-
-    console.log(`[Password Reset] Password saved successfully for user ${user.identification}`);
 
     // send confirmation email to user (best effort, don't fail if email fails)
     try {
@@ -277,6 +280,55 @@ export const resetPassword = async (
       return;
     }
 
+    next(error);
+  }
+};
+
+export const changePassword = async (
+  req: Request & { user?: User },
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const { current_password, new_password } = req.body as ChangePasswordRequestBody;
+
+    if (!current_password || !new_password) {
+      res.status(400).json({ message: "Current password and new password are required" });
+      return;
+    }
+
+    const user = req.user;
+    if (!user) {
+      res.status(401).json({ message: "Unauthorized" });
+      return;
+    }
+
+    const isValid = verifyPassword(current_password, user.password_hash);
+    if (!isValid) {
+      res.status(401).json({ message: "Current password is incorrect" });
+      return;
+    }
+
+    if (verifyPassword(new_password, user.password_hash)) {
+      res.status(400).json({ message: "New password must be different from your current password" });
+      return;
+    }
+
+    user.password_hash = hashPassword(new_password);
+    user.must_change_password = false;
+    user.updated_at = new Date();
+    await user.save();
+
+    res.status(200).json({ message: "Password changed successfully" });
+  } catch (error) {
+    if (error instanceof DatabaseError) {
+      const dbMessage =
+        (error.parent as { message?: string } | undefined)?.message ?? error.message;
+      console.log("Database error during password change:", dbMessage);
+      res.status(500).json({ message: "Database error during password change" });
+      next();
+      return;
+    }
     next(error);
   }
 };

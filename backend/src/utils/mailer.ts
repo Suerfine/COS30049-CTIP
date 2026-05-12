@@ -167,7 +167,10 @@ export async function sendRegistrationApprovedEmail(
       Use the credentials below to access the portal.
     </p>
     ${buildCredentialTable(input.accountEmail, input.password)}
-    <p style="margin:18px 0 0;text-align:center;font-size:12px;color:#52645a;">
+    <p style="margin:18px 0 0;text-align:center;font-size:14px;color:#14532d;font-weight:700;">
+      You will be prompted to change your password at first login.
+    </p>
+    <p style="margin:8px 0 0;text-align:center;font-size:12px;color:#52645a;">
       Please keep these credentials secure.
     </p>
   `);

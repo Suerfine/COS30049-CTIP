@@ -30,11 +30,12 @@ export const authService = {
         password,
       });
 
-      const { access_token, token_type } = response.data;
+      const { access_token, token_type, must_change_password } = response.data;
       const payload = decodeJwtPayload(access_token);
       return {
         access_token,
         token_type,
+        must_change_password: must_change_password ?? false,
         user: {
           id: payload?.id,
           role: payload?.role || "park_guide",
@@ -69,6 +70,21 @@ export const authService = {
       throw new Error(
         "Unable to connect to server. Please check backend is running.",
       );
+    }
+  },
+
+  async changeFirstTimePassword(currentPassword, newPassword) {
+    try {
+      const response = await apiClient.post("/change-password", {
+        current_password: currentPassword,
+        new_password: newPassword,
+      });
+      return response.data;
+    } catch (error) {
+      if (error.response) {
+        throw new Error(error.response.data?.message || "Failed to change password");
+      }
+      throw new Error("Unable to connect to server. Please check backend is running.");
     }
   },
 
