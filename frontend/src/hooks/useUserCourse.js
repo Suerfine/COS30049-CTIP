@@ -110,7 +110,7 @@ export const useUserCourse = () => {
   const handleEnrollment = useCallback(
     async (courseId) => {
       try {
-        await enrollmentService.enroll(courseId, currentUser.id); 
+        await enrollmentService.enroll(courseId); 
         await loadInitialData();
         const successMsg = "Enrollment request sent for approval.";
         Platform.OS === "web"
