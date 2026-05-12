@@ -36,8 +36,6 @@ export const buildComplianceEvent = (
 ): AnomalyEventFactoryAttributes => {
   const eventTypesWithSeverity: Array<{
     type:
-      | "touching_plant"
-      | "touching_animal"
       | "plucking_plants"
       | "hitting_animal"
       | "extended_plant_touch"
@@ -47,12 +45,6 @@ export const buildComplianceEvent = (
       | "loud_noise"
       | "trespassing";
   }> = [
-    {
-      type: "touching_plant",
-    },
-    {
-      type: "touching_animal",
-    },
     {
       type: "plucking_plants",
     },
