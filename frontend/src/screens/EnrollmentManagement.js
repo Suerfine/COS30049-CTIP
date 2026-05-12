@@ -48,7 +48,7 @@ const EnrollmentManagement = () => {
         requestSubmissionSort,
         auditData,
         auditLoading,
-        fetchEnrollmentAudit,
+        fetchEnrollmentAudit,resetSubmissionSort
     } = useSubmissionManagement();
 
     const {
@@ -131,6 +131,10 @@ const EnrollmentManagement = () => {
         isEnrollment ? setCurrentPage :
         isSubmission ? setSubmissionCurrentPage :
         setPaymentCurrentPage;
+    const activeResetConfig=
+        isEnrollment ? resetSort :
+        isSubmission ? resetSubmissionSort :
+        resetPaymentSort
 
     const activeSearchQuery =
         isEnrollment
@@ -243,10 +247,10 @@ const EnrollmentManagement = () => {
     const renderSubmissionsHeader = () => (
         <View style={[styles.tableHeader, styles.row]}>
             <Text style={[styles.headerText, { flex: 3 }]}>Full Name</Text>
-            <Pressable onPress={() => requestSort('course_id')} style={[styles.headerRow, { flex: 2 }]}>
+            <Pressable onPress={() => requestSubmissionSort('course_id')} style={[styles.headerRow, { flex: 2 }]}>
                 <Text style={styles.headerText}>Course Code</Text>
-                {sortConfig.key==='course_id' &&
-                sortConfig.direction==='asc' ? <ArrowUpNarrowWide size={14} color="white"/> : <ArrowDownWideNarrow size={14} color="white"/>}
+                {sortSubmissionConfig.key==='course_id' &&
+                sortSubmissionConfig.direction==='asc' ? <ArrowUpNarrowWide size={14} color="white"/> : <ArrowDownWideNarrow size={14} color="white"/>}
             </Pressable>
             <Text style={[styles.headerText, { flex: 4 }]}>Course Name</Text>
             <Text style={[styles.headerText, { flex: 2 }]}>Status</Text>
@@ -473,7 +477,7 @@ const EnrollmentManagement = () => {
 
             <View style={[styles.toolbar, styles.row]}>
                 <View style={styles.row}>
-                    <Pressable onPress={resetSort} style={styles.iconBtn}><RotateCcw size={20} /></Pressable>
+                    <Pressable onPress={activeResetConfig} style={styles.iconBtn}><RotateCcw size={20} /></Pressable>
                     <View style={[styles.search, styles.row]}>
                         <Search size={18} color="#8f8f8f" />
                         <TextInput
@@ -1406,6 +1410,3 @@ const styles = StyleSheet.create({
     },
 });
 export default EnrollmentManagement;
-
-
-// Submission: sortconfig
