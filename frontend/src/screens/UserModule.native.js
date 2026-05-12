@@ -1,31 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
-import {
-    View,
-    Text,
-    StyleSheet,
-    ScrollView,
-    ImageBackground,
-    Pressable,
-    ActivityIndicator,
-    Image,
-    TouchableOpacity,
-    Modal,
-    FlatList,
-    Platform,
-    Alert,
-    Dimensions,
-    TouchableWithoutFeedback
-} from 'react-native';
+import { View, Text, StyleSheet, ScrollView, ImageBackground, Pressable, ActivityIndicator, Image, TouchableOpacity,  Modal, FlatList, Alert, Dimensions, } from 'react-native';
 import { useRoute } from '@react-navigation/native';
-import {
-    Award,
-    Calendar,
-    Clock,
-    Menu,
-    ChevronLeft,
-    Bot,
-    X
-} from 'lucide-react-native';
+import { Award, Calendar, Clock, Menu, ChevronLeft, Bot, } from 'lucide-react-native';
 import Markdown from 'react-native-markdown-display';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -47,13 +23,11 @@ const UserModule = ({ navigation }) => {
     const route = useRoute();
     const { id, enrollmentStatus, enrollmentId, enrollmentStatus: initialStatus } = route.params;
 
-    // Synchronized state with Web
     const [localStatus, setLocalStatus] = useState(initialStatus);
     const hasfailedRef = useRef(false);
     const scrollViewRef = useRef(null);
     const [selectedPage, setSelectedPage] = useState({ type: 'overview' });
-    const [drawerOpen, setDrawerOpen] = useState(false);
-    const [activeTab, setActiveTab] = useState('Overview');
+    const [outlineOpen, setOutlineOpen] = useState(false);
     const [chatOpen, setChatOpen] = useState(false);
 
     const isLocked = enrollmentStatus === null ||
@@ -82,7 +56,6 @@ const UserModule = ({ navigation }) => {
 
     const { allCourseList } = useCourses();
 
-    // Feature Identical to Web: isDeadEnd logic
     const { progressMap, isDeadEnd } = useCourseProgress(course, userMarks, fullHistoryMap);
     const isFailed = localStatus === 'failed' || isDeadEnd;
 
@@ -93,10 +66,7 @@ const UserModule = ({ navigation }) => {
     );
 
     const scrollToTop = () => {
-        scrollViewRef.current?.scrollTo({
-            y: 0,
-            animated: true,
-        });
+        scrollViewRef.current?.scrollTo({ y: 0, animated: true });
     };
 
     useEffect(() => {
@@ -105,32 +75,21 @@ const UserModule = ({ navigation }) => {
         }
     }, [selectedPage, loadWorkshops]);
 
-    // Feature Identical to Web: Auto-Fail Effect
+    // Auto-Fail Effect
     useEffect(() => {
         const handleFailure = async () => {
-            if (
-                isDeadEnd &&
-                localStatus !== 'failed' &&
-                !hasfailedRef.current
-            ) {
+            if (isDeadEnd && localStatus !== 'failed' && !hasfailedRef.current) {
                 hasfailedRef.current = true;
                 setLocalStatus('failed');
                 const result = await failEnrollment(enrollmentId);
-
                 if (result.success) {
                     Alert.alert("Course Failed", "Maximum attempts reached for a required assessment.");
                     navigation.navigate('ParkGuideMobileRoot', { screen: 'Courses' });
                 }
             }
         };
-
         handleFailure();
     }, [isDeadEnd, localStatus, failEnrollment]);
-
-    const tabs = [
-        { id: 'Overview', label: 'Overview' },
-        { id: 'Workshops', label: 'Workshops' },
-    ];
 
     if (loading) {
         return (
@@ -152,21 +111,12 @@ const UserModule = ({ navigation }) => {
 
     const handleSelectPage = (item) => {
         setSelectedPage(item);
-        setDrawerOpen(false);
-    };
-
-    const handleBack = () => {
-        if (selectedPage?.type === 'page') {
-            setSelectedPage({ type: 'overview' });
-        } else {
-            navigation.goBack();
-        }
+        setOutlineOpen(false);
     };
 
     const renderHistoryItem = ({ item }) => {
         const requiredScore = selectedPage?.page?.passing_score || 80;
         const isPass = item.score >= requiredScore;
-
         return (
             <View style={styles.historyItem}>
                 <View style={styles.historyLeft}>
@@ -180,22 +130,14 @@ const UserModule = ({ navigation }) => {
                         </Text>
                     </View>
                 </View>
-
                 <View style={{ flex: 1, alignItems: 'center' }}>
                     <Text style={{ fontSize: 10, color: '#64748b', textTransform: 'uppercase' }}>Overall Score</Text>
                     <Text style={styles.historyScoreValue}>
                         {item.score} <Text style={{ fontSize: 12, color: '#94a3b8', fontWeight: '400' }}>/ {item.maxScore}</Text>
                     </Text>
                 </View>
-
-                <View style={[
-                    styles.historyBadge,
-                    { backgroundColor: isPass ? '#dcfce7' : '#fee2e2' }
-                ]}>
-                    <Text style={[
-                        styles.historyBadgeText,
-                        { color: isPass ? '#166534' : '#991b1b' }
-                    ]}>
+                <View style={[styles.historyBadge, { backgroundColor: isPass ? '#dcfce7' : '#fee2e2' }]}>
+                    <Text style={[styles.historyBadgeText, { color: isPass ? '#166534' : '#991b1b' }]}>
                         {isPass ? 'PASSED' : 'FAILED'}
                     </Text>
                 </View>
@@ -204,132 +146,117 @@ const UserModule = ({ navigation }) => {
     };
 
     const renderOverviewContent = () => {
-                const prerequisiteTitles = course.prerequisite_groups?.flatMap(group => 
-                    group.prerequisites?.map(p => {
-                        const match = allCourseList.find(c => c.id === p.course_id);
-                        return match ? match.title : `Course #${p.course_id}`;
-                    })
-                ) || [];
-                return (
-                    <View style={styles.tabSection}>
-                        {/* Prerequisite Section */}
-                        {prerequisiteTitles.length > 0 && (
-                            <View style={styles.prereqSection}>
-                                <Text style={styles.sectionTitle}>Required Prerequisite Courses</Text>
-                                <View>
-                                    {prerequisiteTitles.map((title, index) => (
-                                        <View key={index} style={styles.prereqItem}>
-                                            <View style={styles.prereqDot} />
-                                            <Text style={styles.prereqText}>{title}</Text>
-                                        </View>
-                                    ))}
-                                </View>
+        const prerequisiteTitles = course.prerequisite_groups?.flatMap(group =>
+            group.prerequisites?.map(p => {
+                const match = allCourseList.find(c => c.id === p.course_id);
+                return match ? match.title : `Course #${p.course_id}`;
+            })
+        ) || [];
+
+        return (
+            <View style={styles.tabSection}>
+                {/* Prerequisite Section */}
+                {prerequisiteTitles.length > 0 && (
+                    <View style={styles.prereqSection}>
+                        <Text style={styles.sectionTitle}>Required Prerequisite Courses</Text>
+                        {prerequisiteTitles.map((title, index) => (
+                            <View key={index} style={styles.prereqItem}>
+                                <View style={styles.prereqDot} />
+                                <Text style={styles.prereqText}>{title}</Text>
                             </View>
-                        )}
-                        {/* Tag Sections */}
-                        <View style={styles.tagSectionContainer}>
-                            {/* Render Location Tags */}
-                            {locationTags.length > 0 && (
-                                <View style={styles.tagGroup}>
-                                    <Text style={styles.tagLabel}>Locations</Text>
-                                    <View style={styles.tagList}>
-                                        {locationTags.map(tag => (
-                                            <View key={tag.id} style={[styles.tagPill, styles.locationPill]}>
-                                                <Text style={styles.tagPillText}>{tag.title}</Text>
-                                            </View>
-                                        ))}
-                                    </View>
-                                </View>
-                            )}
-    
-                        {/* Render Category Tags */}
-                        {categoryTags.length > 0 && (
-                            <View style={styles.tagGroup}>
-                                <Text style={styles.tagLabel}>Categories</Text>
-                                <View style={styles.tagList}>
-                                    {categoryTags.map(tag => (
-                                        <View key={tag.id} style={[styles.tagPill, styles.categoryPill]}>
-                                            <Text style={styles.tagPillText}>{tag.title}</Text>
-                                        </View>
-                                    ))}
-                                </View>
-                            </View>
-                        )}
+                        ))}
                     </View>
+                )}
+                {/* Tag Sections */}
+                <View style={styles.tagSectionContainer}>
+                    {/* Render Location Tags */}
+                    {locationTags.length > 0 && (
+                        <View style={styles.tagGroup}>
+                            <Text style={styles.tagLabel}>Locations</Text>
+                            <View style={styles.tagList}>
+                                {locationTags.map(tag => (
+                                    <View key={tag.id} style={[styles.tagPill, styles.locationPill]}>
+                                        <Text style={styles.tagPillText}>{tag.title}</Text>
+                                    </View>
+                                ))}
+                            </View>
+                        </View>
+                    )}
+                    {/* Render Category Tags */}
+                    {categoryTags.length > 0 && (
+                        <View style={styles.tagGroup}>
+                            <Text style={styles.tagLabel}>Categories</Text>
+                            <View style={styles.tagList}>
+                                {categoryTags.map(tag => (
+                                    <View key={tag.id} style={[styles.tagPill, styles.categoryPill]}>
+                                        <Text style={styles.tagPillText}>{tag.title}</Text>
+                                    </View>
+                                ))}
+                            </View>
+                        </View>
+                    )}
+                </View>
                 {/* Render the dynamic content */}
                 <View style={styles.markdownContainer}>
                     <Markdown style={markdownStyles}>
                         {course?.description || "_No content provided yet. Click edit to start._"}
                     </Markdown>
                 </View>
-    
-                        {/* Badge Achievement Section */}
-                        <View>
-                        <Text style={styles.sectionTitle}>Completion Reward</Text>
-                        <View style={styles.badgeAchievementCard}>
-                            <View style={styles.badgeTextContent}>
-                                <Text style={styles.badgeSubtitle}>Official Certification</Text>
-                                <Text style={styles.badgeDescription}>
-                                    Complete all modules and pass the final assessment to earn your 
-                                    <Text style={{fontWeight: '700'}}> {course.title} Professional Badge.</Text>
-                                </Text>
-                            </View>
-                            
-                            <View style={styles.badgePreviewContainer}>
-                                <Image 
-                                    source={course.badge_img_url ? { uri: course.badge_img_url } : require('../../assets/course_badge.png')} 
-                                    style={styles.largeAchievementBadge}
-                                />
-                                <View style={styles.verifiedBadge}>
-                                    <Text style={styles.verifiedText}>VERIFIED</Text>
-                                </View>
-                            </View>
+                {/* Badge Achievement Section */}
+                <View>
+                    <Text style={styles.sectionTitle}>Completion Reward</Text>
+                    <View style={styles.badgeAchievementCard}>
+                        <View style={styles.badgeTextContent}>
+                            <Text style={styles.badgeSubtitle}>Official Certification</Text>
+                            <Text style={styles.badgeDescription}>
+                                Complete all modules and pass the final assessment to earn your
+                                <Text style={{ fontWeight: '700' }}> {course.title} Professional Badge.</Text>
+                            </Text>
                         </View>
+                        <View style={styles.badgePreviewContainer}>
+                            <Image
+                                source={course.badge_img_url ? { uri: course.badge_img_url } : require('../../assets/course_badge.png')}
+                                style={styles.largeAchievementBadge}
+                            />
+                            <View style={styles.verifiedBadge}>
+                                <Text style={styles.verifiedText}>VERIFIED</Text>
+                            </View>
                         </View>
                     </View>
-                );
-        };
+                </View>
+            </View>
+        );
+    };
 
     return (
         <SafeAreaView style={styles.safeArea} edges={['left', 'right']}>
-            {/* Mobile Drawer (OutlineBar) */}
-            <Modal
-                visible={drawerOpen}
-                transparent
-                animationType="slide"
-                onRequestClose={() => setDrawerOpen(false)}
-            >
-                <TouchableWithoutFeedback onPress={() => setDrawerOpen(false)}>
-                    <View style={styles.drawerScrim} />
-                </TouchableWithoutFeedback>
-                <View style={styles.drawerContainer}>
-                    <Pressable style={styles.drawerClose} onPress={() => setDrawerOpen(false)}>
-                        <X size={24} color="#000" />
-                    </Pressable>
-                    <OutlineBar
-                        course={course}
-                        onSelectPage={handleSelectPage}
-                        progressMap={progressMap}
-                        editable={false}
-                        isCollapsed={false}
-                        isLocked={isLocked}
-                        isFailed={isFailed}
-                    />
-                </View>
-            </Modal>
+
+            <OutlineBar
+                course={course}
+                onSelectPage={handleSelectPage}
+                progressMap={progressMap}
+                editable={false}
+                isOpen={outlineOpen}
+                onClose={() => setOutlineOpen(false)}
+                isLocked={isLocked}
+                isFailed={isFailed}
+            />
+
             <ScrollView ref={scrollViewRef}>
                 <View style={styles.container}>
-                    {/* Background Image */}
-                    <ImageBackground 
+                    <ImageBackground
                         source={require('../../assets/forest.png')}
                         style={styles.backgroundImage}
                     >
                         <View style={styles.courseContainer}>
-                            <Pressable onPress={()=>setDrawerOpen(true)}>
-                                <Menu color="white" size={25}/>
+                            <Pressable onPress={() => setOutlineOpen(true)}>
+                                <Menu color="white" size={25} />
                             </Pressable>
-                            <Pressable onPress={()=>navigation.goBack()} style={({pressed})=>[styles.backButton, pressed && styles.btnPressed]}>
-                                <ChevronLeft size={24} color="white"/>
+                            <Pressable
+                                onPress={() => navigation.goBack()}
+                                style={({ pressed }) => [styles.backButton, pressed && styles.btnPressed]}
+                            >
+                                <ChevronLeft size={24} color="white" />
                             </Pressable>
                             <View>
                                 <Text style={styles.description}>Start your learning journey</Text>
@@ -339,7 +266,7 @@ const UserModule = ({ navigation }) => {
                             </View>
                         </View>
                     </ImageBackground>
-                    {/* Content */}
+
                     <View style={styles.contentWrapper}>
                         {selectedPage?.type === 'page' ? (
                             <View style={styles.editorContainer}>
@@ -352,7 +279,6 @@ const UserModule = ({ navigation }) => {
                                             <Award size={20} color="#15803d" />
                                             <Text style={styles.guideInfoTitle}>Final Assessment Requirements</Text>
                                         </View>
-                                        
                                         <View style={styles.statsRow}>
                                             <View style={styles.guideStatChip}>
                                                 <Text style={styles.statLabel}>Max Attempts:</Text>
@@ -363,26 +289,25 @@ const UserModule = ({ navigation }) => {
                                                 <Text style={styles.statValue}>{selectedPage.page?.passing_score || 80}%</Text>
                                             </View>
                                         </View>
-                                        
                                         <Text style={styles.guideNotice}>
                                             You must achieve the passing score to earn your certificate and badge.
                                         </Text>
                                     </View>
                                 )}
-                                
+
                                 {elementsLoading ? (
                                     <View style={styles.elementLoader}>
                                         <ActivityIndicator color="#0a6340" />
                                         <Text style={styles.loaderText}>Loading Elements...</Text>
                                     </View>
                                 ) : (
-                                    <PageRenderer 
+                                    <PageRenderer
                                         elements={elements}
                                         role={currentUser.role}
                                         courseId={id}
                                         onProgressUpdate={async (elementId, score, content = {}) => {
-                                            const result = await saveProgress(elementId, score, content); 
-                                            return result; 
+                                            const result = await saveProgress(elementId, score, content);
+                                            return result;
                                         }}
                                         userMarks={userMarks}
                                         isFinalQuiz={selectedPage.page.final_quiz}
@@ -393,24 +318,25 @@ const UserModule = ({ navigation }) => {
                                             const quizIds = elements
                                                 .filter(el => el.type === 'quiz_objective')
                                                 .map(el => el.id);
-                                            handleFetchHistory(quizIds); 
+                                            handleFetchHistory(quizIds);
                                         }}
                                         onRefreshHistory={refreshHistory}
                                         scrollToTop={scrollToTop}
                                         isFailed={isFailed}
                                     />
                                 )}
+
                                 <Modal visible={isHistoryVisible} transparent animationType="slide">
                                     <View style={styles.modalOverlay}>
                                         <View style={styles.modalContent}>
                                             <Text style={styles.modalTitle}>Attempt History</Text>
-                                            <FlatList 
+                                            <FlatList
                                                 data={historyData}
                                                 renderItem={renderHistoryItem}
                                                 keyExtractor={(item) => item.id.toString()}
                                                 ListEmptyComponent={<Text style={styles.emptyHistory}>No previous attempts.</Text>}
                                             />
-                                            <TouchableOpacity 
+                                            <TouchableOpacity
                                                 onPress={() => setIsHistoryVisible(false)}
                                                 style={styles.closeBtn}
                                             >
@@ -420,33 +346,32 @@ const UserModule = ({ navigation }) => {
                                     </View>
                                 </Modal>
                             </View>
+
                         ) : selectedPage?.type === 'forum' ? (
-                            <DiscussionSection 
-                                courseId={id} 
-                                navigation={navigation} 
-                                styles={styles} 
+                            <DiscussionSection
+                                courseId={id}
+                                navigation={navigation}
+                                styles={styles}
                             />
-                        ) : selectedPage?.type==='workshops' ? (
+
+                        ) : selectedPage?.type === 'workshops' ? (
                             // Workshops
                             <View style={styles.editorContainer}>
                                 <Text style={styles.editorLabel}>Workshop Learning</Text>
                                 <Text style={styles.pageTitle}>Course Workshops</Text>
-
                                 {workshopsLoading ? (
                                     <View style={styles.elementLoader}>
                                         <ActivityIndicator color="#0a6340" />
-                                        <Text style={styles.loaderText}>
-                                            Loading Workshops...
-                                        </Text>
+                                        <Text style={styles.loaderText}>Loading Workshops...</Text>
                                     </View>
                                 ) : (
-                                    <PageRenderer 
+                                    <PageRenderer
                                         elements={workshops}
                                         role={currentUser.role}
                                         courseId={id}
                                         onProgressUpdate={async (elementId, score, content = {}) => {
-                                            const result = await saveProgress(elementId, score, content); 
-                                            return result; 
+                                            const result = await saveProgress(elementId, score, content);
+                                            return result;
                                         }}
                                         userMarks={userMarks}
                                     />
@@ -460,36 +385,35 @@ const UserModule = ({ navigation }) => {
                                         <Text style={styles.courseTitle}>{course.title}</Text>
                                         <View style={styles.statsRow}>
                                             <View style={styles.statChip}>
-                                                <Clock size={16} color="#363636"/>
+                                                <Clock size={16} color="#363636" />
                                                 <Text style={styles.statLabel}>{course.expected_completion_weeks} Weeks</Text>
                                             </View>
                                             <View style={styles.statChip}>
-                                                <Calendar size={16} color="#363636"/>
+                                                <Calendar size={16} color="#363636" />
                                                 <Text style={styles.statLabel}>Course Validity: {course.must_complete_in_weeks} Weeks</Text>
                                             </View>
                                             <View style={styles.statChip}>
-                                                <Award size={16} color="#363636"/>
+                                                <Award size={16} color="#363636" />
                                                 <Text style={styles.statLabel}>Badge Validity: {course.badge_expire_in_months} Months</Text>
                                             </View>
                                         </View>
                                     </View>
                                 </View>
-                                
-                                <Image 
-                                    source={course.cover_img_url ? { uri: course.cover_img_url } : require('../../assets/first_aid.png')} style={styles.course_cover}
+                                <Image
+                                    source={course.cover_img_url ? { uri: course.cover_img_url } : require('../../assets/first_aid.png')}
+                                    style={styles.course_cover}
                                 />
-
                                 {renderOverviewContent()}
                             </View>
                         )}
                     </View>
                 </View>
             </ScrollView>
-            {/* AIChatbot Section */}
+
             <AIChatBot isOpen={chatOpen} onClose={() => setChatOpen(false)} />
             {!chatOpen && (
-                <TouchableOpacity 
-                    style={styles.floatingChatBtn} 
+                <TouchableOpacity
+                    style={styles.floatingChatBtn}
                     onPress={() => setChatOpen(true)}
                 >
                     <Bot color="white" size={24} />
@@ -498,46 +422,16 @@ const UserModule = ({ navigation }) => {
             )}
         </SafeAreaView>
     );
-}
+};
 
 const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
         backgroundColor: "#f5f5f5",
     },
-    rowContainer: {
-        flex: 1,
-        flexDirection: 'row',
-    },
-    drawerScrim: {
-        position: "absolute",
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: "rgba(0,0,0,0.45)",
-    },
-    drawerContainer: {
-        position: "absolute",
-        top: 0,
-        left: 0,
-        bottom: 0,
-        width: 280,
-        backgroundColor: "#fff",
-        elevation: 16,
-    },
-    drawerClose: {
-        alignSelf: "flex-end",
-        padding: 14,
-    },
     backgroundImage: {
         width: '100%',
         minHeight: 140,
-    },
-    backgroundImageStyle: {
-        borderBottomLeftRadius: 20,
-        borderBottomRightRadius: 20,
-        marginTop: 0,
     },
     courseContainer: {
         paddingVertical: 30,
@@ -550,24 +444,21 @@ const styles = StyleSheet.create({
         fontSize: 22,
         fontWeight: 'bold',
         color: 'white',
-        marginLeft: 4
+        marginLeft: 4,
     },
     description: {
         fontSize: 12,
         color: 'rgba(255,255,255,0.85)',
-        marginLeft: 4
+        marginLeft: 4,
     },
     container: {
-        flex: 1,
-    },
-    scrollView: {
         flex: 1,
     },
     statsRow: {
         flexDirection: 'row',
         flexWrap: 'wrap',
         gap: 12,
-        marginBottom: 20
+        marginBottom: 20,
     },
     courseTitle: {
         fontSize: 24,
@@ -588,7 +479,7 @@ const styles = StyleSheet.create({
         fontSize: 12,
     },
     content: {
-        marginTop: 20
+        marginTop: 20,
     },
     headerRow: {
         flexDirection: 'row',
@@ -596,12 +487,9 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginBottom: 20,
     },
-    dynamicContent: {
-        marginTop: 10,
-    },
     tabSection: {
         paddingTop: 10,
-        gap: 20
+        gap: 20,
     },
     sectionTitle: {
         fontSize: 18,
@@ -619,27 +507,25 @@ const styles = StyleSheet.create({
         marginTop: 10,
         marginBottom: 30,
     },
-    badgeTextContent: {
-        flex: 1,
-    },
+    badgeTextContent: { flex: 1 },
     badgeSubtitle: {
         fontSize: 12,
         fontWeight: '700',
         color: '#0a6340',
         textTransform: 'uppercase',
         marginBottom: 4,
-        textAlign: 'center'
+        textAlign: 'center',
     },
     badgeDescription: {
         fontSize: 14,
         color: '#444',
         lineHeight: 20,
-        textAlign: 'center'
+        textAlign: 'center',
     },
     badgePreviewContainer: {
         alignItems: 'center',
         justifyContent: 'center',
-        marginTop: 20
+        marginTop: 20,
     },
     largeAchievementBadge: {
         width: 100,
@@ -674,28 +560,28 @@ const styles = StyleSheet.create({
     },
     editorContainer: {
         flex: 1,
-        paddingBottom: 50
+        paddingBottom: 50,
     },
     editorLabel: {
         color: '#0a6340',
         fontWeight: 'bold',
         fontSize: 12,
         textTransform: 'uppercase',
-        marginBottom: 5
+        marginBottom: 5,
     },
     pageTitle: {
         fontSize: 28,
         fontWeight: 'bold',
         color: '#1a1a1a',
-        marginBottom: 20
+        marginBottom: 20,
     },
     elementLoader: {
         marginTop: 50,
-        alignItems: 'center'
+        alignItems: 'center',
     },
     loaderText: {
         marginTop: 10,
-        color: '#666'
+        color: '#666',
     },
     backButton: {
         width: 40,
@@ -704,15 +590,13 @@ const styles = StyleSheet.create({
         padding: 8,
         borderRadius: 50,
         justifyContent: 'center',
-        alignItems: 'center'
+        alignItems: 'center',
     },
     tagSectionContainer: {
         gap: 25,
-        marginTop: 5
+        marginTop: 5,
     },
-    tagGroup: {
-        gap: 8,
-    },
+    tagGroup: { gap: 8 },
     tagLabel: {
         fontSize: 12,
         fontWeight: '700',
@@ -793,12 +677,7 @@ const styles = StyleSheet.create({
     guideStatChip: {
         flexDirection: 'column',
         gap: 4,
-        flex: 1
-    },
-    statLabel: {
-        fontSize: 12,
-        color: '#6b7280',
-        fontWeight: '500',
+        flex: 1,
     },
     statValue: {
         fontSize: 20,
@@ -836,7 +715,7 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: 'rgba(0,0,0,0.5)',
         justifyContent: 'center',
-        padding: 20
+        padding: 20,
     },
     modalContent: {
         backgroundColor: 'white',
@@ -844,14 +723,14 @@ const styles = StyleSheet.create({
         padding: 20,
         maxHeight: '80%',
         width: '90%',
-        alignSelf: 'center'
+        alignSelf: 'center',
     },
     modalTitle: {
         fontSize: 18,
         fontWeight: '800',
         color: '#1e293b',
         marginBottom: 15,
-        textAlign: 'center'
+        textAlign: 'center',
     },
     historyItem: {
         flexDirection: 'row',
@@ -859,7 +738,7 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         paddingVertical: 12,
         borderBottomWidth: 1,
-        borderBottomColor: '#f1f5f9'
+        borderBottomColor: '#f1f5f9',
     },
     historyLeft: {
         flexDirection: 'row',
@@ -868,32 +747,32 @@ const styles = StyleSheet.create({
     },
     historyDate: {
         fontSize: 12,
-        color: '#64748b'
+        color: '#64748b',
     },
     historyBadge: {
         paddingHorizontal: 8,
         paddingVertical: 4,
-        borderRadius: 4
+        borderRadius: 4,
     },
     historyBadgeText: {
         fontSize: 10,
-        fontWeight: '800'
+        fontWeight: '800',
     },
     historyScoreValue: {
         fontSize: 18,
         fontWeight: '700',
-        color: '#1e293b'
+        color: '#1e293b',
     },
     closeBtn: {
         marginTop: 15,
         padding: 12,
         backgroundColor: '#0a6340',
         borderRadius: 8,
-        alignItems: 'center'
+        alignItems: 'center',
     },
     closeBtnText: {
         color: 'white',
-        fontWeight: 'bold'
+        fontWeight: 'bold',
     },
     loadingContainer: {
         flex: 1,
@@ -924,8 +803,14 @@ const styles = StyleSheet.create({
     center: {
         flex: 1,
         justifyContent: 'center',
-        alignItems: 'center'
-    }
+        alignItems: 'center',
+    },
+    markdownContainer: {},
+    emptyHistory: {
+        textAlign: 'center',
+        color: '#94a3b8',
+        marginVertical: 20,
+    },
 });
 
 export default UserModule;
