@@ -15,6 +15,7 @@ export const useEnrollmentManagement = () => {
     // Filters
     const [currentStatus, setCurrentStatus] = useState('All');
     const [searchQuery, setSearchQuery] = useState('');
+    const [currentCourseId, setCurrentCourseId] = useState('All');
 
     // Sorting
     const [sortConfig, setSortConfig] = useState({
@@ -31,7 +32,8 @@ export const useEnrollmentManagement = () => {
                 10,
                 searchQuery,
                 sortConfig,
-                currentStatus
+                currentStatus,
+                currentCourseId
             );
 
             setEnrollments(enrollData.data || []);
@@ -53,7 +55,8 @@ export const useEnrollmentManagement = () => {
         currentPage,
         searchQuery,
         sortConfig,
-        currentStatus
+        currentStatus,
+        currentCourseId
     ]);
 
     // Update Status
@@ -154,6 +157,7 @@ export const useEnrollmentManagement = () => {
         resetSort,
         refreshEnrollments: fetchEnrollments,
         handleUpdateStatus,
-        deleteRecord
+        deleteRecord,
+        currentCourseId, setCurrentCourseId
     };
 };

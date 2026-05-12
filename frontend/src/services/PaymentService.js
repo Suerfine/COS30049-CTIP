@@ -41,32 +41,43 @@ export const paymentService = {
                 apiClient.get(API_ENDPOINTS.USER.ACCOUNT, { params: { size: 100 } })
             ]);
 
-            const payments = getData(paymentRes);
-            const users = getData(userRes);
+            const paymentData = paymentRes?.data || {};
+            const payments = paymentData?.data || [];
+            const users = userRes?.data?.data || [];
 
             let enriched = payments.map(p => {
                 const user = users.find(u => Number(u.id) === Number(p.user_id));
 
                 return {
                     ...p,
-                    fullName: user ? `${user.firstname} ${user.lastname}` : `User #${p.user_id}`
+                    fullName: user 
+                        ? `${user.firstname} ${user.lastname}` 
+                        : `User #${p.user_id}`,
+                    user_profile_image: user?.profile_image || null,
                 };
             });
 
-            return enriched;
-
-            // simple search filter (kept lightweight)
             if (searchQuery.trim()) {
                 const q = searchQuery.toLowerCase();
 
-                return payments.filter((p) =>
-                    String(p.fullName || "").toLowerCase().includes(q) ||
-                    String(p.course_id).includes(q) ||
-                    String(p.status).toLowerCase().includes(q)
+                enriched = enriched.filter((p) =>
+                    String(p.user_fullname || "")
+                        .toLowerCase()
+                        .includes(q) ||
+                    String(p.course_id || "")
+                        .toLowerCase()
+                        .includes(q) ||
+                    String(p.status || "")
+                        .toLowerCase()
+                        .includes(q)
                 );
             }
 
-            return payments;
+            return {
+                data: enriched,
+                totalPages: paymentData?.totalPages || 1,
+                totalElements: paymentData?.totalElements || enriched.length,
+            };
         } catch (error) {
             console.error("Payment Service Error:", error);
             throw new Error("Failed to fetch payment records");
@@ -157,5 +168,29 @@ export const paymentService = {
                 course
             };
         });
-    }
+    },
+
+    /**
+     * Verify Payment
+     */
+    verifyPayment: async (
+        paymentId,
+        status,
+        adminRemark = ''
+    ) => {
+        try {
+            const res = await apiClient.patch(
+                `/payments/${paymentId}/verify/${status}`,
+                {
+                    admin_id: 1,
+                    admin_remark: adminRemark
+                }
+            );
+
+            return res.data;
+        } catch (error) {
+            console.error("Verify Payment Error:", error);
+            throw error;
+        }
+    },
 };

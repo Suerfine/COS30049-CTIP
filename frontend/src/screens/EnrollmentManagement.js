@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Pressable, TextInput, ScrollView, FlatList, Image, Modal } from 'react-native';
-import { RotateCcw, Search, ChevronDown, ChevronUp, ArrowUpNarrowWide, ArrowDownWideNarrow, Circle, Trash2, ChevronLeft, ChevronsLeft, ChevronRight, ChevronsRight, CheckCircle2 } from 'lucide-react-native';
+import { RotateCcw, Search, ChevronDown, ChevronUp, ArrowUpNarrowWide, ArrowDownWideNarrow, Circle, Trash2, ChevronLeft, ChevronsLeft, ChevronRight, ChevronsRight, CheckCircle2, X,  Filter } from 'lucide-react-native';
 
 // Import hooks and assets
 import SlidingTabs from '../components/SlidingTabs';
@@ -30,6 +30,7 @@ const EnrollmentManagement = () => {
         handleUpdateStatus,
         deleteRecord,
         courses,
+        currentCourseId, setCurrentCourseId
     } = useEnrollmentManagement();
 
     // Progress
@@ -50,11 +51,34 @@ const EnrollmentManagement = () => {
         fetchEnrollmentAudit,
     } = useSubmissionManagement();
 
+    const {
+        payments,
+        paymentTotalPages,
+        paymentTotalElements,
+        currentPaymentPage,
+        setPaymentCurrentPage,
+        paymentStatus,
+        setPaymentStatus,
+        handleVerifyPayment,
+        paymentSortConfig,
+        requestPaymentSort,
+        resetPaymentSort,
+    } = usePayment();
+
     const [activeTab, setActiveTab] = useState('enrollment');
     const [isOpen, setIsOpen] = useState(false);
     const [detailModalVisible, setDetailModalVisible] = useState(false);
     const [selectedUserEnrollment, setSelectedUserEnrollment] = useState(null);
     const [selectedUserHistory, setSelectedUserHistory] = useState([]);
+    const [paymentModalVisible, setPaymentModalVisible] = useState(false);
+    const [selectedPayment, setSelectedPayment] = useState(null);
+    const [filterVisible, setFilterVisible]=useState(false);
+    const [translateX, setTranslateX]=useState(300);
+    const [tempCourseFilter, setTempCourseFilter]=useState('All');
+    const [rejectModalVisible, setRejectModalVisible] = useState(false);
+    const [adminRemark, setAdminRemark] = useState('');
+    const [selectedCourseFilter, setSelectedCourseFilter] = useState('All');
+
     const enrollmentStatusOptions = [
         'All',
         'in_progress',
@@ -62,6 +86,7 @@ const EnrollmentManagement = () => {
         'completed',
         'failed',
         'expired',
+        'Rejected',
         'pending_payment',
     ];
 
@@ -192,15 +217,23 @@ const EnrollmentManagement = () => {
         setDetailModalVisible(true);
     };
 
+    useEffect(()=>{
+        setTranslateX(filterVisible ? 0 : 400);
+    }, [filterVisible]);
 
     const renderEnrollmentHeader = () => (
         <View style={[styles.tableHeader, styles.row]}>
             <Text style={[styles.headerText, { flex: 3 }]}>Full Name</Text>
-            <Text style={[styles.headerText, { flex: 2 }]}>Course Code</Text>
+            <Pressable onPress={() => requestSort('course_id')} style={[styles.headerRow, { flex: 2 }]}>
+                <Text style={styles.headerText}>Course Code</Text>
+                {sortConfig.key==='course_id' &&
+                sortConfig.direction==='asc' ? <ArrowUpNarrowWide size={14} color="white"/> : <ArrowDownWideNarrow size={14} color="white"/>}
+            </Pressable>
             <Text style={[styles.headerText, { flex: 4 }]}>Course Name</Text>
             <Pressable onPress={() => requestSort('enrolled_at')} style={[styles.headerRow, { flex: 2 }]}>
                 <Text style={styles.headerText}>Enrolled On</Text>
-                {sortConfig.key === 'enrolled_at' && (sortConfig.direction === 'asc' ? <ArrowUpNarrowWide size={14} color="white" /> : <ArrowDownWideNarrow size={14} color="white" />)}
+                {sortConfig.key==='enrolled_at' &&
+                sortConfig.direction==='asc' ? <ArrowUpNarrowWide size={14} color="white"/> : <ArrowDownWideNarrow size={14} color="white"/>}
             </Pressable>
             <Text style={[styles.headerText, { flex: 2 }]}>Status</Text>
             <Text style={[styles.headerText, { flex: 2 }]}>Expiry On</Text>
@@ -210,7 +243,11 @@ const EnrollmentManagement = () => {
     const renderSubmissionsHeader = () => (
         <View style={[styles.tableHeader, styles.row]}>
             <Text style={[styles.headerText, { flex: 3 }]}>Full Name</Text>
-            <Text style={[styles.headerText, { flex: 2 }]}>Course Code</Text>
+            <Pressable onPress={() => requestSort('course_id')} style={[styles.headerRow, { flex: 2 }]}>
+                <Text style={styles.headerText}>Course Code</Text>
+                {sortConfig.key==='course_id' &&
+                sortConfig.direction==='asc' ? <ArrowUpNarrowWide size={14} color="white"/> : <ArrowDownWideNarrow size={14} color="white"/>}
+            </Pressable>
             <Text style={[styles.headerText, { flex: 4 }]}>Course Name</Text>
             <Text style={[styles.headerText, { flex: 2 }]}>Status</Text>
             <Text style={[styles.headerText, { flex: 1 }]}>Badge</Text>
@@ -221,11 +258,12 @@ const EnrollmentManagement = () => {
 
     const renderPaymentHeader = () => (
         <View style={[styles.tableHeader, styles.row]}>
-            <Text style={[styles.headerText, { flex: 3 }]}>Full Name</Text>
-            <Text style={[styles.headerText, { flex: 2 }]}>Amount</Text>
-            <Text style={[styles.headerText, { flex: 2 }]}>Method</Text>
-            <Text style={[styles.headerText, { flex: 2 }]}>Status</Text>
+            <Text style={[styles.headerText, { flex: 4 }]}>Full Name</Text>
+            <Text style={[styles.headerText, { flex: 3 }]}>Amount</Text>
+            <Text style={[styles.headerText, { flex: 3 }]}>Status</Text>
             <Text style={[styles.headerText, { flex: 3 }]}>Paid On</Text>
+            <Text style={[styles.headerText, { flex: 3 }]}>Processed On</Text>
+            <Text style={[styles.headerText, { flex: 2 }]}>Receipt</Text>
         </View>
     );
 
@@ -279,18 +317,108 @@ const EnrollmentManagement = () => {
         );
     };
 
-    const renderPaymentItem = ({ item }) => (
-        <View style={[styles.row, styles.tableRow]}>
-            <View style={[{ flex: 3 }, styles.userInfo, styles.row]}>
-                <Text>{item.fullName}</Text>
-            </View>
+    const handleApprovePayment = async () => {
+        try {
+            await handleVerifyPayment(
+                selectedPayment.id,
+                "paid"
+            );
 
-            <Text style={{ flex: 2 }}>RM {item.amount}</Text>
-            <Text style={{ flex: 2 }}>{item.method}</Text>
-            <Text style={{ flex: 2 }}>{item.status}</Text>
-            <Text style={{ flex: 3 }}>{formatDate(item.paid_at)}</Text>
-        </View>
-    );
+            setPaymentModalVisible(false);
+            setSelectedPayment(null);
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+    const handleRejectPayment = async () => {
+        try {
+            await handleVerifyPayment(
+                selectedPayment.id,
+                "failed",
+                adminRemark
+            );
+
+            setRejectModalVisible(false);
+            setPaymentModalVisible(false);
+            setAdminRemark('');
+            setSelectedPayment(null);
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+    const handleDownloadReceipt = () => {
+        if (selectedPayment?.receipt_filepath) {
+            window.open(selectedPayment.receipt_filepath, '_blank');
+        }
+    };
+
+    const renderPaymentItem = ({ item }) => {
+        const statusConfig = Status_Config[item.status?.toLowerCase()] || {
+            color: "#8f8f8f",
+            label: item.status || 'Unknown'
+        };
+
+        return (
+            <Pressable
+                onPress={() => {
+                    setSelectedPayment(item);
+                    setPaymentModalVisible(true);
+                }}
+                style={({ hovered }) => [
+                    styles.row,
+                    styles.tableRow,
+                    hovered && { backgroundColor: '#f9f9f9' }
+                ]}
+            >
+                <View style={[{ flex: 4 }, styles.userInfo, styles.row]}>
+                    {item.user_profile_image ? (
+                        <Image source={{ uri: item.user_profile_image }} style={styles.avatar} />
+                    ) : (
+                        <View style={styles.pfpPlaceholder}>
+                            <Text style={styles.pfpInitials}>
+                                {item.user_fullname ? item.user_fullname[0].toUpperCase() : '?'}
+                            </Text>
+                        </View>
+                    )}
+                    <Text>{item.user_fullname}</Text>
+                </View>
+
+                <Text style={{ flex: 3 }}>RM {item.amount ?? 0}</Text>
+                <View style={[styles.row, styles.badge, { flex: 3 }]}>
+                    <Circle size={8} stroke={statusConfig.color} fill={statusConfig.color} />
+                    <Text style={[styles.badgeText, { color: statusConfig.color }]}>
+                        {statusConfig.label}
+                    </Text>
+                </View>
+                <Text style={{ flex: 3 }}>
+                    {item.created_at
+                        ? formatDate(item.created_at)
+                        : 'N/A'}
+                </Text>
+                <Text style={{ flex: 3 }}>
+                    {item.processed_at
+                        ? formatDate(item.processed_at)
+                        : 'N/A'}
+                </Text>
+                <View style={{ flex: 2 }}>
+                    <Pressable
+                        onPress={() => {
+                            if (item.receipt_filepath) {
+                                window.open(item.receipt_filepath, '_blank');
+                            }
+                        }}
+                        style={styles.downloadBtn}
+                    >
+                        <Text style={styles.downloadBtnText}>
+                            Download
+                        </Text>
+                    </Pressable>
+                </View>
+            </Pressable> 
+        );
+    };
 
     const renderPagination = () => {
         const pageNumbers = [];
@@ -326,6 +454,7 @@ const EnrollmentManagement = () => {
     };
 
     return (
+        <>
         <ScrollView style={styles.container}>
             <Text style={styles.title}>Enrollment Management</Text>
             <SlidingTabs 
@@ -357,6 +486,7 @@ const EnrollmentManagement = () => {
                             }}
                         />
                     </View>
+                
                     <View style={styles.dropdownWrapper}>
                         <Pressable style={styles.pillTrigger} onPress={() => setIsOpen(!isOpen)}>
                             <Text numberOfLines={1} ellipsizeMode='tail' style={styles.pillText}>
@@ -392,6 +522,16 @@ const EnrollmentManagement = () => {
                         )}
                     </View>
                 </View>
+                {activeTab === "enrollment" && (
+                    <Pressable 
+                        onPress={() => setFilterVisible(true)}
+                        style={() => [
+                            styles.iconBtn,
+                        ]}
+                    >
+                        <Filter size={20} color={filterVisible ? "#0a6340" : "#666"} />
+                    </Pressable>
+                )}
             </View>
 
             <View style={styles.tableContainer}>
@@ -476,7 +616,221 @@ const EnrollmentManagement = () => {
                     </View>
                 </View>
             </Modal>
+
+            <Modal
+                animationType='fade'
+                transparent
+                visible={paymentModalVisible}
+                onRequestClose={() => setPaymentModalVisible(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.paymentModalContent}>
+                        <View style={styles.modalHeader}>
+                            <Text style={styles.modalTitle}>
+                                Payment Details
+                            </Text>
+
+                            <Pressable
+                                onPress={() => setPaymentModalVisible(false)}
+                            >
+                                <Text style={styles.closeBtn}>✕</Text>
+                            </Pressable>
+                        </View>
+
+                        {selectedPayment && (
+                            <ScrollView showsVerticalScrollIndicator={false}>
+                                <View style={styles.paymentUserSection}>
+                                    {selectedPayment.user_profile_image? (
+                                        <Image
+                                            source={{
+                                                uri: selectedPayment.user_profile_image
+                                            }}
+                                            style={styles.paymentAvatar}
+                                        />
+                                    ) : (
+                                        <View style={styles.paymentAvatarPlaceholder}>
+                                            <Text style={styles.paymentAvatarInitial}>
+                                                {selectedPayment.user_fullname?.[0]?.toUpperCase()}
+                                            </Text>
+                                        </View>
+                                    )}
+
+                                    <View style={{ flex: 1 }}>
+                                        <Text style={styles.paymentUserName}>
+                                            {selectedPayment.user_fullname}
+                                        </Text>
+                                        <Text style={styles.paymentCourse}>
+                                            {selectedPayment.course_title || 'Course'}
+                                        </Text>
+                                    </View>
+                                </View>
+                                <View style={styles.receiptSection}>
+                                    {selectedPayment.receipt_filepath ? (
+                                        <Image
+                                            source={{
+                                                uri: selectedPayment.receipt_filepath
+                                            }}
+                                            style={styles.receiptImage}
+                                        />
+                                    ) : (
+                                        <View style={styles.noReceiptBox}>
+                                            <Text style={styles.noReceiptText}>
+                                                No Receipt Uploaded
+                                            </Text>
+                                        </View>
+                                    )}
+                                </View>
+                                <View style={styles.paymentActionRow}>
+                                    {selectedPayment?.status === 'pending' && (
+                                        <>
+                                            <Pressable
+                                                style={styles.approveBtn}
+                                                onPress={handleApprovePayment}
+                                            >
+                                                <Text style={styles.actionBtnText}>
+                                                    Approve
+                                                </Text>
+                                            </Pressable>
+                                            <Pressable 
+                                                style={styles.rejectBtn}
+                                                onPress={() => setRejectModalVisible(true)}    
+                                            >
+                                                <Text style={styles.actionBtnText}>
+                                                    Reject
+                                                </Text>
+                                            </Pressable>
+                                        </>
+                                    )}
+                                </View>
+                            </ScrollView>
+                        )}
+                    </View>
+                </View>
+            </Modal>
+            <Modal
+                animationType='fade'
+                transparent
+                visible={rejectModalVisible}
+                onRequestClose={() => setRejectModalVisible(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.rejectModalContent}>
+                        
+                        <View style={styles.modalHeader}>
+                            <Text style={styles.modalTitle}>
+                                Reject Payment
+                            </Text>
+
+                            <Pressable
+                                onPress={() => setRejectModalVisible(false)}
+                            >
+                                <Text style={styles.closeBtn}>✕</Text>
+                            </Pressable>
+                        </View>
+
+                        <Text style={styles.rejectLabel}>
+                            Admin Remarks
+                        </Text>
+
+                        <TextInput
+                            multiline
+                            value={adminRemark}
+                            onChangeText={setAdminRemark}
+                            placeholder="Enter rejection remarks..."
+                            style={styles.rejectInput}
+                        />
+
+                        <View style={styles.rejectActionRow}>
+                            <Pressable
+                                style={styles.cancelBtn}
+                                onPress={() => setRejectModalVisible(false)}
+                            >
+                                <Text style={styles.cancelBtnText}>
+                                    Cancel
+                                </Text>
+                            </Pressable>
+
+                            <Pressable
+                                style={styles.rejectConfirmBtn}
+                                onPress={handleRejectPayment}
+                            >
+                                <Text style={styles.actionBtnText}>
+                                    Confirm Reject
+                                </Text>
+                            </Pressable>
+                        </View>
+
+                    </View>
+                </View>
+            </Modal>
         </ScrollView>
+        <View style={[styles.filterSidebar, { transform: [{ translateX }] }]}>
+                <View style={styles.sidebarHeader}>
+                    <Text style={styles.sidebarTitle}>Courses Filters</Text>
+                    <Pressable onPress={() => setFilterVisible(false)}>
+                        <X size={24} color="#666" />
+                    </Pressable>
+                </View>
+
+                <ScrollView showsVerticalScrollIndicator={false} style={styles.sidebarContent}>
+                    <View style={styles.sidebarSection}>                        
+                        <Pressable 
+                            style={[styles.sidebarItem, tempCourseFilter === 'All' && styles.sidebarItemActive]}
+                            onPress={() => setTempCourseFilter('All')}
+                        >
+                            <Text style={[styles.sidebarItemText, tempCourseFilter === 'All' && styles.sidebarItemTextActive]}>
+                                All Courses
+                            </Text>
+                        </Pressable>
+
+                        {courses.map((course) => (
+                            <Pressable 
+                                key={course.id} 
+                                style={[
+                                    styles.sidebarItem, 
+                                    tempCourseFilter === course.title && styles.sidebarItemActive
+                                ]}
+                                onPress={() => setTempCourseFilter(course.title)}
+                            >
+                                <Text 
+                                    numberOfLines={2} 
+                                    style={[
+                                        styles.sidebarItemText, 
+                                        tempCourseFilter === course.title && styles.sidebarItemTextActive
+                                    ]}
+                                >
+                                    {course.id} - {course.title}
+                                </Text>
+                            </Pressable>
+                        ))}
+                    </View>
+                </ScrollView>
+
+                <View style={styles.sidebarFooter}>
+                    <Pressable 
+                        style={styles.sidebarResetBtn} 
+                        onPress={() => {
+                            setTempCourseFilter('All');
+                            setSelectedCourseFilter('All');
+                            setFilterVisible(false);
+                        }}
+                    >
+                        <Text style={styles.sidebarResetText}>Reset</Text>
+                    </Pressable>
+                    <Pressable 
+                        style={styles.sidebarApplyBtn} 
+                        onPress={() => {
+                            const selected=courses.find(c=>c.title === tempCourseFilter);
+                            setCurrentCourseId(selected ? selected.id : 'All')
+                            setFilterVisible(false);
+                            setActivePage(1);
+                        }}
+                    >
+                        <Text style={styles.sidebarApplyText}>Apply Filters</Text>
+                    </Pressable>
+                </View>
+            </View>
+            </>
     );
 };
 
@@ -767,9 +1121,291 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         padding: 40, 
         color: '#666' 
-    }
+    },
+    paymentModalContent: {
+        width: '60%',
+        maxHeight: '90%',
+        backgroundColor: '#fff',
+        borderRadius: 20,
+        padding: 25,
+    },
+    paymentUserSection: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 15,
+        marginBottom: 25,
+    },
+    paymentAvatar: {
+        width: 65,
+        height: 65,
+        borderRadius: 50,
+    },
+    paymentAvatarPlaceholder: {
+        width: 65,
+        height: 65,
+        borderRadius: 50,
+        backgroundColor: '#2c5c189d',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    paymentAvatarInitial: {
+        color: 'white',
+        fontWeight: 'bold',
+        fontSize: 24,
+    },
+    paymentUserName: {
+        fontSize: 18,
+        fontWeight: '700',
+        color: '#222',
+    },
+    receiptSection: {
+        marginTop: 10,
+    },
+
+    receiptTitle: {
+        fontSize: 16,
+        fontWeight: '700',
+        marginBottom: 15,
+        color: '#333',
+    },
+    receiptImage: {
+        width: '100%',
+        height: 450,
+        borderRadius: 16,
+        resizeMode: 'contain',
+        backgroundColor: '#f5f5f5',
+    },
+    noReceiptBox: {
+        height: 180,
+        borderRadius: 14,
+        borderWidth: 1,
+        borderColor: '#ddd',
+        borderStyle: 'dashed',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    noReceiptText: {
+        color: '#888',
+        fontSize: 14,
+    },
+
+    filterSidebar: {
+        position: 'absolute',
+        right: 0,
+        top: 0,
+        bottom: 0,
+        width: 300,
+        backgroundColor: 'white',
+        zIndex: 1001,
+        padding: 20,
+        boxShadow: '-2px 0px 10px rgba(0,0,0,0.1)',
+        elevation: 5,
+    },
+    sidebarHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingBottom: 20,
+        borderBottomWidth: 1,
+        borderBottomColor: '#eee',
+    },
+    sidebarTitle: {
+        fontSize: 18,
+        fontWeight: '700',
+        color: '#1a1a1a',
+    },
+    sidebarContent: {
+        flex: 1,
+        marginTop: 20,
+    },
+    sidebarSection: {
+        marginBottom: 25,
+    },
+    sidebarItem: {
+        paddingVertical: 12,
+        paddingHorizontal: 15,
+        borderRadius: 8,
+        marginBottom: 5,
+    },
+    sidebarItemActive: {
+        backgroundColor: '#f0fdf4',
+        borderWidth: 1,
+        borderColor: '#dcfce7',
+    },
+    sidebarItemText: {
+        fontSize: 13,
+        color: '#666',
+    },
+    sidebarItemTextActive: {
+        color: '#0a6340',
+        fontWeight: '600',
+    },
+    sidebarFooter: {
+        flexDirection: 'row',
+        gap: 10,
+        paddingTop: 20,
+        borderTopWidth: 1,
+        borderTopColor: '#eee',
+    },
+    sidebarApplyBtn: {
+        flex: 2,
+        backgroundColor: '#0a6340',
+        padding: 12,
+        borderRadius: 8,
+        alignItems: 'center',
+    },
+    sidebarApplyText: {
+        color: 'white',
+        fontWeight: '600',
+    },
+    sidebarResetBtn: {
+        flex: 1,
+        backgroundColor: '#f1f5f9',
+        padding: 12,
+        borderRadius: 8,
+        alignItems: 'center',
+    },
+    sidebarResetText: {
+        color: '#64748b',
+        fontWeight: '600',
+    },
+    paymentCourse: {
+        marginTop: 4,
+        color: '#666',
+        fontSize: 13,
+    },
+    paymentInfoRow: {
+        flexDirection: 'row',
+        gap: 15,
+        marginBottom: 20,
+    },
+    infoCard: {
+        flex: 1,
+        backgroundColor: '#f8fafc',
+        borderRadius: 14,
+        padding: 16,
+    },
+    infoLabel: {
+        fontSize: 12,
+        color: '#888',
+        marginBottom: 8,
+    },
+    infoValue: {
+        fontSize: 18,
+        fontWeight: '700',
+        color: '#111',
+    },
+    remarkSection: {
+        marginTop: 20,
+    },
+    remarkLabel: {
+        fontWeight: '600',
+        marginBottom: 10,
+        color: '#333',
+    },
+    remarkInput: {
+        borderWidth: 1,
+        borderColor: '#ddd',
+        borderRadius: 12,
+        padding: 14,
+        minHeight: 120,
+        textAlignVertical: 'top',
+        backgroundColor: '#fafafa',
+    },
+    paymentActionRow: {
+        flexDirection: 'row',
+        gap: 12,
+        marginTop: 25,
+    },
+    downloadBtn: {
+        flex: 1,
+        backgroundColor: '#f59e0b',
+        paddingVertical: 14,
+        borderRadius: 12,
+        alignItems: 'center',
+    },
+    approveBtn: {
+        flex: 1,
+        backgroundColor: '#0a6340',
+        paddingVertical: 14,
+        borderRadius: 12,
+        alignItems: 'center',
+    },
+    rejectBtn: {
+        flex: 1,
+        backgroundColor: 'red',
+        paddingVertical: 14,
+        borderRadius: 12,
+        alignItems: 'center',
+    },
+    actionBtnText: {
+        color: 'white',
+        fontWeight: '700',
+        fontSize: 14,
+    },
+    downloadBtnText: {
+        color: 'white',
+        fontWeight: '700',
+        fontSize: 14,
+    },
+    downloadTableBtn: {
+        backgroundColor: '#eff6ff',
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        borderRadius: 8,
+        alignSelf: 'flex-start',
+    },
+    downloadTableBtnText: {
+        color: '#2563eb',
+        fontWeight: '600',
+        fontSize: 12,
+    },
+    rejectModalContent: {
+        width: '40%',
+        backgroundColor: 'white',
+        borderRadius: 20,
+        padding: 24,
+    },
+    rejectLabel: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#333',
+        marginBottom: 10,
+    },
+    rejectInput: {
+        minHeight: 120,
+        borderWidth: 1,
+        borderColor: '#ddd',
+        borderRadius: 12,
+        padding: 14,
+        textAlignVertical: 'top',
+        outlineStyle: 'none',
+        backgroundColor: '#fafafa',
+    },
+    rejectActionRow: {
+        flexDirection: 'row',
+        justifyContent: 'flex-end',
+        gap: 12,
+        marginTop: 24,
+    },
+    cancelBtn: {
+        backgroundColor: '#f1f5f9',
+        paddingVertical: 12,
+        paddingHorizontal: 20,
+        borderRadius: 10,
+    },
+    cancelBtnText: {
+        color: '#475569',
+        fontWeight: '600',
+    },
+    rejectConfirmBtn: {
+        backgroundColor: '#dc2626',
+        paddingVertical: 12,
+        paddingHorizontal: 20,
+        borderRadius: 10,
+    },
 });
 export default EnrollmentManagement;
 
-//  delete means dropped, and delete is fully delete and approved 
-// Submission: sortconfig, status
+
+// Submission: sortconfig

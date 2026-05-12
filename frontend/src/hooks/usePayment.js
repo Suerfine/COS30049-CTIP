@@ -30,7 +30,13 @@ export const usePayment = (searchQuery = '') => {
                 paymentStatus
             );
 
-            setPayments(res?.data || res || []);
+            setPayments(
+                (res?.data || res || []).map(p => ({
+                    ...p,
+                    fullName: p.user_fullname,
+                    profileImage: p.user_profile_image
+                }))
+            );
             setPaymentTotalPages(res?.totalPages || 1);
             setPaymentTotalElements(res?.totalElements || 0);
 
@@ -68,6 +74,27 @@ export const usePayment = (searchQuery = '') => {
         });
     };
 
+    const handleVerifyPayment = async (
+        paymentId,
+        status,
+        adminRemark = ''
+    ) => {
+        try {
+            await paymentService.verifyPayment(
+                paymentId,
+                status,
+                adminRemark
+            );
+
+            await fetchPayments();
+
+            return { success: true };
+        } catch (err) {
+            console.error(err);
+            return { success: false };
+        }
+    };
+
     useEffect(() => {
         fetchPayments();
     }, [fetchPayments]);
@@ -94,6 +121,7 @@ export const usePayment = (searchQuery = '') => {
         resetPaymentSort,
 
         // actions
-        refreshPayments: fetchPayments
+        refreshPayments: fetchPayments,
+        handleVerifyPayment
     };
 };

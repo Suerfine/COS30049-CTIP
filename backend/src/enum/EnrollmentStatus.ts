@@ -8,7 +8,7 @@ export enum EnrollmentStatus {
   // The park guide has completed the course and is waiting for admin to review the completion.
   IN_REVIEW = "in_review",
 
-  // The park guide has completed the course and is waiting for admin to review the completion.
+  // The park guide has completed the course and is issued badge by admin
   COMPLETED = "completed",
 
   // The park guide was either unable to complete the course or failed the assessment and needs to retake the course.
