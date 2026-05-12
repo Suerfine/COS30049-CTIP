@@ -16,7 +16,6 @@ const EnrollmentDetailModal = ({
     status,
 }) => {
     if (!data) return null;
-    console.log(allCourses);
 
     const requiredPrereqs = data.course?.prerequisite_groups?.[0]?.prerequisites || [];
 

@@ -2,7 +2,8 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { Clock, CheckCircle2, ShieldAlert, FileText, CreditCard} from 'lucide-react-native';
 
-const PaymentReview = ({ navigation }) => {
+const PaymentReview = ({ navigation, route }) => {
+    const { courseTitle, amount } = route.params || {};
     const steps = [
         { title: "Payment Submitted", desc: "Receipt uploaded successfully", status: "complete" },
         { title: "Financial Verification", desc: "Admin checking bank code SIGMAMYKL", status: "current" },
@@ -32,7 +33,7 @@ const PaymentReview = ({ navigation }) => {
 
             <Text style={styles.title}>Payment Under Review</Text>
             <Text style={styles.subtitle}>
-                We've received your receipt. Your enrollment status is currently: 
+                We've received your receipt for {courseTitle}. Your enrollment status is currently: 
                 <Text style={{ fontWeight: 'bold', color: '#0a6340' }}> PENDING</Text>
             </Text>
 

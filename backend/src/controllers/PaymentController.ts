@@ -42,13 +42,21 @@ export const submitPayment = async (
   next: NextFunction
 ) => {
   try {
-    const { enrollment_id, receipt_filepath } = req.body;
-    const enrollmentId = parseId(enrollment_id);
+    console.log("BODY:", req.body);
+    console.log("FILE:", req.file);
+    const enrollmentId = parseId(req.body.enrollment_id);
+    const file = req.file;
 
-    if (!enrollmentId) throw new HttpError(400, "enrollment_id is required");
+    if (!enrollmentId) {
+      throw new HttpError(400, "enrollment_id is required");
+    }
+
+    if (!file) {
+      throw new HttpError(400, "receipt file is required");
+    }
 
     const enrollment = await Enrollment.findByPk(enrollmentId, {
-      include: [{ model: Course, as: 'course' }]
+      include: [{ model: Course, as: "course" }],
     });
 
     if (!enrollment || !enrollment.course) {
@@ -60,15 +68,22 @@ export const submitPayment = async (
       course_id: enrollment.course_id,
       enrollment_id: enrollmentId,
       amount: enrollment.course.cost,
-      receipt_filepath: receipt_filepath,
+
+      receipt_filepath: file.path,
+
       status: PaymentStatus.PENDING,
     });
 
-    await enrollment.update({ status: EnrollmentStatus.PENDING_PAYMENT });
+    await enrollment.update({
+      status: EnrollmentStatus.PENDING_PAYMENT,
+    });
 
     return res.status(201).json(payment);
+
   } catch (err) {
-    if (err instanceof HttpError) return res.status(err.status).json({ message: err.message });
+    if (err instanceof HttpError) {
+      return res.status(err.status).json({ message: err.message });
+    }
     next(err);
   }
 };
@@ -203,7 +218,9 @@ export const getAllPayments = async (
           id: payment.id,
           amount: payment.amount,
           status: payment.status,
-          receipt_filepath: payment.receipt_filepath,
+          receipt_filepath: payment.receipt_filepath
+          ? `${req.protocol}://${req.get("host")}/${payment.receipt_filepath.replace(/^\/+/, "")}`
+          : null,
           created_at: payment.created_at,
           admin_remark: payment.admin_remark,
           processed_at: payment.processed_at,

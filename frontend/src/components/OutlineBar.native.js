@@ -154,10 +154,6 @@ const OutlineBar = ({ course, progressMap = {}, onSelectPage, editable, isOpen, 
                                     onMouseEnter={() => setHoveredItem({ type: 'module', id: mid })}
                                     onMouseLeave={() => setHoveredItem(null)}
                                 >
-                                    {!editable && !isLocked && (
-                                        <View style={[styles.progressBar, { width: `${modStatus.percent}%` }]} />
-                                    )}
-
                                     <Pressable
                                         style={[styles.moduleBlock, isSelected && styles.selected, isLocked && styles.lockedItem]}
                                         onPress={() => {
@@ -190,13 +186,11 @@ const OutlineBar = ({ course, progressMap = {}, onSelectPage, editable, isOpen, 
                                         </Text>
 
                                         {expandedModule === mid ? <ChevronDown size={15}/> : <ChevronRight size={15}/>}
-
-                                        {editable && !isEditing && hoveredItem?.id === mid && (
-                                            <Pressable onPress={() => deleteModule(mid)}>
-                                                <Trash2 size={16} />
-                                            </Pressable>
-                                        )}
                                     </Pressable>
+
+                                    {/* {!editable && !isLocked && (
+                                        <View style={[styles.progressBar, { width: `${modStatus.percent}%` }]} />
+                                    )} */}
                                 </View>
 
                                 {/* PAGES */}
@@ -306,7 +300,7 @@ const styles = StyleSheet.create({
         elevation: 1,
     },
     sidebarContainer: {
-        width: width * 0.82,
+        width: width * 0.72,
         height: '100%',
         backgroundColor: 'white',
         position: 'absolute',
@@ -314,7 +308,7 @@ const styles = StyleSheet.create({
         top: 0,
         bottom: 0,
         elevation: 10,
-        paddingTop: 60,
+        paddingTop: 50,
         paddingBottom: 20,
         zIndex: 2,
         elevation: 2,
@@ -324,7 +318,7 @@ const styles = StyleSheet.create({
         gap: 6,
         borderWidth: 1,
         borderColor: '#d0d0d0',
-        paddingVertical: 8,
+        paddingVertical: 2,
         backgroundColor: 'white',
         borderRadius: 15,
         alignItems: 'center',

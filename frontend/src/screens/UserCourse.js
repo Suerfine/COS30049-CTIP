@@ -193,8 +193,10 @@ const UserCourse = ({ navigation }) => {
                                         window.alert(`The following prerequisite(s) has not been fulfilled: ${prereqList}`);
                                         return;
                                     }
-                                    const confirmed = window.confirm(`Are you sure you want to enroll in ${course.title}?`);
-                                    if (confirmed) handleEnrollment(course.id);
+                                    navigation.navigate('ParkGuideStack', {
+                                        screen: 'Payment',
+                                        params: { course}
+                                    });
                                     }}
                                     style={{ width: '100%' }}
                                 />

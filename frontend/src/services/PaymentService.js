@@ -103,6 +103,7 @@ export const paymentService = {
      * POST: Create payment
      */
     create: async (payload) => {
+        console.log(payload);
         try {
             const res = await apiClient.post(
                 API_ENDPOINTS.PAYMENT.SUBMIT,
@@ -180,8 +181,9 @@ export const paymentService = {
     ) => {
         try {
             const res = await apiClient.patch(
-                `/payments/${paymentId}/verify/${status}`,
+                `/payments/${paymentId}/verify`,
                 {
+                    status,
                     admin_id: 1,
                     admin_remark: adminRemark
                 }

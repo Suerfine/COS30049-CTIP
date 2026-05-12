@@ -73,7 +73,8 @@ export const enrollmentService = {
             };
         } catch (error) {
             console.error("Enrollment Service Error:", error);
-            throw new Error('Failed to fetch enrollment records');
+            console.error("DATA:", error.response?.data);
+            console.error("MESSAGE:", error.message);
         }
     },
     /**
@@ -100,10 +101,8 @@ export const enrollmentService = {
     /**
      * POST: Create new Enrollment
      */
-    enroll: async (courseId, userId) => {
-        const res = await apiClient.post(API_ENDPOINTS.ENROLLMENT.ENROLL(courseId), {
-            user_id: userId 
-        });
+    enroll: async (courseId) => {
+        const res = await apiClient.post(API_ENDPOINTS.ENROLLMENT.ENROLL(courseId));
         return res.data;
     },
 

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { paymentService } from '../services/PaymentService';
+import { enrollmentService } from '../services/EnrollmentService';
 
 export const usePayment = (searchQuery = '') => {
     const [payments, setPayments] = useState([]);
@@ -30,11 +31,20 @@ export const usePayment = (searchQuery = '') => {
                 paymentStatus
             );
 
+            const paymentData = res?.data || [];
+
             setPayments(
-                (res?.data || res || []).map(p => ({
+                paymentData.map(p => ({
                     ...p,
-                    fullName: p.user_fullname,
-                    profileImage: p.user_profile_image
+                    fullName:
+                        p.fullName ||
+                        p.user_fullname ||
+                        `User #${p.user_id}`,
+
+                    profileImage:
+                        p.profileImage ||
+                        p.user_profile_image ||
+                        null
                 }))
             );
             setPaymentTotalPages(res?.totalPages || 1);
@@ -80,18 +90,66 @@ export const usePayment = (searchQuery = '') => {
         adminRemark = ''
     ) => {
         try {
+            const targetPayment = payments.find(
+                p => Number(p.id) === Number(paymentId)
+            );
+            if (!targetPayment) {
+                throw new Error("Payment not found");
+            }
+
             await paymentService.verifyPayment(
                 paymentId,
                 status,
                 adminRemark
             );
 
+            if (targetPayment.enrollment_id) {
+                if (status === 'paid') {
+                    await enrollmentService.updateStatus(
+                        targetPayment.enrollment_id,
+                        'in_review'
+                    );
+                }
+                if (status === 'failed') {
+                    await enrollmentService.updateStatus(
+                        targetPayment.enrollment_id,
+                        'rejected'
+                    );
+                }
+            }
             await fetchPayments();
 
             return { success: true };
         } catch (err) {
             console.error(err);
-            return { success: false };
+            return { 
+                success: false,
+                error:
+                    err?.response?.data?.message ||
+                    err.message ||
+                    'Failed to verify payment' 
+            };
+        }
+    };
+
+    const deletePayment = async (paymentId) => {
+        try {
+
+            await paymentService.delete(paymentId);
+            await fetchPayments();
+            return {
+                success: true
+            };
+
+        } catch (err) {
+            console.error("Delete Payment Error:", err);
+            return {
+                success: false,
+                error:
+                    err?.response?.data?.message ||
+                    err.message ||
+                    'Failed to delete payment'
+            };
         }
     };
 
@@ -122,6 +180,7 @@ export const usePayment = (searchQuery = '') => {
 
         // actions
         refreshPayments: fetchPayments,
-        handleVerifyPayment
+        handleVerifyPayment,
+        deletePayment
     };
 };
