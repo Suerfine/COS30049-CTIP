@@ -13,6 +13,7 @@ import {
   ClockAlert,
   SquarePen,
   Trash2,
+  CheckCircle2
 } from "lucide-react-native";
 import ProgressBar from "./ProgressBar.js";
 import { useTranslation } from "react-i18next";
@@ -44,6 +45,7 @@ const CourseCard = ({
   onEnroll,
   previousEnrollments = [],
   onViewHistory,
+  isPublished
 }) => {
   const { t, i18n } = useTranslation();
   const isWeb = Platform.OS === "web";
@@ -176,7 +178,7 @@ const CourseCard = ({
           
         </View>
 
-        {isAdmin && (
+        {isAdmin && !isPublished && (
           <View style={styles.icon}>
             <Pressable
               onPress={onEdit}
@@ -191,6 +193,12 @@ const CourseCard = ({
               <Trash2 size={20} />
             </Pressable>
           </View>
+        )}
+        {isPublished && (
+          <View style={styles.publishedBadge}>
+            <CheckCircle2 size={12} color="#065f46" strokeWidth={3} />
+            <Text style={styles.publishedText}>PUBLISHED</Text>
+        </View>
         )}
 
         {/* web */}
@@ -417,6 +425,25 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "600",
   },
+  publishedBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: '#dcfce7',
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderRadius: 6,
+      borderWidth: 1,
+      borderColor: '#86efac',
+      gap: 5,
+      alignSelf: 'flex-start',
+      marginTop:5
+  },
+  publishedText: {
+      fontSize: 10,
+      fontWeight: '800',
+      color: '#065f46', 
+      letterSpacing: 0.5,
+  },    
 });
 
 export default CourseCard;

@@ -3,6 +3,7 @@ import { ElementService } from "../services/ElementService";
 import { pageService } from "../services/pageService";
 
 export const useElements=(courseId, moduleId, pageId)=>{
+
     const [elements, setElements]=useState([]);
     const [loading, setLoading]=useState(false);
     const [error, setError]=useState(null);
@@ -95,17 +96,26 @@ export const useElements=(courseId, moduleId, pageId)=>{
         }
     };
 
-    const loadWorkshops = useCallback(async () => {
+    useEffect(() => {
         if (!courseId) return;
-        setWorkshopsLoading(true);
-        try {
-            const data = await ElementService.getWorkshops(courseId);
-            setWorkshops(data);
-        } catch (err) {
-            console.error("useElements Workshop Error: ", err);
-        } finally {
-            setWorkshopsLoading(false);
-        }
+
+        const fetchWorkshops = async () => {
+            setWorkshopsLoading(true);
+            try {
+                const data = await ElementService.getWorkshops(courseId);
+
+                if (Array.isArray(data)) {
+                    setWorkshops(data);
+                }
+
+            } catch (err) {
+                console.error("useElements Workshop Error:", err);
+            } finally {
+                setWorkshopsLoading(false);
+            }
+        };
+
+        fetchWorkshops();
     }, [courseId]);
 
     const updatePageSettings = async (targetPageId, settings) => {
@@ -125,5 +135,5 @@ export const useElements=(courseId, moduleId, pageId)=>{
         loadElements();
     },[loadElements]);
 
-    return {elements, loading, error, refresh: loadElements, createNewElement, updateExistingElement, deleteElement, moveElement, workshopsLoading,loadWorkshops, workshops, updatePageSettings};
+    return {elements, loading, error, refresh: loadElements, createNewElement, updateExistingElement, deleteElement, moveElement, workshopsLoading, workshops, updatePageSettings};
 }

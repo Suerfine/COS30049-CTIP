@@ -226,6 +226,7 @@ const AdminCourse = ({ navigation }) => {
                     onEdit={() => handleEdit(course)}
                     onDelete={() => handleDelete(course.id)}
                     style={{width: '100%'}}
+                    isPublished={course.status === 'released' ? true : false}
                   />
                 </View>
                 );
