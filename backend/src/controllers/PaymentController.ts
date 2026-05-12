@@ -203,7 +203,9 @@ export const getAllPayments = async (
           id: payment.id,
           amount: payment.amount,
           status: payment.status,
-          receipt_filepath: payment.receipt_filepath,
+          receipt_filepath: payment.receipt_filepath
+          ? `${req.protocol}://${req.get("host")}/${payment.receipt_filepath.replace(/^\/+/, "")}`
+          : null,
           created_at: payment.created_at,
           admin_remark: payment.admin_remark,
           processed_at: payment.processed_at,

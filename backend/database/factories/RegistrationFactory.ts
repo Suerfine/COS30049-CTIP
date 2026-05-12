@@ -1,6 +1,8 @@
 import { faker } from "@faker-js/faker";
 import { RegistrationStatus } from "../../src/enum/RegistrationStatus";
 
+const DUMMY_DOCUMENT_PATH = "public/dev/seed_resume.pdf";
+
 export type RegistrationFactoryUser = {
   id: number;
   created_at?: Date | null;
@@ -20,6 +22,7 @@ export type RegistrationFactoryAttributes = {
   lastname: string;
   identification: string;
   personal_email: string;
+  document_filepath: string | null;
   tel: string;
   admin_remark: string | null;
   reviewed_at: Date | null;
@@ -74,6 +77,7 @@ const buildRegistrationData = (): Omit<RegistrationFactoryAttributes, "id" | "us
     tel: faker.phone.number(),
     admin_remark: faker.datatype.boolean() ? faker.lorem.sentence() : null,
     reviewed_at: null,
+    document_filepath: DUMMY_DOCUMENT_PATH,
   };
 };
 
@@ -116,6 +120,8 @@ export const buildRegistration = (
     reviewed_at: registrationOverrides.reviewed_at === undefined ? reviewedAt : registrationOverrides.reviewed_at,
     created_at: createdAt,
     updated_at: registrationOverrides.updated_at instanceof Date ? registrationOverrides.updated_at : createdAt,
+    document_filepath:
+    registrationOverrides.document_filepath ?? DUMMY_DOCUMENT_PATH,
   };
 };
 
