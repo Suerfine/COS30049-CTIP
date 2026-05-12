@@ -8,7 +8,7 @@ const path=require('path');
 //dot env for environment variables
 const dotenv=require('dotenv');
 dotenv.config();
-const PORT = process.env.PORT || 5000;
+const PORT = 4000;
 
 const app = express();
 app.use(cors());
@@ -42,7 +42,7 @@ const upload=multer({storage: storage});
 const courses = [
     {
         id: 1,
-        image: 'http://localhost:5000/images/first_aid.png',
+        image: 'http://localhost:4000/images/first_aid.png',
         courseTitle: 'Basic First Aid',
         level: 'basic',
         duration: '15 hours 30 mins',
@@ -154,7 +154,7 @@ const courses = [
     },
     {
         id: 2,
-        image: 'http://localhost:5000/images/cpr.png',
+        image: 'http://localhost:4000/images/cpr.png',
         courseTitle: 'CPR Training',
         level: 'basic',
         duration: '8 hours',
@@ -184,7 +184,7 @@ const courses = [
     },
     {
         id: 3,
-        image: 'http://localhost:5000/images/plantconservation.jpg',
+        image: 'http://localhost:4000/images/plantconservation.jpg',
         courseTitle: 'Plant Conservation',
         level: 'advanced',
         duration: '10 hours',
@@ -245,7 +245,7 @@ app.post('/api/courses', upload.single('image'), (req, res)=>{
             return res.status(400).send({message: 'No file uploaded'});
         }
         const newId=courses.length>0 ? Math.max(...courses.map(c=>c.id))+1 : 1;
-        const imageUrl=`http://localhost:5000/images/${req.file.filename}`;
+        const imageUrl=`http://localhost:4000/images/${req.file.filename}`;
         const newCourse={
             id: newId,
             courseTitle:req.body.courseTitle,
@@ -277,7 +277,7 @@ app.put('/api/courses/:id', upload.single('image'), (req,res)=>{
 
     let imageUrl=courses[courseIndex].image;
     if(req.file){
-        imageUrl=`http://localhost:5000/images/${req.file.filename}`;
+        imageUrl=`http://localhost:4000 /images/${req.file.filename}`;
     }
     const updatedCourse={
         ...courses[courseIndex],
@@ -445,160 +445,173 @@ app.delete('/api/courses/:id/modules/:moduleId/pages/:pageId', (req, res) => {
 // Dummy user data
 const users=[
     {
-        id: 1,
-        fullName: 'John Doe',
+        id: 1, 
+        fname: 'John',
+        lname: 'Doe',
         username: 'johndoe_dev',
         ic: '020512-13-4233',
         email: 'johndoe@gmail.com',
-        status: 'Active',
-        role:'parkguide',
-        joinedDate: '2025-10-15',
-        lastActive: '2 mins ago',
-        profileImage: 'http://localhost:5000/user-images/johndoe.png',
+        telefon: '012-3456789',
+        registerDate: '2025-10-15',
+        status: 'Approved',
+        profileImage: 'http://localhost:4000/user-images/johndoe.png',
+        remark: 'I would like to register for access to the dashboard and manage my projects.'
     },
     {
         id: 2,
-        fullName: 'Jenny Sim',
+        fname: 'Jenny',
+        lname: 'Sim',
         username: 'jenny_dev',
         ic: '0802-13-4433',
         email: 'jenny@gmail.com',
-        status: 'Inactive',
-        role:'admin',
-        joinedDate: '2026-01-20',
-        lastActive: '5 days ago',
-        profileImage: 'http://localhost:5000/user-images/jenny.png',
+        telefon: '012-3456789',
+        registerDate: '2026-01-20',
+        status: 'Pending',
+        profileImage: 'http://localhost:4000/user-images/jenny.png',
+        remark: 'I would like to register for access to the dashboard and manage my projects.'
     },
     {
         id: 3,
-        fullName: 'John Smith',
+        fname: 'John',
+        lname: 'Smith',
         username: 'john_smith',
         ic: '9102-11-2233',
         email: 'johnsmith@gmail.com',
-        status: 'Active',
-        role:'parkguide',
-        joinedDate: '2026-02-10',
-        lastActive: '2 days ago',
-        profileImage: 'http://localhost:5000/user-images/smith.png',
+        telefon: '012-3456789',
+        registerDate: '2026-02-10',
+        status: 'Rejected',
+        profileImage: 'http://localhost:4000/user-images/smith.png',
+        remark: 'I would like to register for access to the dashboard and manage my projects.'
     },
     {
         id: 4,
-        fullName: 'Olivia Bennett',
+        fname: 'Olivia',
+        lname: 'Bennett',
         username: 'olivia_b',
         ic: '9903-22-3344',
         email: 'olivia.bennett@gmail.com',
-        status: 'Inactive',
-        role:'admin',
-        joinedDate: '2026-01-25',
-        lastActive: '10 days ago',
-        profileImage: 'http://localhost:5000/user-images/olivia.png',
+        telefon: '012-3456789',
+        registerDate: '2026-01-25',
+        status: 'Approved',
+        profileImage: 'http://localhost:4000/user-images/olivia.png',
+        remark: 'I would like to register for access to the dashboard and manage my projects.'
     },
     {
         id: 5,
-        fullName: 'Daniel Warren',
+        fname: 'Daniel',
+        lname: 'Warren',
         username: 'daniel_w',
         ic: '8704-33-4455',
         email: 'daniel.warren@gmail.com',
-        status: 'Active',
-        role:'parkguide',
-        joinedDate: '2026-03-01',
-        lastActive: '1 day ago',
-        profileImage: 'http://localhost:5000/user-images/daniel.png',
+        telefon: '012-3456789',
+        registerDate: '2026-03-01',
+        status: 'Pending',
+        profileImage: 'http://localhost:4000/user-images/daniel.png',
+        remark: 'I would like to register for access to the dashboard and manage my projects.'
     },
     {
         id: 6,
-        fullName: 'Chloe Hayes',
+        fname: 'Chloe',
+        lname: 'Hayes',
         username: 'chloe_h',
         ic: '9505-44-5566',
         email: 'chloe.hayes@gmail.com',
-        status: 'Active',
-        role:'admin',
-        joinedDate: '2026-02-15',
-        lastActive: '3 hours ago',
-        profileImage: 'http://localhost:5000/user-images/chloe.png',
+        telefon: '012-3456789',
+        registerDate: '2026-02-15',
+        status: 'Approved',
+        profileImage: 'http://localhost:4000/user-images/chloe.png',
+        remark: 'I would like to register for access to the dashboard and manage my projects.'
     },
     {
         id: 7,
-        fullName: 'Marcus Reed',
+        fname: 'Marcus',
+        lname: 'Reed',
         username: 'marcus_r',
         ic: '8906-55-6677',
         email: 'marcus.reed@gmail.com',
-        status: 'Inactive',
-        role:'parkguide',
-        joinedDate: '2026-01-30',
-        lastActive: '15 days ago',
-        profileImage: 'http://localhost:5000/user-images/marcus.png',
+        telefon: '012-3456789',
+        registerDate: '2026-01-30',
+        status: 'Rejected',
+        profileImage: 'http://localhost:4000/user-images/marcus.png',
+        remark: 'I would like to register for access to the dashboard and manage my projects.'
     },
     {
         id: 8,
-        fullName: 'Isabelle Clark',
+        fname: 'Isabelle',
+        lname: 'Clark',
         username: 'isabelle_c',
         ic: '970766-13-7788',
         email: 'isabelle.clark@gmail.com',
-        status: 'Active',
-        role:'admin',
-        joinedDate: '2026-03-05',
-        lastActive: '5 hours ago',
-        profileImage: 'http://localhost:5000/user-images/issabelle.png',
+        telefon: '012-3456789',
+        registerDate: '2026-03-05',
+        status: 'Approved',
+        profileImage: 'http://localhost:4000/user-images/issabelle.png',
+        remark: 'I would like to register for access to the dashboard and manage my projects.'
     },
     {
         id: 9,
-        fullName: 'Lucas Mitchell',
+        fname: 'Lucas',
+        lname: 'Mitchell',
         username: 'lucas_m',
         ic: '8608-77-8899',
         email: 'lucas.mitchell@gmail.com',
-        status: 'Inactive',
-        role:'parkguide',
-        joinedDate: '2026-02-20',
-        lastActive: '20 days ago',
-        profileImage: 'http://localhost:5000/user-images/lucas.png',
+        telefon: '012-3456789',
+        registerDate: '2026-02-20',
+        status: 'Pending',
+        profileImage: 'http://localhost:4000/user-images/lucas.png',
+        remark: 'I would like to register for access to the dashboard and manage my projects.'
     },
     {
         id: 10,
-        fullName: 'Mark Willburg',
+        fname: 'Mark',
+        lname: 'Willburg',
         username: 'mark_w',
         ic: '9409-88-9900',
         email: 'mark.willburg@gmail.com',
-        status: 'Active',
-        role:'admin',
-        joinedDate: '2026-03-10',
-        lastActive: '12 hours ago',
-        profileImage: 'http://localhost:5000/user-images/mark.png',
+        telefon: '012-3456789',
+        registerDate: '2026-03-10',
+        status: 'Approved',
+        profileImage: 'http://localhost:4000/user-images/mark.png',
+        remark: 'I would like to register for access to the dashboard and manage my projects.'
     },
     {
         id: 11,
-        fullName: 'Nicholas Agenn',
+        fname: 'Nicholas',
+        lname: 'Agenn',
         username: 'nicholas_a',
         ic: '9810-99-0011',
         email: 'nicholas.agenn@gmail.com',
-        status: 'Inactive',
-        role:'parkguide',
-        joinedDate: '2026-01-28',
-        lastActive: '30 days ago',
-        profileImage: 'http://localhost:5000/user-images/nicholas.png',
+        telefon: '012-3456789',
+        registerDate: '2026-01-28',
+        status: 'Rejected',
+        profileImage: 'http://localhost:4000/user-images/nicholas.png',
+        remark: 'I would like to register for access to the dashboard and manage my projects.'
     },
     {
         id: 12,
-        fullName: 'Mia Nadinn',
+        fname: 'Mia',
+        lname: 'Nadinn',
         username: 'mia_n',
         ic: '9211-00-1122',
         email: 'mia.nadinn@gmail.com',
-        status: 'Active',
-        role:'admin',
-        joinedDate: '2026-03-15',
-        lastActive: '6 hours ago',
-        profileImage: 'http://localhost:5000/user-images/mia.png',
+        telefon: '012-3456789',
+        registerDate: '2026-03-15',
+        status: 'Approved',
+        profileImage: 'http://localhost:4000/user-images/mia.png',
+        remark: 'I would like to register for access to the dashboard and manage my projects.'
     },
     {
         id: 13,
-        fullName: 'Noemi Villan',
+        fname: 'Noemi',
+        lname: 'Villan',
         username: 'noemi_v',
         ic: '9312-11-2233',
         email: 'noemi.villan@gmail.com',
-        status: 'Inactive',
-        role:'parkguide',
-        joinedDate: '2026-02-05',
-        lastActive: '25 days ago',
-        profileImage: 'http://localhost:5000/user-images/noemi.png',
+        telefon: '012-3456789',
+        registerDate: '2026-02-05',
+        status: 'Pending',
+        profileImage: 'http://localhost:4000/user-images/noemi.png',
+        remark: 'I would like to register for access to the dashboard and manage my projects.'
     }
 ]
 
@@ -607,16 +620,165 @@ app.get('/api/users',(req,res)=>{
     res.json(users);
 })
 
+// Accounts (1,4,6,8,10,12)
+const accounts=[
+    {
+        id: 1,
+        reg_id:1,
+        joinedDate: '2025-10-15',
+        lastLogin: '5 minutes ago',
+    },
+    {
+        id: 2,
+        reg_id:4,
+        joinedDate: '2024-10-5',
+        lastLogin: '2 minutes ago',
+    },
+    {
+        id: 3,
+        reg_id:6,
+        joinedDate: '2024-04-12',
+        lastLogin: '5 days ago',
+    },
+    {
+        id: 4,
+        reg_id:8,
+        joinedDate: '2023-06-04',
+        lastLogin: '3 minutes ago',
+    },
+    {
+        id: 5,
+        reg_id:10,
+        joinedDate: '2024-10-07',
+        lastLogin: '10 days ago',
+    },
+    {
+        id: 6,
+        reg_id:12,
+        joinedDate: '2025-10-15',
+        lastLogin: '5 minutes ago',
+    }
+]   
+
+// Route to get all accounts
+app.get('/api/accounts',(req,res)=>{
+    res.json(accounts);
+})
+
+// Dummy Enrollment data
+const enrollments = [
+  {
+    "id":1,
+    "userId": 1,
+    "fullName": "Fam Sin Mim",
+    "courseId": 1,
+    "courseName": "IOT & Hardware Prototyping",
+    "Enrolled_on": "2026-01-15",
+    "status": "Completed",
+    "completed_on": "2026-02-10",
+    "expiry_date": "2027-02-11"
+  },
+  {
+    "id":2,
+    "userId": 2,
+    "fullName": "Jordan Smith",
+    "courseId": 2,
+    "courseName": "Advanced Machine Learning",
+    "Enrolled_on": "2026-02-01",
+    "status": "In Progress",
+    "completed_on": null,
+    "expiry_date": "2026-08-01"
+  },
+  {
+    "id":3,
+    "userId": 3,
+    "fullName": "Amira Varma",
+    "courseId": 3,
+    "courseName": "Full-Stack Web Development",
+    "Enrolled_on": "2025-12-10",
+    "status": "Expired",
+    "completed_on": null,
+    "expiry_date": "2026-03-10"
+  },
+  {
+    "id":4,
+    "userId": 4,
+    "fullName": "Kevin Chen",
+    "courseId": 1,
+    "courseName": "IOT & Hardware Prototyping",
+    "Enrolled_on": "2026-03-20",
+    "status": "In Progress",
+    "completed_on": null,
+    "expiry_date": "2026-09-20"
+  },
+  {
+    "id":5,
+    "userId": 5,
+    "fullName": "Sachi Tanaka",
+    "courseId": 2,
+    "courseName": "Advanced Machine Learning",
+    "Enrolled_on": "2026-01-05",
+    "status": "Completed",
+    "completed_on": "2026-01-25",
+    "expiry_date": "2027-01-26"
+  }
+];
+
+// Route to get all enrollments
+app.get('/api/enrollments',(req,res)=>{
+    res.json(enrollments);
+});
+
+// Dummy submission
+const submissions=[
+  {
+    "id":1,
+    "userId": 1,
+    "course_id": 1,
+    "fullName": "Sachi Tanaka",
+    "courseId": 2,
+    "courseName": "Advanced Machine Learning",
+    "course_total_score": 92,
+    "final_quiz_score": 88,
+    "completion_date": "2026-02-10",
+    "badge": null,
+    "issued_on": "2026-02-11",
+    "expiry_date":"20267-02-11",
+    "status":'Approved'
+  },
+  {
+    "id":2,
+    "userId": 5,
+    "course_id": 2,
+    "fullName": "Sachi Tanaka",
+    "courseId": 2,
+    "courseName": "Advanced Machine Learning",
+    "course_total_score": 85,
+    "final_quiz_score": 90,
+    "completion_date": "2026-01-25",
+    "badge": null,
+    "issued_on": "2026-02-11",
+    "expiry_date":"20267-02-11",
+    "status":'Pending'
+  }
+];
+
+// Route to get all submissions
+app.get('/api/submissions',(req,res)=>{
+    res.json(submissions);
+});
 // ---------------------------------------------------------------------
 
 // Dummy todo data
 const todos = [
-  { id: 1, title: "Finish Module 1", course: "Basic First Aid", date: "2026-04-30", completed: true },
-  { id: 2, title: "Finish Module 1", course: "CPR Training", date: "2026-05-06", completed: true },
-  { id: 3, title: "Finish Module 2", course: "Basic First Aid", date: "2026-08-05", completed: false },
-  { id: 4, title: "Finish Module 2", course: "CPR Training", date: "2026-05-30", completed: false },
-  { id: 5, title: "Finish Module 2", course: "CPR Training", date: "2026-05-30", completed: false },
-  { id: 6, title: "Finish Module 2", course: "CPR Training", date: "2026-06-01", completed: false }
+    { id: 1, title: "Finish Module 1", course: "Basic First Aid", date: "2026-04-30", completed: true },
+    { id: 2, title: "Finish Module 1", course: "CPR Training", date: "2026-05-06", completed: true },
+    { id: 3, title: "Finish Module 2", course: "Basic First Aid", date: "2026-08-05", completed: true },
+    { id: 4, title: "Finish Module 2", course: "CPR Training", date: "2026-05-30", completed: false },
+    { id: 5, title: "Finish Module 2", course: "CPR Training", date: "2026-05-30", completed: false },
+    { id: 6, title: "Finish Module 2", course: "CPR Training", date: "2026-06-01", completed: false },
+    { id: 7, title: "Finish Module 2", course: "CPR Training", date: "2026-05-30", completed: false },
+    { id: 8, title: "Finish Module 2", course: "CPR Training", date: "2026-06-01", completed: false }
 ];
 
 // Route to get all todos

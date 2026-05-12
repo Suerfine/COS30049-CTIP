@@ -1,34 +1,56 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
-import { Circle, CircleCheckBig } from 'lucide-react-native';
+import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
+import { Circle, CircleCheckBig, MapPin, Tag, LoaderCircle} from 'lucide-react-native';
+import { useTranslation } from 'react-i18next';
+import { UserRoles } from '../enum/UserRoles';
 
-const statusLabels = {
-    inProgress: 'In Progress',
-    completed: 'Completed',
-    notEnrolled: 'Not Enrolled',
-};
+const FilterSidebar = ({ visible, tempFilters, setTempFilters, onApply, onReset, onClose, role,allTagList = [] }) => {
+    const {t, i18n}=useTranslation();
+    const [translateX, setTranslateX] = useState(300);
 
-const FilterSidebar = ({ visible, tempFilters, setTempFilters, onApply, onReset, onClose }) => {
-    const [translateX, setTranslateX] = useState(-300);
+    const locationTags = allTagList.filter(tag => tag.type === 'location');
+    const categoryTags = allTagList.filter(tag => tag.type === 'category');
+
+    const statusLabels = {
+        inProgress: t('status.in progress'),
+        completed: t('status.completed'),
+        notEnrolled: t('status.not enrolled'),
+        inReview: t('status.in review'),
+        applied: t('status.applied'),
+        pendingPayment: t('status.pending payment'),
+    };
 
     useEffect(() => {
-        setTranslateX(visible ? 0 : -300);
+        setTranslateX(visible ? 0 : 300);
     }, [visible]);
 
     const toggle = (key, value) => {
-        setTempFilters(prev => ({
-            ...prev,
-            [key]: prev[key] === value ? 'all' : value,
-        }));
+        setTempFilters(prev => {
+            if (key === 'status') {
+                return { ...prev, [key]: prev[key] === value ? 'all' : value };
+            } else {
+                const currentList = Array.isArray(prev[key]) ? prev[key] : [];
+                const isExist = currentList.includes(value);
+
+                return {
+                    ...prev,
+                    [key]: isExist ? currentList.filter(item => item !== value) : [...currentList, value]
+                };
+            }
+        });
     };
+
+    // const setAllCategories=()=>{
+    //     setTempFilters(prev=>({...prev, category:'all'}));
+    // };
 
     const FilterItem = ({ label, isSelected, onPress }) => (
         <Pressable style={styles.item} onPress={onPress}>
             {isSelected
-                ? <CircleCheckBig size={18} color="green" />
+                ? <CircleCheckBig size={18} color="#0a6340" />
                 : <Circle size={18} color="gray" />
             }
-            <Text style={styles.text}>{label}</Text>
+            <Text style={[styles.text, isSelected && styles.activeText]}>{label}</Text>
         </Pressable>
     );
 
@@ -39,50 +61,76 @@ const FilterSidebar = ({ visible, tempFilters, setTempFilters, onApply, onReset,
             )}
 
             <View style={[styles.sidebar, { transform: [{ translateX }] }]}>
-                <Text style={styles.title}>Filters</Text>
-
-                {/* filter by level */}
-                <Text style={styles.section}>Level</Text>
-                {['Basic', 'Advanced'].map(level => (
-                    <FilterItem
-                        key={level}
-                        label={level}
-                        isSelected={tempFilters.level === level}
-                        onPress={() => toggle('level', level)}
-                    />
-                ))}
-                <FilterItem
-                    label="All"
-                    isSelected={tempFilters.level === 'all'}
-                    onPress={() => setTempFilters(prev => ({ ...prev, level: 'all' }))}
-                />
+                <ScrollView showsVerticalScrollIndicator={false}>
+                <Text style={styles.title}>{t("filters")}</Text>
 
                 {/* filter by status */}
-                <Text style={styles.section}>Status</Text>
-                {['inProgress', 'completed', 'notEnrolled'].map(status => (
-                    <FilterItem
-                        key={status}
-                        label={statusLabels[status]}
-                        isSelected={tempFilters.status === status}
-                        onPress={() => toggle('status', status)}
-                    />
-                ))}
-                <FilterItem
-                    label="All"
-                    isSelected={tempFilters.status === 'all'}
-                    onPress={() => setTempFilters(prev => ({ ...prev, status: 'all' }))}
-                />
+                {role===UserRoles.ADMIN ? (
+                    null
+                ) : (
+                    <View style={styles.sectionGroup}>
+                        <View style={styles.row}>
+                            <LoaderCircle size={16} color="#0a6340"/>
+                            <Text style={styles.sectionTitle}>{t('progress')}</Text>
+                        </View>
+                        {['inProgress', 'completed', 'notEnrolled', 'inReview', 'applied', 'pendingPayment'].map(status => (
+                            <FilterItem
+                                key={status}
+                                label={statusLabels[status]}
+                                isSelected={tempFilters.status === status}
+                                onPress={() => toggle('status', status)}
+                            />
+                        ))}
+                        <FilterItem
+                            label="All"
+                            isSelected={tempFilters.status === 'all'}
+                            onPress={() => setTempFilters(prev => ({ ...prev, status: 'all' }))}
+                        />
+                    </View>
+                )}
 
+                {/* Location Filters */}
+                <View style={styles.sectionGroup}>
+                    <View style={styles.row}>
+                        <MapPin size={16} color="#0a6340" />
+                        <Text style={styles.sectionTitle}>Locations</Text>
+                    </View>
+                    {locationTags.map(tag => (
+                        <FilterItem
+                            key={tag.id}
+                            label={tag.title}
+                            isSelected={tempFilters.location?.includes(tag.title)}
+                            onPress={() => toggle('location', tag.title)}
+                        />
+                    ))}
+                </View>
+
+                    {/* Category Filters */}
+                    <View style={styles.sectionGroup}>
+                        <View style={styles.row}>
+                            <Tag size={16} color="#0a6340" />
+                            <Text style={styles.sectionTitle}>Categories</Text>
+                        </View>
+                        {categoryTags.map(tag => (
+                            <FilterItem
+                                key={tag.id}
+                                label={tag.title}
+                                isSelected={tempFilters.category?.includes(tag.title)}
+                                onPress={() => toggle('category', tag.title)}
+                            />
+                        ))}
+                    </View>
+                </ScrollView>
                 {/* apply and reset buttons */}
                 <View style={styles.buttons}>
                     <Pressable style={styles.applyBtn} onPress={onApply}>
-                        <Text style={{ color: 'white' }}>Apply</Text>
+                        <Text style={{ color: 'white' }}>{t("apply")}</Text>
                     </Pressable>
                     <Pressable
                         style={styles.resetBtn}
                         onPress={() => { onReset(); onClose(); }}
                     >
-                        <Text style={{ color: 'white' }}>Reset</Text>
+                        <Text style={{ color: 'white' }}>{t("reset")}</Text>
                     </Pressable>
                 </View>
             </View>
@@ -102,8 +150,9 @@ const styles = StyleSheet.create({
     },
     sidebar: {
         position: 'absolute',
-        left: 0,
+        right: 0,
         top: 0,
+        bottom:0,
         height: '100%',
         width: 280,
         backgroundColor: 'white',
@@ -146,6 +195,20 @@ const styles = StyleSheet.create({
         padding: 10,
         borderRadius: 8,
         alignItems: 'center',
+    },
+    sectionGroup: { 
+        marginBottom: 20
+    },
+    sectionTitle: { 
+        fontSize: 16, 
+        fontWeight: '700', 
+        color: '#444', 
+        marginLeft: 8 
+    },
+    row: { 
+        flexDirection: 'row', 
+        alignItems: 'center', 
+        marginBottom: 10 
     },
 });
 

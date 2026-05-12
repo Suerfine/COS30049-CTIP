@@ -5,3 +5,11 @@
 
 # Frontend and backend node modules
 node_modules/
+
+#AI anomaly files
+bin/
+runs/
+
+#ignore pycache files
+__pycache__/**
+__pycache__/

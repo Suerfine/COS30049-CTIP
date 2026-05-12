@@ -142,3 +142,11 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
+
+# Storage files
+storage/*
+!storage/public/
+storage/public/*
+!storage/public/dev/
+
+__pycache__/
