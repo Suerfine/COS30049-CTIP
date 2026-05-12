@@ -1,26 +1,24 @@
-require('dotenv').config();
+require("dotenv").config();
 
-const dialect = (process.env.DB_DIALECT || 'sqlite').toLowerCase();
-
+// Sequelize configuration for both SQLite and MySQL based on environment variables
+const dialect = (process.env.DB_DIALECT || "sqlite").toLowerCase();
 const baseConfig = {
   dialect: dialect,
 };
-
 let config;
-
-if (dialect === 'sqlite') {
+if (dialect === "sqlite") {
   config = {
     ...baseConfig,
-    storage: process.env.DB_STORAGE || './storage/dev_db.sqlite',
+    storage: process.env.DB_STORAGE || "./storage/dev_db.sqlite",
   };
-} else if (dialect === 'mysql') {
+} else if (dialect === "mysql") {
   config = {
     ...baseConfig,
-    host: process.env.DB_HOST || '127.0.0.1',
+    host: process.env.DB_HOST || "127.0.0.1",
     port: process.env.DB_PORT || 3306,
-    username: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD || '',
-    database: process.env.DB_NAME || '',
+    username: process.env.DB_USER || "root",
+    password: process.env.DB_PASSWORD || "",
+    database: process.env.DB_NAME || "",
   };
 } else {
   throw new Error(`Unsupported DB_DIALECT: ${dialect}. Use sqlite or mysql.`);
@@ -28,6 +26,10 @@ if (dialect === 'sqlite') {
 
 module.exports = {
   development: config,
-  test: config,
+  test: {
+    dialect: "sqlite",
+    storage: ":memory:",
+    logging: false,
+  },
   production: config,
 };

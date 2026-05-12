@@ -252,4 +252,8 @@ const startServer = async (): Promise<void> => {
   }
 };
 
-startServer();
+if (process.env.NODE_ENV !== "test") {
+  void startServer();
+}
+
+export default app; // Export the app for testing purposes
