@@ -1,10 +1,12 @@
 import { useState,useEffect, useRef, useMemo } from 'react';
-import { View, Text, Image, StyleSheet, TouchableOpacity, Linking, Platform } from 'react-native';
+import { View, Text, Image, StyleSheet, TouchableOpacity, Platform, ActivityIndicator } from 'react-native';
 import { FileText, Play, Download, HelpCircle, Edit3, editCircle, Trash2,ChevronUp, ChevronDown, CheckCircle2, RotateCcw, AlertCircle, Calendar, Clock, MapPin, ExternalLink} from 'lucide-react-native';
 import Markdown from 'react-native-markdown-display';
 import * as Progress from 'react-native-progress';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import WebView from 'react-native-webview';
+// import * as Linking from 'expo-linking';
+import { Linking } from 'react-native';
 
 // Import other hooks and component
 import { markdownStyles } from './markdownStyle';
@@ -186,31 +188,46 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
 
     const IntersectionWrapper = ({ children, id, score, type, isAlreadyComplete }) => {
         const elementRef = useRef(null);
+        const handleMobileLayout = () => {
+            if (type === 'quiz_objective' || type === 'workshop') return;
+
+            if (Platform.OS !== 'web' && !isAlreadyComplete && !viewedElements[id]) {
+                setTimeout(() => {
+                    markAsComplete(id, score);
+                }, 8000); 
+            }
+        };
 
         useEffect(() => {
-            if (isAdmin || type === 'quiz_objective' || type==='workshop' || viewedElements[id] || isAlreadyComplete) return;
+            if (isAdmin || type === 'quiz_objective' || type === 'workshop' || viewedElements[id] || isAlreadyComplete) return;
 
-            const observer = new IntersectionObserver(
-                ([entry]) => {
-                    if (entry.isIntersecting && entry.intersectionRatio >= 0.7) {
-                        observer.disconnect();
-                        setTimeout(() => {
-                            markAsComplete(id, score);
-                        }, 5000);
-                    }
-                },
-                { threshold: [0.7] }
-            );
+            if (Platform.OS === 'web') {
+                const observer = new IntersectionObserver(
+                    ([entry]) => {
+                        if (entry.isIntersecting && entry.intersectionRatio >= 0.7) {
+                            observer.disconnect();
+                            setTimeout(() => {
+                                markAsComplete(id, score);
+                            }, 5000);
+                        }
+                    },
+                    { threshold: [0.7] }
+                );
 
-            if (elementRef.current) {
-                observer.observe(elementRef.current);
+                if (elementRef.current) {
+                    observer.observe(elementRef.current);
+                }
+
+                return () => observer.disconnect();
             }
-
-            return () => observer.disconnect();
-        }, [id, isAlreadyComplete]);
+        }, [id, isAlreadyComplete, type]); 
 
         return (
-            <View ref={elementRef} style={{ width: '100%' }}>
+            <View 
+                ref={elementRef} 
+                onLayout={handleMobileLayout} 
+                style={{ width: '100%' }}
+            >
                 {children}
             </View>
         );
@@ -311,48 +328,78 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
     }, [courseId, isAdmin]);
     
     const VideoPlayer = ({ url }) => {
-        const getEmbedUrl = (originalUrl) => {
-            let videoId = '';
-            if (originalUrl.includes('v=')) {
-                videoId = originalUrl.split('v=')[1].split('&')[0];
-            } else if (originalUrl.includes('youtu.be/')) {
-                videoId = originalUrl.split('youtu.be/')[1];
-            } else if (originalUrl.includes('embed/')) {
-                videoId = originalUrl.split('embed/')[1];
-            }
 
-            return `https://www.youtube-nocookie.com/embed/${videoId}`;
-        };
+    const getVideoId = (originalUrl) => {
+        let videoId = '';
 
-        const embedUrl = getEmbedUrl(url);
-
-        if (Platform.OS === 'web') {
-            return (
-                <View style={{ height: 450 }}>
-                    <iframe
-                        src={embedUrl}
-                        width="100%"
-                        height="100%"
-                        frameBorder="0"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                    />
-                </View>
-            );
+        if (originalUrl.includes('v=')) {
+            videoId = originalUrl.split('v=')[1].split('&')[0];
+        } else if (originalUrl.includes('youtu.be/')) {
+            videoId = originalUrl.split('youtu.be/')[1];
+        } else if (originalUrl.includes('embed/')) {
+            videoId = originalUrl.split('embed/')[1];
         }
 
+        return videoId;
+    };
+
+    const videoId = getVideoId(url);
+
+    const embedUrl = `https://www.youtube.com/embed/${videoId}?rel=0&controls=1&playsinline=1`;
+
+    const openInYouTube = async () => {
+        const appUrl = `youtube://watch?v=${videoId}`;
+        const webUrl = `https://www.youtube.com/watch?v=${videoId}`;
+
+        try {
+            const supported = await Linking.canOpenURL(appUrl);
+            if (supported) {
+                await Linking.openURL(appUrl); // open YouTube app
+            } else {
+                await Linking.openURL(webUrl); // fallback browser
+            }
+        } catch (e) {
+            await Linking.openURL(webUrl);
+        }
+    };
+
+    // ✅ WEB
+    if (Platform.OS === 'web') {
         return (
-            <View style={{ height: 220 }}>
-                <WebView 
-                    source={{ uri: embedUrl }} 
-                    allowsFullscreenVideo 
-                    domStorageEnabled={true}
-                    javaScriptEnabled={true}
-                    originWhitelist={['*']}
+            <View style={{ height: 450 }}>
+                <iframe
+                    src={embedUrl}
+                    width="100%"
+                    height="100%"
+                    frameBorder="0"
+                    allowFullScreen
                 />
             </View>
         );
-    };
+    }
+
+    // ✅ MOBILE (NO WebView for YouTube)
+    return (
+        <View style={{ height: 220, borderRadius: 12, overflow: 'hidden', backgroundColor: '#000' }}>
+            
+            {/* Optional preview UI */}
+            <TouchableOpacity
+                onPress={openInYouTube}
+                style={{
+                    flex: 1,
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    backgroundColor: '#000'
+                }}
+            >
+                <Text style={{ color: 'white', fontSize: 14 }}>
+                    ▶ Open in YouTube
+                </Text>
+            </TouchableOpacity>
+
+        </View>
+    );
+};
 
     if (!elements || elements.length === 0) {
         return (

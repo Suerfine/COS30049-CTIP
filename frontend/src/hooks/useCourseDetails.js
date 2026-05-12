@@ -204,7 +204,10 @@ export const useCourseDetails=(id, enrollmentId, initialMarks = {})=>{
                         } else {
                             const totalElements = page.elements?.length || 0;
                             const completedCount = page.elements?.filter(
-                                el => (marksMap[el.id]?.earned_grade || 0) > 0
+                                el => {
+                                    const mark = marksMap[el.id];
+                                    return mark?.earned_grade >= (el.passing_score ?? 0);
+                                    }
                             ).length || 0;
                             isPageComplete = totalElements > 0 && completedCount === totalElements;
                             

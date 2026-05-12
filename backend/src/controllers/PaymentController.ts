@@ -114,7 +114,14 @@ export const verifyPayment = async (
         ? EnrollmentStatus.IN_PROGRESS
         : EnrollmentStatus.REJECTED;
 
-    await enrollment.update({ status: newEnrollmentStatus }, { transaction });
+    await enrollment.update(
+      {
+        status: newEnrollmentStatus,
+        enrolled_at:
+          statusFromUrl === PaymentStatus.PAID ? new Date() : enrollment.enrolled_at,
+      },
+      { transaction }
+    );
 
     await transaction.commit();
     return res.json({ 
@@ -199,6 +206,8 @@ export const getAllPayments = async (
           receipt_filepath: payment.receipt_filepath,
           created_at: payment.created_at,
           admin_remark: payment.admin_remark,
+          processed_at: payment.processed_at,
+          processed_by_user_id: payment.processed_by_user_id,
 
           user_fullname: user
             ? `${user.firstname} ${user.lastname}`

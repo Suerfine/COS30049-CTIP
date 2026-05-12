@@ -291,7 +291,8 @@ const styles = StyleSheet.create({
     marginHorizontal: Platform.OS === 'web' ? 50 : 15,
     flexDirection: 'row',           
     justifyContent: 'space-between', 
-    alignItems: 'center',  
+    alignItems: 'center', 
+    flexWrap:'wrap' 
   },
   backgroundImage: {
     width: "100%",
@@ -365,7 +366,7 @@ const styles = StyleSheet.create({
     flexDirection:'row',
     flexWrap:'wrap',
     gap:8,
-    marginTop:15,
+    marginVertical:15,
   },
   pill:{
     flexDirection:'row',

@@ -13,6 +13,8 @@
         "completed":"Completed",
         "in progress":"In Progress",
         "in review":"In Review",
+        "applied": "Applied",
+        "pending payment": "Pending Payment",
         "basic":"Basic",
         "advanced":"Advanced",
         "not enrolled":"Not Enrolled"

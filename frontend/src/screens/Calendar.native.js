@@ -84,19 +84,19 @@ const Calendar=({route,navigation})=>{
         : filteredEvents;
         return (
             <>
-            <RNCalendar
-                renderArrow={(direction)=>(
-                    direction==='left' ? <ChevronLeft size={24} color="#32750e"/> : <ChevronRight size={24} color="#32750e"/>
-                )}
-                renderHeader={(date) => {
-                    const monthYear = date.toString('MMMM yyyy');
-                        return (
-                            <View>
-                                <Text style={styles.customHeaderTitle}>{monthYear}</Text>
-                            </View>
-                        );
+                <RNCalendar
+                    renderArrow={(direction) =>
+                        direction === 'left' ? (
+                            <ChevronLeft size={24} color="#32750e" />
+                        ) : (
+                            <ChevronRight size={24} color="#32750e" />
+                        )
                     }
-                }
+                    renderHeader={(date) => (
+                        <View>
+                            <Text style={styles.customHeaderTitle}>{date.toString('MMMM yyyy')}</Text>
+                        </View>
+                    )}
                     current={new Date().toISOString().split('T')[0]}
                     onDayPress={day => {
                         if (selectedDate === day.dateString) {
@@ -209,14 +209,11 @@ const Calendar=({route,navigation})=>{
                         </Pressable>
                     );
                 }}
-                renderHeader={(date) => {
-                const monthYear = date.toString('MMMM yyyy');
-                    return (
-                        <View>
-                            <Text style={styles.customHeaderTitle}>{monthYear}</Text>
-                        </View>
-                    );
-                }}
+                renderHeader={(date) => (
+                    <View>
+                        <Text style={styles.customHeaderTitle}>{date.toString('MMMM yyyy')}</Text>
+                    </View>
+                )}
                 theme={{
                     'stylesheet.calendar.main':{
                         week:{
@@ -579,4 +576,3 @@ const styles=StyleSheet.create({
 });
 
 export default Calendar;
-// need wirte the function of end date > satrt date, add which course, add which type

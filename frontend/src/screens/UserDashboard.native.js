@@ -33,6 +33,24 @@ const UserDashboard=({navigation})=>{
     } = useUserDashboard();
 
     const { inProgressCourses, completedCourses } = useUserCourse({ progressData });
+
+    // dummy in progress course to test navigation
+    // const { inProgressCourses: realInProgress, completedCourses } = useUserCourse();
+    // const MOCK_IN_PROGRESS = [
+    //   {
+    //     id: 1,
+    //     title: "Mock Course: Wildlife Safety",
+    //     cover_img_url: "https://picsum.photos/seed/course/400/200",
+    //     module_count: 5,
+    //     expected_completion_weeks: 4,
+    //     must_complete_in_weeks: 8,
+    //     progress: 0.45,
+    //     enrollmentStatus: "in_progress",
+    //     enrollmentId: 1001,
+    //     is_enrollable: false,
+    //   },
+    // ];
+    // const inProgressCourses = __DEV__ ? MOCK_IN_PROGRESS : realInProgress;
     const {t, i18n}=useTranslation();
 
     return(
@@ -90,67 +108,74 @@ const UserDashboard=({navigation})=>{
 
                     {/* in progress courses */}
                     <View style={styles.cardContainer}>
-                        {courseFilter === 'in progress' &&
-                            inProgressCourses.map(course => {
-                                const courseProgress = progressData.find(p => p.courseId === course.id);
-                                const numModules = course.modules ? course.modules.length : 0;
-
-                                return (
-                                    <CourseCard
-                                        key={course.id}
-                                        id={course.id}
-                                        coverImgUrl={course.cover_img_url}
-                                        courseTitle={course.title}
-                                        numModules={numModules}
-                                        duration={course.expected_completion_weeks}
-                                        expiry={course.must_complete_in_weeks}
-                                        progress={course.progress}
-                                        enrollmentStatus={course.enrollmentStatus}
-                                        userType={userType}
-                                        // handlers
-                                        onPress={() => navigation.navigate('ParkGuideStack', {
-                                            screen: 'UserModule', 
-                                            params: { 
-                                                id: course.id,
-                                                enrollmentStatus: course.enrollmentStatus ?? null,
-                                                enrollmentId: course.enrollmentId ?? null,
-                                            }
-                                        })}
-                                    />
-                                );
-                            })
-                        }
+                        {courseFilter === 'in progress' && (
+                            inProgressCourses.length > 0 ? (
+                                inProgressCourses.map(course => (
+                                    <View key={course.id} style={[styles.cardWrapper]}>
+                                        <CourseCard
+                                            key={course.id}
+                                            id={course.id}
+                                            coverImgUrl={course.cover_img_url}
+                                            courseTitle={course.title}
+                                            numModules={course.module_count ?? 0}
+                                            duration={course.expected_completion_weeks}
+                                            expiry={course.must_complete_in_weeks}
+                                            progress={course.progress} // This is now the real weighted score %
+                                            enrollmentStatus={course.enrollmentStatus}
+                                            isEnrollable={course.is_enrollable}
+                                            userType={userType}
+                                            onPress={() =>
+                                                    navigation.navigate('UserModule', {
+                                                        id: course.id,
+                                                        enrollmentStatus:
+                                                        course.enrollmentStatus ?? null,
+                                                        enrollmentId: course.enrollmentId
+                                                    })
+                                                }
+                                            style={{ width: '100%' }}
+                                        />
+                                    </View>
+                                ))
+                            ) : (
+                                <Text style={styles.emptyText}>No courses in progress.</Text>
+                            )
+                        )}
 
                         {/* completed courses */}
-                        {courseFilter === 'completed' &&
-                            completedCourses.map(course => {
-                                const courseProgress = progressData.find(p => p.courseId === course.id);
-                                const numModules = course.modules ? course.modules.length : 0;
-
-                                return (
-                                    <CourseCard
-                                        key={course.id}
-                                        id={course.id}
-                                        imagePath={{ uri: course.image }}
-                                        courseTitle={course.courseTitle}
-                                        numModules={numModules}
-                                        duration={course.duration}
-                                        expiry={course.expiryDate}
-                                        progress={courseProgress?.progress ?? 1}
-                                        userType={userType}
-                                        // handlers
-                                        onPress={() => navigation.navigate('ParkGuideStack', {
-                                            screen: 'UserModule', 
-                                            params: { 
-                                                id: course.id,
-                                                enrollmentStatus: course.enrollmentStatus ?? null,
-                                                enrollmentId: course.enrollmentId
-                                            }
-                                        })}
-                                    />
-                                );
-                            })
-                        }
+                        {courseFilter === 'completed' && (
+                            completedCourses.length > 0 ? (
+                                completedCourses.map(course => {
+                                    return (
+                                        <View key={course.id} style={[styles.cardWrapper, { flexBasis: cardStyles.width, minWidth: cardStyles.width }]}>
+                                            <CourseCard
+                                                key={course.id}
+                                                id={course.id}
+                                                coverImgUrl={course.cover_img_url}
+                                                courseTitle={course.title}
+                                                numModules={course.module_count ?? 0}
+                                                duration={course.expected_completion_weeks}
+                                                expiry={course.must_complete_in_weeks}
+                                                progress={course.progress}
+                                                enrollmentStatus={course.enrollmentStatus}
+                                                isEnrollable={course.is_enrollable}
+                                                userType={userType}
+                                                onPress={() =>
+                                                    navigation.navigate('UserModule', {
+                                                        id: course.id,
+                                                        enrollmentStatus:
+                                                        course.enrollmentStatus ?? null,
+                                                        enrollmentId: course.enrollmentId
+                                                    })
+                                                }
+                                                style={{ width: '100%' }}
+                                            />
+                                        </View>
+                                    );
+                                })
+                            ) : (
+                                <Text style={styles.emptyText}>No completed courses.</Text>
+                            )
+                        )}
                     </View>
                 </View>
                 <View style={styles.sectionHeader}>
@@ -165,7 +190,7 @@ const UserDashboard=({navigation})=>{
                                     <Pressable 
                                         key={item.id} 
                                         style={styles.categoryTag}
-                                        onPress={() => navigation.navigate('ParkGuideStack', {
+                                        onPress={() => navigation.navigate('ParkGuideMobileRoot', {
                                             screen: 'Courses', 
                                             params: { 
                                                 filterCategory: item.title
@@ -293,6 +318,11 @@ const styles=StyleSheet.create({
         fontSize: 12,
         color: 'white',
         fontWeight: '500',
+    },
+    cardWrapper: {
+        flexGrow: 0, 
+        flexShrink: 1,
+        display: 'flex',
     },
 })
 

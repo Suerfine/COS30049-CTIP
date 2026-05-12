@@ -58,7 +58,8 @@ export const enrollCourse = async (
     const enrollment = await Enrollment.create({
       user_id: req.user!.id,
       course_id: courseId,
-      status: EnrollmentStatus.IN_REVIEW,
+      // status: EnrollmentStatus.IN_REVIEW,
+      status: EnrollmentStatus.PENDING_PAYMENT,
       enrolled_at: new Date(),
     });
     return res.status(201).json(toEnrollmentResponse(enrollment));
@@ -239,7 +240,25 @@ export const updateEnrollmentStatus = async (
         break;
       case EnrollmentStatus.IN_PROGRESS:
         if (
-          enrollment.status !== EnrollmentStatus.IN_REVIEW
+          // enrollment.status !== EnrollmentStatus.IN_REVIEW
+          enrollment.status !== EnrollmentStatus.APPLIED &&
+          enrollment.status !== EnrollmentStatus.PENDING_PAYMENT
+        ) {
+          throw new HttpError(400, "Invalid enrollment status transition");
+        }
+        enrollment.status = newStatus;
+        break;
+      // NEW: transition to pending payment
+      case EnrollmentStatus.PENDING_PAYMENT:
+        if (enrollment.status !== null) {
+          throw new HttpError(400, "Invalid enrollment status transition");
+        }
+        enrollment.status = newStatus;
+        break;
+      // NEW: transition to applied
+      case EnrollmentStatus.APPLIED:
+        if (
+          enrollment.status !== EnrollmentStatus.PENDING_PAYMENT
         ) {
           throw new HttpError(400, "Invalid enrollment status transition");
         }
@@ -306,11 +325,14 @@ export const getSubmissionSummaries = async (
         ? req.query.orderBy
         : "id ASC";
 
-    // ✅ Build WHERE like getAllEnrollments style
     const whereClause: any = {};
 
     if (status !== "All") {
       whereClause.status = status;
+    } else {
+      whereClause.status = {
+        [Op.notIn]: ["pending_payment", "in_review"]
+      };
     }
 
     if (search) {

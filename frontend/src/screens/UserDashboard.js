@@ -161,38 +161,43 @@ const UserDashboard = ({ navigation }) => {
                                 )}
 
                             {/* completed courses */}
-                            {courseFilter === 'completed' &&
-                                completedCourses.map(course => {
-                                    // const numModules = course.module_count ? course.module_count.length : 0;
-                                    return (
-                                        <View key={course.id} style={[styles.cardWrapper, { flexBasis: cardStyles.width, minWidth: cardStyles.width }]}>
-                                            <CourseCard
-                                                key={course.id}
-                                                id={course.id}
-                                                coverImgUrl={course.cover_img_url}
-                                                courseTitle={course.title}
-                                                numModules={course.module_count ?? 0}
-                                                duration={course.expected_completion_weeks}
-                                                expiry={course.must_complete_in_weeks}
-                                                progress={course.progress}
-                                                enrollmentStatus={course.enrollmentStatus}
-                                                isEnrollable={course.is_enrollable}
-                                                userType={userType}
-                                                // handlers
-                                                onPress={() => navigation.navigate('ParkGuideStack', {
-                                                    screen: 'UserModule', 
-                                                    params: { 
-                                                        id: course.id,
-                                                        enrollmentStatus: course.enrollmentStatus ?? null,
-                                                        enrollmentId: course.enrollmentId
+                            {courseFilter === 'completed' && (
+                                completedCourses.length > 0 ? (
+                                    completedCourses.map(course => {
+                                        return (
+                                            <View key={course.id} style={[styles.cardWrapper, { flexBasis: cardStyles.width, minWidth: cardStyles.width }]}>
+                                                <CourseCard
+                                                    key={course.id}
+                                                    id={course.id}
+                                                    coverImgUrl={course.cover_img_url}
+                                                    courseTitle={course.title}
+                                                    numModules={course.module_count ?? 0}
+                                                    duration={course.expected_completion_weeks}
+                                                    expiry={course.must_complete_in_weeks}
+                                                    progress={course.progress}
+                                                    enrollmentStatus={course.enrollmentStatus}
+                                                    isEnrollable={course.is_enrollable}
+                                                    userType={userType}
+                                                    onPress={() =>
+                                                        navigation.navigate('ParkGuideStack', {
+                                                            screen: 'UserModule',
+                                                            params: {
+                                                                id: course.id,
+                                                                enrollmentStatus:
+                                                                    course.enrollmentStatus ?? null,
+                                                                enrollmentId: course.enrollmentId
+                                                            }
+                                                        })
                                                     }
-                                                })}
-                                                style={{ width: '100%' }}
-                                            />
-                                        </View>
-                                    );
-                                })
-                            }
+                                                    style={{ width: '100%' }}
+                                                />
+                                            </View>
+                                        );
+                                    })
+                                ) : (
+                                    <Text style={styles.emptyText}>No completed courses.</Text>
+                                )
+                            )}
                         </View>
                             {/* Categories */}
                             <Text style={styles.sectionTitle}>{t('explore')} {t('categories')}</Text>

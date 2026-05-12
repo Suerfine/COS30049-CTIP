@@ -39,9 +39,7 @@ export const useSubmissionManagement = () => {
                 );
 
             setSubmissions(
-                (submissionData.data || []).filter(
-                    item=>item.status !== 'pending_payment' && item.status !== 'in_review'
-                )
+                (submissionData.data || [])
             );
             setSubmissionTotalPages(
                 submissionData.totalPages || 1
@@ -130,6 +128,6 @@ export const useSubmissionManagement = () => {
         auditData,
         auditLoading,
         fetchEnrollmentAudit,
-        refreshSubmissions: fetchSubmissions
+        refreshSubmissions: fetchSubmissions, resetSubmissionSort
     };
 };
