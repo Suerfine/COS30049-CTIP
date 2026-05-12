@@ -86,6 +86,7 @@ const EnrollmentManagement = () => {
         'completed',
         'failed',
         'expired',
+        'Rejected',
         'pending_payment',
     ];
 
@@ -223,11 +224,16 @@ const EnrollmentManagement = () => {
     const renderEnrollmentHeader = () => (
         <View style={[styles.tableHeader, styles.row]}>
             <Text style={[styles.headerText, { flex: 3 }]}>Full Name</Text>
-            <Text style={[styles.headerText, { flex: 2 }]}>Course Code</Text>
+            <Pressable onPress={() => requestSort('course_id')} style={[styles.headerRow, { flex: 2 }]}>
+                <Text style={styles.headerText}>Course Code</Text>
+                {sortConfig.key==='course_id' &&
+                sortConfig.direction==='asc' ? <ArrowUpNarrowWide size={14} color="white"/> : <ArrowDownWideNarrow size={14} color="white"/>}
+            </Pressable>
             <Text style={[styles.headerText, { flex: 4 }]}>Course Name</Text>
             <Pressable onPress={() => requestSort('enrolled_at')} style={[styles.headerRow, { flex: 2 }]}>
                 <Text style={styles.headerText}>Enrolled On</Text>
-                {sortConfig.key === 'enrolled_at' && (sortConfig.direction === 'asc' ? <ArrowUpNarrowWide size={14} color="white" /> : <ArrowDownWideNarrow size={14} color="white" />)}
+                {sortConfig.key==='enrolled_at' &&
+                sortConfig.direction==='asc' ? <ArrowUpNarrowWide size={14} color="white"/> : <ArrowDownWideNarrow size={14} color="white"/>}
             </Pressable>
             <Text style={[styles.headerText, { flex: 2 }]}>Status</Text>
             <Text style={[styles.headerText, { flex: 2 }]}>Expiry On</Text>
@@ -237,7 +243,11 @@ const EnrollmentManagement = () => {
     const renderSubmissionsHeader = () => (
         <View style={[styles.tableHeader, styles.row]}>
             <Text style={[styles.headerText, { flex: 3 }]}>Full Name</Text>
-            <Text style={[styles.headerText, { flex: 2 }]}>Course Code</Text>
+            <Pressable onPress={() => requestSort('course_id')} style={[styles.headerRow, { flex: 2 }]}>
+                <Text style={styles.headerText}>Course Code</Text>
+                {sortConfig.key==='course_id' &&
+                sortConfig.direction==='asc' ? <ArrowUpNarrowWide size={14} color="white"/> : <ArrowDownWideNarrow size={14} color="white"/>}
+            </Pressable>
             <Text style={[styles.headerText, { flex: 4 }]}>Course Name</Text>
             <Text style={[styles.headerText, { flex: 2 }]}>Status</Text>
             <Text style={[styles.headerText, { flex: 1 }]}>Badge</Text>
