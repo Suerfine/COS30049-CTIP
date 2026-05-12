@@ -1,12 +1,10 @@
 import { useState,useEffect, useRef, useMemo } from 'react';
-import { View, Text, Image, StyleSheet, TouchableOpacity, Platform, ActivityIndicator } from 'react-native';
+import { View, Text, Image, StyleSheet, TouchableOpacity, Platform, ActivityIndicator,Linking, useWindowDimensions } from 'react-native';
 import { FileText, Play, Download, HelpCircle, Edit3, editCircle, Trash2,ChevronUp, ChevronDown, CheckCircle2, RotateCcw, AlertCircle, Calendar, Clock, MapPin, ExternalLink} from 'lucide-react-native';
 import Markdown from 'react-native-markdown-display';
 import * as Progress from 'react-native-progress';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import WebView from 'react-native-webview';
-// import * as Linking from 'expo-linking';
-import { Linking } from 'react-native';
 
 // Import other hooks and component
 import { markdownStyles } from './markdownStyle';
@@ -28,6 +26,10 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
     const [showFinalResults, setShowFinalResults] = useState(false);
     const [localAnswers, setLocalAnswers] = useState({});
     const [submissionCount, setSubmissionCount] = useState(0);
+
+    // adjust workshop detail for mobile
+    const { width } = useWindowDimensions();
+    const isMobile = width < 768;
 
     useEffect(() => {
         if (!isFinalQuiz || !userMarks || elements.length === 0) return;
@@ -623,8 +625,12 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
                                         }
                                     }
                                     return (
-                                        <View style={styles.workshopCard}>
-                                            <View style={[styles.workshopDateTag, isRegistered && { backgroundColor: '#0a6340' }]}>
+                                        <View style={[styles.workshopCard, isMobile && { flexDirection: 'column' }]}>
+                                            <View style={[
+                                                styles.workshopDateTag, 
+                                                isRegistered && { backgroundColor: '#0a6340' },
+                                                isMobile && { width: '100%', flexDirection: 'row', borderRightWidth: 0, borderBottomWidth: 1, borderBottomColor: '#dcfce7', gap: 10, padding: 10 }
+                                            ]}>
                                                 {isRegistered ? (
                                                     <CheckCircle2 color="white" size={26} />
                                                 ) : (
@@ -667,18 +673,12 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
                                                                     {item.date}
                                                                 </Text>
                                                             </View>
-                                                            <View style={styles.sessionTimeRow}>
+                                                            <View style={[styles.sessionTimeRow, isMobile && { justifyContent: 'flex-start', paddingLeft: 30 }]}>
                                                                 <Clock size={14} color={isSelected ? "#0a6340" : "#666"} />
                                                                 <Text style={[styles.sessionTimeText, isSelected && { color: '#0a6340', fontWeight: '600' }]}>
                                                                     {item.startTime} — {item.endTime}
                                                                 </Text>
                                                             </View>
-                                                                <View style={styles.sessionTimeRow}>
-                                                                    <Clock size={14} color={isSelected ? "#0a6340" : "#666"} />
-                                                                    <Text style={[styles.sessionTimeText, isSelected && { color: '#0a6340', fontWeight: '600' }]}>
-                                                                        {item.startTime} — {item.endTime}
-                                                                    </Text>
-                                                                </View>
                                                             </TouchableOpacity>
                                                         );
                                                     })}
