@@ -303,7 +303,7 @@ export const updateRegistration = async (
 };
 
 export const getRegistrationDocument = async (
-  req: Request<{ id: string }> & { user?: User },
+  req: Request<{ id: string }>,
   res: Response,
   next: NextFunction,
 ) => {
@@ -320,8 +320,19 @@ export const getRegistrationDocument = async (
       throw new HttpError(404, "Document not found");
     }
 
-    // Send the file to the client
-    return res.sendFile(storage.fullPath(registration.document_filepath || ""));
+    // Retrieve the file and send
+    const fileBuffer = await storage.retrieve(
+      registration.document_filepath || "",
+    );
+    const originalFilename = path.basename(
+      registration.document_filepath || "",
+    );
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${originalFilename}"`,
+    );
+    res.type(path.extname(originalFilename));
+    return res.send(fileBuffer);
   } catch (err) {
     if (err instanceof HttpError) {
       res.status(err.status).json({ message: err.message });

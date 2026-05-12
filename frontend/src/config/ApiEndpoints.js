@@ -9,6 +9,9 @@ export const API_ENDPOINTS = {
     APPROVE: (id) => `/registrations/${id}/approve`,
     REJECT: (id) => `/registrations/${id}/reject`,
   },
+  REGISTRATION: {
+    DOCUMENT: (id) => `/registrations/${id}/document`,
+  },
   COURSE: {
     LIST: "/courses",
     DETAIL: (id) => `/courses/${id}`,
