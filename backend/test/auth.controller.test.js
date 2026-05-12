@@ -37,29 +37,18 @@ const { hashPassword } = require("../src/utils/password");
 
 async function setupTestDatabase() {
   await sequelize.sync({ force: true });
-  
-  // Create password_reset_tokens table manually
-  await sequelize.query(`
-    CREATE TABLE IF NOT EXISTS password_reset_tokens (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      user_id INTEGER NOT NULL,
-      token_hash VARCHAR(255) NOT NULL UNIQUE,
-      expires_at DATETIME NOT NULL,
-      used_at DATETIME NULL,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (user_id) REFERENCES users(id)
-    );
-  `);
 }
 
+// Derives username and identification from the email local part so each call
+// produces a unique user — avoids unique-constraint collisions across subtests.
 async function createTestUser(email = "testuser@example.com") {
+  const localPart = email.split("@")[0];
   const hashedPassword = hashPassword("OldPassword123!");
   return await User.create({
-    username: "testuser",
+    username: localPart,
     firstname: "Test",
     lastname: "User",
-    identification: "testuser",
+    identification: localPart,
     personal_email: email,
     tel: "0123456789",
     role: "learner",

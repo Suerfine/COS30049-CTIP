@@ -1,7 +1,9 @@
 import { useMemo, useState } from 'react';
 import { View, Text, StyleSheet, Pressable, ScrollView, TextInput, Alert, Image, useWindowDimensions } from 'react-native';
-import { ArrowLeft, Lock, Check, X, Eye, EyeOff } from 'lucide-react-native';
+import { ArrowLeft, Lock, Check, X, Eye, EyeOff, CheckCircle } from 'lucide-react-native';
 import { authService } from '../services/authService';
+import ModalLayout from '../components/ModalLayout';
+import { useAuth } from '../context/AuthContext';
 
 const ResetPassword = ({ navigation, route }) => {
     const { width } = useWindowDimensions();
@@ -13,6 +15,8 @@ const ResetPassword = ({ navigation, route }) => {
     const [errorMessage, setErrorMessage] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirm, setShowConfirm] = useState(false);
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const { logout } = useAuth();
     
     const computePasswordStrength = (pwd) => {
         const hasLength = typeof pwd === 'string' && pwd.length >= 8;
@@ -64,8 +68,8 @@ const ResetPassword = ({ navigation, route }) => {
             setLoading(true);
             setErrorMessage('');
             await authService.resetPassword(token, password);
-            Alert.alert('Password updated', 'Your password has been reset successfully. Please sign in with your new password.');
-            navigation.navigate('Login');
+            await logout();
+            setShowSuccessModal(true);
         } catch (error) {
             const msg = error?.message || 'Please request a new reset link.';
             setErrorMessage(msg);
@@ -195,6 +199,29 @@ const ResetPassword = ({ navigation, route }) => {
                     </View>
                 </View>
             </ScrollView>
+
+            <ModalLayout visible={showSuccessModal} onClose={() => {}}>
+                <View style={styles.successModal}>
+                    <CheckCircle size={52} color="#2f6618" />
+                    <Text style={styles.successTitle}>Password Updated!</Text>
+                    <Text style={styles.successMessage}>
+                        Your password has been reset successfully. Please sign in with your new password.
+                    </Text>
+                    <Pressable
+                        style={styles.successButton}
+                        onPress={() => {
+                            setShowSuccessModal(false);
+                            navigation.reset({
+                                index: 0,
+                                routes: [{ name: 'SFC', state: { routes: [{ name: 'Login' }] } }],
+                            });
+                        }}
+                    >
+                        <Text style={styles.successButtonText}>Sign In</Text>
+                    </Pressable>
+                </View>
+            </ModalLayout>
+
         </View>
     );
 };
@@ -414,6 +441,34 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         gap: 8,
         marginBottom: 6,
+    },
+    successModal: {
+        padding: 36,
+        alignItems: 'center',
+        gap: 16,
+    },
+    successTitle: {
+        fontSize: 22,
+        fontWeight: '700',
+        color: '#1f4f13',
+    },
+    successMessage: {
+        fontSize: 15,
+        color: '#60735b',
+        textAlign: 'center',
+        lineHeight: 22,
+    },
+    successButton: {
+        backgroundColor: '#2f6618',
+        paddingVertical: 12,
+        paddingHorizontal: 40,
+        borderRadius: 10,
+        marginTop: 8,
+    },
+    successButtonText: {
+        color: '#fff',
+        fontSize: 15,
+        fontWeight: '600',
     },
 });
 

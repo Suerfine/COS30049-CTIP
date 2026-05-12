@@ -5,11 +5,14 @@
   "scripts": {
     "start": "node dist/server.js",
     "build": "tsc -p .",
-    "dev": "nodemon --watch src --ext ts --exec ts-node src/server.ts",
+    "dev": "nodemon",
     "seed:dev": "ts-node database/seeders/DevelopmentSeeder.ts",
     "test": "node --require ts-node/register/transpile-only --test ./test/registration.controller.test.js",
     "test:audit": "node --require ts-node/register/transpile-only --test ./test/audit-logging.integration.test.js",
-    "test:security": "node --require ts-node/register/transpile-only --test ./test/encryption-security.integration.test.js"
+    "test:security": "node --require ts-node/register/transpile-only --test ./test/encryption-security.integration.test.js",
+    "test:tls": "node --test ./test/tls-certificate.integration.test.js",
+    "test:auth": "node --require ts-node/register/transpile-only --test ./test/auth.controller.test.js",
+    "test:password-reset": "node --require ts-node/register/transpile-only ./test/password-reset-integration.test.js"
   },
   "keywords": [],
   "author": "",

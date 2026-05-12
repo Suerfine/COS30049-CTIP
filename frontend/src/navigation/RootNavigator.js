@@ -7,6 +7,9 @@ import UnloggedInNavigator from "./UnloggedInNavigator";
 import AdminNavigator from "./AdminNavigator";
 import ParkGuideNavigator from "./ParkGuideNavigator";
 
+// Import screens that must be reachable regardless of auth state
+import ResetPassword from "../screens/ResetPassword";
+
 // Import auth context
 import { useAuth } from "../context/AuthContext";
 
@@ -26,43 +29,31 @@ export default function RootNavigator() {
     return null;
   }
 
-  // No user logged in - show unlogged in stack
-  if (!currentUser) {
-    return (
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      {!currentUser ? (
         <Stack.Screen
           name="SFC"
           component={UnloggedInNavigator}
-          options={{
-            animationEnabled: false,
-          }}
+          options={{ animationEnabled: false }}
         />
-      </Stack.Navigator>
-    );
-  }
-
-  // User is logged in - show role-based navigator
-  return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      {currentUser.role === UserRoles.ADMIN ? (
+      ) : currentUser.role === UserRoles.ADMIN ? (
         <Stack.Screen
           name="AdminStack"
           component={AdminNavigator}
-          initialParams={{screen: 'Admin Dashboard'}}
-          options={{
-            animationEnabled: false,
-          }}
+          initialParams={{ screen: 'Admin Dashboard' }}
+          options={{ animationEnabled: false }}
         />
       ) : (
         <Stack.Screen
           name="ParkGuideStack"
           component={ParkGuideNavigator}
-          initialParams={{screen: 'Dashboard'}}
-          options={{
-            animationEnabled: false,
-          }}
+          initialParams={{ screen: 'Dashboard' }}
+          options={{ animationEnabled: false }}
         />
       )}
+      {/* Always reachable via deep link regardless of auth state */}
+      <Stack.Screen name="ResetPassword" component={ResetPassword} />
     </Stack.Navigator>
   );
 }

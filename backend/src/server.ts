@@ -157,6 +157,13 @@ const startServer = async (): Promise<void> => {
       const protocol = httpsEnabled ? "https" : "http";
       console.log(`Server is running on ${protocol}://localhost:${port}`);
     });
+
+    const shutdown = () => {
+      server.close(() => process.exit(0));
+    };
+
+    process.on("SIGINT", shutdown);
+    process.on("SIGTERM", shutdown);
   } catch (error) {
     console.error("Error occurred while starting the server:", error);
     process.exit(1);

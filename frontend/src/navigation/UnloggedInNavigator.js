@@ -6,7 +6,6 @@ import Landing from "../screens/Landing";
 import Login from "../screens/Login";
 import SignUp from "../screens/SignUp";
 import ForgotPassword from "../screens/ForgotPassword";
-import ResetPassword from "../screens/ResetPassword";
 
 const Stack = createStackNavigator();
 
@@ -43,13 +42,6 @@ export default function UnloggedInNavigator() {
       <Stack.Screen
         name="ForgotPassword"
         component={ForgotPassword}
-        options={{
-          animationEnabled: true,
-        }}
-      />
-      <Stack.Screen
-        name="ResetPassword"
-        component={ResetPassword}
         options={{
           animationEnabled: true,
         }}

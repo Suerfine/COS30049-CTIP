@@ -15,6 +15,7 @@ export const useSignUp=()=>{
     const [loading, setLoading] = useState(false);
     const [file, setFile]=useState(null);
     const [error, setError]=useState({});
+    const [showSuccessModal, setShowSuccessModal]=useState(false);
 
     // // Password strength calculation
     // const calculatePasswordStrength = (pwd) => {
@@ -109,12 +110,10 @@ export const useSignUp=()=>{
             };
 
             await RegisterService.registerUser(userData);
-            
-            Alert.alert('Success', 'Account created successfully! Please log in.');
-            navigation.navigate('Login');
+            setShowSuccessModal(true);
 
         } catch (error) {
-             Alert.alert('* Registration failed. Please try again.')
+            Alert.alert('Registration Failed', error.message || 'Please try again.');
         } finally {
             setLoading(false);
         }
@@ -130,6 +129,7 @@ export const useSignUp=()=>{
         loading,setLoading,
         handleSignUp,
         handleUpload, removeFile,
-        error, setError
+        error, setError,
+        showSuccessModal, setShowSuccessModal
     }
 }

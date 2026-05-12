@@ -11,7 +11,7 @@ import RootNavigator from "./src/navigation/RootNavigator";
 import { AuthProvider } from "./src/context/AuthContext";
 
 const linking = {
-  prefixes: ["http://localhost:8081", "parkguide://"],
+  prefixes: ["https://localhost:8081", "http://localhost:8081", "parkguide://"],
   config: {
     screens: {
       SFC: {
@@ -20,9 +20,9 @@ const linking = {
           Login: "login",
           SignUp: "signup",
           ForgotPassword: "forgot-password",
-          ResetPassword: "reset-password",
         }
       },
+      ResetPassword: "reset-password",
       "Course Management": "courseManagement",
       "Course Details": "course/:id",
       Dashboard: "dashboard",

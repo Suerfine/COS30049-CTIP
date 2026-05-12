@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { View, Text, StyleSheet, Pressable, ScrollView, TextInput, Alert, Image, useWindowDimensions } from 'react-native';
-import { User, Mail, Phone, IdCard, FileUp, FileCheck, FileIcon, X } from 'lucide-react-native';
+import { User, Mail, Phone, IdCard, FileUp, FileCheck, FileIcon, X, CheckCircle } from 'lucide-react-native';
 
 // Import other hook and component
 import { useSignUp } from '../hooks/useSignUp';
+import ModalLayout from '../components/ModalLayout';
 
 const SignUp = ({ navigation }) => {
     const { width } = useWindowDimensions();
@@ -18,7 +19,8 @@ const SignUp = ({ navigation }) => {
         loading,setLoading,
         handleSignUp,
         handleUpload, removeFile,
-        error, setError
+        error, setError,
+        showSuccessModal, setShowSuccessModal
     }=useSignUp();
 
     return (
@@ -205,6 +207,26 @@ const SignUp = ({ navigation }) => {
                 </View>
             </View>
         </ScrollView>
+
+        <ModalLayout visible={showSuccessModal} onClose={() => {}}>
+            <View style={styles.successModal}>
+                <CheckCircle size={52} color="#2f6618" />
+                <Text style={styles.successTitle}>Registration Submitted!</Text>
+                <Text style={styles.successMessage}>
+                    Your registration has been received. Please wait for admin approval — you will be notified via email once your account is approved.
+                </Text>
+                <Pressable
+                    style={styles.successButton}
+                    onPress={() => {
+                        setShowSuccessModal(false);
+                        navigation.navigate('Login');
+                    }}
+                >
+                    <Text style={styles.successButtonText}>OK</Text>
+                </Pressable>
+            </View>
+        </ModalLayout>
+
         </View>
     );
 };
@@ -506,6 +528,34 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         marginTop: 2,
         textAlign: 'left',
+    },
+    successModal: {
+        padding: 36,
+        alignItems: 'center',
+        gap: 16,
+    },
+    successTitle: {
+        fontSize: 22,
+        fontWeight: '700',
+        color: '#1f4f13',
+    },
+    successMessage: {
+        fontSize: 15,
+        color: '#60735b',
+        textAlign: 'center',
+        lineHeight: 22,
+    },
+    successButton: {
+        backgroundColor: '#2f6618',
+        paddingVertical: 12,
+        paddingHorizontal: 40,
+        borderRadius: 10,
+        marginTop: 8,
+    },
+    successButtonText: {
+        color: '#fff',
+        fontSize: 15,
+        fontWeight: '600',
     },
 });
 
