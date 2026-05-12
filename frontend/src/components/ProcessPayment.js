@@ -116,7 +116,7 @@ const Payment = ({
                     onPress={onUploadReceipt}
                 >
                     {receipt ? (
-                        <Image source={{ uri: receipt }} style={styles.receiptPreview} />
+                        <Image source={{ uri: receipt.uri }} style={styles.receiptPreview} />
                     ) : (
                         <View style={styles.uploadPlaceholder}>
                             <Upload color="#666" size={32} />

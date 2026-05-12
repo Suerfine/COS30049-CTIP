@@ -101,11 +101,8 @@ export const enrollmentService = {
     /**
      * POST: Create new Enrollment
      */
-    enroll: async (courseId, userId) => {
-        const res = await apiClient.post(API_ENDPOINTS.ENROLLMENT.ENROLL, {
-            course_id: courseId,
-            user_id: userId 
-        });
+    enroll: async (courseId) => {
+        const res = await apiClient.post(API_ENDPOINTS.ENROLLMENT.ENROLL(courseId));
         return res.data;
     },
 
