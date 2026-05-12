@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Pressable, TextInput, ScrollView, FlatList, Image, Modal } from 'react-native';
-import { RotateCcw, Search, ChevronDown, ChevronUp, ArrowUpNarrowWide, ArrowDownWideNarrow, Circle, Trash2, ChevronLeft, ChevronsLeft, ChevronRight, ChevronsRight, CheckCircle2 } from 'lucide-react-native';
+import { RotateCcw, Search, ChevronDown, ChevronUp, ArrowUpNarrowWide, ArrowDownWideNarrow, Circle, Trash2, ChevronLeft, ChevronsLeft, ChevronRight, ChevronsRight, CheckCircle2, X,  Filter } from 'lucide-react-native';
 
 // Import hooks and assets
 import SlidingTabs from '../components/SlidingTabs';
@@ -67,6 +67,10 @@ const EnrollmentManagement = () => {
     const [selectedUserHistory, setSelectedUserHistory] = useState([]);
     const [paymentModalVisible, setPaymentModalVisible] = useState(false);
     const [selectedPayment, setSelectedPayment] = useState(null);
+    const [filterVisible, setFilterVisible]=useState(false);
+    const [translateX, setTranslateX]=useState(300);
+    const [tempCourseFilter, setTempCourseFilter]=useState('All');
+
     const enrollmentStatusOptions = [
         'All',
         'in_progress',
@@ -204,6 +208,9 @@ const EnrollmentManagement = () => {
         setDetailModalVisible(true);
     };
 
+    useEffect(()=>{
+        setTranslateX(filterVisible ? 0 : 400);
+    }, [filterVisible]);
 
     const renderEnrollmentHeader = () => (
         <View style={[styles.tableHeader, styles.row]}>
@@ -330,6 +337,11 @@ const EnrollmentManagement = () => {
                     </Text>
                 </View>
                 <Text style={{ flex: 2 }}>
+                    {item.created_at
+                        ? formatDate(item.created_at)
+                        : 'N/A'}
+                </Text>
+                <Text style={{ flex: 2 }}>
                     {item.processed_at
                         ? formatDate(item.processed_at)
                         : 'N/A'}
@@ -375,6 +387,7 @@ const EnrollmentManagement = () => {
     };
 
     return (
+        <>
         <ScrollView style={styles.container}>
             <Text style={styles.title}>Enrollment Management</Text>
             <SlidingTabs 
@@ -406,6 +419,7 @@ const EnrollmentManagement = () => {
                             }}
                         />
                     </View>
+                
                     <View style={styles.dropdownWrapper}>
                         <Pressable style={styles.pillTrigger} onPress={() => setIsOpen(!isOpen)}>
                             <Text numberOfLines={1} ellipsizeMode='tail' style={styles.pillText}>
@@ -441,6 +455,14 @@ const EnrollmentManagement = () => {
                         )}
                     </View>
                 </View>
+                <Pressable 
+                    onPress={() => setFilterVisible(true)}
+                    style={() => [
+                        styles.iconBtn,
+                    ]}
+                >
+                    <Filter size={20} color={filterVisible ? "#0a6340" : "#666"} />
+                </Pressable>
             </View>
 
             <View style={styles.tableContainer}>
@@ -592,6 +614,83 @@ const EnrollmentManagement = () => {
                 </View>
             </Modal>
         </ScrollView>
+        <View style={[styles.filterSidebar, { transform: [{ translateX }] }]}>
+                <View style={styles.sidebarHeader}>
+                    <Text style={styles.sidebarTitle}>Courses Filters</Text>
+                    <Pressable onPress={() => setFilterVisible(false)}>
+                        <X size={24} color="#666" />
+                    </Pressable>
+                </View>
+
+                <ScrollView showsVerticalScrollIndicator={false} style={styles.sidebarContent}>
+                    <View style={styles.sidebarSection}>                        
+                        <Pressable 
+                            style={[styles.sidebarItem, tempCourseFilter === 'All' && styles.sidebarItemActive]}
+                            onPress={() => setTempCourseFilter('All')}
+                        >
+                            <Text style={[styles.sidebarItemText, tempCourseFilter === 'All' && styles.sidebarItemTextActive]}>
+                                All Courses
+                            </Text>
+                        </Pressable>
+
+                        {courses.map((course) => (
+                            <Pressable 
+                                key={course.id} 
+                                style={[
+                                    styles.sidebarItem, 
+                                    tempCourseFilter === course.title && styles.sidebarItemActive
+                                ]}
+                                onPress={() => setTempCourseFilter(course.title)}
+                            >
+                                <Text 
+                                    numberOfLines={2} 
+                                    style={[
+                                        styles.sidebarItemText, 
+                                        tempCourseFilter === course.title && styles.sidebarItemTextActive
+                                    ]}
+                                >
+                                    {course.id} - {course.title}
+                                </Text>
+                            </Pressable>
+                        ))}
+                    </View>
+                </ScrollView>
+
+                <View style={styles.sidebarFooter}>
+                    <Pressable 
+                        style={styles.sidebarResetBtn} 
+                        onPress={() => {
+                            setTempCourseFilter('All');
+                            setSelectedCourseFilter('All');
+                            setFilterVisible(false);
+                        }}
+                    >
+                        <Text style={styles.sidebarResetText}>Reset</Text>
+                    </Pressable>
+                    <Pressable 
+                        style={styles.sidebarApplyBtn} 
+                        onPress={() => {
+                            setSelectedCourseFilter(tempCourseFilter);
+                            setFilterVisible(false);
+                            setActivePage(1);
+                        }}
+                    >
+                        <Text style={styles.sidebarApplyText}>Apply Filters</Text>
+                    </Pressable>
+                    {/* <View style={styles.buttons}>
+                        <Pressable style={styles.applyBtn} onPress={onApply}>
+                            <Text style={{ color: 'white' }}>{t("apply")}</Text>
+                        </Pressable>
+                        <Pressable
+                            style={styles.resetBtn}
+                            onPress={() => { onReset(); onClose(); }}
+                        >
+                            <Text style={{ color: 'white' }}>{t("reset")}</Text>
+                        </Pressable>
+                    </View> */}
+                </View>
+            </View>
+            </>
     );
 };
 
@@ -949,8 +1048,89 @@ const styles = StyleSheet.create({
         color: '#888',
         fontSize: 14,
     },
+
+    filterSidebar: {
+        position: 'absolute',
+        right: 0,
+        top: 0,
+        bottom: 0,
+        width: 300,
+        backgroundColor: 'white',
+        zIndex: 1001,
+        padding: 20,
+        boxShadow: '-2px 0px 10px rgba(0,0,0,0.1)',
+        elevation: 5,
+    },
+    sidebarHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingBottom: 20,
+        borderBottomWidth: 1,
+        borderBottomColor: '#eee',
+    },
+    sidebarTitle: {
+        fontSize: 18,
+        fontWeight: '700',
+        color: '#1a1a1a',
+    },
+    sidebarContent: {
+        flex: 1,
+        marginTop: 20,
+    },
+    sidebarSection: {
+        marginBottom: 25,
+    },
+    sidebarItem: {
+        paddingVertical: 12,
+        paddingHorizontal: 15,
+        borderRadius: 8,
+        marginBottom: 5,
+    },
+    sidebarItemActive: {
+        backgroundColor: '#f0fdf4',
+        borderWidth: 1,
+        borderColor: '#dcfce7',
+    },
+    sidebarItemText: {
+        fontSize: 13,
+        color: '#666',
+    },
+    sidebarItemTextActive: {
+        color: '#0a6340',
+        fontWeight: '600',
+    },
+    sidebarFooter: {
+        flexDirection: 'row',
+        gap: 10,
+        paddingTop: 20,
+        borderTopWidth: 1,
+        borderTopColor: '#eee',
+    },
+    sidebarApplyBtn: {
+        flex: 2,
+        backgroundColor: '#0a6340',
+        padding: 12,
+        borderRadius: 8,
+        alignItems: 'center',
+    },
+    sidebarApplyText: {
+        color: 'white',
+        fontWeight: '600',
+    },
+    sidebarResetBtn: {
+        flex: 1,
+        backgroundColor: '#f1f5f9',
+        padding: 12,
+        borderRadius: 8,
+        alignItems: 'center',
+    },
+    sidebarResetText: {
+        color: '#64748b',
+        fontWeight: '600',
+    },
 });
 export default EnrollmentManagement;
 
-//  delete means dropped, and delete is fully delete and approved 
-// Submission: sortconfig, status
+
+// Submission: sortconfig
