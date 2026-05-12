@@ -48,17 +48,11 @@ const UserModule = ({navigation}) => {
         })
     }
 
-    const { elements, loading: elementsLoading, workshopsLoading,loadWorkshops, workshops } = useElements(
+    const { elements, loading: elementsLoading, workshopsLoading, workshops } = useElements(
         id,
         selectedPage?.page?.module_id || selectedPage?.module?.id,
         selectedPage?.page?.id
     );
-
-    useEffect(() => {
-        if (selectedPage?.type === 'workshops') {
-            loadWorkshops();
-        }
-    }, [activeTab, loadWorkshops]);
 
     useEffect(() => {
         const handleFailure = async () => {

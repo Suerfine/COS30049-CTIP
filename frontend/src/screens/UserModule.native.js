@@ -59,7 +59,7 @@ const UserModule = ({ navigation }) => {
     const { progressMap, isDeadEnd } = useCourseProgress(course, userMarks, fullHistoryMap);
     const isFailed = localStatus === 'failed' || isDeadEnd;
 
-    const { elements, loading: elementsLoading, workshopsLoading, loadWorkshops, workshops } = useElements(
+    const { elements, loading: elementsLoading, workshopsLoading, workshops } = useElements(
         id,
         selectedPage?.page?.module_id || selectedPage?.module?.id,
         selectedPage?.page?.id
@@ -69,11 +69,6 @@ const UserModule = ({ navigation }) => {
         scrollViewRef.current?.scrollTo({ y: 0, animated: true });
     };
 
-    useEffect(() => {
-        if (selectedPage?.type === 'workshops') {
-            loadWorkshops();
-        }
-    }, [selectedPage, loadWorkshops]);
 
     // Auto-Fail Effect
     useEffect(() => {
