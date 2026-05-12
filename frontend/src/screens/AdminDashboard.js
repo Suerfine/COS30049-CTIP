@@ -1,7 +1,7 @@
 import { AlertTriangle, Book, ClipboardList, Flag, MapPin, RefreshCcw, User, RotateCcw, Pin } from "lucide-react-native";
 import React, { useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { CircleMarker, MapContainer, Popup, TileLayer, Tooltip, useMap } from "react-leaflet";
+// import { CircleMarker, MapContainer, Popup, TileLayer, Tooltip, useMap } from "react-leaflet";
 import { useTranslation } from "react-i18next";
 
 import { useAnomalyMapEvents } from "../hooks/useAnomalyMapEvents";
