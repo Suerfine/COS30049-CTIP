@@ -70,9 +70,8 @@ const buildUniqueCourseTitle = (): string => {
 export const buildCourse = (
   overrides: CourseFactoryInput = {},
 ): CourseFactoryAttributes => {
-  const title=faker.company.catchPhrase();
-  const description = 
-  `# Course Description
+  const title = faker.company.catchPhrase();
+  const description = `# Course Description
   This professional training module provides an in-depth exploration of ${title}. You will master the ${faker.hacker.adjective()} frameworks necessary for conservation in Sarawak.
 
   # What you will learn
@@ -85,15 +84,13 @@ export const buildCourse = (
     expectedCompletionWeeks + faker.number.int({ min: 2, max: 12 });
 
   const defaultCourse: CourseFactoryAttributes = {
-    title : buildUniqueCourseTitle(),
+    title: buildUniqueCourseTitle(),
     description: description,
     expected_completion_weeks: expectedCompletionWeeks,
     must_complete_in_weeks: hardLimitWeeks,
     badge_expire_in_months: faker.number.int({ min: 6, max: 36 }),
     cost: parseFloat(faker.commerce.price({ min: 50, max: 500 })),
-    status: faker.datatype.boolean(0.7)
-    ? CourseStatus.RELEASED
-    : CourseStatus.UNRELEASED,
+    status: CourseStatus.RELEASED,
     cover_img_path: "public/dev/course_cover_placeholder.jpg",
     badge_img_path: "public/dev/course_badge_placeholder.png",
   };
