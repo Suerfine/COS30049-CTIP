@@ -58,6 +58,10 @@ const EnrollmentManagement = () => {
         setPaymentCurrentPage,
         paymentStatus,
         setPaymentStatus,
+        handleVerifyPayment,
+        paymentSortConfig,
+        requestPaymentSort,
+        resetPaymentSort,
     } = usePayment();
 
     const [activeTab, setActiveTab] = useState('enrollment');
@@ -70,6 +74,9 @@ const EnrollmentManagement = () => {
     const [filterVisible, setFilterVisible]=useState(false);
     const [translateX, setTranslateX]=useState(300);
     const [tempCourseFilter, setTempCourseFilter]=useState('All');
+    const [rejectModalVisible, setRejectModalVisible] = useState(false);
+    const [adminRemark, setAdminRemark] = useState('');
+    const [selectedCourseFilter, setSelectedCourseFilter] = useState('All');
 
     const enrollmentStatusOptions = [
         'All',
@@ -242,8 +249,9 @@ const EnrollmentManagement = () => {
         <View style={[styles.tableHeader, styles.row]}>
             <Text style={[styles.headerText, { flex: 4 }]}>Full Name</Text>
             <Text style={[styles.headerText, { flex: 3 }]}>Amount</Text>
-            <Text style={[styles.headerText, { flex: 2 }]}>Status</Text>
-            <Text style={[styles.headerText, { flex: 2 }]}>Paid On</Text>
+            <Text style={[styles.headerText, { flex: 3 }]}>Status</Text>
+            <Text style={[styles.headerText, { flex: 3 }]}>Paid On</Text>
+            <Text style={[styles.headerText, { flex: 3 }]}>Processed On</Text>
             <Text style={[styles.headerText, { flex: 2 }]}>Receipt</Text>
         </View>
     );
@@ -298,6 +306,43 @@ const EnrollmentManagement = () => {
         );
     };
 
+    const handleApprovePayment = async () => {
+        try {
+            await handleVerifyPayment(
+                selectedPayment.id,
+                "paid"
+            );
+
+            setPaymentModalVisible(false);
+            setSelectedPayment(null);
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+    const handleRejectPayment = async () => {
+        try {
+            await handleVerifyPayment(
+                selectedPayment.id,
+                "failed",
+                adminRemark
+            );
+
+            setRejectModalVisible(false);
+            setPaymentModalVisible(false);
+            setAdminRemark('');
+            setSelectedPayment(null);
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+    const handleDownloadReceipt = () => {
+        if (selectedPayment?.receipt_filepath) {
+            window.open(selectedPayment.receipt_filepath, '_blank');
+        }
+    };
+
     const renderPaymentItem = ({ item }) => {
         const statusConfig = Status_Config[item.status?.toLowerCase()] || {
             color: "#8f8f8f",
@@ -330,25 +375,36 @@ const EnrollmentManagement = () => {
                 </View>
 
                 <Text style={{ flex: 3 }}>RM {item.amount ?? 0}</Text>
-                <View style={[styles.row, styles.badge, { flex: 2 }]}>
+                <View style={[styles.row, styles.badge, { flex: 3 }]}>
                     <Circle size={8} stroke={statusConfig.color} fill={statusConfig.color} />
                     <Text style={[styles.badgeText, { color: statusConfig.color }]}>
                         {statusConfig.label}
                     </Text>
                 </View>
-                <Text style={{ flex: 2 }}>
+                <Text style={{ flex: 3 }}>
                     {item.created_at
                         ? formatDate(item.created_at)
                         : 'N/A'}
                 </Text>
-                <Text style={{ flex: 2 }}>
+                <Text style={{ flex: 3 }}>
                     {item.processed_at
                         ? formatDate(item.processed_at)
                         : 'N/A'}
                 </Text>
-                <Text style={{ flex: 2, color: '#2563eb' }}>
-                    View Receipt
-                </Text>
+                <View style={{ flex: 2 }}>
+                    <Pressable
+                        onPress={() => {
+                            if (item.receipt_filepath) {
+                                window.open(item.receipt_filepath, '_blank');
+                            }
+                        }}
+                        style={styles.downloadBtn}
+                    >
+                        <Text style={styles.downloadBtnText}>
+                            Download
+                        </Text>
+                    </Pressable>
+                </View>
             </Pressable> 
         );
     };
@@ -586,9 +642,12 @@ const EnrollmentManagement = () => {
                                         </View>
                                     )}
 
-                                    <View>
+                                    <View style={{ flex: 1 }}>
                                         <Text style={styles.paymentUserName}>
                                             {selectedPayment.user_fullname}
+                                        </Text>
+                                        <Text style={styles.paymentCourse}>
+                                            {selectedPayment.course_title || 'Course'}
                                         </Text>
                                     </View>
                                 </View>
@@ -608,8 +667,86 @@ const EnrollmentManagement = () => {
                                         </View>
                                     )}
                                 </View>
+                                <View style={styles.paymentActionRow}>
+                                    {selectedPayment?.status === 'pending' && (
+                                        <>
+                                            <Pressable
+                                                style={styles.approveBtn}
+                                                onPress={handleApprovePayment}
+                                            >
+                                                <Text style={styles.actionBtnText}>
+                                                    Approve
+                                                </Text>
+                                            </Pressable>
+                                            <Pressable 
+                                                style={styles.rejectBtn}
+                                                onPress={() => setRejectModalVisible(true)}    
+                                            >
+                                                <Text style={styles.actionBtnText}>
+                                                    Reject
+                                                </Text>
+                                            </Pressable>
+                                        </>
+                                    )}
+                                </View>
                             </ScrollView>
                         )}
+                    </View>
+                </View>
+            </Modal>
+            <Modal
+                animationType='fade'
+                transparent
+                visible={rejectModalVisible}
+                onRequestClose={() => setRejectModalVisible(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.rejectModalContent}>
+                        
+                        <View style={styles.modalHeader}>
+                            <Text style={styles.modalTitle}>
+                                Reject Payment
+                            </Text>
+
+                            <Pressable
+                                onPress={() => setRejectModalVisible(false)}
+                            >
+                                <Text style={styles.closeBtn}>✕</Text>
+                            </Pressable>
+                        </View>
+
+                        <Text style={styles.rejectLabel}>
+                            Admin Remarks
+                        </Text>
+
+                        <TextInput
+                            multiline
+                            value={adminRemark}
+                            onChangeText={setAdminRemark}
+                            placeholder="Enter rejection remarks..."
+                            style={styles.rejectInput}
+                        />
+
+                        <View style={styles.rejectActionRow}>
+                            <Pressable
+                                style={styles.cancelBtn}
+                                onPress={() => setRejectModalVisible(false)}
+                            >
+                                <Text style={styles.cancelBtnText}>
+                                    Cancel
+                                </Text>
+                            </Pressable>
+
+                            <Pressable
+                                style={styles.rejectConfirmBtn}
+                                onPress={handleRejectPayment}
+                            >
+                                <Text style={styles.actionBtnText}>
+                                    Confirm Reject
+                                </Text>
+                            </Pressable>
+                        </View>
+
                     </View>
                 </View>
             </Modal>
@@ -1128,6 +1265,141 @@ const styles = StyleSheet.create({
     sidebarResetText: {
         color: '#64748b',
         fontWeight: '600',
+    },
+    paymentCourse: {
+        marginTop: 4,
+        color: '#666',
+        fontSize: 13,
+    },
+    paymentInfoRow: {
+        flexDirection: 'row',
+        gap: 15,
+        marginBottom: 20,
+    },
+    infoCard: {
+        flex: 1,
+        backgroundColor: '#f8fafc',
+        borderRadius: 14,
+        padding: 16,
+    },
+    infoLabel: {
+        fontSize: 12,
+        color: '#888',
+        marginBottom: 8,
+    },
+    infoValue: {
+        fontSize: 18,
+        fontWeight: '700',
+        color: '#111',
+    },
+    remarkSection: {
+        marginTop: 20,
+    },
+    remarkLabel: {
+        fontWeight: '600',
+        marginBottom: 10,
+        color: '#333',
+    },
+    remarkInput: {
+        borderWidth: 1,
+        borderColor: '#ddd',
+        borderRadius: 12,
+        padding: 14,
+        minHeight: 120,
+        textAlignVertical: 'top',
+        backgroundColor: '#fafafa',
+    },
+    paymentActionRow: {
+        flexDirection: 'row',
+        gap: 12,
+        marginTop: 25,
+    },
+    downloadBtn: {
+        flex: 1,
+        backgroundColor: '#f59e0b',
+        paddingVertical: 14,
+        borderRadius: 12,
+        alignItems: 'center',
+    },
+    approveBtn: {
+        flex: 1,
+        backgroundColor: '#0a6340',
+        paddingVertical: 14,
+        borderRadius: 12,
+        alignItems: 'center',
+    },
+    rejectBtn: {
+        flex: 1,
+        backgroundColor: 'red',
+        paddingVertical: 14,
+        borderRadius: 12,
+        alignItems: 'center',
+    },
+    actionBtnText: {
+        color: 'white',
+        fontWeight: '700',
+        fontSize: 14,
+    },
+    downloadBtnText: {
+        color: 'white',
+        fontWeight: '700',
+        fontSize: 14,
+    },
+    downloadTableBtn: {
+        backgroundColor: '#eff6ff',
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        borderRadius: 8,
+        alignSelf: 'flex-start',
+    },
+    downloadTableBtnText: {
+        color: '#2563eb',
+        fontWeight: '600',
+        fontSize: 12,
+    },
+    rejectModalContent: {
+        width: '40%',
+        backgroundColor: 'white',
+        borderRadius: 20,
+        padding: 24,
+    },
+    rejectLabel: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#333',
+        marginBottom: 10,
+    },
+    rejectInput: {
+        minHeight: 120,
+        borderWidth: 1,
+        borderColor: '#ddd',
+        borderRadius: 12,
+        padding: 14,
+        textAlignVertical: 'top',
+        outlineStyle: 'none',
+        backgroundColor: '#fafafa',
+    },
+    rejectActionRow: {
+        flexDirection: 'row',
+        justifyContent: 'flex-end',
+        gap: 12,
+        marginTop: 24,
+    },
+    cancelBtn: {
+        backgroundColor: '#f1f5f9',
+        paddingVertical: 12,
+        paddingHorizontal: 20,
+        borderRadius: 10,
+    },
+    cancelBtnText: {
+        color: '#475569',
+        fontWeight: '600',
+    },
+    rejectConfirmBtn: {
+        backgroundColor: '#dc2626',
+        paddingVertical: 12,
+        paddingHorizontal: 20,
+        borderRadius: 10,
     },
 });
 export default EnrollmentManagement;

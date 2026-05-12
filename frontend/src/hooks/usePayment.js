@@ -74,6 +74,27 @@ export const usePayment = (searchQuery = '') => {
         });
     };
 
+    const handleVerifyPayment = async (
+        paymentId,
+        status,
+        adminRemark = ''
+    ) => {
+        try {
+            await paymentService.verifyPayment(
+                paymentId,
+                status,
+                adminRemark
+            );
+
+            await fetchPayments();
+
+            return { success: true };
+        } catch (err) {
+            console.error(err);
+            return { success: false };
+        }
+    };
+
     useEffect(() => {
         fetchPayments();
     }, [fetchPayments]);
@@ -100,6 +121,7 @@ export const usePayment = (searchQuery = '') => {
         resetPaymentSort,
 
         // actions
-        refreshPayments: fetchPayments
+        refreshPayments: fetchPayments,
+        handleVerifyPayment
     };
 };
