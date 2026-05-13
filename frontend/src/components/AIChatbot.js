@@ -131,7 +131,7 @@ const AIChatBot = ({ isOpen, onClose, pageId }) => {
             <Bot size={20} color="white" />
           </View>
           <View>
-            <Text style={styles.headerTitle}>SIGMA AI Guide</Text>
+            <Text style={styles.headerTitle}>SFC AI Guide</Text>
             <Text style={styles.headerStatus}>Online | Powered by Gemini</Text>
           </View>
         </View>

@@ -6,7 +6,7 @@ const PaymentReview = ({ navigation, route }) => {
     const { courseTitle, amount } = route.params || {};
     const steps = [
         { title: "Payment Submitted", desc: "Receipt uploaded successfully", status: "complete" },
-        { title: "Financial Verification", desc: "Admin checking bank code SIGMAMYKL", status: "current" },
+        { title: "Financial Verification", desc: "Admin checking bank code SFCMYKL", status: "current" },
         { title: "Enrollment Review", desc: "Final administrative approval", status: "pending" }
     ];
 

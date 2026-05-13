@@ -29,7 +29,7 @@ const Payment = ({
     onConfirmPayment
  }) => {
     const courseTitle = course?.title;
-    const refNumber = "SIGMA-7742-XP";
+    const refNumber = "SFC-7742-XP";
 
     const copyToClipboard = (text) => {
         if (Platform.OS === 'web') {
@@ -74,7 +74,7 @@ const Payment = ({
                     <View style={styles.bankRow}>
                         <View>
                             <Text style={styles.bankLabel}>Bank Name</Text>
-                            <Text style={styles.bankValue}>SIGMA Bank Malaysia</Text>
+                            <Text style={styles.bankValue}>SFC Bank Malaysia</Text>
                         </View>
                     </View>
                     <View style={styles.bankRow}>
@@ -89,9 +89,9 @@ const Payment = ({
                     <View style={styles.bankRow}>
                         <View>
                             <Text style={styles.bankLabel}>Bank Code (SWIFT)</Text>
-                            <Text style={styles.bankValue}>SIGMAMYKL</Text>
+                            <Text style={styles.bankValue}>SFCMYKL</Text>
                         </View>
-                        <TouchableOpacity onPress={() => copyToClipboard('SIGMAMYKL')}>
+                        <TouchableOpacity onPress={() => copyToClipboard('SFCMYKL')}>
                             <Copy size={18} color="#0a6340" />
                         </TouchableOpacity>
                     </View>
