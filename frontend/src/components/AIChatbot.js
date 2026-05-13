@@ -17,7 +17,7 @@ const AIChatBot = ({ isOpen, onClose, pageId }) => {
   const [messages, setMessages] = useState([
     {
       id: 1,
-      text: "Hello! I'm your SIGMAmed Assistant. How can I help you with your training today?",
+      text: "Hello! I'm your SFC Assistant. How can I help you with your training today?",
       sender: "ai",
       time: "9:41 AM",
     },
@@ -131,7 +131,7 @@ const AIChatBot = ({ isOpen, onClose, pageId }) => {
             <Bot size={20} color="white" />
           </View>
           <View>
-            <Text style={styles.headerTitle}>SIGMA AI Guide</Text>
+            <Text style={styles.headerTitle}>SFC AI Guide</Text>
             <Text style={styles.headerStatus}>Online | Powered by Gemini</Text>
           </View>
         </View>

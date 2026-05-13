@@ -263,7 +263,7 @@ enrollmentRouter.delete("/:id", auth, EnrollmentController.deleteEnrollment);
  *                   user_fullname: Jenny
  *                   course_code: ICT30001
  *                   course_name: SFC Digital Park Guide Training
- *                   badge_url: https://api.sigmamed.com/badges/park-guide.png
+ *                   badge_url: https://api.sfc.com/badges/park-guide.png
  *                   pfp_url: null
  *                   completed_at: 2026-05-07T10:00:00Z
  *                   badge_expiry_on: 2026-11-07T10:00:00Z
