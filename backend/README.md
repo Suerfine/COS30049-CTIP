@@ -52,6 +52,37 @@ The server supports optional TLS transport with environment variables:
 
 When `HTTPS_ENABLED=true`, the app starts as an HTTPS server and serves `https://localhost:<PORT>`.
 
+### Dev setup with HTTPS (for LAN access from other devices)
+
+The project uses [mkcert](https://github.com/FiloSottile/mkcert) to generate locally-trusted certificates.
+
+**Install mkcert** (run once per machine):
+
+```powershell
+winget install FiloSottile.mkcert
+# then trust the local CA:
+mkcert -install
+```
+
+**Generate a cert that covers your LAN IP** (run on the machine hosting the backend):
+
+```powershell
+# Find your Wi-Fi IPv4 address first
+ipconfig
+# Then generate the cert (replace 192.168.x.x with your actual IP)
+cd backend/certs
+mkcert 192.168.x.x localhost 127.0.0.1
+```
+
+This produces `192.168.x.x+2.pem` and `192.168.x.x+2-key.pem`. Update `backend/.env`:
+
+```
+HTTPS_CERT_PATH=certs/192.168.x.x+2.pem
+HTTPS_KEY_PATH=certs/192.168.x.x+2-key.pem
+```
+
+**On every other device** that needs to trust the cert, install mkcert and run `mkcert -install` once. That device must also install the CA from the host machine — copy the CA files from `mkcert -CAROOT` on the host and import them, or simply install mkcert on each device and re-run `mkcert -install`.
+
 # Project Structure:
 
 ```

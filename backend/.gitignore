@@ -145,3 +145,8 @@ vite.config.ts.timestamp-*
 
 # Storage files
 storage/*
+
+# TLS certificates (generated locally via mkcert — never commit private keys)
+certs/*.pem
+certs/*.crt
+certs/*.key
