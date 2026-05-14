@@ -5,7 +5,6 @@ import { paginateModel, formatPaginateResponse } from "../utils/paginate";
 import { NextFunction, Request, Response } from "express";
 import { Payment, Enrollment, User, Course } from "../models";
 import sequelize from "../config/Database";
-import path from "path";
 import { PaymentStatus } from "../enum/PaymentStatus";
 import { EnrollmentStatus } from "../enum/EnrollmentStatus";
 import { UserRoles } from "../enum/UserRoles";
