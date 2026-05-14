@@ -4,11 +4,23 @@ const router=express.Router();
 const multer=require('multer');
 const fstat=require('fs');
 const path=require('path');
+const http=require('http');
+const https=require('https');
 
 //dot env for environment variables
 const dotenv=require('dotenv');
 dotenv.config();
-const PORT = 4000;
+const PORT = parseInt(process.env.DUMMY_PORT) || 4000;
+
+function parseBooleanFlag(value) {
+    if (!value) return false;
+    const normalized = value.trim().toLowerCase();
+    return normalized === 'true' || normalized === '1' || normalized === 'yes';
+}
+
+const httpsEnabled = parseBooleanFlag(process.env.HTTPS_ENABLED);
+const PROTOCOL = httpsEnabled ? 'https' : 'http';
+const BASE_URL = `${PROTOCOL}://localhost:${PORT}`;
 
 const app = express();
 app.use(cors());
@@ -42,7 +54,7 @@ const upload=multer({storage: storage});
 const courses = [
     {
         id: 1,
-        image: 'http://localhost:4000/images/first_aid.png',
+        image: `${BASE_URL}/images/first_aid.png`,
         courseTitle: 'Basic First Aid',
         level: 'basic',
         duration: '15 hours 30 mins',
@@ -154,7 +166,7 @@ const courses = [
     },
     {
         id: 2,
-        image: 'http://localhost:4000/images/cpr.png',
+        image: `${BASE_URL}/images/cpr.png`,
         courseTitle: 'CPR Training',
         level: 'basic',
         duration: '8 hours',
@@ -184,7 +196,7 @@ const courses = [
     },
     {
         id: 3,
-        image: 'http://localhost:4000/images/plantconservation.jpg',
+        image: `${BASE_URL}/images/plantconservation.jpg`,
         courseTitle: 'Plant Conservation',
         level: 'advanced',
         duration: '10 hours',
@@ -245,7 +257,7 @@ app.post('/api/courses', upload.single('image'), (req, res)=>{
             return res.status(400).send({message: 'No file uploaded'});
         }
         const newId=courses.length>0 ? Math.max(...courses.map(c=>c.id))+1 : 1;
-        const imageUrl=`http://localhost:4000/images/${req.file.filename}`;
+        const imageUrl=`${BASE_URL}/images/${req.file.filename}`;
         const newCourse={
             id: newId,
             courseTitle:req.body.courseTitle,
@@ -277,7 +289,7 @@ app.put('/api/courses/:id', upload.single('image'), (req,res)=>{
 
     let imageUrl=courses[courseIndex].image;
     if(req.file){
-        imageUrl=`http://localhost:4000 /images/${req.file.filename}`;
+        imageUrl=`${BASE_URL}/images/${req.file.filename}`;
     }
     const updatedCourse={
         ...courses[courseIndex],
@@ -454,7 +466,7 @@ const users=[
         telefon: '012-3456789',
         registerDate: '2025-10-15',
         status: 'Approved',
-        profileImage: 'http://localhost:4000/user-images/johndoe.png',
+        profileImage: `${BASE_URL}/user-images/johndoe.png`,
         remark: 'I would like to register for access to the dashboard and manage my projects.'
     },
     {
@@ -467,7 +479,7 @@ const users=[
         telefon: '012-3456789',
         registerDate: '2026-01-20',
         status: 'Pending',
-        profileImage: 'http://localhost:4000/user-images/jenny.png',
+        profileImage: `${BASE_URL}/user-images/jenny.png`,
         remark: 'I would like to register for access to the dashboard and manage my projects.'
     },
     {
@@ -480,7 +492,7 @@ const users=[
         telefon: '012-3456789',
         registerDate: '2026-02-10',
         status: 'Rejected',
-        profileImage: 'http://localhost:4000/user-images/smith.png',
+        profileImage: `${BASE_URL}/user-images/smith.png`,
         remark: 'I would like to register for access to the dashboard and manage my projects.'
     },
     {
@@ -493,7 +505,7 @@ const users=[
         telefon: '012-3456789',
         registerDate: '2026-01-25',
         status: 'Approved',
-        profileImage: 'http://localhost:4000/user-images/olivia.png',
+        profileImage: `${BASE_URL}/user-images/olivia.png`,
         remark: 'I would like to register for access to the dashboard and manage my projects.'
     },
     {
@@ -506,7 +518,7 @@ const users=[
         telefon: '012-3456789',
         registerDate: '2026-03-01',
         status: 'Pending',
-        profileImage: 'http://localhost:4000/user-images/daniel.png',
+        profileImage: `${BASE_URL}/user-images/daniel.png`,
         remark: 'I would like to register for access to the dashboard and manage my projects.'
     },
     {
@@ -519,7 +531,7 @@ const users=[
         telefon: '012-3456789',
         registerDate: '2026-02-15',
         status: 'Approved',
-        profileImage: 'http://localhost:4000/user-images/chloe.png',
+        profileImage: `${BASE_URL}/user-images/chloe.png`,
         remark: 'I would like to register for access to the dashboard and manage my projects.'
     },
     {
@@ -532,7 +544,7 @@ const users=[
         telefon: '012-3456789',
         registerDate: '2026-01-30',
         status: 'Rejected',
-        profileImage: 'http://localhost:4000/user-images/marcus.png',
+        profileImage: `${BASE_URL}/user-images/marcus.png`,
         remark: 'I would like to register for access to the dashboard and manage my projects.'
     },
     {
@@ -545,7 +557,7 @@ const users=[
         telefon: '012-3456789',
         registerDate: '2026-03-05',
         status: 'Approved',
-        profileImage: 'http://localhost:4000/user-images/issabelle.png',
+        profileImage: `${BASE_URL}/user-images/issabelle.png`,
         remark: 'I would like to register for access to the dashboard and manage my projects.'
     },
     {
@@ -558,7 +570,7 @@ const users=[
         telefon: '012-3456789',
         registerDate: '2026-02-20',
         status: 'Pending',
-        profileImage: 'http://localhost:4000/user-images/lucas.png',
+        profileImage: `${BASE_URL}/user-images/lucas.png`,
         remark: 'I would like to register for access to the dashboard and manage my projects.'
     },
     {
@@ -571,7 +583,7 @@ const users=[
         telefon: '012-3456789',
         registerDate: '2026-03-10',
         status: 'Approved',
-        profileImage: 'http://localhost:4000/user-images/mark.png',
+        profileImage: `${BASE_URL}/user-images/mark.png`,
         remark: 'I would like to register for access to the dashboard and manage my projects.'
     },
     {
@@ -584,7 +596,7 @@ const users=[
         telefon: '012-3456789',
         registerDate: '2026-01-28',
         status: 'Rejected',
-        profileImage: 'http://localhost:4000/user-images/nicholas.png',
+        profileImage: `${BASE_URL}/user-images/nicholas.png`,
         remark: 'I would like to register for access to the dashboard and manage my projects.'
     },
     {
@@ -597,7 +609,7 @@ const users=[
         telefon: '012-3456789',
         registerDate: '2026-03-15',
         status: 'Approved',
-        profileImage: 'http://localhost:4000/user-images/mia.png',
+        profileImage: `${BASE_URL}/user-images/mia.png`,
         remark: 'I would like to register for access to the dashboard and manage my projects.'
     },
     {
@@ -610,7 +622,7 @@ const users=[
         telefon: '012-3456789',
         registerDate: '2026-02-05',
         status: 'Pending',
-        profileImage: 'http://localhost:4000/user-images/noemi.png',
+        profileImage: `${BASE_URL}/user-images/noemi.png`,
         remark: 'I would like to register for access to the dashboard and manage my projects.'
     }
 ]
@@ -810,9 +822,25 @@ app.get('/api/progress', (req, res) => {
 
 // ---------------------------------------------------------------------
 
-// Start Over
-app.listen(PORT, ()=>{
-    console.log(`Server running on http://localhost:${PORT}`);
-})
+// Start server with HTTPS if configured, otherwise HTTP
+let server;
+if (httpsEnabled) {
+    const keyPath = process.env.HTTPS_KEY_PATH?.trim();
+    const certPath = process.env.HTTPS_CERT_PATH?.trim();
+    if (!keyPath || !certPath) {
+        throw new Error('HTTPS_ENABLED is true but HTTPS_KEY_PATH and HTTPS_CERT_PATH are not configured.');
+    }
+    const httpsOptions = {
+        key: fstat.readFileSync(path.resolve(keyPath)),
+        cert: fstat.readFileSync(path.resolve(certPath)),
+    };
+    server = https.createServer(httpsOptions, app);
+} else {
+    server = http.createServer(app);
+}
+
+server.listen(PORT, () => {
+    console.log(`Server running on ${BASE_URL}`);
+});
 
 

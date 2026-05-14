@@ -1,4 +1,5 @@
-const BASE_URL='http://localhost:4000/api/submissions';
+import { API_BASE_URL } from '../config/DummyapiConfig';
+const BASE_URL=`${API_BASE_URL}/api/submissions`;
 
 export const submissionService={
     // GET: fetch all submissions

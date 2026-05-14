@@ -4,6 +4,7 @@ import { ListPlus, ChevronRight } from 'lucide-react-native';
 import Checkbox from 'expo-checkbox';
 import { Calendar } from 'react-native-calendars';
 import {useRoute} from '@react-navigation/native';
+import { API_BASE_URL } from '../config/DummyapiConfig';
 
 // Import Components
 import NavBar from '../components/NavBar';
@@ -16,7 +17,7 @@ const UserModule = ({ navigation }) => {
         const [selectedPage, setSelectedPage]=useState(null);
     
         useEffect(()=>{
-            fetch(`http://localhost:4000/api/courses/${id}`)
+            fetch(`${API_BASE_URL}/api/courses/${id}`)
             .then(res=>res.json())
             .then(data=>setCourse(data))
             .catch(err=>console.error('Error when fetching the course: ',err));

@@ -1,4 +1,5 @@
-const BASE_URL='http://localhost:4000/api/enrollments';
+import { API_BASE_URL } from '../config/DummyapiConfig';
+const BASE_URL=`${API_BASE_URL}/api/enrollments`;
 
 export const enrollmentService={
     // GET: fetch all enrollments

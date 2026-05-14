@@ -2,6 +2,7 @@ import React,{useEffect,useState} from 'react';
 import { View, Text, StyleSheet, ScrollView, ImageBackground, Pressable} from 'react-native';
 import {useRoute} from '@react-navigation/native';
 import { Menu } from 'lucide-react-native';
+import apiClient from '../config/apiConfig';
 
 // Import Components
 import OutlineBar from '../components/OutlineBar.js';
@@ -14,9 +15,8 @@ const EditCourseDetail = () => {
     const [isCollapsed, setIsCollapsed]=useState(false);
 
     useEffect(()=>{
-        fetch(`http://localhost:5000/api/courses/${id}`)
-        .then(res=>res.json())
-        .then(data=>setCourse(data))
+        apiClient.get(`/courses/${id}`)
+        .then(res=>setCourse(res.data))
         .catch(err=>console.error('Error when fetching the course: ',err));
     }, [id]);
     

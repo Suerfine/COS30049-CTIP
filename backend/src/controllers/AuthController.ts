@@ -28,7 +28,6 @@ type ResetPasswordRequestBody = {
 };
 
 const SFC_EMAIL_DOMAIN = "sfc.gov.my";
-const PASSWORD_RESET_EXPIRY = "30m";
 
 function parseSfcLoginEmail(value: string): string | null {
   const email = value.trim().toLowerCase();
@@ -73,10 +72,7 @@ export const token = async (
 
     const user = await User.findOne({
       where: {
-        [Op.or]: [
-          { identification: identificationFromEmail },
-          { personal_email: normalizedUsername },
-        ],
+        username: identificationFromEmail,
       },
     });
 
