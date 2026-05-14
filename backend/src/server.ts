@@ -13,6 +13,7 @@ import { ArModel } from "./models";
 import routes from "./routes";
 import swaggerSpec from "./config/Swagger";
 import mqttService from "./iot/MqttService";
+import { registerJobs } from "./jobs";
 
 // Issue with augmeneted Express Request type not being recognized in middleware, so we need to redeclare it here
 import { User } from "../src/models";
@@ -238,6 +239,9 @@ const startServer = async (): Promise<void> => {
     } else {
       console.log("MQTT service is DISABLED (ENABLE_MQTT is not true).");
     }
+
+    // Register all jobs
+    registerJobs();
 
     // Sync database schemas (creates missing tables, won't alter existing ones)
     await sequelize.sync();
