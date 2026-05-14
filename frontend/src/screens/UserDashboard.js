@@ -175,6 +175,7 @@ const UserDashboard = ({ navigation }) => {
                         tabs={eventTab}
                         activeTab={filter}
                         onTabChange={(id) => setFilter(id)}
+                        fullWidth
                     />
 
                     <View style={styles.todoList}>
