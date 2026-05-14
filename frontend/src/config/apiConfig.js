@@ -2,6 +2,7 @@ import {Platform} from "react-native";
 import axios from 'axios';
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Constants from 'expo-constants';
+import { triggerLogout } from "../context/AuthContext";
 
 const BASE_URL=()=>{
     const hostFromExpo=Constants?.expoConfig?.hostUri?.split(':')?.[0];
@@ -31,8 +32,10 @@ apiClient.interceptors.request.use(async (config)=>{
 apiClient.interceptors.response.use(
     (response)=>response,
     async(error)=>{
-        if(error.response && error.response.data.message==="jwt expired"){
+        const errorMessage = error.response?.data?.message;
+        if(error.response && errorMessage === "jwt expired"){
             await AsyncStorage.multiRemove(["accessToken", "currentUser"]);
+            await triggerLogout();
         }
         return Promise.reject(error);
     }
