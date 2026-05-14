@@ -135,12 +135,7 @@ export function generateRandomPassword(): string {
   return `SFC-${crypto.randomBytes(6).toString("base64url")}`;
 }
 
-export function generateSfcEmail(id: string | number): string {
-  const localPart = String(id)
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9._-]/g, "");
-
+export function generateSfcEmail(localPart: string): string {
   return `${localPart}@sfc.gov.my`;
 }
 

@@ -28,6 +28,15 @@ import {
   sendRegistrationRejectedEmail,
 } from "../utils/mailer";
 
+async function generateUniqueLocalPart(): Promise<string> {
+  for (let attempt = 0; attempt < 10; attempt++) {
+    const localPart = String(Math.floor(100_000_000 + Math.random() * 900_000_000));
+    const exists = await User.findOne({ where: { username: localPart } });
+    if (!exists) return localPart;
+  }
+  throw new Error("Failed to generate a unique SFC email ID after 10 attempts");
+}
+
 type RegistrationRequestWithFile = Request & {
   user?: User;
   file?: Express.Multer.File;
@@ -347,8 +356,9 @@ export const approveRegistration = async (
 
     // Create new ParkGuide with an SFC login email and random password.
     const temporary_password = generateRandomPassword();
-    const sfcEmail = generateSfcEmail(registration.identification);
-    const username = sfcEmail.split("@")[0].slice(0, 30);
+    const localPart = await generateUniqueLocalPart();
+    const sfcEmail = generateSfcEmail(localPart);
+    const username = localPart;
     const user = await User.create({
       username,
       firstname: registration.firstname,
