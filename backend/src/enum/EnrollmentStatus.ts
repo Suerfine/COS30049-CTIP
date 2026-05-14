@@ -1,5 +1,8 @@
 export enum EnrollmentStatus {
-  // The park guide has applied for the course but has yet for admin to approve the enrollment.
+  // When the payment is in pending
+  PENDING_PAYMENT = "pending_payment",
+
+  // The park guide has applied for the course and pays immediately. but has yet for admin to approve the enrollment.
   APPLIED = "applied",
 
   // The park guide has been approved by admin and is currently taking the course.
@@ -10,6 +13,9 @@ export enum EnrollmentStatus {
 
   // The park guide has completed the course and is issued badge by admin
   COMPLETED = "completed",
+
+  // !!!FINAL STATES!!!
+  // States below are final states. Meaning the enrollment should not ever change from these states to any other states.
 
   // The park guide was either unable to complete the course or failed the assessment and needs to retake the course.
   FAILED = "failed",
@@ -22,7 +28,4 @@ export enum EnrollmentStatus {
 
   // The park guide has completed the course but badge expired
   EXPIRED = "expired",
-
-  // When the payment is in pending
-  PENDING_PAYMENT = "pending_payment",
 }
