@@ -182,8 +182,6 @@ export const upsertUser = async (
   next: NextFunction,
 ) => {
   try {
-    // TODO: Properly move authorization logic to middleware
-    //
     // Authorization logic to check if the current user is admin or updating their own account
     const targetUser = await User.findByPk(req.params.id);
     const isAdmin = req.user?.role === UserRoles.ADMIN;
@@ -206,7 +204,7 @@ export const upsertUser = async (
     ) {
       // Checking if the new username already exists for another user
       const existingUsername = await User.findOne({
-        where: { username: req.body.username },
+        where: { username: req.body.username, id: { $ne: targetUser.id } },
       });
       if (existingUsername) {
         throw new HttpError(400, "Username already exists");
@@ -358,6 +356,14 @@ export const createUser = async (
     const user_identification = identification.trim();
     const user_personal_email = personal_email.trim();
     const user_tel = tel.trim();
+
+    // Only allow admin to create a user using this route
+    if (!req.user || req.user.role !== UserRoles.ADMIN) {
+      throw new HttpError(
+        403,
+        "Only admin can create new user. Public has to do so through registration route.",
+      );
+    }
 
     // Checking if username already exists
     const existingUser = await User.findOne({
