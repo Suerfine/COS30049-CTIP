@@ -181,7 +181,7 @@ export const paymentService = {
     ) => {
         try {
             const res = await apiClient.patch(
-                `/payments/${paymentId}/verify`,
+                API_ENDPOINTS.PAYMENT.UPDATE_STATUS(paymentId, status),
                 {
                     status,
                     admin_id: 1,
@@ -194,5 +194,13 @@ export const paymentService = {
             console.error("Verify Payment Error:", error);
             throw error;
         }
+    },
+
+    downloadReceipt: async (paymentId) => {
+        const res = await apiClient.get(
+            API_ENDPOINTS.PAYMENT.RECEIPT(paymentId),
+            { responseType: 'blob' }
+        );
+        return res;
     },
 };

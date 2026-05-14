@@ -1,10 +1,13 @@
 import { Op } from "sequelize";
+import fs from "fs";
+import path from "path";
 import { paginateModel, formatPaginateResponse } from "../utils/paginate";
 import { NextFunction, Request, Response } from "express";
 import { Payment, Enrollment, User, Course } from "../models";
 import sequelize from "../config/Database";
 import { PaymentStatus } from "../enum/PaymentStatus";
 import { EnrollmentStatus } from "../enum/EnrollmentStatus";
+import { UserRoles } from "../enum/UserRoles";
 import {
   parseId,
   parseNumberField,
@@ -19,6 +22,30 @@ class HttpError extends Error {
     super(message);
     this.status = status;
   }
+}
+
+function resolveStoredReceiptPath(storedPath: string): string | null {
+  const backendRoot = path.resolve(__dirname, "../..");
+  const allowedRoots = [
+    path.resolve(backendRoot, "uploads"),
+    path.resolve(backendRoot, "storage"),
+  ];
+
+  const normalizedStoredPath = storedPath
+    .replace(/^https?:\/\/[^/]+\/?/i, "")
+    .replace(/^\/+/, "");
+
+  const candidates = [
+    path.resolve(backendRoot, normalizedStoredPath),
+    path.resolve(backendRoot, "storage", normalizedStoredPath),
+  ];
+
+  return candidates.find((candidate) => {
+    const isAllowed = allowedRoots.some(
+      (root) => candidate === root || candidate.startsWith(`${root}${path.sep}`),
+    );
+    return isAllowed && fs.existsSync(candidate);
+  }) ?? null;
 }
 
 async function validatePayment(paymentIdRaw: string): Promise<Payment> {
@@ -316,6 +343,48 @@ export const getPaymentById = async (
     }
 
     return res.json(payment);
+  } catch (err) {
+    if (err instanceof HttpError) {
+      return res.status(err.status).json({ message: err.message });
+    }
+    next(err);
+  }
+};
+
+export const downloadReceipt = async (
+  req: Request<{ id: string }>,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const id = parseId(req.params.id);
+
+    if (id === null) {
+      throw new HttpError(400, "Invalid payment_id");
+    }
+
+    const payment = await Payment.findByPk(id);
+    if (!payment) {
+      throw new HttpError(404, "Payment record not found");
+    }
+
+    const isAdmin = req.user?.role === UserRoles.ADMIN;
+    const isOwner = Number(req.user?.id) === Number(payment.user_id);
+    if (!isAdmin && !isOwner) {
+      throw new HttpError(403, "You are not allowed to download this receipt");
+    }
+
+    if (!payment.receipt_filepath) {
+      throw new HttpError(404, "Receipt file not found");
+    }
+
+    const filePath = resolveStoredReceiptPath(payment.receipt_filepath);
+
+    if (!filePath) {
+      throw new HttpError(404, "Receipt file not found");
+    }
+
+    return res.download(filePath);
   } catch (err) {
     if (err instanceof HttpError) {
       return res.status(err.status).json({ message: err.message });

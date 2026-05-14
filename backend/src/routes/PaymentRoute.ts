@@ -131,6 +131,8 @@ paymentRouter.get("/", auth, PaymentController.getAllPayments);
  */
 paymentRouter.get("/user/:userId", auth, PaymentController.getPaymentsByUser);
 
+paymentRouter.get("/:id/receipt", auth, PaymentController.downloadReceipt);
+
 /**
  * @swagger
  * /api/payments/{id}:

@@ -10,6 +10,7 @@ import { usePayment } from '../hooks/usePayment';
 import { useSubmissionManagement } from '../hooks/useSubmissionManagement';
 import EnrollmentDetailModal from '../components/EnrollmentDetailModal';
 import { Status_Config } from '../utils/status_config';
+import { paymentService } from '../services/PaymentService';
 
 const EnrollmentManagement = () => {
     // Enrollment management
@@ -352,10 +353,29 @@ const EnrollmentManagement = () => {
         }
     };
 
-    const handleDownloadReceipt = () => {
-        if (selectedPayment?.receipt_filepath) {
-            window.open(selectedPayment.receipt_filepath, '_blank');
+    const downloadReceipt = async (payment) => {
+        if (!payment?.id) return;
+
+        try {
+            const response = await paymentService.downloadReceipt(payment.id);
+            const blobUrl = window.URL.createObjectURL(response.data);
+            const link = document.createElement('a');
+            const disposition = response.headers?.['content-disposition'];
+            const filenameMatch = disposition?.match(/filename="?([^"]+)"?/);
+            link.href = blobUrl;
+            link.download = filenameMatch?.[1] || `payment-receipt-${payment.id}`;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(blobUrl);
+        } catch (err) {
+            console.error("Receipt Download Error:", err);
+            alert(err?.response?.data?.message || "Failed to download receipt.");
         }
+    };
+
+    const handleDownloadReceipt = () => {
+        downloadReceipt(selectedPayment);
     };
 
     const renderPaymentItem = ({ item }) => {
@@ -408,11 +428,7 @@ const EnrollmentManagement = () => {
                 </Text>
                 <View style={{ flex: 2 }}>
                     <Pressable
-                        onPress={() => {
-                            if (item.receipt_filepath) {
-                                window.open(item.receipt_filepath, '_blank');
-                            }
-                        }}
+                        onPress={() => downloadReceipt(item)}
                         style={styles.downloadBtn}
                     >
                         <Text style={styles.downloadBtnText}>
