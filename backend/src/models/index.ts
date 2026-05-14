@@ -11,6 +11,7 @@ import Discussion from "./Discussion";
 import Message from "./Messages";
 import Tag from "./Tag";
 import Notification from "./Notification";
+import NotificationPreference from "./NotificationPreference";
 import CourseTag from "./CourseTag";
 import Sensor from "./Sensor";
 import SensorLog from "./SensorLogs";
@@ -152,6 +153,11 @@ Course.hasMany(Prerequisite, {
 
 User.hasMany(Notification, { foreignKey: "user_id", as: "notifications" });
 Notification.belongsTo(User, { foreignKey: "user_id", as: "user" });
+User.hasMany(NotificationPreference, {
+  foreignKey: "user_id",
+  as: "notification_preferences",
+});
+NotificationPreference.belongsTo(User, { foreignKey: "user_id", as: "user" });
 
 Sensor.hasMany(SensorLog, { foreignKey: "sensor_id", as: "logs" });
 SensorLog.belongsTo(Sensor, { foreignKey: "sensor_id", as: "sensor" });
@@ -194,6 +200,7 @@ export {
   Prerequisite,
   Event,
   Notification,
+  NotificationPreference,
   Sensor,
   SensorLog,
   AnomalyEvent as AnomalyEvent,

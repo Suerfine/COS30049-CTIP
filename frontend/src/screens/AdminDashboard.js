@@ -3,12 +3,15 @@ import React, { useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { CircleMarker, MapContainer, Popup, TileLayer, Tooltip, useMap } from "react-leaflet";
 import { useTranslation } from "react-i18next";
+import { useNavigation } from "@react-navigation/native";
 
 import { useAnomalyMapEvents } from "../hooks/useAnomalyMapEvents";
 import { formatDate } from "../utils/formatDate";
 import { DEFAULT_MAP_CENTER, LEAFLET_CSS, EVENT_LABELS, SEVERITY_CONFIG } from "../utils/AnomalyConstant";
 import { useAdminDashboard } from "../hooks/useAdminDashboard";
 import { useNotification } from '../hooks/useNotification';
+import { useAuth } from "../context/AuthContext";
+import { navigateNotification } from "../utils/navigateNotification";
 
 const getEventTypeLabel = (eventType) => {
   if (!eventType) {
@@ -129,6 +132,8 @@ const HoverDetailCard = ({ event, isPinned }) => {
 
 const AdminDashboard = () => {
   const { t } = useTranslation();
+  const navigation = useNavigation();
+  const { currentUser } = useAuth();
   const { events, loading: mapLoading, error: mapError, refresh } = useAnomalyMapEvents();
   const { stats } = useAdminDashboard();
   const { 
@@ -324,7 +329,15 @@ const AdminDashboard = () => {
           ) : (
             <ScrollView style={styles.latestUpdatesList}>
               {latestNotifications.map((notification) => (
-                <View key={notification.id} style={styles.notificationItem}>
+                <Pressable
+                  key={notification.id}
+                  onPress={() => navigateNotification(navigation, notification.url, currentUser)}
+                  style={({ hovered, pressed }) => [
+                    styles.notificationItem,
+                    hovered && styles.notificationItemHover,
+                    pressed && styles.notificationItemPressed,
+                  ]}
+                >
                   <View style={styles.notificationContent}>
                     <View style={styles.titleRow}>
                       <Text style={styles.notificationTitle}>{notification.title}</Text>
@@ -335,7 +348,7 @@ const AdminDashboard = () => {
                       {new Date(notification.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </Text>
                   </View>
-                </View>
+                </Pressable>
               ))}
             </ScrollView>
           )}
@@ -637,7 +650,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderWidth: 1,
     borderColor: "#e5e7eb",
-    cursor: "default",
+    cursor: "pointer",
+  },
+  notificationItemHover: {
+    borderColor: "#b7d5b0",
+    backgroundColor: "#fbfdfb",
+  },
+  notificationItemPressed: {
+    opacity: 0.88,
   },
   notificationContent: {
     flex: 1,

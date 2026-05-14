@@ -17,7 +17,7 @@ import { useCourses } from '../hooks/useCourses.js';
 
 const EditCourseDetail = () => {
     const route=useRoute();
-    const {id}=route.params;
+    const {id, initialSection, discussionId}=route.params;
     const {course, loading, error, updateDescription, locationTags, categoryTags}=useCourseDetails(id);
     const navigation = useNavigation();
     const auth = useAuth();
@@ -49,6 +49,12 @@ const EditCourseDetail = () => {
             link:""
         }
     });
+
+    useEffect(() => {
+        if (initialSection === 'forum') {
+            setSelectedPage({ type: 'forum' });
+        }
+    }, [initialSection, discussionId]);
 
     const { elements, loading: elementsLoading, createNewElement,updateExistingElement, deleteElement, moveElement, 
     updatePageSettings } = useElements(
@@ -548,6 +554,7 @@ const EditCourseDetail = () => {
                         ) : selectedPage?.type === 'forum' ? (
                             <DiscussionSection 
                                 courseId={id} 
+                                initialDiscussionId={discussionId}
                                 navigation={navigation} 
                                 styles={styles} 
                             />

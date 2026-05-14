@@ -2,17 +2,28 @@ import { Request, Response, NextFunction } from "express";
 import {
   CreateNotificationRequest,
   NotificationResponse,
+  UpdateNotificationPreferencesRequest,
   UpdateNotificationRequest,
 } from "../types/Notification";
 import Notification from "../models/Notification";
 import { parseBooleanField } from "../utils/parseRequest";
 import { PaginateRequestParams, PaginateResponse } from "../types/common";
 import { formatPaginateResponse, paginateModel } from "../utils/paginate";
-import { format } from "node:path";
 import { UserRoles } from "../enum/UserRoles";
 import User from "../models/User";
 import sequelize from "../config/Database";
-import { where } from "sequelize";
+import { Op } from "sequelize";
+import { NotificationCategory } from "../enum/NotificationCategory";
+import {
+  getNotificationPreferences,
+  getUsersWithNotificationEnabled,
+  updateNotificationPreferences,
+} from "../utils/notificationPreferences";
+import { Course, Enrollment, Event } from "../models";
+import { EnrollmentStatus } from "../enum/EnrollmentStatus";
+import { EventStatus } from "../enum/EventStatus";
+
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 class HttpError extends Error {
   status: number;
@@ -21,6 +32,114 @@ class HttpError extends Error {
     super(message);
     this.status = status;
   }
+}
+
+function startOfDay(date: Date): Date {
+  const normalized = new Date(date);
+  normalized.setHours(0, 0, 0, 0);
+  return normalized;
+}
+
+function addDays(date: Date, days: number): Date {
+  return new Date(date.getTime() + days * MS_PER_DAY);
+}
+
+function isSameDay(firstDate: Date, secondDate: Date): boolean {
+  return startOfDay(firstDate).getTime() === startOfDay(secondDate).getTime();
+}
+
+async function createNotificationIfMissing(
+  userId: number,
+  title: string,
+  message: string,
+  category: NotificationCategory,
+  url: string | null = null,
+): Promise<void> {
+  const enabledUserIds = await getUsersWithNotificationEnabled(
+    [userId],
+    category,
+  );
+  if (enabledUserIds.length === 0) {
+    return;
+  }
+
+  const existingNotification = await Notification.findOne({
+    where: { user_id: userId, title, message },
+  });
+  if (existingNotification) {
+    return;
+  }
+
+  await Notification.create({
+    user_id: userId,
+    title,
+    message,
+    url,
+  });
+}
+
+async function generateDueNotificationsForUser(userId: number): Promise<void> {
+  const today = startOfDay(new Date());
+  const tomorrow = addDays(today, 1);
+
+  const upcomingEvents = await Event.findAll({
+    where: {
+      user_id: userId,
+      status: EventStatus.PENDING,
+      event_start_at: {
+        [Op.gte]: tomorrow,
+        [Op.lt]: addDays(tomorrow, 1),
+      },
+    },
+  });
+
+  await Promise.all(
+    upcomingEvents.map((event) =>
+      createNotificationIfMissing(
+        userId,
+        "Todo Starts Tomorrow",
+        `"${event.title}" starts on ${event.event_start_at.toLocaleDateString()}.`,
+        NotificationCategory.TODO_REMINDER,
+        "/calendar",
+      ),
+    ),
+  );
+
+  const activeEnrollments = await Enrollment.findAll({
+    where: {
+      user_id: userId,
+      status: {
+        [Op.in]: [EnrollmentStatus.IN_PROGRESS, EnrollmentStatus.IN_REVIEW],
+      },
+    },
+    include: [{ model: Course, as: "course" }],
+  });
+
+  await Promise.all(
+    activeEnrollments.flatMap((enrollment: any) => {
+      const course = enrollment.course as Course | undefined;
+      if (!course?.must_complete_in_weeks || !enrollment.enrolled_at) {
+        return [];
+      }
+
+      const dueDate = addDays(
+        new Date(enrollment.enrolled_at),
+        Number(course.must_complete_in_weeks) * 7,
+      );
+
+      return [7, 3]
+        .filter((daysBefore) => isSameDay(addDays(today, daysBefore), dueDate))
+        .map((daysBefore) =>
+          createNotificationIfMissing(
+            userId,
+            `Course Due in ${daysBefore} Days`,
+            `"${course.title}" must be completed by ${dueDate.toLocaleDateString()}.`,
+            NotificationCategory.COURSE_EXPIRY,
+            `/courses/${course.id}`,
+          ),
+        );
+    }),
+  );
 }
 
 /**
@@ -74,8 +193,13 @@ export const createNotification = async (
       targetUserIds = req.body.target_user_ids;
     }
 
+    const enabledUserIds = await getUsersWithNotificationEnabled(
+      targetUserIds,
+      req.body.category,
+    );
+
     // Create the notification
-    for (const targetUserId of targetUserIds) {
+    for (const targetUserId of enabledUserIds) {
       await Notification.create(
         {
           user_id: targetUserId,
@@ -86,13 +210,13 @@ export const createNotification = async (
         { transaction },
       );
     }
-    transaction.commit();
+    await transaction.commit();
 
     return res
       .status(201)
       .json({ message: "Notification(s) created successfully" });
   } catch (err) {
-    transaction.rollback();
+    await transaction.rollback();
     if (err instanceof HttpError) {
       res.status(err.status).json({ message: err.message });
     } else {
@@ -164,6 +288,8 @@ export const getAllMyNotifications = async (
   next: NextFunction,
 ) => {
   try {
+    await generateDueNotificationsForUser(req.user!.id);
+
     // Retrieve notifications for the authenticated user, filtering by dismissed status if includeDismissed is false
     const includeDismissed = parseBooleanField(req.query.includeDismissed);
     const notifications = await paginateModel(Notification, req.query, {
@@ -197,6 +323,64 @@ export const getAllMyNotifications = async (
     );
     return res.status(200).json(formattedResponse);
   } catch (err) {
+    if (err instanceof HttpError) {
+      res.status(err.status).json({ message: err.message });
+    } else {
+      res.status(500).json({ message: "Internal server error\n" + err });
+    }
+    next(err);
+  }
+};
+
+export const getMyNotificationPreferences = async (
+  req: Request,
+  res: Response<{ preferences: Record<NotificationCategory, boolean> } | { message: string }>,
+  next: NextFunction,
+) => {
+  try {
+    if (!req.user) {
+      throw new HttpError(401, "Unauthorized");
+    }
+
+    return res.status(200).json({
+      preferences: await getNotificationPreferences(req.user.id),
+    });
+  } catch (err) {
+    if (err instanceof HttpError) {
+      res.status(err.status).json({ message: err.message });
+    } else {
+      res.status(500).json({ message: "Internal server error\n" + err });
+    }
+    next(err);
+  }
+};
+
+export const updateMyNotificationPreferences = async (
+  req: Request<any, any, UpdateNotificationPreferencesRequest>,
+  res: Response<{ preferences: Record<NotificationCategory, boolean> } | { message: string }>,
+  next: NextFunction,
+) => {
+  const transaction = await sequelize.transaction();
+  try {
+    if (!req.user) {
+      throw new HttpError(401, "Unauthorized");
+    }
+
+    const preferences = req.body.preferences;
+    if (!preferences || typeof preferences !== "object") {
+      throw new HttpError(400, "preferences must be an object");
+    }
+
+    const updatedPreferences = await updateNotificationPreferences(
+      req.user.id,
+      preferences,
+      transaction,
+    );
+    await transaction.commit();
+
+    return res.status(200).json({ preferences: updatedPreferences });
+  } catch (err) {
+    await transaction.rollback();
     if (err instanceof HttpError) {
       res.status(err.status).json({ message: err.message });
     } else {
@@ -271,9 +455,9 @@ export const updateNotification = async (
     notification.url = req.body.url || null;
     notification.dismissed_at = req.body.dismissed_at || null;
     await notification.save({ transaction });
-    transaction.commit();
+    await transaction.commit();
   } catch (err) {
-    transaction.rollback();
+    await transaction.rollback();
     if (err instanceof HttpError) {
       res.status(err.status).json({ message: err.message });
     } else {
@@ -312,7 +496,7 @@ export const dismissNotification = async (
     // Set the dismissed_at timestamp
     notification.dismissed_at = new Date();
     await notification.save({ transaction });
-    transaction.commit();
+    await transaction.commit();
     return res.status(200).json({
       id: notification.id,
       title: notification.title,
@@ -323,7 +507,7 @@ export const dismissNotification = async (
       updated_at: notification.updated_at,
     });
   } catch (err) {
-    transaction.rollback();
+    await transaction.rollback();
     if (err instanceof HttpError) {
       res.status(err.status).json({ message: err.message });
     } else {
@@ -357,12 +541,12 @@ export const deleteNotification = async (
       throw new HttpError(404, "Notification not found");
     }
 
-    transaction.commit();
+    await transaction.commit();
     return res
       .status(200)
       .json({ message: "Notification deleted successfully" });
   } catch (err) {
-    transaction.rollback();
+    await transaction.rollback();
     if (err instanceof HttpError) {
       res.status(err.status).json({ message: err.message });
     } else {

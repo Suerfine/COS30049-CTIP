@@ -2,16 +2,25 @@ import React from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator } from 'react-native';
 import { X, RotateCcw } from 'lucide-react-native'; 
 import { useTranslation } from 'react-i18next';
+import { useNavigation } from '@react-navigation/native';
 import { useNotification } from '../hooks/useNotification';
+import { useAuth } from '../context/AuthContext';
+import { navigateNotification } from '../utils/navigateNotification';
 
 const Notification = () => {
     const { t } = useTranslation();
+    const navigation = useNavigation();
+    const { currentUser } = useAuth();
     const { 
         notifications, 
         loading, 
         fetchNotifications, 
         handleDismiss 
     } = useNotification();
+
+    const handleOpenNotification = (notification) => {
+        navigateNotification(navigation, notification.url, currentUser);
+    };
 
     return (
         <View style={styles.container}>
@@ -33,10 +42,15 @@ const Notification = () => {
             ) : (
                 <ScrollView style={styles.content}>
                     {notifications.map((notification) => (
-                        /* Changed to View because it's no longer a main action button.
-                           The only interactive part is the Dismiss button.
-                        */
-                        <View key={notification.id} style={styles.notificationItem}>
+                        <Pressable
+                            key={notification.id}
+                            onPress={() => handleOpenNotification(notification)}
+                            style={({ hovered, pressed }) => [
+                                styles.notificationItem,
+                                hovered && styles.notificationItemHover,
+                                pressed && styles.notificationItemPressed,
+                            ]}
+                        >
                             <View style={styles.notificationContent}>
                                 <View style={styles.titleRow}>
                                     <Text style={styles.notificationTitle}>{notification.title}</Text>
@@ -52,7 +66,10 @@ const Notification = () => {
 
                             <View style={styles.notificationActions}>
                                 <Pressable
-                                    onPress={() => handleDismiss(notification.id)}
+                                    onPress={(event) => {
+                                        event?.stopPropagation?.();
+                                        handleDismiss(notification.id);
+                                    }}
                                     style={({ hovered }) => [
                                         styles.dismissBtn,
                                         hovered && styles.dismissBtnHover // Only the X button glows now
@@ -62,7 +79,7 @@ const Notification = () => {
                                     <X size={20} color="#9ca3af" />
                                 </Pressable>
                             </View>
-                        </View>
+                        </Pressable>
                     ))}
                 </ScrollView>
             )}
@@ -113,8 +130,14 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         borderWidth: 1, // Back to a thin border since it's not a button
         borderColor: '#e5e7eb',
-        // On web, this ensures the mouse doesn't look like it can click the card
-        cursor: 'default', 
+        cursor: 'pointer',
+    },
+    notificationItemHover: {
+        borderColor: '#b7d5b0',
+        backgroundColor: '#fbfdfb',
+    },
+    notificationItemPressed: {
+        opacity: 0.88,
     },
     notificationContent: {
         flex: 1,

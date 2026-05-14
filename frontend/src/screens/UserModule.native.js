@@ -47,6 +47,8 @@ const UserModule = ({ navigation }) => {
     enrollmentStatus,
     enrollmentId,
     enrollmentStatus: initialStatus,
+    initialSection,
+    discussionId,
   } = route.params;
 
   const [localStatus, setLocalStatus] = useState(initialStatus);
@@ -55,6 +57,12 @@ const UserModule = ({ navigation }) => {
   const [selectedPage, setSelectedPage] = useState({ type: "overview" });
   const [outlineOpen, setOutlineOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
+
+  useEffect(() => {
+    if (initialSection === "forum") {
+      setSelectedPage({ type: "forum" });
+    }
+  }, [initialSection, discussionId]);
 
   const isLocked =
     enrollmentStatus === null ||
@@ -465,6 +473,7 @@ const UserModule = ({ navigation }) => {
             ) : selectedPage?.type === "forum" ? (
               <DiscussionSection
                 courseId={id}
+                initialDiscussionId={discussionId}
                 navigation={navigation}
                 styles={styles}
               />

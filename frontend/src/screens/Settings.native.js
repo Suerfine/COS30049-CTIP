@@ -10,6 +10,7 @@ import { ModalStyle } from '../components/ModalStyle';
 import ChangePasswordContent from '../components/ChangePasswordContent';
 import { useSetLanguage } from '../hooks/useSetLanguage';
 import { useTranslation } from 'react-i18next';
+import NotificationModal from '../components/NotificationModal';
 
 const Settings=({navigation})=>{
     const {t, i18n}=useTranslation();
@@ -38,6 +39,7 @@ const Settings=({navigation})=>{
     };
 
     const [errors, setErrors] = useState({});
+    const [notifModalVisible, setNotifModalVisible] = useState(false);
 
     const clearError = (field) => {
         setErrors(prev => {
@@ -224,7 +226,7 @@ const Settings=({navigation})=>{
                     <View style={styles.divider}/>
 
                     {/* Notification */}
-                    <Pressable style={styles.listItem}>
+                    <Pressable style={styles.listItem} onPress={() => setNotifModalVisible(true)}>
                         <View style={styles.listItemLoading}>
                             <View style={[styles.iconBox, {backgroundColor:'#fff3e0'}]}>
                                 <Bell size={20} color="#f57c00"/>
@@ -268,6 +270,10 @@ const Settings=({navigation})=>{
                     </View>
                 </View>
             </Modal>
+            <NotificationModal
+                visible={notifModalVisible}
+                onClose={() => setNotifModalVisible(false)}
+            />
         </SafeAreaView>
     )
 };
