@@ -19,6 +19,7 @@ import sensorRouter from "./SensorRoute";
 import discussionRouter from "./DiscussionRoute";
 import paymentRouter from "./PaymentRoute";
 import ChatbotRouter from "./ChatbotRoute";
+import searchRouter from "./SearchRoute";
 const router = Router();
 
 /*=============================
@@ -118,6 +119,7 @@ router.use("/events", eventRouter);
 ===============================*/
 router.use("/payments", paymentRouter);
 router.use("/chatbot", ChatbotRouter);
+router.use("/search", searchRouter);
 
 /**
  * @swagger

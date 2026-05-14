@@ -1,7 +1,8 @@
 import React from 'react';
-import {View, Text, TextInput, Pressable, StyleSheet} from 'react-native';
-import { Menu, Search, Bell, SlidersHorizontal, Settings} from 'lucide-react-native';
+import {View, Text, Pressable, StyleSheet} from 'react-native';
+import { Menu, Bell, Settings} from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
+import ParkGuideSiteSearch from './ParkGuideSiteSearch';
 
 const MobileTopBar=({onToggleSidebar, routeName, onFilterPress, navigation})=>{
     const {t, i18n}=useTranslation();
@@ -19,10 +20,7 @@ const MobileTopBar=({onToggleSidebar, routeName, onFilterPress, navigation})=>{
 
             {/* Search Component */}
             {(routeName !== 'Profile' && routeName !== 'Settings') && (
-                <View style={styles.search}>
-                    <Search size={18}/>
-                    <TextInput style={styles.input} placeholder='Search...' placeholderTextColor="#AAAAAA"/>
-                </View>
+                <ParkGuideSiteSearch navigation={navigation} variant="mobile" />
             )}
             
             <View style={styles.toolIcon}>
@@ -67,24 +65,6 @@ const styles=StyleSheet.create({
         borderBottomColor:'#3a3a3a66',
         borderBottomWidth:1,
         elevation:4,
-    },
-    search:{
-        flexDirection:'row',
-        gap:3,
-        borderWidth:1,
-        borderColor:'#8f8f8f',
-        backgroundColor:'white',
-        borderRadius:13,
-        alignItems:"center",
-        width:250,
-        maxHeight:30,
-        paddingHorizontal:3
-    },
-    input:{
-        flex:1,
-        maxWidth:250,
-        height:40,
-        outlineStyle:'none'
     },
     iconBtn:{
         padding:8,

@@ -99,4 +99,7 @@ export const API_ENDPOINTS = {
     SEND_MESSAGE: "/chatbot",
     CREATE_SESSION: "/chatbot/create-session",
   },
+  SEARCH: {
+    PARK_GUIDE: "/search/park-guide",
+  },
 };

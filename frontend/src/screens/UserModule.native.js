@@ -61,8 +61,11 @@ const UserModule = ({ navigation }) => {
   useEffect(() => {
     if (initialSection === "forum") {
       setSelectedPage({ type: "forum" });
+      return;
     }
-  }, [initialSection, discussionId]);
+
+    setSelectedPage({ type: "overview" });
+  }, [id, initialSection, discussionId]);
 
   const isLocked =
     enrollmentStatus === null ||
