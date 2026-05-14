@@ -3,6 +3,8 @@
 #include <DHT.h>
 #include <time.h>
 
+#define DEVICE_CONNECTED false
+
 // --- TIME ---
 const char* ntpServer = "pool.ntp.org";
 const long  gmtOffset_sec = 28800; // For Malaysia (UTC+8): 8 * 3600
@@ -60,8 +62,8 @@ void setup() {
   Serial.println("\n--- System Initializing ---");
   
   dht.begin();
-  pinMode(PIN_MICROWAVE, INPUT);
-  pinMode(PIN_ACOUSTIC, INPUT);
+  pinMode(PIN_MICROWAVE, INPUT_PULLDOWN);
+  pinMode(PIN_ACOUSTIC, INPUT_PULLUP);
   pinMode(PIN_BUZZER, OUTPUT);
   pinMode(PIN_LED, OUTPUT);
   
@@ -285,7 +287,13 @@ void loop() {
   reconnectWiFi();
   reconnectMQTT();
   client.loop();
-  processSensors();
-  processQueue();
+
+  if (DEVICE_CONNECTED) {
+    processSensors();
+    processQueue();
+  } else {
+    Serial.println("Device not connected. Sensor logging disabled.");
+  }
+
   delay(1000);
 }

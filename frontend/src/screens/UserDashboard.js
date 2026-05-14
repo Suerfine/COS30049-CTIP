@@ -37,6 +37,8 @@ const UserDashboard = ({ navigation }) => {
     } = useUserDashboard();
 
     const { width } = useWindowDimensions();
+    const isMobile = width < 1024;
+    const isSmallMobile = width < 700;
     const cardStyles = useMemo(() => {
         if (Platform.OS !== 'web') {
             return { width: '100%', gap: 0 };
@@ -58,180 +60,553 @@ const UserDashboard = ({ navigation }) => {
     const { inProgressCourses, completedCourses, loading: coursesLoading } = useUserCourse();
     const [showModal, setShowModal] = useState(false);
     const [selectedTask, setSelectedTask] = useState(null);
-    const openEdit = (event) => { setSelectedTask(event); setShowModal(true); };
+    const openEdit = (event) => { 
+        setSelectedTask(event); 
+        setShowModal(true); 
+    };
     const {t, i18n}=useTranslation();
 
-    return(
-        <ScrollView style={{ flex: 1 }}>
-            <View style={styles.topRow}>
-                {/* Left side of screen */}
-                <View style={styles.leftScreen}>
-                        <View style={styles.leftColumn}>
-                            {/* info card */}
-                            <View style={styles.infoContainer}>
-                                <ImageBackground
-                                    source={require('../../assets/darkgreen_bg.jpeg')}
-                                    style={styles.infoCard}
-                                >
-                                    {/* info card left side */}
-                                    <View style={styles.infoLeft}>
-                                        <Text style={styles.welcomeText}>
-                                            Welcome, {user?.firstname}
+    const renderRightSection = () => (
+        <View style={isMobile ? styles.rightWrapperMobile : styles.rightWrapper}>
+            <View
+                style={[
+                    styles.rightColumn,
+                    isMobile && styles.rightColumnMobile,
+                    isSmallMobile && styles.rightColumnSmallMobile,
+                ]}
+            >
+                {/* Calendar */}
+                <View style={[
+                    styles.calendarContainer,
+                    isMobile && styles.calendarMobile,
+                ]}>
+                    <View style={styles.calendarHeader}>
+                        <Text style={styles.monthText}>
+                            {currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })}
+                        </Text>
+
+                        <Pressable onPress={() => setIsExpanded(!isExpanded)} style={styles.expandBtn}>
+                            {isExpanded ? (
+                                <ChevronsDownUp size={20} color="#0a6340" />
+                            ) : (
+                                <ChevronsUpDown size={20} color="#0a6340" />
+                            )}
+                        </Pressable>
+                    </View>
+
+                    <View style={styles.divider} />
+
+                    <View style={styles.calendarBodyRow}>
+                        <Pressable
+                            onPress={() => {
+                                const d = new Date(currentDate);
+                                isExpanded ? d.setMonth(d.getMonth() - 1) : d.setDate(d.getDate() - 7);
+                                setCurrentDate(d);
+                            }}
+                        >
+                            <ChevronLeft size={24} color="#2f6618fe" />
+                        </Pressable>
+
+                        <View style={{ flex: 1 }}>
+                            <View style={styles.weekHeaderRow}>
+                                {weekLabels.map((day, i) => (
+                                    <Text key={i} style={styles.weekHeaderText}>
+                                        {day}
+                                    </Text>
+                                ))}
+                            </View>
+
+                            <View style={isExpanded ? styles.monthGrid : styles.weekRow}>
+                                {(isExpanded ? getDaysInMonth(currentDate) : weekDates).map((date, index) => {
+                                    if (!date) {
+                                        return (
+                                            <View
+                                                key={index}
+                                                style={[styles.dayContainer, styles.monthDayContainer]}
+                                            />
+                                        );
+                                    }
+
+                                    const dateString = formatLocalDate(date);
+                                    const isSelected = selectedDate === dateString;
+                                    const hasEvent = hasPendingEventOnDate(date);
+
+                                    return (
+                                        <Pressable
+                                            key={index}
+                                            style={[
+                                                styles.dayContainer,
+                                                isExpanded ? styles.monthDayContainer : { flex: 1 },
+                                            ]}
+                                            onPress={() => setSelectedDate(isSelected ? null : dateString)}
+                                        >
+                                            <Text style={[
+                                                styles.dayNumber,
+                                                isSelected && styles.selectedText,
+                                            ]}>
+                                                {date.getDate()}
+                                            </Text>
+
+                                            {hasEvent && <View style={styles.dot} />}
+                                        </Pressable>
+                                    );
+                                })}
+                            </View>
+                        </View>
+
+                        <Pressable
+                            onPress={() => {
+                                const d = new Date(currentDate);
+                                isExpanded ? d.setMonth(d.getMonth() + 1) : d.setDate(d.getDate() + 7);
+                                setCurrentDate(d);
+                            }}
+                        >
+                            <ChevronRight size={24} color="#2f6618fe" />
+                        </Pressable>
+                    </View>
+                </View>
+
+                {/* Todo */}
+                <View style={[
+                    styles.todoSection,
+                    isMobile && styles.todoMobileWrapper,
+                ]}>
+                    <SlidingTabs
+                        tabs={eventTab}
+                        activeTab={filter}
+                        onTabChange={(id) => setFilter(id)}
+                    />
+
+                    <View style={styles.todoList}>
+                        <View style={styles.todoHeader}>
+                            <Text style={styles.todoListTitle}>Todo List</Text>
+
+                            <Pressable
+                                onPress={() => {
+                                    setSelectedTask(null);
+                                    setShowModal(true);
+                                }}
+                            >
+                                <ListPlus size={20} />
+                            </Pressable>
+                        </View>
+
+                        <ScrollView showsVerticalScrollIndicator={true} indicatorStyle="white">
+                            {filteredEvents.length === 0 ? (
+                                <Text>No todos</Text>
+                            ) : (
+                                filteredEvents.map(event => (
+                                    <View key={event.id} style={styles.todoItem}>
+                                        <View style={styles.todoRow}>
+                                            <Checkbox
+                                                value={event.status === 'completed'}
+                                                onValueChange={() => toggleEvent(event.id)}
+                                            />
+
+                                            <View style={{ flex: 1 }}>
+                                                <Text style={styles.todoTitle}>{event.title}</Text>
+                                                <Text style={styles.todoCourse}>
+                                                    {event.type} - {formatDate(event.event_start_at, false)}
+                                                </Text>
+                                            </View>
+
+                                            <Pressable onPress={() => openEdit(event)}>
+                                                <ChevronRight size={20} />
+                                            </Pressable>
+                                        </View>
+                                    </View>
+                                ))
+                            )}
+                        </ScrollView>
+                    </View>
+                </View>
+            </View>
+        </View>
+    );
+
+    return (
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ flexGrow: 1 }}>
+            <View style={[
+                styles.topRow,
+                isMobile && styles.topRowMobile,
+            ]}>
+                {/* Left side */}
+                <View style={[
+                    styles.leftScreen,
+                    isMobile && styles.leftScreenMobile,
+                ]}>
+                    <View style={styles.leftColumn}>
+                        {/* Info card */}
+                        <View style={styles.infoContainer}>
+                            <ImageBackground
+                                source={require('../../assets/darkgreen_bg.jpeg')}
+                                style={styles.infoCard}
+                            >
+                                <View style={styles.infoLeft}>
+                                    <Text style={styles.welcomeText}>
+                                        Welcome, {user?.firstname}
+                                    </Text>
+
+                                    <View style={styles.row}>
+                                        <ClockFading size={16} style={styles.icon} />
+                                        <Text style={styles.subText}>
+                                            Joined since {formatDate(user?.created_at, false)}
                                         </Text>
+                                    </View>
+
+                                    <View style={styles.infoRow1}>
+                                        <View style={styles.row}>
+                                            <Phone size={16} style={styles.icon} />
+                                            <Text style={styles.subText}>{user?.tel}</Text>
+                                        </View>
 
                                         <View style={styles.row}>
-                                            <ClockFading size={16} style={styles.icon}/>
-                                            <Text style={styles.subText}>
-                                                Joined since {formatDate(user?.created_at,false)}
+                                            <Mail size={16} style={styles.icon} />
+                                            <Text style={styles.subText}>{user?.personal_email}</Text>
+                                        </View>
+                                    </View>
+                                </View>
+
+                                <View style={styles.infoRight}>
+                                    {user?.profileImage ? (
+                                        <Image source={{ uri: user.profileImage }} style={styles.pfp} />
+                                    ) : (
+                                        <View style={styles.pfpPlaceholder}>
+                                            <Text style={styles.pfpInitials}>
+                                                {user?.firstname ? user.firstname[0].toUpperCase() : '?'}
                                             </Text>
                                         </View>
+                                    )}
 
-                                        <View style={styles.infoRow1}>
-                                            <View style={styles.row}>
-                                                <Phone size={16} style={styles.icon}/>
-                                                <Text style={styles.subText}>
-                                                    {user?.tel}
-                                                </Text>
-                                            </View>
-                                            
-                                            <View style={styles.row}>
-                                                <Mail size={16} style={styles.icon}/>
-                                                <Text style={styles.subText}>
-                                                    {user?.personal_email}
-                                                </Text>
-                                            </View>
+                                    <Text style={styles.idBadge}>ID: {user?.id}</Text>
+                                </View>
+                            </ImageBackground>
+                        </View>
+
+                        <Text style={styles.sectionTitle}>My Courses</Text>
+
+                        <SlidingTabs
+                            tabs={courseTab}
+                            activeTab={courseFilter}
+                            onTabChange={(id) => setCourseFilter(id)}
+                        />
+
+                        <View style={[styles.cardContainer, { columnGap: cardStyles.gap }]}>
+                            {coursesLoading && <Text>Updating progress...</Text>}
+
+                            {courseFilter === 'in progress' && (
+                                inProgressCourses.length > 0 ? (
+                                    inProgressCourses.map(course => (
+                                        <View
+                                            key={course.id}
+                                            style={[
+                                                styles.cardWrapper,
+                                                { flexBasis: cardStyles.width, minWidth: cardStyles.width },
+                                            ]}
+                                        >
+                                            <CourseCard
+                                                id={course.id}
+                                                coverImgUrl={course.cover_img_url}
+                                                courseTitle={course.title}
+                                                numModules={course.module_count ?? 0}
+                                                duration={course.expected_completion_weeks}
+                                                expiry={course.must_complete_in_weeks}
+                                                progress={course.progress}
+                                                enrollmentStatus={course.enrollmentStatus}
+                                                isEnrollable={course.is_enrollable}
+                                                userType={userType}
+                                                onPress={() => navigation.navigate('ParkGuideStack', {
+                                                    screen: 'UserModule',
+                                                    params: {
+                                                        id: course.id,
+                                                        enrollmentStatus: course.enrollmentStatus,
+                                                        enrollmentId: course.enrollmentId,
+                                                    },
+                                                })}
+                                                style={{ width: '100%' }}
+                                            />
                                         </View>
-                                    </View>
+                                    ))
+                                ) : (
+                                    <Text style={styles.emptyText}>No courses in progress.</Text>
+                                )
+                            )}
 
-                                    {/* info card right side */}
-                                    <View style={styles.infoRight}>
-                                        {user?.profileImage ? (
-                                        <Image source={{ uri: user.profileImage }} style={styles.pfp}/>
-                                        ) : (
-                                            <View style={styles.pfpPlaceholder}>
-                                                <Text style={styles.pfpInitials}>
-                                                    {user?.firstname ? user?.firstname[0].toUpperCase() : '?'}
-                                                </Text>
-                                            </View>
-                                        )}
-
-                                        <Text style={styles.idBadge}>
-                                            ID: {user?.id}
-                                        </Text>
-                                    </View>
-                                </ImageBackground>
-                            </View>
-                            <Text style={styles.sectionTitle}>My Courses</Text>
-                            <SlidingTabs tabs={courseTab} activeTab={courseFilter} onTabChange={(id)=>setCourseFilter(id)}/>
-                            <View style={[styles.cardContainer, { columnGap: cardStyles.gap }]}>
-                                {coursesLoading && <Text>Updating progress...</Text>}
-
-                                {/* Render In Progress Tab */}
-                                {courseFilter === 'in progress' && (
-                                    inProgressCourses.length > 0 ? (
-                                        inProgressCourses.map(course => (
-                                            <View key={course.id} style={[styles.cardWrapper, { flexBasis: cardStyles.width, minWidth: cardStyles.width }]}>
-                                                <CourseCard
-                                                    key={course.id}
-                                                    id={course.id}
-                                                    coverImgUrl={course.cover_img_url}
-                                                    courseTitle={course.title}
-                                                    numModules={course.module_count ?? 0}
-                                                    duration={course.expected_completion_weeks}
-                                                    expiry={course.must_complete_in_weeks}
-                                                    progress={course.progress} // This is now the real weighted score %
-                                                    enrollmentStatus={course.enrollmentStatus}
-                                                    isEnrollable={course.is_enrollable}
-                                                    userType={userType}
-                                                    onPress={() => navigation.navigate('ParkGuideStack', {
-                                                        screen: 'UserModule', 
-                                                        params: { 
-                                                            id: course.id,
-                                                            enrollmentStatus: course.enrollmentStatus,
-                                                            enrollmentId: course.enrollmentId
-                                                        }
-                                                    })}
-                                                    style={{ width: '100%' }}
-                                                />
-                                            </View>
-                                        ))
-                                    ) : (
-                                        <Text style={styles.emptyText}>No courses in progress.</Text>
-                                    )
-                                )}
-
-                            {/* completed courses */}
                             {courseFilter === 'completed' && (
                                 completedCourses.length > 0 ? (
-                                    completedCourses.map(course => {
-                                        return (
-                                            <View key={course.id} style={[styles.cardWrapper, { flexBasis: cardStyles.width, minWidth: cardStyles.width }]}>
-                                                <CourseCard
-                                                    key={course.id}
-                                                    id={course.id}
-                                                    coverImgUrl={course.cover_img_url}
-                                                    courseTitle={course.title}
-                                                    numModules={course.module_count ?? 0}
-                                                    duration={course.expected_completion_weeks}
-                                                    expiry={course.must_complete_in_weeks}
-                                                    progress={course.progress}
-                                                    enrollmentStatus={course.enrollmentStatus}
-                                                    isEnrollable={course.is_enrollable}
-                                                    userType={userType}
-                                                    onPress={() =>
-                                                        navigation.navigate('ParkGuideStack', {
-                                                            screen: 'UserModule',
-                                                            params: {
-                                                                id: course.id,
-                                                                enrollmentStatus:
-                                                                    course.enrollmentStatus ?? null,
-                                                                enrollmentId: course.enrollmentId
-                                                            }
-                                                        })
-                                                    }
-                                                    style={{ width: '100%' }}
-                                                />
-                                            </View>
-                                        );
-                                    })
+                                    completedCourses.map(course => (
+                                        <View
+                                            key={course.id}
+                                            style={[
+                                                styles.cardWrapper,
+                                                { flexBasis: cardStyles.width, minWidth: cardStyles.width },
+                                            ]}
+                                        >
+                                            <CourseCard
+                                                id={course.id}
+                                                coverImgUrl={course.cover_img_url}
+                                                courseTitle={course.title}
+                                                numModules={course.module_count ?? 0}
+                                                duration={course.expected_completion_weeks}
+                                                expiry={course.must_complete_in_weeks}
+                                                progress={course.progress}
+                                                enrollmentStatus={course.enrollmentStatus}
+                                                isEnrollable={course.is_enrollable}
+                                                userType={userType}
+                                                onPress={() => navigation.navigate('ParkGuideStack', {
+                                                    screen: 'UserModule',
+                                                    params: {
+                                                        id: course.id,
+                                                        enrollmentStatus: course.enrollmentStatus ?? null,
+                                                        enrollmentId: course.enrollmentId,
+                                                    },
+                                                })}
+                                                style={{ width: '100%' }}
+                                            />
+                                        </View>
+                                    ))
                                 ) : (
                                     <Text style={styles.emptyText}>No completed courses.</Text>
                                 )
                             )}
                         </View>
-                            {/* Categories */}
-                            <Text style={styles.sectionTitle}>{t('explore')} {t('categories')}</Text>
-                                <View style={styles.tagContainer}>
-                                    {categories.length > 0 ? (
-                                        categories
-                                            .filter(tag => tag.type === 'category') 
-                                            .map((item) => (
-                                                <Pressable 
-                                                    key={item.id} 
-                                                    style={styles.categoryTag}
-                                                    onPress={() => navigation.navigate('ParkGuideStack', {
-                                                        screen: 'Courses', 
-                                                        params: { 
-                                                            filterCategory: item.title
-                                                        }
-                                                    })}
-                                                >
-                                                    <Text style={styles.tagText}>{item.title}</Text>
-                                                </Pressable>
-                                            ))
-                                    ) : (
-                                        <Text style={styles.emptyText}>{t('No categories found.')}</Text>
-                                    )}
+
+                        <Text style={styles.sectionTitle}>
+                            {t('explore')} {t('categories')}
+                        </Text>
+
+                        <View style={styles.tagContainer}>
+                            {categories.length > 0 ? (
+                                categories
+                                    .filter(tag => tag.type === 'category')
+                                    .map(item => (
+                                        <Pressable
+                                            key={item.id}
+                                            style={styles.categoryTag}
+                                            onPress={() => navigation.navigate('ParkGuideStack', {
+                                                screen: 'Courses',
+                                                params: {
+                                                    filterCategory: item.title,
+                                                },
+                                            })}
+                                        >
+                                            <Text style={styles.tagText}>{item.title}</Text>
+                                        </Pressable>
+                                    ))
+                            ) : (
+                                <Text style={styles.emptyText}>{t('No categories found.')}</Text>
+                            )}
+                        </View>
+
+                        {/* Mobile calendar + todo goes here */}
+                        {isMobile && renderRightSection()}
+                    </View>
+                </View>
+
+                {/* Desktop right sidebar only */}
+                {!isMobile && renderRightSection()}
+            </View>
+
+            <AddTodo
+                visible={showModal}
+                setIsModalVisible={(visible) => {
+                    setShowModal(visible);
+                    if (!visible) {
+                        setSelectedTask(null);
+                    }
+                }}
+                onCreated={refreshData}
+                initialEvent={selectedTask}
+            />
+        </ScrollView>
+    );
+
+    return(
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ flexGrow: 1 }}>
+            <View style={[
+                styles.topRow,
+                isMobile && styles.topRowMobile
+            ]}>
+                {/* Left side of screen */}
+                <View style={[
+                    styles.leftScreen,
+                    isMobile && styles.leftScreenMobile
+                ]}>
+                    <View style={styles.leftColumn}>
+                        {/* info card */}
+                        <View style={styles.infoContainer}>
+                            <ImageBackground
+                                source={require('../../assets/darkgreen_bg.jpeg')}
+                                style={styles.infoCard}
+                            >
+                                {/* info card left side */}
+                                <View style={styles.infoLeft}>
+                                    <Text style={styles.welcomeText}>
+                                        Welcome, {user?.firstname}
+                                    </Text>
+
+                                    <View style={styles.row}>
+                                        <ClockFading size={16} style={styles.icon}/>
+                                        <Text style={styles.subText}>
+                                            Joined since {formatDate(user?.created_at,false)}
+                                        </Text>
+                                    </View>
+
+                                    <View style={styles.infoRow1}>
+                                        <View style={styles.row}>
+                                            <Phone size={16} style={styles.icon}/>
+                                            <Text style={styles.subText}>
+                                                {user?.tel}
+                                            </Text>
+                                        </View>
+                                        
+                                        <View style={styles.row}>
+                                            <Mail size={16} style={styles.icon}/>
+                                            <Text style={styles.subText}>
+                                                {user?.personal_email}
+                                            </Text>
+                                        </View>
+                                    </View>
                                 </View>
-                        </View> 
+
+                                {/* info card right side */}
+                                <View style={styles.infoRight}>
+                                    {user?.profileImage ? (
+                                    <Image source={{ uri: user.profileImage }} style={styles.pfp}/>
+                                    ) : (
+                                        <View style={styles.pfpPlaceholder}>
+                                            <Text style={styles.pfpInitials}>
+                                                {user?.firstname ? user?.firstname[0].toUpperCase() : '?'}
+                                            </Text>
+                                        </View>
+                                    )}
+
+                                    <Text style={styles.idBadge}>
+                                        ID: {user?.id}
+                                    </Text>
+                                </View>
+                            </ImageBackground>
+                        </View>
+                        <Text style={styles.sectionTitle}>My Courses</Text>
+                        <SlidingTabs tabs={courseTab} activeTab={courseFilter} onTabChange={(id)=>setCourseFilter(id)}/>
+                        <View style={[styles.cardContainer, { columnGap: cardStyles.gap }]}>
+                            {coursesLoading && <Text>Updating progress...</Text>}
+
+                            {/* Render In Progress Tab */}
+                            {courseFilter === 'in progress' && (
+                                inProgressCourses.length > 0 ? (
+                                    inProgressCourses.map(course => (
+                                        <View key={course.id} style={[styles.cardWrapper, { flexBasis: cardStyles.width, minWidth: cardStyles.width }]}>
+                                            <CourseCard
+                                                key={course.id}
+                                                id={course.id}
+                                                coverImgUrl={course.cover_img_url}
+                                                courseTitle={course.title}
+                                                numModules={course.module_count ?? 0}
+                                                duration={course.expected_completion_weeks}
+                                                expiry={course.must_complete_in_weeks}
+                                                progress={course.progress} // This is now the real weighted score %
+                                                enrollmentStatus={course.enrollmentStatus}
+                                                isEnrollable={course.is_enrollable}
+                                                userType={userType}
+                                                onPress={() => navigation.navigate('ParkGuideStack', {
+                                                    screen: 'UserModule', 
+                                                    params: { 
+                                                        id: course.id,
+                                                        enrollmentStatus: course.enrollmentStatus,
+                                                        enrollmentId: course.enrollmentId
+                                                    }
+                                                })}
+                                                style={{ width: '100%' }}
+                                            />
+                                        </View>
+                                    ))
+                                ) : (
+                                    <Text style={styles.emptyText}>No courses in progress.</Text>
+                                )
+                            )}
+
+                        {/* completed courses */}
+                        {courseFilter === 'completed' && (
+                            completedCourses.length > 0 ? (
+                                completedCourses.map(course => {
+                                    return (
+                                        <View key={course.id} style={[styles.cardWrapper, { flexBasis: cardStyles.width, minWidth: cardStyles.width }]}>
+                                            <CourseCard
+                                                key={course.id}
+                                                id={course.id}
+                                                coverImgUrl={course.cover_img_url}
+                                                courseTitle={course.title}
+                                                numModules={course.module_count ?? 0}
+                                                duration={course.expected_completion_weeks}
+                                                expiry={course.must_complete_in_weeks}
+                                                progress={course.progress}
+                                                enrollmentStatus={course.enrollmentStatus}
+                                                isEnrollable={course.is_enrollable}
+                                                userType={userType}
+                                                onPress={() =>
+                                                    navigation.navigate('ParkGuideStack', {
+                                                        screen: 'UserModule',
+                                                        params: {
+                                                            id: course.id,
+                                                            enrollmentStatus:
+                                                                course.enrollmentStatus ?? null,
+                                                            enrollmentId: course.enrollmentId
+                                                        }
+                                                    })
+                                                }
+                                                style={{ width: '100%' }}
+                                            />
+                                        </View>
+                                    );
+                                })
+                            ) : (
+                                <Text style={styles.emptyText}>No completed courses.</Text>
+                            )
+                        )}
+                    </View>
+                        {/* Categories */}
+                        <Text style={styles.sectionTitle}>{t('explore')} {t('categories')}</Text>
+                            <View style={styles.tagContainer}>
+                                {categories.length > 0 ? (
+                                    categories
+                                        .filter(tag => tag.type === 'category') 
+                                        .map((item) => (
+                                            <Pressable 
+                                                key={item.id} 
+                                                style={styles.categoryTag}
+                                                onPress={() => navigation.navigate('ParkGuideStack', {
+                                                    screen: 'Courses', 
+                                                    params: { 
+                                                        filterCategory: item.title
+                                                    }
+                                                })}
+                                            >
+                                                <Text style={styles.tagText}>{item.title}</Text>
+                                            </Pressable>
+                                        ))
+                                ) : (
+                                    <Text style={styles.emptyText}>{t('No categories found.')}</Text>
+                                )}
+                            </View>
+                    </View> 
                 </View>
 
                 {/* Right side of screen */} 
-                <View style={styles.rightWrapper}>
-                    <View style={styles.rightColumn}>
-                        
+                <View style={[
+                    isMobile
+                        ? styles.rightWrapperMobile
+                        : styles.rightWrapper
+                ]}>
+                    <View style={[
+                        styles.rightColumn,
+                        isMobile && styles.rightColumnMobile
+                    ]}>
                         {/* Calendar */}
-                        <View style={styles.calendarContainer}>
+                        <View style={[
+                            styles.calendarContainer,
+                            isMobile && styles.calendarMobile
+                        ]}>
                             <View style={styles.calendarHeader}>
                                 <Text style={styles.monthText}>{currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })}
                                 </Text>
@@ -315,52 +690,57 @@ const UserDashboard = ({ navigation }) => {
                                 }}>
                                     <ChevronRight size={24} color='#2f6618fe' />
                                 </Pressable>
-
                             </View>
                         </View>
-
-                        {/* Todo tab for filter (All, Completed, Not completed) */}
-                        <SlidingTabs tabs={eventTab} activeTab={filter} onTabChange={(id)=>setFilter(id)}/>
-
+                        
                         {/* Todo list */}
-                        <View style={{ flex: 1, minHeight: 0 }}>
-                            <View style={styles.todoList}>
-                                <View style={styles.todoHeader}>
-                                    <Text style={styles.todoListTitle}>Todo List</Text>
-                                    <Pressable 
-                                    onPress={() => {
-                                            setSelectedTask(null);
-                                            setShowModal(true);
-                                        }}
-                                    >
-                                        <ListPlus size={20} />
-                                    </Pressable>
-                                </View>
-                                <ScrollView showsVerticalScrollIndicator={true} indicatorStyle='white'>
-                                    {filteredEvents.length === 0 ? (
-                                        <Text>No todos</Text>
-                                    ) : (
-                                        filteredEvents.map(event => (
-                                            <View key={event.id} style={styles.todoItem}>
-                                                <View style={styles.todoRow}>
-                                                    <Checkbox
-                                                        value={event.status === 'completed'}
-                                                        onValueChange={() => toggleEvent(event.id)}
-                                                    />
-                                                    <View style={{flex: 1}}>
-                                                        <Text style={styles.todoTitle}>{event.title}</Text>
-                                                        <Text style={styles.todoCourse}>{event.type} - {formatDate(event.event_start_at, false)}</Text>
-                                                    </View>
+                        <View style={[
+                            styles.todoSection,
+                            isMobile && styles.todoMobileWrapper
+                        ]}>
+                            {/* Todo tab for filter */}
+                            <SlidingTabs 
+                                tabs={eventTab} 
+                                activeTab={filter} 
+                                onTabChange={(id)=>setFilter(id)}
+                            />
+                                <View style={styles.todoList}>
+                                    <View style={styles.todoHeader}>
+                                        <Text style={styles.todoListTitle}>Todo List</Text>
+                                        <Pressable 
+                                        onPress={() => {
+                                                setSelectedTask(null);
+                                                setShowModal(true);
+                                            }}
+                                        >
+                                            <ListPlus size={20} />
+                                        </Pressable>
+                                    </View>
+                                    <ScrollView showsVerticalScrollIndicator={true} indicatorStyle='white'>
+                                        {filteredEvents.length === 0 ? (
+                                            <Text>No todos</Text>
+                                        ) : (
+                                            filteredEvents.map(event => (
+                                                <View key={event.id} style={styles.todoItem}>
+                                                    <View style={styles.todoRow}>
+                                                        <Checkbox
+                                                            value={event.status === 'completed'}
+                                                            onValueChange={() => toggleEvent(event.id)}
+                                                        />
+                                                        <View style={{flex: 1}}>
+                                                            <Text style={styles.todoTitle}>{event.title}</Text>
+                                                            <Text style={styles.todoCourse}>{event.type} - {formatDate(event.event_start_at, false)}</Text>
+                                                        </View>
 
-                                                    <Pressable onPress={() => openEdit(event)}>
-                                                        <ChevronRight size={20} />
-                                                    </Pressable>
+                                                        <Pressable onPress={() => openEdit(event)}>
+                                                            <ChevronRight size={20} />
+                                                        </Pressable>
+                                                    </View>
                                                 </View>
-                                            </View>
-                                        ))
-                                    )}
-                                </ScrollView>
-                            </View>
+                                            ))
+                                        )}
+                                    </ScrollView>
+                                </View>
                         </View>
                     </View>
                 </View>
@@ -408,10 +788,20 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         gap: 20,
     },
+    topRowMobile: {
+        flexDirection: 'column',
+        gap: 0,
+    },
     leftColumn:{
         flexDirection: 'column',
         width: '100%',
         gap: 20,
+    },
+    leftScreenMobile: {
+        flex: 0,
+        alignSelf: 'stretch',
+        marginLeft: 0,
+        paddingHorizontal: 20,
     },
     rightColumn:{
         flex: 1,
@@ -419,6 +809,12 @@ const styles = StyleSheet.create({
         paddingHorizontal: 30,
         minHeight: 0,
         paddingVertical: 30,
+    },
+    rightColumnMobile: {
+        flexDirection: 'column',
+        gap: 20,
+        paddingHorizontal: 0,
+        paddingVertical: 0,
     },
     rightWrapper:{
         flex: 1,
@@ -428,6 +824,14 @@ const styles = StyleSheet.create({
         height:'calc(100vh - 65px)',
         alignSelf:'flex-start',
         maxWidth:370
+    },
+    rightWrapperMobile: {
+        width: '100%',
+        maxWidth: '100%',
+        backgroundColor: 'transparent',
+        paddingHorizontal: 20,
+        paddingBottom: 30,
+        marginTop: 20,
     },
     // Info card
     infoContainer:{
@@ -488,6 +892,10 @@ const styles = StyleSheet.create({
         color: 'white',
     },
     // Calendar
+    calendarMobile: {
+        width: '100%',
+        marginBottom: 0,
+    },
     calendarContainer:{
         width: '100%',
         marginBottom: 10,
@@ -568,6 +976,14 @@ const styles = StyleSheet.create({
         marginVertical: 5,
     },
     // Todo list
+    todoSection: {
+        width: '100%',
+        minHeight: 0,
+    },
+    todoMobileWrapper: {
+        width: '100%',
+        minHeight: 360,
+    },
     todoList:{
         flex: 1,
         backgroundColor: '#8ed2a944',
