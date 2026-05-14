@@ -1,4 +1,5 @@
 import { PaginateRequestParams } from "./common";
+import { NotificationCategory } from "../enum/NotificationCategory";
 
 export interface NotificationResponse {
   id: number;
@@ -16,6 +17,7 @@ export interface CreateNotificationRequest {
   title: string;
   message: string;
   url?: string | null;
+  category?: NotificationCategory;
 }
 
 export interface UpdateNotificationRequest {
@@ -23,4 +25,8 @@ export interface UpdateNotificationRequest {
   message: string;
   url: string | null;
   dismissed_at: Date | null;
+}
+
+export interface UpdateNotificationPreferencesRequest {
+  preferences: Partial<Record<NotificationCategory, boolean>>;
 }

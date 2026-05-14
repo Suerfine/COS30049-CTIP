@@ -140,6 +140,18 @@ NotificationRouter.get(
   NotificationController.getAllMyNotifications,
 );
 
+NotificationRouter.get(
+  "/preferences",
+  auth,
+  NotificationController.getMyNotificationPreferences,
+);
+
+NotificationRouter.put(
+  "/preferences",
+  auth,
+  NotificationController.updateMyNotificationPreferences,
+);
+
 /**
  * @swagger
  * /api/notifications/{id}:

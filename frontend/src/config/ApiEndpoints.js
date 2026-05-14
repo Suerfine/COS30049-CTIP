@@ -61,6 +61,7 @@ export const API_ENDPOINTS = {
   NOTIFICATION: {
     LIST: "/notifications",
     MY_NOTIFICATIONS: "/notifications/me",
+    PREFERENCES: "/notifications/preferences",
     DETAIL: (id) => `/notifications/${id}`,
     UPDATE: (id) => `/notifications/${id}`,
     DISMISS: (id) => `/notifications/${id}/dismiss`,

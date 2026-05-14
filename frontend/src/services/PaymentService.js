@@ -223,11 +223,14 @@ export const paymentService = {
    */
   verifyPayment: async (paymentId, status, adminRemark = "") => {
     try {
-      const res = await apiClient.patch(`/payments/${paymentId}/verify`, {
-        status,
-        admin_id: 1,
-        admin_remark: adminRemark,
-      });
+      const res = await apiClient.patch(
+        API_ENDPOINTS.PAYMENT.UPDATE_STATUS(paymentId, status),
+        {
+          status,
+          admin_id: 1,
+          admin_remark: adminRemark,
+        },
+      );
 
       return res.data;
     } catch (error) {

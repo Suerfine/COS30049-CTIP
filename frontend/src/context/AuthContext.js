@@ -1,8 +1,23 @@
-import { createContext, useContext, useMemo, useState, useEffect } from "react";
+import { createContext, useContext, useMemo, useState, useEffect, useCallback } from "react";
 import { authService } from "../services/authService";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const AuthContext = createContext(null);
+let logoutHandler = null;
+
+export const registerLogoutHandler = (handler) => {
+  logoutHandler = handler;
+};
+
+export const clearLogoutHandler = () => {
+  logoutHandler = null;
+};
+
+export const triggerLogout = async () => {
+  if (typeof logoutHandler === "function") {
+    await logoutHandler();
+  }
+};
 
 export const AuthProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
@@ -53,11 +68,18 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     await AsyncStorage.multiRemove(["currentUser", "accessToken"]);
     setCurrentUser(null);
     setAccessToken(null);
-  };
+  }, []);
+
+  useEffect(() => {
+    registerLogoutHandler(logout);
+    return () => {
+      clearLogoutHandler();
+    };
+  }, [logout]);
 
   const value = useMemo(
     () => ({

@@ -3,6 +3,9 @@ import { AnomalyEvent as AnomalyEvent, User } from "../models";
 import { DatabaseError, Op } from "sequelize";
 import { PaginateRequestParams, PaginateResponse } from "../types/common";
 import { paginateModel } from "../utils/paginate";
+import sequelize from "../config/Database";
+import { sendNotification } from "../utils/sendNotification";
+import { NotificationCategory } from "../enum/NotificationCategory";
 
 interface CreateAnomalyEventRequest {
   user_id: number;
@@ -87,6 +90,7 @@ export const createAnomalyEvent = async (
   res: Response<AnomalyEventResponse | { message: string }>,
   next: NextFunction,
 ) => {
+  const transaction = await sequelize.transaction();
   try {
     // Validate user exists
     const user = req.user
@@ -94,17 +98,45 @@ export const createAnomalyEvent = async (
       throw new HttpError(404, "User not found" + req.user?.username);
     }
 
-    const event = await AnomalyEvent.create({
-      user_id: req.body.user_id,
-      event_type: req.body.event_type,
-      metadata: req.body.metadata || null,
-      latitude: req.body.latitude || null,
-      longitude: req.body.longitude || null,
-      annotated_frame_base64: req.body.annotated_frame_base64 || null,
-    });
+    const event = await AnomalyEvent.create(
+      {
+        user_id: req.body.user_id,
+        event_type: req.body.event_type,
+        metadata: req.body.metadata || null,
+        latitude: req.body.latitude || null,
+        longitude: req.body.longitude || null,
+        annotated_frame_base64: req.body.annotated_frame_base64 || null,
+      },
+      { transaction },
+    );
+
+    await sendNotification(
+      "admin",
+      "New Anomaly Detected",
+      `A ${req.body.event_type.replace(/_/g, " ")} anomaly was detected. Please review it on the anomaly dashboard.`,
+      transaction,
+      undefined,
+      false,
+      NotificationCategory.ANOMALY_ALERT,
+      "/admin/dashboard",
+    );
+
+    await sendNotification(
+      "single",
+      "Anomaly Detected",
+      `A ${req.body.event_type.replace(/_/g, " ")} anomaly was recorded for your activity.`,
+      transaction,
+      req.body.user_id,
+      false,
+      NotificationCategory.ANOMALY_ALERT,
+      "/anomaly",
+    );
+
+    await transaction.commit();
 
     res.status(201).json(toAnomalyEventResponse(event));
   } catch (error) {
+    await transaction.rollback();
     if (error instanceof HttpError) {
       return res.status(error.status).json({ message: error.message });
     }

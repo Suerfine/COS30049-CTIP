@@ -38,7 +38,14 @@ const MobileTopBar=({onToggleSidebar, routeName, onFilterPress, navigation})=>{
                     </Pressable>
                 )}
                 {/* Notification */}
-                <Pressable style={styles.iconBtn}>
+                <Pressable
+                    style={styles.iconBtn}
+                    onPress={() => {
+                        navigation.navigate('ParkGuideMobileRoot', {
+                            screen: 'Notification'
+                        });
+                    }}
+                >
                     <Bell size={22} color="#333"/>
                     <View style={styles.badge}></View>
                 </Pressable>

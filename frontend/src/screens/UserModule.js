@@ -48,6 +48,8 @@ const UserModule = ({ navigation }) => {
     enrollmentStatus,
     enrollmentId,
     enrollmentStatus: initialStatus,
+    initialSection,
+    discussionId,
   } = route.params;
   const [localStatus, setLocalStatus] = useState(initialStatus);
   const hasfailedRef = useRef(false);
@@ -89,6 +91,12 @@ const UserModule = ({ navigation }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [activeTab, setActiveTab] = useState("Overview");
   const scrollViewRef = useRef(null);
+
+  useEffect(() => {
+    if (initialSection === "forum") {
+      setSelectedPage({ type: "forum" });
+    }
+  }, [initialSection, discussionId]);
 
   const scrollToTop = () => {
     scrollViewRef.current?.scrollTo({
@@ -484,6 +492,7 @@ const UserModule = ({ navigation }) => {
             ) : selectedPage?.type === "forum" ? (
               <DiscussionSection
                 courseId={id}
+                initialDiscussionId={discussionId}
                 navigation={navigation}
                 styles={styles}
               />

@@ -171,18 +171,19 @@ export const useUserDashboard = () => {
             });
         }
         if (filter === "upcoming") {
-            return result.filter(event =>
-                event.status === "pending"
+            return result.filter(
+                (event) => event.type !== "workshop" && event.status === "pending"
             );
         }
+
         if (filter === "completed") {
-            return result.filter(event =>
-                event.type === "normal" && event.status === "completed"
+            return result.filter(
+                (event) => event.type !== "workshop" && event.status === "completed"
             );
         }
+
         if (filter === "workshop") {
-            return result.filter(event => 
-                event.type === "workshop");
+            return result.filter((event) => event.type === "workshop");
         }
         return result;
     }, [events, selectedDate, filter]);

@@ -1,4 +1,6 @@
 import { Op } from "sequelize";
+import fs from "fs";
+import path from "path";
 import { paginateModel, formatPaginateResponse } from "../utils/paginate";
 import { NextFunction, Request, Response } from "express";
 import { Payment, Enrollment, User, Course } from "../models";
@@ -6,11 +8,14 @@ import sequelize from "../config/Database";
 import path from "path";
 import { PaymentStatus } from "../enum/PaymentStatus";
 import { EnrollmentStatus } from "../enum/EnrollmentStatus";
+import { UserRoles } from "../enum/UserRoles";
 import {
   parseId,
   parseNumberField,
   parseOptionalText,
 } from "../utils/parseRequest";
+import { sendNotification } from "../utils/sendNotification";
+import { NotificationCategory } from "../enum/NotificationCategory";
 import { DiskStorageService } from "../services/storage/DiskStorageService";
 
 class HttpError extends Error {
@@ -19,6 +24,33 @@ class HttpError extends Error {
     super(message);
     this.status = status;
   }
+}
+
+function resolveStoredReceiptPath(storedPath: string): string | null {
+  const backendRoot = path.resolve(__dirname, "../..");
+  const allowedRoots = [
+    path.resolve(backendRoot, "uploads"),
+    path.resolve(backendRoot, "storage"),
+  ];
+
+  const normalizedStoredPath = storedPath
+    .replace(/^https?:\/\/[^/]+\/?/i, "")
+    .replace(/^\/+/, "");
+
+  const candidates = [
+    path.resolve(backendRoot, normalizedStoredPath),
+    path.resolve(backendRoot, "storage", normalizedStoredPath),
+  ];
+
+  return (
+    candidates.find((candidate) => {
+      const isAllowed = allowedRoots.some(
+        (root) =>
+          candidate === root || candidate.startsWith(`${root}${path.sep}`),
+      );
+      return isAllowed && fs.existsSync(candidate);
+    }) ?? null
+  );
 }
 
 async function validatePayment(paymentIdRaw: string): Promise<Payment> {
@@ -39,10 +71,11 @@ async function validatePayment(paymentIdRaw: string): Promise<Payment> {
 }
 
 export const submitPayment = async (
-  req: Request,
+  req: Request & { file?: { path: string } },
   res: Response,
   next: NextFunction,
 ) => {
+  const transaction = await sequelize.transaction();
   try {
     console.log("BODY:", req.body);
     console.log("FILE:", req.file);
@@ -59,29 +92,50 @@ export const submitPayment = async (
 
     const enrollment = await Enrollment.findByPk(enrollmentId, {
       include: [{ model: Course, as: "course" }],
+      transaction,
     });
 
     if (!enrollment || !enrollment.course) {
       throw new HttpError(404, "Enrollment or Course not found");
     }
 
-    const payment = await Payment.create({
-      user_id: enrollment.user_id,
-      course_id: enrollment.course_id,
-      enrollment_id: enrollmentId,
-      amount: enrollment.course.cost,
+    const payment = await Payment.create(
+      {
+        user_id: enrollment.user_id,
+        course_id: enrollment.course_id,
+        enrollment_id: enrollmentId,
+        amount: enrollment.course.cost,
 
-      receipt_filepath: file.path,
+        receipt_filepath: file.path,
 
-      status: PaymentStatus.PENDING,
-    });
+        status: PaymentStatus.PENDING,
+      },
+      { transaction },
+    );
 
-    await enrollment.update({
-      status: EnrollmentStatus.PENDING_PAYMENT,
-    });
+    await enrollment.update(
+      {
+        status: EnrollmentStatus.PENDING_PAYMENT,
+      },
+      { transaction },
+    );
+
+    await sendNotification(
+      "admin",
+      "Payment Awaiting Approval",
+      `A payment receipt was submitted for "${enrollment.course.title}". Please review it for approval.`,
+      transaction,
+      undefined,
+      false,
+      NotificationCategory.PAYMENT_APPROVAL,
+      "/payments",
+    );
+
+    await transaction.commit();
 
     return res.status(201).json(payment);
   } catch (err) {
+    await transaction.rollback();
     if (err instanceof HttpError) {
       return res.status(err.status).json({ message: err.message });
     }
@@ -120,7 +174,9 @@ export const verifyPayment = async (
       { transaction },
     );
 
-    const enrollment = await Enrollment.findByPk(payment.enrollment_id);
+    const enrollment = await Enrollment.findByPk(payment.enrollment_id, {
+      transaction,
+    });
     if (!enrollment) {
       throw new HttpError(404, "Associated enrollment not found");
     }
@@ -140,6 +196,19 @@ export const verifyPayment = async (
       },
       { transaction },
     );
+
+    if (statusFromUrl === PaymentStatus.PAID) {
+      await sendNotification(
+        "single",
+        "Enrollment Approved",
+        "Your course enrollment has been approved. You can now start learning.",
+        transaction,
+        enrollment.user_id,
+        false,
+        NotificationCategory.ENROLLMENT_SUCCESS,
+        `/courses/${enrollment.course_id}`,
+      );
+    }
 
     await transaction.commit();
     return res.json({
@@ -274,6 +343,48 @@ export const getPaymentById = async (
     }
 
     return res.json(payment);
+  } catch (err) {
+    if (err instanceof HttpError) {
+      return res.status(err.status).json({ message: err.message });
+    }
+    next(err);
+  }
+};
+
+export const downloadReceipt = async (
+  req: Request<{ id: string }>,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const id = parseId(req.params.id);
+
+    if (id === null) {
+      throw new HttpError(400, "Invalid payment_id");
+    }
+
+    const payment = await Payment.findByPk(id);
+    if (!payment) {
+      throw new HttpError(404, "Payment record not found");
+    }
+
+    const isAdmin = req.user?.role === UserRoles.ADMIN;
+    const isOwner = Number(req.user?.id) === Number(payment.user_id);
+    if (!isAdmin && !isOwner) {
+      throw new HttpError(403, "You are not allowed to download this receipt");
+    }
+
+    if (!payment.receipt_filepath) {
+      throw new HttpError(404, "Receipt file not found");
+    }
+
+    const filePath = resolveStoredReceiptPath(payment.receipt_filepath);
+
+    if (!filePath) {
+      throw new HttpError(404, "Receipt file not found");
+    }
+
+    return res.download(filePath);
   } catch (err) {
     if (err instanceof HttpError) {
       return res.status(err.status).json({ message: err.message });

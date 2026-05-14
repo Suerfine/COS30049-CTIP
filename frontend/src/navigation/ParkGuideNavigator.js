@@ -120,6 +120,14 @@ function MobileTabNavigator() {
           }}
         />
         <Tab.Screen
+          name="Notification"
+          component={Notification}
+          options={{
+            tabBarButton: () => null,
+            tabBarItemStyle: { display: "none" },
+          }}
+        />
+        <Tab.Screen
           name="Profile"
           component={UserProfile}
           options={{
