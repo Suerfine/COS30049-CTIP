@@ -20,6 +20,30 @@ export const notificationService = {
     }
   },
 
+  getPreferences: async () => {
+    try {
+      const response = await apiClient.get(API_ENDPOINTS.NOTIFICATION.PREFERENCES);
+      return response.data;
+    } catch (err) {
+      console.error('Fetch Notification Preferences Error: ', err);
+      const errorMessage = err.response?.data?.message || 'Failed to fetch notification preferences.';
+      return Promise.reject(errorMessage);
+    }
+  },
+
+  updatePreferences: async (preferences) => {
+    try {
+      const response = await apiClient.put(API_ENDPOINTS.NOTIFICATION.PREFERENCES, {
+        preferences,
+      });
+      return response.data;
+    } catch (err) {
+      console.error('Update Notification Preferences Error: ', err);
+      const errorMessage = err.response?.data?.message || 'Failed to update notification preferences.';
+      return Promise.reject(errorMessage);
+    }
+  },
+
   // Get all notifications (admin)
   getAllNotifications: async (params = {}) => {
     try {

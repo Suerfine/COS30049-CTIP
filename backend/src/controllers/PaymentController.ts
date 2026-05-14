@@ -10,6 +10,8 @@ import {
   parseNumberField,
   parseOptionalText,
 } from "../utils/parseRequest";
+import { sendNotification } from "../utils/sendNotification";
+import { NotificationCategory } from "../enum/NotificationCategory";
 
 class HttpError extends Error {
   status: number;
@@ -37,10 +39,11 @@ async function validatePayment(paymentIdRaw: string): Promise<Payment> {
 }
 
 export const submitPayment = async (
-  req: Request,
+  req: Request & { file?: { path: string } },
   res: Response,
   next: NextFunction
 ) => {
+  const transaction = await sequelize.transaction();
   try {
     console.log("BODY:", req.body);
     console.log("FILE:", req.file);
@@ -57,30 +60,51 @@ export const submitPayment = async (
 
     const enrollment = await Enrollment.findByPk(enrollmentId, {
       include: [{ model: Course, as: "course" }],
+      transaction,
     });
 
     if (!enrollment || !enrollment.course) {
       throw new HttpError(404, "Enrollment or Course not found");
     }
 
-    const payment = await Payment.create({
-      user_id: enrollment.user_id,
-      course_id: enrollment.course_id,
-      enrollment_id: enrollmentId,
-      amount: enrollment.course.cost,
+    const payment = await Payment.create(
+      {
+        user_id: enrollment.user_id,
+        course_id: enrollment.course_id,
+        enrollment_id: enrollmentId,
+        amount: enrollment.course.cost,
 
-      receipt_filepath: file.path,
+        receipt_filepath: file.path,
 
-      status: PaymentStatus.PENDING,
-    });
+        status: PaymentStatus.PENDING,
+      },
+      { transaction },
+    );
 
-    await enrollment.update({
-      status: EnrollmentStatus.PENDING_PAYMENT,
-    });
+    await enrollment.update(
+      {
+        status: EnrollmentStatus.PENDING_PAYMENT,
+      },
+      { transaction },
+    );
+
+    await sendNotification(
+      "admin",
+      "Payment Awaiting Approval",
+      `A payment receipt was submitted for "${enrollment.course.title}". Please review it for approval.`,
+      transaction,
+      undefined,
+      false,
+      NotificationCategory.PAYMENT_APPROVAL,
+      "/payments",
+    );
+
+    await transaction.commit();
 
     return res.status(201).json(payment);
 
   } catch (err) {
+    await transaction.rollback();
     if (err instanceof HttpError) {
       return res.status(err.status).json({ message: err.message });
     }
@@ -119,7 +143,9 @@ export const verifyPayment = async (
       { transaction }
     );
 
-    const enrollment = await Enrollment.findByPk(payment.enrollment_id);
+    const enrollment = await Enrollment.findByPk(payment.enrollment_id, {
+      transaction,
+    });
     if (!enrollment) {
       throw new HttpError(404, "Associated enrollment not found");
     }
@@ -137,6 +163,19 @@ export const verifyPayment = async (
       },
       { transaction }
     );
+
+    if (statusFromUrl === PaymentStatus.PAID) {
+      await sendNotification(
+        "single",
+        "Enrollment Approved",
+        "Your course enrollment has been approved. You can now start learning.",
+        transaction,
+        enrollment.user_id,
+        false,
+        NotificationCategory.ENROLLMENT_SUCCESS,
+        `/courses/${enrollment.course_id}`,
+      );
+    }
 
     await transaction.commit();
     return res.json({ 

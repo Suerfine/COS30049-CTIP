@@ -1,8 +1,8 @@
-import { th } from "@faker-js/faker";
-import sequelize from "../config/Database";
 import { Notification, User } from "../models";
 import { UserRoles } from "../enum/UserRoles";
 import { Transaction } from "sequelize";
+import { NotificationCategory } from "../enum/NotificationCategory";
+import { getUsersWithNotificationEnabled } from "./notificationPreferences";
 
 export async function sendNotification(
   mode: "all" | "admin" | "single",
@@ -11,54 +11,50 @@ export async function sendNotification(
   transaction: Transaction,
   userId?: number,
   sendEmail: boolean = false,
+  category?: NotificationCategory,
+  url?: string | null,
 ): Promise<void> {
   try {
+    let targetUserIds: number[] = [];
+
     switch (mode) {
       case "all":
-        User.findAll().then((users) => {
-          users.forEach((user) => {
-            Notification.create({
-              user_id: user.id,
-              title,
-              message,
-            });
-          });
-        });
+        targetUserIds = await User.findAll({ attributes: ["id"] }).then(
+          (users) => users.map((user) => user.id),
+        );
         break;
       case "admin":
-        User.findAll({
+        targetUserIds = await User.findAll({
           where: { role: UserRoles.ADMIN },
-        }).then((admins) => {
-          admins.forEach((admin) => {
-            Notification.create({
-              user_id: admin.id,
-              title,
-              message,
-            });
-          });
-        });
+          attributes: ["id"],
+        }).then((admins) => admins.map((admin) => admin.id));
         break;
       case "single":
         if (!userId) {
           throw new Error("User ID is required for 'single' mode");
         }
-        Notification.create({
-          user_id: userId,
-          title,
-          message,
-        });
-        break;
-      case "single":
-        if (!userId) {
-          throw new Error("User ID is required for 'single' mode");
-        }
-        Notification.create({
-          user_id: userId,
-          title,
-          message,
-        });
+        targetUserIds = [userId];
         break;
     }
+
+    const enabledUserIds = await getUsersWithNotificationEnabled(
+      targetUserIds,
+      category,
+    );
+
+    await Promise.all(
+      enabledUserIds.map((targetUserId) =>
+        Notification.create(
+          {
+            user_id: targetUserId,
+            title,
+            message,
+            url: url || null,
+          },
+          { transaction },
+        ),
+      ),
+    );
     // TODO: If sendEmail is true, implement logic to send an email notification to the user
   } catch (error) {
     throw error;

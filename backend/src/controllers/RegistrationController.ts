@@ -26,6 +26,7 @@ import { th } from "@faker-js/faker";
 import { sendNotification } from "../utils/sendNotification";
 import { logger } from "../utils/logger";
 import sequelize from "../config/Database";
+import { NotificationCategory } from "../enum/NotificationCategory";
 
 class HttpError extends Error {
   status: number;
@@ -151,11 +152,13 @@ export const createRegistration = async (
       transaction,
       undefined,
       true,
+      NotificationCategory.REGISTRATION_REVIEW,
+      "/registrations",
     );
-    transaction.commit();
+    await transaction.commit();
     return res.status(200).json(toRegistrationResponse(registration));
   } catch (err) {
-    transaction.rollback();
+    await transaction.rollback();
     if (err instanceof HttpError) {
       res.status(err.status).json({ message: err.message });
     } else {

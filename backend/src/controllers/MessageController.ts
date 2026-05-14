@@ -10,6 +10,7 @@ import { formatPaginateResponse, paginateModel } from "../utils/paginate";
 import { PaginateResponse } from "../types/common";
 import sequelize from "../config/Database";
 import { sendNotification } from "../utils/sendNotification";
+import { NotificationCategory } from "../enum/NotificationCategory";
 
 class HttpError extends Error {
   status: number;
@@ -48,11 +49,14 @@ export const createMessage = async (
     );
 
     const discussion = await Discussion.findByPk(discussion_id, {
-      attributes: ['title'], // 
+      attributes: ['id', 'course_id', 'title'],
       transaction
     });
 
     const discussionTopic = discussion?.title || `ID: ${discussion_id}`;
+    const discussionUrl = discussion?.course_id
+      ? `/courses/${discussion.course_id}/discussion/${discussion_id}`
+      : "/discussions";
 
     // Sending notificationts to whoevers bane was tagged in the message content
     const taggedUsernames =
@@ -67,16 +71,20 @@ export const createMessage = async (
         attributes: ["id"],
       }).then((users) => users.map((user) => user.id));
       
-      usersInDiscussion.forEach((userId) => {
-        sendNotification(
-          "single",
-          `New mention from @${req.user?.username}`,
-          `@${req.user?.username} tagged you in "${discussionTopic}".`,
-          transaction,
-          userId,
-          false,
-        );
-      });
+      await Promise.all(
+        usersInDiscussion.map((userId) =>
+          sendNotification(
+            "single",
+            `New mention from @${req.user?.username}`,
+            `@${req.user?.username} tagged you in "${discussionTopic}".`,
+            transaction,
+            userId,
+            false,
+            NotificationCategory.DISCUSSION,
+            discussionUrl,
+          ),
+        ),
+      );
     } else {
       for (const taggedUsername of taggedUsernames) {
         // Check if the tagged user exists
@@ -92,6 +100,8 @@ export const createMessage = async (
             transaction,
             taggedUser.id,
             false,
+            NotificationCategory.DISCUSSION,
+            discussionUrl,
           );
         }
       }

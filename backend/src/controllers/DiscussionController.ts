@@ -11,6 +11,7 @@ import { PaginateRequestParams, PaginateResponse } from "../types/common";
 import { Op } from "sequelize";
 import { sendNotification } from "../utils/sendNotification";
 import sequelize from "../config/Database";
+import { NotificationCategory } from "../enum/NotificationCategory";
 
 class HttpError extends Error {
   status: number;
@@ -53,18 +54,6 @@ export const createDiscussion = async (
       is_public,
     }, { transaction });
 
-    //Return the created discussion
-    res.status(201).json({
-      id: discussion.id,
-      course_id: discussion.course_id,
-      creator_user_id: discussion.user_id,
-      creator: { username: req.user.username, role: req.user.role },
-      title: discussion.title,
-      is_public: discussion.is_public,
-      created_at: discussion.created_at,
-      updated_at: discussion.updated_at,
-    });
-
     // Sending notification to those whom it may concern about the new discussion channel created
     if (discussion.is_public) {
       // If the discussion is public, notify all Park Guides in the course about the new discussion channel
@@ -91,6 +80,8 @@ export const createDiscussion = async (
             transaction,
             userId,
             false,
+            NotificationCategory.DISCUSSION,
+            `/courses/${course_id}/discussion/${discussion.id}`,
           );
         }),
       );
@@ -102,10 +93,23 @@ export const createDiscussion = async (
       transaction,
       undefined,
       false,
+      NotificationCategory.DISCUSSION,
+      `/courses/${course_id}/discussion/${discussion.id}`,
     );
-    transaction.commit();
+    await transaction.commit();
+
+    return res.status(201).json({
+      id: discussion.id,
+      course_id: discussion.course_id,
+      creator_user_id: discussion.user_id,
+      creator: { username: req.user.username, role: req.user.role },
+      title: discussion.title,
+      is_public: discussion.is_public,
+      created_at: discussion.created_at,
+      updated_at: discussion.updated_at,
+    });
   } catch (err) {
-    transaction.rollback();
+    await transaction.rollback();
     if (err instanceof HttpError) {
       res.status(err.status).json({ message: err.message });
     } else {

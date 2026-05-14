@@ -9,6 +9,8 @@ import { formatPaginateResponse, paginateModel } from "../utils/paginate";
 import { EnrollmentStatus } from "../enum/EnrollmentStatus";
 import sequelize from "../config/Database";
 import { Op, WhereOptions } from "sequelize";
+import { sendNotification } from "../utils/sendNotification";
+import { NotificationCategory } from "../enum/NotificationCategory";
 
 class HttpError extends Error {
   status: number;
@@ -177,7 +179,7 @@ export const updateEnrollmentStatus = async (
     if (Number.isNaN(enrollmentId)) {
       throw new HttpError(400, "Invalid enrollment id");
     }
-    const enrollment = await Enrollment.findByPk(enrollmentId);
+    const enrollment = await Enrollment.findByPk(enrollmentId, { transaction });
     if (!enrollment) {
       throw new HttpError(404, "Enrollment not found");
     }
@@ -215,7 +217,9 @@ export const updateEnrollmentStatus = async (
         }
 
         // After a park guide has finished all the courses
-        const course = await Course.findByPk(enrollment.course_id);
+        const course = await Course.findByPk(enrollment.course_id, {
+          transaction,
+        });
         if (!course) {
           throw new HttpError(404, "Course not found");
         }
@@ -230,6 +234,16 @@ export const updateEnrollmentStatus = async (
                 course.badge_expire_in_months * 30 * 24 * 60 * 60 * 1000,
             )
           : null;
+        await sendNotification(
+          "single",
+          "New Badge Awarded",
+          `Congratulations! You received a new badge for "${course.title}".`,
+          transaction,
+          enrollment.user_id,
+          false,
+          NotificationCategory.BADGE_AWARDED,
+          "/badges",
+        );
         break;
       case EnrollmentStatus.IN_REVIEW:
         // XXX: Remove this route. The status should only be set to IN_REVIEW by code.
@@ -247,6 +261,16 @@ export const updateEnrollmentStatus = async (
           throw new HttpError(400, "Invalid enrollment status transition");
         }
         enrollment.status = newStatus;
+        await sendNotification(
+          "single",
+          "Enrollment Approved",
+          "Your course enrollment has been approved. You can now start learning.",
+          transaction,
+          enrollment.user_id,
+          false,
+          NotificationCategory.ENROLLMENT_SUCCESS,
+          `/courses/${enrollment.course_id}`,
+        );
         break;
       // NEW: transition to pending payment
       case EnrollmentStatus.PENDING_PAYMENT:
@@ -267,7 +291,7 @@ export const updateEnrollmentStatus = async (
       default:
         throw new HttpError(400, "Unsupported enrollment status transition");
     }
-    await enrollment.save();
+    await enrollment.save({ transaction });
     await transaction.commit();
     return res.status(200).json(toEnrollmentResponse(enrollment));
   } catch (err) {
@@ -544,6 +568,16 @@ export const approveBadge = async (
     }
 
     await enrollment.save({ transaction });
+    await sendNotification(
+      "single",
+      "New Badge Awarded",
+      `Congratulations! You received a new badge for "${courseData?.title || "your course"}".`,
+      transaction,
+      enrollment.user_id,
+      false,
+      NotificationCategory.BADGE_AWARDED,
+      "/badges",
+    );
     await transaction.commit();
 
     return res.status(200).json(toEnrollmentResponse(enrollment));
