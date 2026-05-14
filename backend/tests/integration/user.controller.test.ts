@@ -85,4 +85,221 @@ describe("User Controller Integration Tests", () => {
       });
     expect(loginResponse.status).toBe(200);
   });
+
+  it("POST /api/users - fails to create an admin user when authenticated as non-admin", async () => {
+    // Create a non-admin user to test with
+    const ParkGuideUsername = faker.internet.username();
+    const ParkGuideEmail = faker.internet.email().toLocaleLowerCase();
+    const ParkGuidePassword = faker.internet.password();
+    await User.create({
+      username: ParkGuideUsername,
+      firstname: "Park",
+      lastname: "Guide",
+      identification: `${ParkGuideUsername}-id`,
+      personal_email: ParkGuideEmail,
+      tel: "0123456789",
+      role: UserRoles.PARK_GUIDE,
+      password_hash: await hashPassword(ParkGuidePassword),
+    });
+    const accessToken = await login({
+      username: ParkGuideEmail,
+      password: ParkGuidePassword,
+    });
+
+    // Attempt to create an admin user with a non-admin access token, expect it to fail with a 403 Forbidden status
+    const createdUsername = faker.internet.username();
+    const createdEmail = faker.internet.email().toLocaleLowerCase();
+    const createdPassword = faker.internet.password();
+    const response = await request(app)
+      .post("/api/users")
+      .set("Authorization", `Bearer ${accessToken}`)
+      .send({
+        username: createdUsername,
+        password: createdPassword,
+        role: UserRoles.ADMIN,
+        firstname: "Created",
+        lastname: "Admin",
+        identification: `${createdUsername}-id`,
+        personal_email: createdEmail,
+        tel: "0987654321",
+      });
+    expect(response.status).toBe(403);
+
+    // Ensure the user was not created
+    const createdUser = await User.findOne({
+      where: { username: createdUsername },
+    });
+    expect(createdUser).toBeNull();
+  });
+
+  it("PUT /api/users/:id - updates an details when authenticated as themselves", async () => {
+    const user = await User.create({
+      username: faker.internet.username(),
+      firstname: "Test",
+      lastname: "User",
+      identification: `testuser-id`,
+      personal_email: faker.internet.email().toLocaleLowerCase(),
+      tel: "0123456789",
+      role: UserRoles.PARK_GUIDE,
+      password_hash: await hashPassword("pass"),
+    });
+
+    // Login as the created user
+    const accessToken = await login({
+      username: user.personal_email,
+      password: "pass",
+    });
+
+    // Attempt to update the user's own details
+    const newFirstname = "Updated";
+    const newLastname = "User";
+    const newTel = "0987654321";
+    const newPassword = "newpass";
+    const response = await request(app)
+      .put(`/api/users/${user.id}`)
+      .set("Authorization", `Bearer ${accessToken}`)
+      .send({
+        firstname: newFirstname,
+        lastname: newLastname,
+        tel: newTel,
+        password: newPassword,
+      });
+    expect(response.status).toBe(200);
+
+    // Ensure the user's details were updated
+    const updatedUser = await User.findByPk(user.id);
+    expect(updatedUser).not.toBeNull();
+    expect(updatedUser?.firstname).toBe(newFirstname);
+    expect(updatedUser?.lastname).toBe(newLastname);
+    expect(updatedUser?.tel).toBe(newTel);
+  });
+
+  it("PUT /api/users/:id - fails to update another user's details when authenticated as non-admin", async () => {
+    // Create two users
+    const user1 = await User.create({
+      username: faker.internet.username(),
+      firstname: "User",
+      lastname: "One",
+      identification: `user1-id`,
+      personal_email: faker.internet.email().toLocaleLowerCase(),
+      tel: "0123456789",
+      role: UserRoles.PARK_GUIDE,
+      password_hash: await hashPassword("pass1"),
+    });
+    const user2 = await User.create({
+      username: faker.internet.username(),
+      firstname: "User",
+      lastname: "Two",
+      identification: `user2-id`,
+      personal_email: faker.internet.email().toLocaleLowerCase(),
+      tel: "0123456789",
+      role: UserRoles.PARK_GUIDE,
+      password_hash: await hashPassword("pass2"),
+    });
+
+    // Login as user1
+    const accessToken = await login({
+      username: user1.personal_email,
+      password: "pass1",
+    });
+
+    // Attempt to update user2's details with user1's access token, expect it to fail with a 403 Forbidden status
+    const response = await request(app)
+      .put(`/api/users/${user2.id}`)
+      .set("Authorization", `Bearer ${accessToken}`)
+      .send({
+        firstname: "Hacked",
+        lastname: "User",
+        tel: "0987654321",
+        password: "hackedpass",
+      });
+    expect(response.status).toBe(403);
+
+    // Ensure user2's details were not updated
+    const updatedUser2 = await User.findByPk(user2.id);
+    expect(updatedUser2).not.toBeNull();
+    expect(updatedUser2?.firstname).toBe("User");
+    expect(updatedUser2?.lastname).toBe("Two");
+    expect(updatedUser2?.tel).toBe("0123456789");
+  });
+
+  it("PUT /api/users/:id - updates another user's details when authenticated as admin", async () => {
+    const adminUser = await createAdminUser();
+    const accessToken = await login({
+      username: ADMIN_LOGIN_USERNAME,
+      password: ADMIN_PASSWORD,
+    });
+
+    // Create another user to update
+    const user = await User.create({
+      username: faker.internet.username(),
+      firstname: "Test",
+      lastname: "User",
+      identification: `testuser-id`,
+      personal_email: faker.internet.email().toLocaleLowerCase(),
+      tel: "0123456789",
+      role: UserRoles.PARK_GUIDE,
+      password_hash: await hashPassword("pass"),
+    });
+
+    // Attempt to update the user's details with admin access token
+    const newFirstname = "AdminUpdated";
+    const newLastname = "User";
+    const newTel = "0987654321";
+    const newPassword = "newpass";
+    const response = await request(app)
+      .put(`/api/users/${user.id}`)
+      .set("Authorization", `Bearer ${accessToken}`)
+      .send({
+        firstname: newFirstname,
+        lastname: newLastname,
+        tel: newTel,
+        password: newPassword,
+      });
+    expect(response.status).toBe(200);
+
+    // Ensure the user's details were updated
+    const updatedUser = await User.findByPk(user.id);
+    expect(updatedUser).not.toBeNull();
+    expect(updatedUser?.firstname).toBe(newFirstname);
+    expect(updatedUser?.lastname).toBe(newLastname);
+    expect(updatedUser?.tel).toBe(newTel);
+  });
+
+  it("PUT /api/users/:id/change-password - updates the user's password", async () => {
+    const user = await User.create({
+      username: faker.internet.username(),
+      firstname: "Test",
+      lastname: "User",
+      identification: `testuser-id`,
+      personal_email: faker.internet.email().toLocaleLowerCase(),
+      tel: "0123456789",
+      role: UserRoles.PARK_GUIDE,
+      password_hash: await hashPassword("oldpassword"),
+    });
+
+    // Login as the created user
+    const accessToken = await login({
+      username: user.personal_email,
+      password: "oldpassword",
+    });
+
+    // Attempt to change the user's password
+    const newPassword = "newpassword";
+    const response = await request(app)
+      .put(`/api/users/${user.id}/change-password`)
+      .set("Authorization", `Bearer ${accessToken}`)
+      .send({
+        old_password: "oldpassword",
+        new_password: newPassword,
+      });
+    expect(response.status).toBe(200);
+
+    // Assert that the user can login with the new password
+    const newAccessToken = await login({
+      username: user.personal_email,
+      password: "newpassword",
+    });
+    expect(newAccessToken).toBeDefined();
+  });
 });
