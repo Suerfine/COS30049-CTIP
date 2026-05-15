@@ -117,5 +117,7 @@
     "course expiry reminders":"Course Expiry Reminders",
     "failed to load notification settings":"Failed to load notification settings.",
     "failed to save notification settings":"Failed to save notification settings.",
-    "no todos":"No Todos"
+    "no todos":"No Todos",
+    "upcoming":"Upcoming",
+    "workshop":"Workshop"
 }

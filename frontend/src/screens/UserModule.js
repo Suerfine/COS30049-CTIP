@@ -57,7 +57,6 @@ const UserModule = ({ navigation }) => {
   const isLocked =
     enrollmentStatus === null ||
     enrollmentStatus === undefined ||
-    enrollmentStatus === "in_review" ||
     enrollmentStatus === "expired" ||
     enrollmentStatus == "pending_payment" ||
     enrollmentStatus == "applied" ||
