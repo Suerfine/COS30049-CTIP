@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator, Platform } from 'react-native';
 import { X, RotateCcw } from 'lucide-react-native'; 
 import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
@@ -88,7 +88,7 @@ const Notification = () => {
             )}
             
         </View>
-        {currentUser.role !== 'admin' && (<SFCFooter/>)}
+        {currentUser.role !== 'admin' && Platform === 'web' && (<SFCFooter/>)}
         </>
     );
 };
