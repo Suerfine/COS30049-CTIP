@@ -163,7 +163,7 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
             });
         });
 
-        return sessions.size + submissionCount;
+        return sessions.size;
     }, [fullHistoryMap, elements, submissionCount]);
 
     const handleTryAgain = () => {
