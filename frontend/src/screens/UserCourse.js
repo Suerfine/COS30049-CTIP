@@ -11,6 +11,7 @@ import SlidingTabs from '../components/SlidingTabs';
 import FilterSidebar from '../components/FilterSidebar';
 import CourseCard from '../components/CourseCard';
 import { useTranslation } from 'react-i18next';
+import SFCFooter from '../components/Footer';
 
 const UserCourse = ({ navigation }) => {
     const { progressData, userType  } = useUserDashboard();
@@ -224,6 +225,7 @@ const UserCourse = ({ navigation }) => {
                     )}
                     </View>
                 </View>
+                <SFCFooter/>
             </ScrollView>
 
             <FilterSidebar

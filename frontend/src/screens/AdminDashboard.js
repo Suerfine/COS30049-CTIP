@@ -167,7 +167,7 @@ const AdminDashboard = () => {
   }, [notifications]);
 
   return (
-    <View style={styles.screenContainer}>
+    <ScrollView style={styles.screenContainer}>
       <style>{LEAFLET_CSS}</style>
       <View style={styles.cards}>
         <View style={styles.adminCard}>
@@ -354,7 +354,7 @@ const AdminDashboard = () => {
           )}
         </View>
       </View>
-    </View>
+    </ScrollView>
   );
 };
 

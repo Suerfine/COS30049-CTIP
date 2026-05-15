@@ -4,7 +4,8 @@ import { ChevronLeft, CheckCircle, Circle, Calendar, Clock, BookOpen, SquarePen,
 import { TextInput } from 'react-native-gesture-handler';
 import ModalLayout from './ModalLayout';
 
-const TaskDetail = ({ task, onClose }) => {
+const TaskDetail = ({ route, navigation }) => {
+    const {task}=route.params;
     const [isEditing, setIsEditing] = useState(false);
     const [editedTask, setEditedTask] = useState({ ...task });
 
@@ -17,7 +18,7 @@ const TaskDetail = ({ task, onClose }) => {
         <View style={styles.container}>
             {/* Top */}
             <View style={styles.topSection}>
-                <Pressable onPress={onClose} style={styles.backButton}>
+                <Pressable onPress={()=> navigation.goBack()} style={styles.backButton}>
                     <ChevronLeft size={24} />
                 </Pressable>
 

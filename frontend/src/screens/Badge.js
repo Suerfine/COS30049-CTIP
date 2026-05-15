@@ -8,6 +8,7 @@ import FilterSidebar from '../components/FilterSidebar';
 import { formatDate } from '../utils/formatDate';
 import { useTranslation } from 'react-i18next';
 import { useUserDashboard } from '../hooks/useUserDashboard';
+import SFCFooter from '../components/Footer';
 
 const Badge = ({ navigation }) => {
     const {
@@ -185,21 +186,6 @@ const Badge = ({ navigation }) => {
                     <View style={styles.titleRow}>
                         <Text style={styles.headerTitle}>My Certifications</Text>
                     </View>
-
-                    <View style={styles.pillContainer}>
-                        {filters.status !== 'all' && (
-                            <View style={styles.pill}>
-                                <Text style={styles.pillText}>{statusLabels[filters.status]}</Text>
-                                <Pressable onPress={() => removeFilter('status')}><CircleX size={14} color="white" /></Pressable>
-                            </View>
-                        )}
-                        {filters.tag !== 'all' && (
-                            <View style={styles.pill}>
-                                <Text style={styles.pillText}>{filters.tag}</Text>
-                                <Pressable onPress={() => removeFilter('tag')}><CircleX size={14} color="white" /></Pressable>
-                            </View>
-                        )}
-                    </View>
                 </View>
 
                 <RenderSection 
@@ -236,6 +222,7 @@ const Badge = ({ navigation }) => {
                     type="locked"
                     emptyMsg="All available courses have been enrolled."
                 />
+                <SFCFooter/>
             </ScrollView>
 
             <FilterSidebar
@@ -418,26 +405,6 @@ const styles = StyleSheet.create({
         fontStyle: 'italic',
         fontSize: 14,
         marginLeft: 5,
-    },
-    pillContainer: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: 8,
-        marginBottom: 10,
-    },
-    pill: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#0a6340',
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 20,
-        gap: 6,
-    },
-    pillText: {
-        fontSize: 12,
-        color: "white",
-        fontWeight: '600',
     },
 });
 

@@ -86,11 +86,7 @@ const MobileSideBar=({isOpen, onClose})=>{
                                     }
 
                                     navigation.navigate('ParkGuideMobileRoot', {
-                                        screen: item.route, 
-                                        params:{
-                                            screen: 'To Do Calendar',
-                                            params:{layout: 'calendar'}
-                                        } 
+                                        screen: item.route
                                     });
                                 }}>
                                     <item.icon size={22} color="#333" />

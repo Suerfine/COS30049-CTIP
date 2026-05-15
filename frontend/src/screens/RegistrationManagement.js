@@ -510,7 +510,7 @@ const RegistrationManagement = () => {
                   onPress={() => handleOpenResume(selectedUser)}
                 >
                   <FileText size={14} color="#0a6340" />
-                  <Text style={styles.pdfText}>View_Resume.pdf</Text>
+                  <Text style={styles.pdfText}>View Resume</Text>
                   <ExternalLink size={14} color="#666" />
                 </Pressable>
               </View>

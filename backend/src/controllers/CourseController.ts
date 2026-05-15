@@ -8,7 +8,7 @@ import {
   PrerequisiteGroup,
   Tag,
   User,
-  Module
+  Module,
 } from "../models";
 import sequelize from "../config/Database";
 import { PaginateRequestParams, PaginateResponse } from "../types/common";
@@ -105,9 +105,7 @@ function toCourseResponse(course: Course, req?: Request<any>): CourseResponse {
       ? `${req.protocol}://${req.get("host")}${course.cover_img_path.startsWith("/") ? course.cover_img_path : `/${course.cover_img_path}`}`
       : null;
 
-  const module_count = Number(
-    (course.toJSON() as any).module_count ?? 0
-  );
+  const module_count = Number((course.toJSON() as any).module_count ?? 0);
 
   return {
     id: course.id,
@@ -341,7 +339,9 @@ async function addCourseTags(
   const existingAssociations = await CourseTag.findAll({
     where: {
       course_id: courseId,
-      tag_id: tagIds,
+      tag_id: {
+        [Op.in]: tagIds,
+      },
     },
     transaction,
     paranoid: false,
@@ -376,31 +376,6 @@ async function addCourseTags(
   }
 
   logger.debug("Course tags added successfully", {
-    courseId,
-    tagCount: tagIds.length,
-  });
-}
-
-async function removeCourseTags(
-  courseId: number,
-  tagIds: number[],
-  transaction: any,
-): Promise<void> {
-  logger.debug("Removing course tags", { courseId, tagIds });
-
-  if (tagIds.length === 0) {
-    return;
-  }
-
-  await CourseTag.destroy({
-    where: {
-      course_id: courseId,
-      tag_id: tagIds,
-    },
-    transaction,
-  });
-
-  logger.debug("Course tags removed successfully", {
     courseId,
     tagCount: tagIds.length,
   });
@@ -536,6 +511,7 @@ export const createCourse = async (
     const coverFile = uploadedFiles.cover?.[0];
     const badgeFile = uploadedFiles.badge?.[0];
 
+    // Check if conver file exists if not reject the request as cover image is required for course creation. Badge image is optional so we will not reject the request if badge image is not provided.
     if (coverFile) {
       logger.debug("Saving course cover image", {
         courseId: course.id,
@@ -554,6 +530,8 @@ export const createCourse = async (
         courseId: course.id,
         path: savedPath,
       });
+    } else {
+      throw new HttpError(400, "Cover image is required for course creation");
     }
 
     if (badgeFile) {
@@ -574,6 +552,8 @@ export const createCourse = async (
         courseId: course.id,
         path: savedPath,
       });
+    } else {
+      throw new HttpError(400, "Badge image is required for course creation");
     }
 
     await course.save({ transaction });
@@ -625,38 +605,62 @@ export const getAllCourses = async (
 
     logger.debug("Course fetch parameters", { includeDeleted });
 
-    const courses = await paginateModel(Course, req.query, {
+    // First, get pagination info and course IDs without the many-to-many include
+    const coursesPaginated = await paginateModel(Course, req.query, {
       paranoid: !includeDeleted,
       include: [
-        ...COURSE_PREREQUISITE_INCLUDE,
         {
           model: Module,
           as: "modules",
           attributes: [],
         },
       ],
-      attributes:{
-        include:[[fn("COUNT", col("modules.id")), "module_count"]],
+      attributes: {
+        include: [[fn("COUNT", col("modules.id")), "module_count"]],
       },
-      group:["Course.id"],
-      subQuery:false,
+      group: ["Course.id"],
+      subQuery: false,
+    });
+
+    // Then, fetch full course data with all tags for the paginated courses
+    const courseIds = coursesPaginated.data.map((c) => c.id);
+    const courses = await Course.findAll({
+      where: {
+        id: courseIds,
+      },
+      include: COURSE_PREREQUISITE_INCLUDE,
+      paranoid: !includeDeleted,
+    });
+
+    // Create a map of courses with their module counts
+    const moduleCountMap = new Map(
+      coursesPaginated.data.map((c) => [
+        c.id,
+        Number((c.toJSON() as any).module_count ?? 0),
+      ]),
+    );
+
+    // Enhance courses with module counts
+    courses.forEach((course) => {
+      (course.toJSON() as any).module_count =
+        moduleCountMap.get(course.id) || 0;
     });
 
     logger.info("Courses fetched successfully", {
-      totalElements: courses.totalElements,
-      totalPages: courses.totalPages,
+      totalElements: coursesPaginated.totalElements,
+      totalPages: coursesPaginated.totalPages,
     });
 
     const baseUrl = `${req.protocol}://${req.get("host")}${req.originalUrl}`;
     const formattedResponse = formatPaginateResponse(
-      courses.data.map((c) => toCourseResponse(c, req)),
+      courses.map((c) => toCourseResponse(c, req)),
       req.query,
       true,
       {
-        page: courses.page,
-        size: courses.size,
-        totalElements: courses.totalElements,
-        totalPages: courses.totalPages,
+        page: coursesPaginated.page,
+        size: coursesPaginated.size,
+        totalElements: coursesPaginated.totalElements,
+        totalPages: coursesPaginated.totalPages,
         baseUrl,
       },
     );

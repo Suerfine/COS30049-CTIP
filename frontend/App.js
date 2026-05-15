@@ -35,7 +35,7 @@ const linking = {
 
 export default function App() {
   const [initialState, setInitialState] = useState(null);
-  const [isReady, setIsReady] = useState(false); // New: Track if storage is loaded
+  const [isReady, setIsReady] = useState(false); 
 
   useEffect(() => {
     const restoreNavigationState = async () => {
@@ -47,7 +47,7 @@ export default function App() {
       } catch (error) {
         console.error("Failed to restore navigation state:", error);
       } finally {
-        setIsReady(true); // Now we are ready to show the app
+        setIsReady(true); 
       }
     };
 
@@ -62,7 +62,6 @@ export default function App() {
     }
   };
 
-  // If we aren't ready, show a splash or loader to prevent defaulting to Dashboard
   if (!isReady) {
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>

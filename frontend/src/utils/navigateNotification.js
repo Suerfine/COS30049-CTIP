@@ -85,7 +85,7 @@ export const navigateNotification = (navigation, url, currentUser) => {
   }
 
   if (path === "/payments") {
-    navigation.navigate(isAdmin ? "Enrollment Management" : "Payment");
+    navigation.navigate(isAdmin ? "Enrollment Management" : "Courses");
     return true;
   }
 
