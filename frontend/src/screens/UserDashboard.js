@@ -14,6 +14,7 @@ import AddTodo from '../components/AddTodo.js';
 import ModalLayout from '../components/ModalLayout.js';
 import TaskDetail from '../components/TaskDetail.js';
 import { useTranslation } from 'react-i18next';
+import { useUserProfile } from '../hooks/useUserProfile.js';
 
 const UserDashboard = ({ navigation }) => {
     const {
@@ -36,6 +37,7 @@ const UserDashboard = ({ navigation }) => {
         weekLabels,eventTab, courseTab, categories,
     } = useUserDashboard();
 
+    const {profileImage} = useUserProfile();
     const { width } = useWindowDimensions();
     const isMobile = width < 1024;
     const isSmallMobile = width < 700;
@@ -269,8 +271,8 @@ const UserDashboard = ({ navigation }) => {
                                 </View>
 
                                 <View style={styles.infoRight}>
-                                    {user?.profileImage ? (
-                                        <Image source={{ uri: user.profileImage }} style={styles.pfp} />
+                                    {profileImage ? (
+                                        <Image source={{ uri: profileImage }} style={styles.pfp} />
                                     ) : (
                                         <View style={styles.pfpPlaceholder}>
                                             <Text style={styles.pfpInitials}>

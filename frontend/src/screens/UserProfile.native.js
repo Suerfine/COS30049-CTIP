@@ -17,7 +17,8 @@ const UserProfile = ({ navigation }) => {
         updateField,
         pfpModalVisible, setPfpModalVisible,
         newImagePath, setNewImagePath,
-        pickImage,
+        profileImage, setProfileImage,
+        pickImage, handleSavePfp,
         isEditing, setIsEditing,
         handleSave,
     } = useUserProfile();
@@ -47,8 +48,8 @@ const UserProfile = ({ navigation }) => {
 
                     <View style={styles.pfpRow}>
                         <View style={styles.pfpWrapper}>
-                            {user?.profileImage ? (
-                                <Image source={{ uri: user.profileImage }} style={styles.pfp} />
+                            {profileImage ? (
+                                <Image source={{ uri: profileImage }} style={styles.pfp} />
                             ) : (
                                 <View style={styles.pfpPlaceholder}>
                                     <Text style={styles.pfpInitials}>
@@ -74,9 +75,16 @@ const UserProfile = ({ navigation }) => {
 
                     <ModalLayout visible={pfpModalVisible} onClose={() => setPfpModalVisible(false)}>
                         <ChangePfpContent
-                            image={newImagePath || user?.profileImage}
+                            image={newImagePath}
                             onPickImage={pickImage}
-                            onClose={() => setPfpModalVisible(false)}
+                            onSave={async () => {
+                                const result = await handleSavePfp();
+                                if (result?.success && result.pfp_url) {
+                                    setProfileImage(result.pfp_url);
+                                }
+                            }}
+                            onClose={() => { setPfpModalVisible(false); setNewImagePath(''); }}
+                            loading={loading}
                         />
                     </ModalLayout>
                 </View>

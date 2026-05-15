@@ -7,22 +7,25 @@ export const userProfileService = {
       const data = new FormData();
 
       Object.keys(form).forEach((key) => {
-        if (form[key] !== undefined && form[key] !== "") {
-          data.append(key, form[key]);
-        }
+          const value = form[key];
+          if (value === undefined || value === '') return;
+          
+          if (value && typeof value === 'object' && value.uri) {
+              data.append(key, value);
+          } else {
+              data.append(key, value);
+          }
       });
 
       const res = await apiClient.put(`/users/${id}`, data, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
+          headers: { 'Content-Type': 'multipart/form-data' },
       });
 
       return { success: true, data: res.data };
     } catch (err) {
       return {
-        success: false,
-        serverError: err.response?.data?.message || "Internal Server Error",
+          success: false,
+          serverError: err.response?.data?.message || 'Internal Server Error',
       };
     }
   },

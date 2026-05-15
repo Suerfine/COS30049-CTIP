@@ -31,6 +31,8 @@ const UserProfile = ({ navigation }) => {
       updateField,
       username, setUsername,
       password, setPassword,
+      profileImage, 
+      setProfileImage,
       editingUsername, setEditingUsername,
       editingPassword, setEditingPassword,
       pfpModalVisible, setPfpModalVisible,
@@ -39,11 +41,11 @@ const UserProfile = ({ navigation }) => {
       showCurrentPassword, setShowCurrentPassword,
       showNewPassword, setShowNewPassword,
       currentPassword, setCurrentPassword,
+      pickImage, handleSavePfp,
       isEditing, setIsEditing,
-      handleSave,
+      handleSave, loading
   } = useUserProfile();
   const [originalData, setOriginalData] = useState(null);
-  const [profileImage, setProfileImage] = useState(null);
   const [errors, setErrors] = useState({}); 
   const { handleUpload, file, setFile} = useSignUp();
 
@@ -102,8 +104,8 @@ const UserProfile = ({ navigation }) => {
             {/* Pfp and name */}
             <View style={styles.pfpRow}>
                 <View style={styles.pfpWrapper}>
-                    {user?.profileImage ? (
-                        <Image source={{ uri: user.profileImage }} style={styles.pfp} />
+                    {profileImage ? (
+                        <Image source={{ uri: profileImage }} style={styles.pfp} />
                     ) : (
                         <View style={styles.pfpPlaceholder}>
                         <Text style={styles.pfpInitials}>
@@ -134,15 +136,19 @@ const UserProfile = ({ navigation }) => {
             {/* Change pfp modal */}
             <ModalLayout
                 visible={pfpModalVisible}
-                onClose={() => setPfpModalVisible(false)}
+                onClose={() => {setPfpModalVisible(false); setNewImagePath('');}}
             >
                 <ChangePfpContent
-                  currentImage={profileImage}
-                  onSave={(uri) => {
-                      setProfileImage(uri);
-                      setPfpModalVisible(false);
+                  image={newImagePath}
+                  onPickImage={pickImage}
+                  onSave={async () => {
+                    const result = await handleSavePfp();
+                      if (result?.success && result.pfp_url) {
+                          setProfileImage(result.pfp_url);
+                      }
                   }}
-                  onClose={() => setPfpModalVisible(false)}
+                  onClose={() => { setPfpModalVisible(false); setNewImagePath(''); }}
+                  loading={loading}
               />
             </ModalLayout>
             </View>

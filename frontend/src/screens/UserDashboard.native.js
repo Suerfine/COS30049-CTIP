@@ -12,6 +12,7 @@ import { useUserCourse } from '../hooks/useUserCourse.js';
 import SlidingTabs from '../components/SlidingTabs.js';
 import { formatDate } from '../utils/formatDate.js';
 import { useTranslation } from 'react-i18next';
+import { useUserProfile } from '../hooks/useUserProfile.js';
 
 const UserDashboard=({navigation})=>{
     const {
@@ -31,7 +32,7 @@ const UserDashboard=({navigation})=>{
         toggleTodo, hasPendingTodoOnDate,formatLocalDate,
         weekLabels,todoTab, courseTab, categories
     } = useUserDashboard();
-
+    const { profileImage } = useUserProfile();
     const { inProgressCourses, completedCourses } = useUserCourse({ progressData });
 
     // dummy in progress course to test navigation
@@ -65,8 +66,8 @@ const UserDashboard=({navigation})=>{
                     style={StyleSheet.absoluteFillObject}/>
                     <View style={styles.infoTop}>
                         <View style={styles.pfpWrapper}>
-                        {user?.profileImage ? (
-                            <Image source={{ uri: user.profileImage }} style={styles.profilePic}/>
+                        {profileImage ? (
+                            <Image source={{ uri: profileImage }} style={styles.profilePic}/>
                             ) : (
                                 <View style={styles.pfpPlaceholder}>
                                     <Text style={styles.pfpInitials}>

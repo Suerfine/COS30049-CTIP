@@ -27,8 +27,8 @@ class HttpError extends Error {
 }
 
 function toUserResponse(user: User, req: Request<any>): UserResponse {
-  let full_url_pfp = user.pfp_url
-    ? `${req.protocol}:\\${req.get("host")}\\${user.pfp_url}`
+  const full_url_pfp = user.pfp_url
+    ? `${req.protocol}://${req.get("host")}/${user.pfp_url.replace(/\\/g, '/')}`
     : null;
 
   return {
@@ -273,7 +273,7 @@ export const upsertUser = async (
         folder: "public",
         subfolder: `users/${targetUser.id}/pfp`,
       });
-      targetUser.pfp_url = path;
+      targetUser.pfp_url = path.replace(/\\/g, '/'); // normalize before saving
       await targetUser.save();
     }
 
@@ -413,7 +413,7 @@ export const createUser = async (
         folder: "public",
         subfolder: `users/${newUser.id}/pfp`,
       });
-      newUser.pfp_url = path;
+      newUser.pfp_url = path.replace(/\\/g, '/'); // normalize before saving
       await newUser.save();
     }
 
