@@ -114,7 +114,7 @@ const EnrollmentDetailModal = ({
                         <Trash2 size={20} color="#dc2626" />
                     </Pressable>
                     {
-                        status !== 'in_progress' && status !== 'pending_payment' && (
+                        status !== 'in_progress' && status !== 'pending_payment' && status !== 'in_review' && status !== 'failed' && (
                             <View style={modalStyles.row}>
                                 <Pressable 
                                     style={[modalStyles.actionBtn, modalStyles.outlineBtn]}
@@ -132,6 +132,12 @@ const EnrollmentDetailModal = ({
                             </View>
                         )
                     }
+                    {status === 'in_review' && (
+                        <Text style={modalStyles.announcement}>Waiting for admin to issue badge</Text>
+                    )}
+                    {status === 'pending_payment' && (
+                        <Text style={modalStyles.announcement}>Waiting for admin to accepted payment</Text>
+                    )}
                 </View>
             </View>
         </ModalLayout>
@@ -286,6 +292,14 @@ const modalStyles = StyleSheet.create({
     row: {
         flexDirection: 'row',
         gap: 20
+    },
+    announcement:{
+        backgroundColor: "#fff3cd",
+        borderWidth: 1,
+        borderColor: "#ffc107",
+        paddingHorizontal:10,
+        borderRadius:5,
+        paddingVertical:5
     }
 });
 

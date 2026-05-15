@@ -984,20 +984,21 @@ const EnrollmentManagement = () => {
                   </View>
                   <View style={styles.paymentActionRow}>
                     {selectedPayment?.status === "pending" && (
-                      <>
-                        <Pressable
-                          style={styles.approveBtn}
-                          onPress={handleApprovePayment}
-                        >
-                          <Text style={styles.actionBtnText}>Approve</Text>
-                        </Pressable>
-                        <Pressable
-                          style={styles.rejectBtn}
-                          onPress={() => setRejectModalVisible(true)}
-                        >
-                          <Text style={styles.actionBtnText}>Reject</Text>
-                        </Pressable>
-                      </>
+                      <View style={styles.row}>
+                          <Pressable 
+                              style={[styles.actionBtn, styles.outlineBtn]}
+                              onPress={() => setRejectModalVisible(true)}
+                          >
+                              <Text style={styles.outlineBtnText}>Reject</Text>
+                          </Pressable>
+
+                          <Pressable 
+                              style={[styles.actionBtn, styles.solidApproveBtn]}
+                              onPress={handleApprovePayment}
+                          >
+                              <Text style={styles.solidBtnText}>Approve</Text>
+                          </Pressable>
+                      </View>
                     )}
                   </View>
                 </ScrollView>
@@ -1624,24 +1625,30 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: "center",
   },
-  approveBtn: {
-    flex: 1,
-    backgroundColor: "#0a6340",
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: "center",
+  row:{
+    flexDirection:'row',
+    gap:10,
   },
-  rejectBtn: {
-    flex: 1,
-    backgroundColor: "red",
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: "center",
+  actionBtn: {
+    height: 48,
+    borderRadius: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    width: 170
   },
-  actionBtnText: {
-    color: "white",
-    fontWeight: "700",
-    fontSize: 14,
+  outlineBtn: {
+      backgroundColor: 'transparent',
+      borderWidth: 1.5,
+      borderColor: '#e5e7eb',
+      paddingHorizontal: 16,
+      width: 170
+  },
+  outlineBtnText: {
+      color: '#4b5563',
+      fontWeight: '700',
+      fontSize: 14,
   },
   downloadBtnText: {
     color: "white",
@@ -1703,6 +1710,14 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 10,
+  },
+  solidApproveBtn: {
+      backgroundColor: '#059669',
+  },
+  solidBtnText: {
+      color: 'white',
+      fontWeight: '700',
+      fontSize: 14,
   },
 });
 export default EnrollmentManagement;
