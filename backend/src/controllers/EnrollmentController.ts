@@ -312,7 +312,7 @@ export const updateEnrollmentStatus = async (
         break;
       case EnrollmentStatus.IN_PROGRESS:
         if (
-          // enrollment.status !== EnrollmentStatus.IN_REVIEW
+          enrollment.status !== EnrollmentStatus.IN_REVIEW &&
           enrollment.status !== EnrollmentStatus.APPLIED &&
           enrollment.status !== EnrollmentStatus.PENDING_PAYMENT
         ) {
