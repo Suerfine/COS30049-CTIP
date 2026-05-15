@@ -21,7 +21,8 @@ export const pageService={
             const response=await apiClient.post(API_ENDPOINTS.COURSE.PAGES(courseId, moduleId),{
                 title:pageData.title,
                 order:pageData.order,
-                passing_score:pageData.passing_score
+                passing_score:pageData.passing_score,
+                final_quiz: pageData.final_quiz,
             });
             return response.data;
         } catch(err){

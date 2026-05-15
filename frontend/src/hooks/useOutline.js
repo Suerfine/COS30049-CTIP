@@ -106,13 +106,14 @@ export const useOutline = (course) => {
         }
     };
 
-    const addPage = async (moduleId) => {
+    const addPage = async (moduleId, isFinalQuiz=false) => {
         try {
             const parentModule = modules.find(m => m.id === moduleId);
             const nextPageOrder = (parentModule.pages?.length || 0) + 1;
-
+            console.log(isFinalQuiz);
             const payload = {
                 title: 'New Page',
+                final_quiz: isFinalQuiz,
                 order: nextPageOrder,
                 passing_score:1,
             };

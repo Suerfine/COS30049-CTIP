@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Pressable, FlatList, TextInput } from 'react-native';
-import { Plus, ChevronRight, ChevronDown, Search, Trash2, Lock, CheckCircle2, XCircle } from 'lucide-react-native';
+import { View, Text, StyleSheet, Pressable, FlatList, TextInput, Modal, TouchableOpacity } from 'react-native';
+import { Plus, ChevronRight, ChevronDown, Search, Trash2, Lock, CheckCircle2, XCircle, HelpCircle } from 'lucide-react-native';
 import { useOutline } from '../hooks/useOutline';
 import * as Progress from 'react-native-progress';
 
@@ -22,8 +22,23 @@ const OutlineBar = ({ course, progressMap = {}, onSelectPage, editable, isCollap
     const [hoveredItem, setHoveredItem] = useState(null);
     const [editingItem, setEditingItem] = useState(null);
     const [localSearch, setLocalSearch] = useState("");
+    const [isPageModalVisible, setIsPageModalVisible]=useState(false);
+    const [pendingModuleId, setPendingModuleId]=useState(null);
 
     if (!course) return null;
+
+    const initiateAddPage = (moduleId) => {
+        setPendingModuleId(moduleId);
+        setIsPageModalVisible(true);
+    };
+
+    const confirmAddPage = (isFinalQuiz) => {
+        if (pendingModuleId) {
+            addPage(pendingModuleId, isFinalQuiz); 
+        }
+        setIsPageModalVisible(false);
+        setPendingModuleId(null);
+    };
 
     useEffect(() => {
         if (activePage) {
@@ -258,6 +273,7 @@ const OutlineBar = ({ course, progressMap = {}, onSelectPage, editable, isCollap
                                             >
                                                 <View style={styles.pageBlock}>
                                                     <Text>
+                                                        
                                                         {displayPageNum}{" "}
                                                         {isEditingPage ? (
                                                             <TextInput
@@ -301,7 +317,7 @@ const OutlineBar = ({ course, progressMap = {}, onSelectPage, editable, isCollap
                                     })}
 
                                     {editable && !isPublished && (
-                                        <Pressable onPress={() => addPage(mid)} style={styles.pageItem}>
+                                        <Pressable onPress={() => initiateAddPage(mid)} style={styles.pageItem}>
                                             <Text style={styles.addPage}>+ Add New Page</Text>
                                         </Pressable>
                                     )}
@@ -311,6 +327,37 @@ const OutlineBar = ({ course, progressMap = {}, onSelectPage, editable, isCollap
                     );
                 }}
             />
+            <Modal visible={isPageModalVisible} transparent animationType="fade">
+                <View style={styles.modalOverlay}>
+                    <View style={styles.confirmCard}>
+                        <Text style={styles.confirmTitle}>New Lesson Page</Text>
+                        <Text style={styles.confirmSub}>Is this page intended to be a <Text style={{fontWeight:'bold'}}>Final Assessment</Text>?</Text>
+                        
+                        <View style={styles.confirmActionRow}>
+                            <TouchableOpacity 
+                                style={[styles.confirmBtn, styles.btnSecondary]} 
+                                onPress={() => confirmAddPage(false)}
+                            >
+                                <Text style={styles.btnTextDark}>Standard Lesson</Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity 
+                                style={[styles.confirmBtn, styles.btnPrimary]} 
+                                onPress={() => confirmAddPage(true)}
+                            >
+                                <Text style={styles.btnTextLight}>Final Assessment</Text>
+                            </TouchableOpacity>
+                        </View>
+
+                        <TouchableOpacity 
+                            onPress={() => setIsPageModalVisible(false)} 
+                            style={styles.cancelLink}
+                        >
+                            <Text style={styles.cancelText}>Cancel</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
         </View>
     );
 };
@@ -419,6 +466,70 @@ const styles=StyleSheet.create({
     },
     lockedItem:{
         opacity: 0.4,
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.4)',
+        justifyContent: 'center',
+        alignItems: 'center'
+    },
+    confirmCard: {
+        width: 350,
+        backgroundColor: 'white',
+        borderRadius: 15,
+        padding: 25,
+        alignItems: 'center',
+        elevation: 10
+    },
+    confirmTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        marginBottom: 10,
+        color: '#333'
+    },
+    confirmSub: {
+        fontSize: 14,
+        color: '#666',
+        textAlign: 'center',
+        marginBottom: 25,
+        lineHeight: 20
+    },
+    confirmActionRow: {
+        flexDirection: 'row',
+        gap: 10,
+        width: '100%'
+    },
+    confirmBtn: {
+        flex: 1,
+        paddingVertical: 12,
+        borderRadius: 8,
+        alignItems: 'center',
+        justifyContent: 'center'
+    },
+    btnPrimary: {
+        backgroundColor: '#0a6340',
+    },
+    btnSecondary: {
+        backgroundColor: '#f1f1f1',
+        borderWidth: 1,
+        borderColor: '#ddd'
+    },
+    btnTextLight: {
+        color: 'white',
+        fontWeight: '700',
+        fontSize: 13
+    },
+    btnTextDark: {
+        color: '#444',
+        fontWeight: '700',
+        fontSize: 13
+    },
+    cancelLink: {
+        marginTop: 20
+    },
+    cancelText: {
+        color: '#999',
+        textDecorationLine: 'underline'
     }
 });
 

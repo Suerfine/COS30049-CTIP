@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { courseService } from '../services/courseService';
 import { enrollmentService } from '../services/EnrollmentService';
+import { progressService } from '../services/ProgressService';
 import React from 'react';
 
 export const useBadges = () => {
@@ -25,26 +26,39 @@ export const useBadges = () => {
                 enrollmentService.getMyEnrollments(),
             ]);
 
-            const courses = courseResponse?.data ?? [];
+            const publishedCourses=(courseResponse?.data ?? []).filter(
+                course=>course.status==='released'
+            );
             const enrollments = enrollResponse?.data ?? [];
-            console.log("ENROLLMENTS:", enrollments);
-            console.log("ENROLL RAW:", enrollResponse);
-            console.log("ENROLLMENT SAMPLE:", enrollments[0]);
-
+            
             const map = {};
-            // enrollments.forEach((e) => { map[e.course_id] = e; });
+            enrollments.forEach((e) => { map[String(e.course_id)] = e; });
+            const enrichedCourses = await Promise.all(
+                publishedCourses.map(async (course) => {
+                    const enrollment = map[String(course.id)];
+                    let progressValue = 0;
 
-            // dummy
-            enrollments.forEach((e) => {
-                const enrollmentData = { ...e };
-                
-                enrollmentData.status = 'COMPLETED'; 
-                enrollmentData.badge_expire_at = "2027-12-31T23:59:59.000Z";
-                
-                map[String(enrollmentData.course_id)] = enrollmentData;
-            });
+                    if (enrollment?.status === 'in_progress') {
+                        try {
+                            const res = await progressService.getCourseProgress(course.id);
+                            const earned = Number(res.score) || 0;
+                            const total = Number(res.maxScore) || 0;
+                            progressValue = total > 0 ? (earned / total) : 0;
+                        } catch (err) {
+                            console.error(`Progress fail for ${course.id}`, err);
+                        }
+                    } else if (enrollment?.status === 'completed') {
+                        progressValue = 1;
+                    }
 
-            setAllCourses(courses);
+                    return {
+                        ...course,
+                        progress: progressValue,
+                    };
+                })
+            );
+
+            setAllCourses(enrichedCourses);
             setEnrollmentMap(map);
         } catch (err) {
             console.error('Badge data fetch failed:', err);
@@ -55,7 +69,6 @@ export const useBadges = () => {
 
     useEffect(() => { loadBadgeData(); }, [loadBadgeData]);
 
-    // const getEnrollment = (courseId) => enrollmentMap[courseId] ?? null;
     const getEnrollment = (courseId) => enrollmentMap[String(courseId)] ?? null;
 
     const tagOptions = React.useMemo(() => {
