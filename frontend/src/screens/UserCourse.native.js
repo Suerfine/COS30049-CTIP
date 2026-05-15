@@ -196,7 +196,7 @@ const UserCourse=({navigation})=>{
                 </View>
 
                 {/* History modal */}
-                <Modal visible={historyModalVisible} transparent animationType="fade">
+                <Modal visible={historyModalVisible} transparent={true} animationType="fade" onRequestClose={() => setHistoryModalVisible(false)}>
                     <View style={styles.modalOverlay}>
                         <View style={styles.modalContent}>
                             <Text style={styles.modalTitle}>Enrollment History</Text>
@@ -355,6 +355,31 @@ const styles=StyleSheet.create({
         justifyContent: "space-between",
         flexDirection: "row",
         marginBottom:10,
+    },
+    // history modal
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    modalContent: {
+        width: '90%',
+        backgroundColor: 'white',
+        borderRadius: 15,
+        padding: 20,
+        elevation: 5,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 4,
+    },
+    modalTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        marginBottom: 15,
+        textAlign: 'center',
+        color: '#333',
     },
     historyRow: {
         flexDirection: 'row',
