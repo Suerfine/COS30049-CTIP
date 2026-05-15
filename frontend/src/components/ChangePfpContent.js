@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, Pressable, Image, StyleSheet } from 'react-native';
 import { X } from 'lucide-react-native';
 import { ModalStyle as styles } from './ModalStyle';
+import { useUserProfile } from '../hooks/useUserProfile';
 
 const ChangePfpContent = ({ image, onPickImage, onSave, onClose, loading }) => {
     return (
@@ -20,7 +21,7 @@ const ChangePfpContent = ({ image, onPickImage, onSave, onClose, loading }) => {
             <View style={styles.imagePicker}>
                 {image ? (
                     <Image
-                        source={{ uri: image }}
+                        source={{ uri: image?.uri ?? image }}
                         style={styles.previewImage}
                         resizeMode="contain"
                     />
