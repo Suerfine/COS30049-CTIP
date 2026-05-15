@@ -59,6 +59,7 @@ const EnrollmentManagement = () => {
     courses,
     currentCourseId,
     setCurrentCourseId,
+    fetchEnrollments,
     handleApproveBadge, handleRejectBadge
   } = useEnrollmentManagement();
 
@@ -496,6 +497,8 @@ const EnrollmentManagement = () => {
 
       setPaymentModalVisible(false);
       setSelectedPayment(null);
+      await fetchPayments();
+      await fetchEnrollments();
     } catch (err) {
       console.error(err);
     }
@@ -510,6 +513,7 @@ const EnrollmentManagement = () => {
       setAdminRemark("");
       setSelectedPayment(null);
       await fetchPayments();
+      await fetchEnrollments();
     } catch (err) {
       console.error(err);
     }
