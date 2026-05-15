@@ -5,6 +5,7 @@ import { useUserDashboard } from '../hooks/useUserDashboard';
 import { useNavigation, CommonActions } from '@react-navigation/native';
 import UserProfile from '../screens/UserProfile.native';
 import { useAuth } from '../context/AuthContext';
+import { useUserProfile } from '../hooks/useUserProfile';
 
 const {width}=Dimensions.get('window');
 
@@ -14,6 +15,7 @@ const MobileSideBar=({isOpen, onClose})=>{
     const slideAnim=useRef(new Animated.Value(-width)).current;
     const [shouldRender, setShouldRender]=useState(isOpen);
     const {user}=useUserDashboard();
+    const {profileImage} = useUserProfile();
 
     const handleLogout = async () => {
         await logout();
@@ -61,8 +63,8 @@ const MobileSideBar=({isOpen, onClose})=>{
                     <View>
                         <View style={styles.pfpWrapper}>
                             {/* Profile  */}
-                            {user?.profileImage ? (
-                                <Image source={{ uri: user.profileImage }} style={styles.profilePic}/>
+                            {profileImage ? (
+                                <Image source={{ uri: profileImage }} style={styles.profilePic}/>
                                 ) : (
                                     <View style={styles.pfpPlaceholder}>
                                         <Text style={styles.pfpInitials}>
