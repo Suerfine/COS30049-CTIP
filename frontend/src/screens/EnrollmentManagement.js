@@ -528,6 +528,7 @@ const EnrollmentManagement = () => {
         setAuditModalVisible(false);
         await fetchEnrollmentAudit(id);
         await setSubmissionCurrentPage((p) => p);
+        await fetchEnrollments();
       } else {
         alert("Failed to approve: " + result.error);
       }
@@ -545,6 +546,7 @@ const EnrollmentManagement = () => {
       setAuditModalVisible(false);
       await fetchEnrollmentAudit(id);
       await setSubmissionCurrentPage((p) => p);
+      await fetchEnrollments();
     } else {
       alert("Error rejecting badge: " + result.error);
     }
