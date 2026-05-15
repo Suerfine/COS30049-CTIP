@@ -12,7 +12,6 @@ import { useUserCourse } from '../hooks/useUserCourse.js';
 import SlidingTabs from '../components/SlidingTabs.js';
 import AddTodo from '../components/AddTodo.js';
 import ModalLayout from '../components/ModalLayout.js';
-import TaskDetail from '../components/TaskDetail.js';
 import { useTranslation } from 'react-i18next';
 import { useUserProfile } from '../hooks/useUserProfile.js';
 import SFCFooter from '../components/Footer.js';
