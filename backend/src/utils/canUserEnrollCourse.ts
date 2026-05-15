@@ -37,15 +37,12 @@ export async function canUserEnrollCourse(
   // Check if the user has previous enrollment. If they have only let them reenroll if their latest enrollment is in a final state (expired, dropped, failed, rejected)
   if (
     enrollment &&
-    !(
-      enrollment.status in
-      [
-        EnrollmentStatus.EXPIRED,
-        EnrollmentStatus.DROPPED,
-        EnrollmentStatus.FAILED,
-        EnrollmentStatus.REJECTED,
-      ]
-    )
+    ![
+      EnrollmentStatus.EXPIRED,
+      EnrollmentStatus.DROPPED,
+      EnrollmentStatus.FAILED,
+      EnrollmentStatus.REJECTED,
+    ].includes(enrollment.status)
   ) {
     return false;
   }

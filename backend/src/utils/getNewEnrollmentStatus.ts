@@ -85,7 +85,7 @@ async function getNewEnrollmentStatus(
           }
 
           // If the page score is greater than the total score for the page, continue to check the next page.
-          if (pageScore > page.passing_score) continue;
+          if (pageScore >= page.passing_score) continue;
 
           // Since, the page score is less than the total score for the page check if it has hit max weeks.
           if (
