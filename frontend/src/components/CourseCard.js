@@ -148,7 +148,6 @@ const CourseCard = ({
           style={styles.courseImg}
           accessibilityLabel="Cover Photo of Course"
         />
-        {/* ✅ New "Badge Received" UI */}
         {enrollmentStatus === EnrollmentStatus.COMPLETED && (
           <View style={styles.completedBadgeFloating}>
             <Award size={12} color="#fff" />
