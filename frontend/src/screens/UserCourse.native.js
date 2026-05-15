@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { CircleX, ListFilter, SignalZero, ChevronLeft, SlidersHorizontal, Search} from 'lucide-react-native'
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 import { useFocusEffect, useRoute } from '@react-navigation/native';
+import { Modal } from 'react-native';
 
 // Import other hook and component
 import { useUserDashboard } from '../hooks/useUserDashboard';
@@ -135,7 +136,7 @@ const UserCourse=({navigation})=>{
                             <Text style={styles.emptyText}>{t('no courses found')}</Text>
                         </View>
                     ) : ( filteredCourses.map(course => {
-                         const numModules = course.module_count ? course.module_count : 0;
+                        const numModules = course.module_count ? course.module_count : 0;
                         return(
                         <CourseCard
                             key={course.id}
@@ -189,11 +190,30 @@ const UserCourse=({navigation})=>{
                                     ]
                                 );
                             }}
-                            onDrop={() => handleDrop(course.id)}
                         />)
-                })
+                    })
                 )}
                 </View>
+
+                {/* History modal */}
+                <Modal visible={historyModalVisible} transparent animationType="fade">
+                    <View style={styles.modalOverlay}>
+                        <View style={styles.modalContent}>
+                            <Text style={styles.modalTitle}>Enrollment History</Text>
+                            {selectedHistory.map((item, index) => (
+                                <View key={index} style={styles.historyRow}>
+                                    <Text style={styles.historyDate}>Enrolled: {new Date(item.created_at).toLocaleDateString()}</Text>
+                                    <Text style={[styles.historyStatus, { color: item.status === 'failed' ? 'red' : 'orange' }]}>
+                                    Status: {item.status.toUpperCase()}
+                                    </Text>
+                                </View>
+                            ))}
+                            <Pressable onPress={() => setHistoryModalVisible(false)}  style={styles.closeBtn}>
+                                <Text style={{ color: 'white' }}>Close</Text>
+                            </Pressable>
+                        </View>
+                    </View>
+                </Modal>
             </ScrollView>
             <FilterSidebar
                 visible={filterVisible}
@@ -335,6 +355,35 @@ const styles=StyleSheet.create({
         justifyContent: "space-between",
         flexDirection: "row",
         marginBottom:10,
+    },
+    historyRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingVertical: 15,
+        borderBottomWidth: 1,
+        borderBottomColor: '#f1f5f9',
+    },
+    historyDate: {
+        fontSize: 14,
+        color: '#475569',
+        fontWeight: '500',
+    },
+    historyStatus: {
+        fontSize: 12,
+        fontWeight: 'bold',
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 12,
+        textTransform: 'uppercase',
+        overflow: 'hidden',
+    },
+    closeBtn: {
+        marginTop: 25,
+        backgroundColor: '#0a6340',
+        paddingVertical: 14,
+        borderRadius: 10,
+        alignItems: 'center',
     },
 });
 
