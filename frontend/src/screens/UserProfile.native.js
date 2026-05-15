@@ -20,7 +20,7 @@ const UserProfile = ({ navigation }) => {
         profileImage, setProfileImage,
         pickImage, handleSavePfp,
         isEditing, setIsEditing,
-        handleSave,
+        handleSave, loading
     } = useUserProfile();
 
     const [originalData, setOriginalData] = useState(null);
