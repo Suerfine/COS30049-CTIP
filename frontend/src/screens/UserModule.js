@@ -570,7 +570,7 @@ const UserModule = ({ navigation }) => {
                   source={
                     course.cover_img_url
                       ? { uri: course.cover_img_url }
-                      : require("../../assets/first_aid.png")
+                      : ''
                   }
                   style={styles.course_cover}
                 />

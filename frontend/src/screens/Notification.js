@@ -6,6 +6,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useNotification } from '../hooks/useNotification';
 import { useAuth } from '../context/AuthContext';
 import { navigateNotification } from '../utils/navigateNotification';
+import SFCFooter from '../components/Footer';
 
 const Notification = () => {
     const { t } = useTranslation();
@@ -23,6 +24,7 @@ const Notification = () => {
     };
 
     return (
+        <>
         <View style={styles.container}>
             <View style={styles.header}>
                 <Text style={styles.title}>My Notifications</Text>
@@ -81,9 +83,13 @@ const Notification = () => {
                             </View>
                         </Pressable>
                     ))}
+                    
                 </ScrollView>
             )}
+            
         </View>
+        <SFCFooter/>
+        </>
     );
 };
 

@@ -16,6 +16,7 @@ import Notification from "../screens/Notification";
 
 // Import components
 import SideBar from "../components/SideBar";
+import SFCFooter from "../components/Footer";
 
 const Stack = createStackNavigator();
 
@@ -57,8 +58,10 @@ export default function AdminNavigator() {
               component={Notification}
             />
           </Stack.Navigator>
+          <SFCFooter/>
         </View>
       </View>
+      
     </View>
   );
 }

@@ -8,6 +8,7 @@ import FilterSidebar from '../components/FilterSidebar';
 import { formatDate } from '../utils/formatDate';
 import { useTranslation } from 'react-i18next';
 import { useUserDashboard } from '../hooks/useUserDashboard';
+import SFCFooter from '../components/Footer';
 
 const Badge = ({ navigation }) => {
     const {
@@ -236,6 +237,7 @@ const Badge = ({ navigation }) => {
                     type="locked"
                     emptyMsg="All available courses have been enrolled."
                 />
+                <SFCFooter/>
             </ScrollView>
 
             <FilterSidebar
