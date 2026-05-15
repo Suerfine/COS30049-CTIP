@@ -1469,3 +1469,5 @@ const styles = StyleSheet.create({
 export default PageRenderer;
 
 // Try final quiz if pass and still has left attempt can redo or not
+// final quiz attempt will not accurate
+// Last time pass, but still marked as fail

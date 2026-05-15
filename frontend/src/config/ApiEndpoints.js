@@ -48,6 +48,7 @@ export const API_ENDPOINTS = {
     PATCH: (id) => `/enrollments/${id}/approve`,
     HISTORY_BY_ENROLLMENT: (enrollmentId) =>
       `/submission/enrollment/${enrollmentId}`,
+    APPROVE: (id)=> `/enrollments/${id}/approve`,
   },
   WORKSHOP: {
     JOIN_WORKSHOP: (courseId, elementId) =>

@@ -114,7 +114,7 @@ const EnrollmentDetailModal = ({
                         <Trash2 size={20} color="#dc2626" />
                     </Pressable>
                     {
-                        status !== 'in_progress' && status !== 'pending_payment' && status !== 'in_review' && status !== 'failed' && (
+                        status !== 'in_progress' && status !== 'pending_payment' && status !== 'in_review' && status !== 'failed' && status !== 'rejected' && (
                             <View style={modalStyles.row}>
                                 <Pressable 
                                     style={[modalStyles.actionBtn, modalStyles.outlineBtn]}

@@ -59,6 +59,7 @@ const EnrollmentManagement = () => {
     courses,
     currentCourseId,
     setCurrentCourseId,
+    handleApproveBadge, handleRejectBadge
   } = useEnrollmentManagement();
 
   // Progress
@@ -92,6 +93,7 @@ const EnrollmentManagement = () => {
     paymentSortConfig,
     requestPaymentSort,
     resetPaymentSort,
+    fetchPayments
   } = usePayment();
 
   const [activeTab, setActiveTab] = useState("enrollment");
@@ -110,6 +112,7 @@ const EnrollmentManagement = () => {
   const [receiptUri, setReceiptUri] = useState(null);
   const [receiptLoading, setReceiptLoading] = useState(false);
   const [receiptError, setReceiptError] = useState("");
+  const [selectedAuditId, setSelectedAuditId] = useState(null);
 
   const enrollmentStatusOptions = [
     "All",
@@ -177,7 +180,7 @@ const EnrollmentManagement = () => {
     ? setSearchQuery
     : isSubmission
       ? setSubmissionSearchQuery
-      : () => {};
+      : () => { };
 
   const getActiveStatus = () => {
     if (isPayment) {
@@ -211,6 +214,7 @@ const EnrollmentManagement = () => {
   const handleOpenAudit = async (id) => {
     try {
       setAuditModalVisible(true);
+      setSelectedAuditId(id);
       const data = await fetchEnrollmentAudit(id);
     } catch (err) {
       console.error(err);
@@ -291,8 +295,8 @@ const EnrollmentManagement = () => {
           setReceiptUri(null);
           setReceiptError(
             err?.response?.data?.message ||
-              err?.message ||
-              "Failed to load receipt",
+            err?.message ||
+            "Failed to load receipt",
           );
         }
       } finally {
@@ -349,7 +353,7 @@ const EnrollmentManagement = () => {
       >
         <Text style={styles.headerText}>Course Code</Text>
         {sortSubmissionConfig.key === "course_id" &&
-        sortSubmissionConfig.direction === "asc" ? (
+          sortSubmissionConfig.direction === "asc" ? (
           <ArrowUpNarrowWide size={14} color="white" />
         ) : (
           <ArrowDownWideNarrow size={14} color="white" />
@@ -430,6 +434,7 @@ const EnrollmentManagement = () => {
       <Pressable
         onPress={async () => {
           setAuditModalVisible(true);
+          setSelectedAuditId(item.id);
           await fetchEnrollmentAudit(item.id);
         }}
         style={({ hovered }) => [
@@ -504,8 +509,38 @@ const EnrollmentManagement = () => {
       setPaymentModalVisible(false);
       setAdminRemark("");
       setSelectedPayment(null);
+      await fetchPayments();
     } catch (err) {
       console.error(err);
+    }
+  };
+  // Handle approve badge
+  const ApproveBadgeAction = async (id) => {
+    try {
+      const result = await handleApproveBadge(id);
+      if (result.success) {
+        setAuditModalVisible(false);
+        await fetchEnrollmentAudit(id);
+        await setSubmissionCurrentPage((p) => p);
+      } else {
+        alert("Failed to approve: " + result.error);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }
+  // Handle reject badge
+  const RejectBadgeAction = async (id) => {
+    if (!window.confirm("Reject this badge and mark enrollment as failed?")) return;
+
+    const result = await handleRejectBadge(id);
+    if (result.success) {
+      alert("Badge rejected.");
+      setAuditModalVisible(false);
+      await fetchEnrollmentAudit(id);
+      await setSubmissionCurrentPage((p) => p);
+    } else {
+      alert("Error rejecting badge: " + result.error);
     }
   };
 
@@ -772,7 +807,7 @@ const EnrollmentManagement = () => {
                         ellipsizeMode="tail"
                         style={[
                           getActiveStatus() === status &&
-                            styles.menuItemTextActive,
+                          styles.menuItemTextActive,
                         ]}
                       >
                         {formatted(status)}
@@ -909,6 +944,24 @@ const EnrollmentManagement = () => {
                   ))
                 )}
               </ScrollView>
+              {auditData?.status === 'in_review' && (
+                <View style={styles.row}>
+                  
+                  <Pressable
+                    style={[styles.actionBtn, styles.outlineBtn]}
+                    onPress={()=>RejectBadgeAction(selectedAuditId)}
+                  >
+                    <Text style={styles.outlineBtnText}>Reject</Text>
+                  </Pressable>
+
+                  <Pressable
+                    style={[styles.actionBtn, styles.solidApproveBtn]}
+                    onPress={() => ApproveBadgeAction(selectedAuditId)}
+                  >
+                    <Text style={styles.solidBtnText}>Approve</Text>
+                  </Pressable>
+                </View>
+                )}
             </View>
           </View>
         </Modal>
@@ -930,78 +983,80 @@ const EnrollmentManagement = () => {
               </View>
 
               {selectedPayment && (
-                <ScrollView showsVerticalScrollIndicator={false}>
-                  <View style={styles.paymentUserSection}>
-                    {selectedPayment.user_profile_image ? (
-                      <Image
-                        source={{
-                          uri: selectedPayment.user_profile_image,
-                        }}
-                        style={styles.paymentAvatar}
-                      />
-                    ) : (
-                      <View style={styles.paymentAvatarPlaceholder}>
-                        <Text style={styles.paymentAvatarInitial}>
-                          {selectedPayment.user_fullname?.[0]?.toUpperCase()}
-                        </Text>
-                      </View>
-                    )}
+                <>
+                  <ScrollView showsVerticalScrollIndicator={false}>
+                    <View style={styles.paymentUserSection}>
+                      {selectedPayment.user_profile_image ? (
+                        <Image
+                          source={{
+                            uri: selectedPayment.user_profile_image,
+                          }}
+                          style={styles.paymentAvatar}
+                        />
+                      ) : (
+                        <View style={styles.paymentAvatarPlaceholder}>
+                          <Text style={styles.paymentAvatarInitial}>
+                            {selectedPayment.user_fullname?.[0]?.toUpperCase()}
+                          </Text>
+                        </View>
+                      )}
 
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.paymentUserName}>
-                        {selectedPayment.user_fullname}
-                      </Text>
-                      <Text style={styles.paymentCourse}>
-                        {selectedPayment.course_title || "Course"}
-                      </Text>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.paymentUserName}>
+                          {selectedPayment.user_fullname}
+                        </Text>
+                        <Text style={styles.paymentCourse}>
+                          {selectedPayment.course_title || "Course"}
+                        </Text>
+                      </View>
                     </View>
-                  </View>
-                  <View style={styles.receiptSection}>
-                    {receiptLoading ? (
-                      <View style={styles.noReceiptBox}>
-                        <Text style={styles.noReceiptText}>
-                          Loading receipt...
-                        </Text>
-                      </View>
-                    ) : receiptUri ? (
-                      <Image
-                        source={{
-                          uri: receiptUri,
-                        }}
-                        style={styles.receiptImage}
-                      />
-                    ) : receiptError ? (
-                      <View style={styles.noReceiptBox}>
-                        <Text style={styles.noReceiptText}>{receiptError}</Text>
-                      </View>
-                    ) : (
-                      <View style={styles.noReceiptBox}>
-                        <Text style={styles.noReceiptText}>
-                          No Receipt Uploaded
-                        </Text>
-                      </View>
-                    )}
-                  </View>
+                    <View style={styles.receiptSection}>
+                      {receiptLoading ? (
+                        <View style={styles.noReceiptBox}>
+                          <Text style={styles.noReceiptText}>
+                            Loading receipt...
+                          </Text>
+                        </View>
+                      ) : receiptUri ? (
+                        <Image
+                          source={{
+                            uri: receiptUri,
+                          }}
+                          style={styles.receiptImage}
+                        />
+                      ) : receiptError ? (
+                        <View style={styles.noReceiptBox}>
+                          <Text style={styles.noReceiptText}>{receiptError}</Text>
+                        </View>
+                      ) : (
+                        <View style={styles.noReceiptBox}>
+                          <Text style={styles.noReceiptText}>
+                            No Receipt Uploaded
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                  </ScrollView>
                   <View style={styles.paymentActionRow}>
                     {selectedPayment?.status === "pending" && (
                       <View style={styles.row}>
-                          <Pressable 
-                              style={[styles.actionBtn, styles.outlineBtn]}
-                              onPress={() => setRejectModalVisible(true)}
-                          >
-                              <Text style={styles.outlineBtnText}>Reject</Text>
-                          </Pressable>
+                        <Pressable
+                          style={[styles.actionBtn, styles.outlineBtn]}
+                          onPress={() => setRejectModalVisible(true)}
+                        >
+                          <Text style={styles.outlineBtnText}>Reject</Text>
+                        </Pressable>
 
-                          <Pressable 
-                              style={[styles.actionBtn, styles.solidApproveBtn]}
-                              onPress={handleApprovePayment}
-                          >
-                              <Text style={styles.solidBtnText}>Approve</Text>
-                          </Pressable>
+                        <Pressable
+                          style={[styles.actionBtn, styles.solidApproveBtn]}
+                          onPress={handleApprovePayment}
+                        >
+                          <Text style={styles.solidBtnText}>Approve</Text>
+                        </Pressable>
                       </View>
                     )}
                   </View>
-                </ScrollView>
+                </>
               )}
             </View>
           </View>
@@ -1095,7 +1150,7 @@ const EnrollmentManagement = () => {
                   style={[
                     styles.sidebarItemText,
                     tempCourseFilter === course.title &&
-                      styles.sidebarItemTextActive,
+                    styles.sidebarItemTextActive,
                   ]}
                 >
                   {course.id} - {course.title}
@@ -1625,9 +1680,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: "center",
   },
-  row:{
-    flexDirection:'row',
-    gap:10,
+  row: {
+    flexDirection: 'row',
+    gap: 10,
   },
   actionBtn: {
     height: 48,
@@ -1639,16 +1694,16 @@ const styles = StyleSheet.create({
     width: 170
   },
   outlineBtn: {
-      backgroundColor: 'transparent',
-      borderWidth: 1.5,
-      borderColor: '#e5e7eb',
-      paddingHorizontal: 16,
-      width: 170
+    backgroundColor: 'transparent',
+    borderWidth: 1.5,
+    borderColor: '#e5e7eb',
+    paddingHorizontal: 16,
+    width: 170
   },
   outlineBtnText: {
-      color: '#4b5563',
-      fontWeight: '700',
-      fontSize: 14,
+    color: '#4b5563',
+    fontWeight: '700',
+    fontSize: 14,
   },
   downloadBtnText: {
     color: "white",
@@ -1712,12 +1767,12 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   solidApproveBtn: {
-      backgroundColor: '#059669',
+    backgroundColor: '#059669',
   },
   solidBtnText: {
-      color: 'white',
-      fontWeight: '700',
-      fontSize: 14,
+    color: 'white',
+    fontWeight: '700',
+    fontSize: 14,
   },
 });
 export default EnrollmentManagement;
