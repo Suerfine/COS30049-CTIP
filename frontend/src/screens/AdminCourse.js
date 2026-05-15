@@ -205,6 +205,7 @@ const AdminCourse = ({ navigation }) => {
           <View style={[styles.cardContainer, { columnGap: cardStyles.gap }]}>
             {Array.isArray(filteredCourses) && filteredCourses.length > 0 ? (
               filteredCourses.map((course) => {
+                console.log(course);
                 const numModules = course.module_count ? course.module_count : 0;
                 return (
                 <View key={course.id} style={[styles.cardWrapper, { flexBasis: cardStyles.width, minWidth: cardStyles.width }]}>
@@ -213,7 +214,7 @@ const AdminCourse = ({ navigation }) => {
                     id={course.id}
                     coverImgUrl={course.cover_img_url}
                     courseTitle={course.title}
-                    numModules={numModules || 16}
+                    numModules={numModules || 0}
                     duration={course.expected_completion_weeks}
                     expiry={course.must_complete_in_weeks}
                     userType="admin"

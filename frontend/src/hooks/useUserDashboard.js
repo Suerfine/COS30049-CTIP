@@ -76,7 +76,6 @@ export const useUserDashboard = () => {
                 setCourses(fetchedCourses);
             }
 
-            // Fetch progress AFTER courses loaded
             if (fetchedCourses.length > 0) {
                 const progressPromises = fetchedCourses.map(course =>
                     progressService.getCourseProgress(course.id)

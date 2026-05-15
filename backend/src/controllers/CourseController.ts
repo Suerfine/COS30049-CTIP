@@ -105,7 +105,8 @@ function toCourseResponse(course: Course, req?: Request<any>): CourseResponse {
       ? `${req.protocol}://${req.get("host")}${course.cover_img_path.startsWith("/") ? course.cover_img_path : `/${course.cover_img_path}`}`
       : null;
 
-  const module_count = Number((course.toJSON() as any).module_count ?? 0);
+  const module_count =
+    Number((course as any).dataValues?.module_count ?? 0);
 
   return {
     id: course.id,
@@ -596,16 +597,16 @@ export const getAllCourses = async (
     page: req.query.page,
     size: req.query.size,
   });
+
   try {
     const isDeletedRaw = req.query.isDeleted;
+
     const includeDeleted =
       (typeof isDeletedRaw === "string" &&
         isDeletedRaw.toLowerCase() === "true") ||
       (typeof isDeletedRaw === "boolean" && isDeletedRaw === true);
 
-    logger.debug("Course fetch parameters", { includeDeleted });
-
-    // First, get pagination info and course IDs without the many-to-many include
+    // STEP 1: pagination + module COUNT
     const coursesPaginated = await paginateModel(Course, req.query, {
       paranoid: !includeDeleted,
       include: [
@@ -622,36 +623,31 @@ export const getAllCourses = async (
       subQuery: false,
     });
 
-    // Then, fetch full course data with all tags for the paginated courses
     const courseIds = coursesPaginated.data.map((c) => c.id);
+
+    // STEP 2: full data fetch (tags + prerequisites)
     const courses = await Course.findAll({
-      where: {
-        id: courseIds,
-      },
+      where: { id: courseIds },
       include: COURSE_PREREQUISITE_INCLUDE,
       paranoid: !includeDeleted,
     });
 
-    // Create a map of courses with their module counts
+    // STEP 3: build module count map (FIXED)
     const moduleCountMap = new Map(
       coursesPaginated.data.map((c) => [
         c.id,
-        Number((c.toJSON() as any).module_count ?? 0),
+        Number((c as any).dataValues?.module_count ?? 0),
       ]),
     );
 
-    // Enhance courses with module counts
+    // STEP 4: inject module_count correctly (FIXED)
     courses.forEach((course) => {
-      (course.toJSON() as any).module_count =
+      (course as any).dataValues.module_count =
         moduleCountMap.get(course.id) || 0;
     });
 
-    logger.info("Courses fetched successfully", {
-      totalElements: coursesPaginated.totalElements,
-      totalPages: coursesPaginated.totalPages,
-    });
-
     const baseUrl = `${req.protocol}://${req.get("host")}${req.originalUrl}`;
+
     const formattedResponse = formatPaginateResponse(
       courses.map((c) => toCourseResponse(c, req)),
       req.query,
