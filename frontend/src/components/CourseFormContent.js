@@ -9,6 +9,12 @@ import { isValidCourseTitle, isValidDuration, isValidExpiryWeeks, isValidBadgeEx
 
 const CourseFormContent = ({ onSubmit, onCancel, isLoading, initialData, allCourseList = [], allTagList = [] }) => {
     console.log(initialData);
+    const getImageUri = (imageValue) => {
+        if (!imageValue) return null;
+        if (typeof imageValue === 'string') return imageValue;
+        return imageValue.uri || null;
+    };
+
     const getInitialTagsByType = (type) => {
         if (!initialData?.tags) return [];
         return initialData.tags
@@ -144,12 +150,14 @@ const CourseFormContent = ({ onSubmit, onCancel, isLoading, initialData, allCour
             quality: 1,
         });
 
-        if (!result.canceled) {
+        if (!result.canceled && result.assets?.[0]) {
+            const pickedAsset = result.assets[0];
+
             if (type === 'badge') {
-                setForm(prev => ({ ...prev, badgeImage: result.assets[0].uri }));
+                setForm(prev => ({ ...prev, badgeImage: pickedAsset }));
                 clearError('badgeImage');
             } else {
-                setForm(prev => ({ ...prev, image: result.assets[0].uri }));
+                setForm(prev => ({ ...prev, image: pickedAsset }));
             }
         }
     };
@@ -388,8 +396,8 @@ const CourseFormContent = ({ onSubmit, onCancel, isLoading, initialData, allCour
                     <View style={styles.upload}>
                         <Text style={styles.label}>Course Cover</Text>
                         <Pressable style={styles.imagePicker} onPress={() => pickImage('cover')}>
-                            {form.image ? (
-                                <Image source={{ uri: form.image }} style={styles.previewImage} />
+                            {getImageUri(form.image) ? (
+                                <Image source={{ uri: getImageUri(form.image) }} style={styles.previewImage} />
                             ) : (
                                 <View style={localStyles.uploadPlaceholder}>
                                     <Image source={require('../../assets/upload_placeholder.png')} style={localStyles.placeholder} />
@@ -400,8 +408,8 @@ const CourseFormContent = ({ onSubmit, onCancel, isLoading, initialData, allCour
 
                         <Text style={[styles.label, { marginTop: 25 }]}>Completion Badge (1:1)</Text>
                         <Pressable style={localStyles.badgePicker} onPress={() => pickImage('badge')}>
-                            {form.badgeImage ? (
-                                <Image source={{ uri: form.badgeImage }} style={localStyles.badgePreview} />
+                            {getImageUri(form.badgeImage) ? (
+                                <Image source={{ uri: getImageUri(form.badgeImage) }} style={localStyles.badgePreview} />
                             ) : (
                                 <View style={localStyles.uploadPlaceholder}>
                                     <Award size={32} color="#ccc" />

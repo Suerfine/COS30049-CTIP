@@ -8,7 +8,7 @@ import {
   PrerequisiteGroup,
   Tag,
   User,
-  Module
+  Module,
 } from "../models";
 import sequelize from "../config/Database";
 import { PaginateRequestParams, PaginateResponse } from "../types/common";
@@ -105,9 +105,7 @@ function toCourseResponse(course: Course, req?: Request<any>): CourseResponse {
       ? `${req.protocol}://${req.get("host")}${course.cover_img_path.startsWith("/") ? course.cover_img_path : `/${course.cover_img_path}`}`
       : null;
 
-  const module_count = Number(
-    (course.toJSON() as any).module_count ?? 0
-  );
+  const module_count = Number((course.toJSON() as any).module_count ?? 0);
 
   return {
     id: course.id,
@@ -536,6 +534,7 @@ export const createCourse = async (
     const coverFile = uploadedFiles.cover?.[0];
     const badgeFile = uploadedFiles.badge?.[0];
 
+    // Check if conver file exists if not reject the request as cover image is required for course creation. Badge image is optional so we will not reject the request if badge image is not provided.
     if (coverFile) {
       logger.debug("Saving course cover image", {
         courseId: course.id,
@@ -554,6 +553,8 @@ export const createCourse = async (
         courseId: course.id,
         path: savedPath,
       });
+    } else {
+      throw new HttpError(400, "Cover image is required for course creation");
     }
 
     if (badgeFile) {
@@ -574,6 +575,8 @@ export const createCourse = async (
         courseId: course.id,
         path: savedPath,
       });
+    } else {
+      throw new HttpError(400, "Badge image is required for course creation");
     }
 
     await course.save({ transaction });
@@ -635,11 +638,11 @@ export const getAllCourses = async (
           attributes: [],
         },
       ],
-      attributes:{
-        include:[[fn("COUNT", col("modules.id")), "module_count"]],
+      attributes: {
+        include: [[fn("COUNT", col("modules.id")), "module_count"]],
       },
-      group:["Course.id"],
-      subQuery:false,
+      group: ["Course.id"],
+      subQuery: false,
     });
 
     logger.info("Courses fetched successfully", {

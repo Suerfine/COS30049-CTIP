@@ -13,7 +13,7 @@ import {
   ClockAlert,
   SquarePen,
   Trash2,
-  CheckCircle2
+  CheckCircle2,
 } from "lucide-react-native";
 import ProgressBar from "./ProgressBar.js";
 import { useTranslation } from "react-i18next";
@@ -26,7 +26,7 @@ const EnrollmentStatus = {
   FAILED: "failed",
   EXPIRED: "expired",
   REJECTED: "rejected",
-  PENDING_PAYMENT: "pending_payment"
+  PENDING_PAYMENT: "pending_payment",
 };
 
 const CourseCard = ({
@@ -45,12 +45,18 @@ const CourseCard = ({
   onEnroll,
   previousEnrollments = [],
   onViewHistory,
-  isPublished
+  isPublished,
 }) => {
   const { t, i18n } = useTranslation();
   const isWeb = Platform.OS === "web";
   const isAdmin = userType === "admin";
   const hasHistory = previousEnrollments.length > 0;
+
+  // Normalize the URL to use forward slashes instead of backslashes
+  const normalizedImageUrl = coverImgUrl
+    ? coverImgUrl.replace(/\\/g, "/")
+    : null;
+
   const handleEnrollPress = () => {
     onEnroll?.();
   };
@@ -94,18 +100,28 @@ const CourseCard = ({
     if (enrollmentStatus === EnrollmentStatus.COMPLETED) {
       return <ProgressBar progress={progress} />;
     }
-    
+
     // 2. Check for FAILED/REJECTED (This is where your history button lives)
-    if (enrollmentStatus === EnrollmentStatus.FAILED || enrollmentStatus === EnrollmentStatus.REJECTED) {
+    if (
+      enrollmentStatus === EnrollmentStatus.FAILED ||
+      enrollmentStatus === EnrollmentStatus.REJECTED
+    ) {
       return (
         <View style={styles.historyActionContainer}>
-          <Pressable style={[styles.enrollBtn, {marginTop: 8}]} onPress={handleEnrollPress}>
-            <Text style={styles.enrollText}>{t("enroll_again", "Enroll Again")}</Text>
+          <Pressable
+            style={[styles.enrollBtn, { marginTop: 8 }]}
+            onPress={handleEnrollPress}
+          >
+            <Text style={styles.enrollText}>
+              {t("enroll_again", "Enroll Again")}
+            </Text>
           </Pressable>
           {hasHistory && (
-             <Pressable style={styles.historyBtn} onPress={onViewHistory}>
-               <Text style={styles.historyBtnText}>{t("view_history", "View History")}</Text>
-             </Pressable>
+            <Pressable style={styles.historyBtn} onPress={onViewHistory}>
+              <Text style={styles.historyBtnText}>
+                {t("view_history", "View History")}
+              </Text>
+            </Pressable>
           )}
         </View>
       );
@@ -120,9 +136,11 @@ const CourseCard = ({
           </Pressable>
           {/* Show history link even if they aren't currently enrolled but have past attempts */}
           {hasHistory && (
-             <Pressable style={styles.historyBtnLink} onPress={onViewHistory}>
-               <Text style={styles.historyLinkText}>{t("view_past_records", "Show Past Records")}</Text>
-             </Pressable>
+            <Pressable style={styles.historyBtnLink} onPress={onViewHistory}>
+              <Text style={styles.historyLinkText}>
+                {t("view_past_records", "Show Past Records")}
+              </Text>
+            </Pressable>
           )}
         </View>
       );
@@ -130,7 +148,6 @@ const CourseCard = ({
 
     return null;
   };
-
 
   return (
     <Pressable
@@ -143,7 +160,7 @@ const CourseCard = ({
     >
       <View style={styles.imageWrapper}>
         <Image
-          source={{ uri: coverImgUrl }}
+          source={{ uri: normalizedImageUrl }}
           style={styles.courseImg}
           accessibilityLabel="Cover Photo of Course"
         />
@@ -175,7 +192,6 @@ const CourseCard = ({
               {renderEnrollmentWidget()}
             </View>
           )}
-          
         </View>
 
         {isAdmin && !isPublished && (
@@ -198,7 +214,7 @@ const CourseCard = ({
           <View style={styles.publishedBadge}>
             <CheckCircle2 size={12} color="#065f46" strokeWidth={3} />
             <Text style={styles.publishedText}>PUBLISHED</Text>
-        </View>
+          </View>
         )}
 
         {/* web */}
@@ -221,7 +237,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 6,
-    overflow: "hidden", 
+    overflow: "hidden",
     borderColor: "#897474",
     width: Platform.select({
       web: 300,
@@ -230,15 +246,16 @@ const styles = StyleSheet.create({
   },
   imageWrapper: {
     width: "100%",
-  },
-  courseImg: {
-    width: "100%", 
     height: Platform.select({
-      web:180,
+      web: 180,
       default: 140,
     }),
-    resizeMode: "cover", 
-    alignSelf: "center",
+    overflow: "hidden",
+  },
+  courseImg: {
+    width: "100%",
+    height: "100%",
+    resizeMode: "cover",
   },
   // drop courses toolbar
   dropToolbarContainer: {
@@ -260,7 +277,7 @@ const styles = StyleSheet.create({
     opacity: 2.0,
   },
   // course detail
- CourseTitle: {
+  CourseTitle: {
     borderBottomColor: "#8f8f8f",
     borderBottomWidth: 1,
     fontSize: Platform.select({ web: 17, default: 14 }),
@@ -268,7 +285,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     textAlign: "left",
     fontWeight: "600",
-    minHeight: Platform.OS === 'web' ? 60 : 50, 
+    minHeight: Platform.OS === "web" ? 60 : 50,
   },
   courseDetails: {
     flexDirection: "row",
@@ -321,11 +338,11 @@ const styles = StyleSheet.create({
   cardHover: {
     ...Platform.select({
       web: {
-        borderColor: "#efab21", 
+        borderColor: "#efab21",
         shadowOpacity: 0.25,
         shadowRadius: 10,
-      }
-    })
+      },
+    }),
   },
   cardPressed: {
     opacity: 0.8,
@@ -336,7 +353,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "flex-end",
   },
-  mobileWidgetContainer:{
+  mobileWidgetContainer: {
     justifyContent: "flex-end",
     alignItems: "flex-end",
   },
@@ -360,7 +377,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#ffc107",
   },
-  badgePendingPayment:{
+  badgePendingPayment: {
     backgroundColor: "#fff3cd",
     borderWidth: 1,
     borderColor: "#ffc107",
@@ -372,10 +389,10 @@ const styles = StyleSheet.create({
   },
   failedContainer: {
     marginTop: 10,
-    width: '100%',
+    width: "100%",
   },
   failedActions: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 10,
     marginTop: 8,
   },
@@ -384,33 +401,32 @@ const styles = StyleSheet.create({
     padding: 8,
     borderRadius: 6,
     borderWidth: 1,
-    borderColor: '#64748b',
-    backgroundColor: 'white',
+    borderColor: "#64748b",
+    backgroundColor: "white",
   },
   viewRecordText: {
-    textAlign: 'center',
-    color: '#64748b',
+    textAlign: "center",
+    color: "#64748b",
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   retryBtn: {
     flex: 1,
     padding: 8,
     borderRadius: 6,
-    backgroundColor: '#dc2626',
+    backgroundColor: "#dc2626",
   },
   retryText: {
-    textAlign: 'center',
-    color: 'white',
+    textAlign: "center",
+    color: "white",
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: "600",
   },
-  
 
   historyActionContainer: {
-    flexDirection: 'column',
+    flexDirection: "column",
     gap: 5,
-    width: '100%',
+    width: "100%",
   },
   historyBtn: {
     backgroundColor: "#f3f4f6",
@@ -426,24 +442,24 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   publishedBadge: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      backgroundColor: '#dcfce7',
-      paddingHorizontal: 8,
-      paddingVertical: 4,
-      borderRadius: 6,
-      borderWidth: 1,
-      borderColor: '#86efac',
-      gap: 5,
-      alignSelf: 'flex-start',
-      marginTop:5
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#dcfce7",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: "#86efac",
+    gap: 5,
+    alignSelf: "flex-start",
+    marginTop: 5,
   },
   publishedText: {
-      fontSize: 10,
-      fontWeight: '800',
-      color: '#065f46', 
-      letterSpacing: 0.5,
-  },    
+    fontSize: 10,
+    fontWeight: "800",
+    color: "#065f46",
+    letterSpacing: 0.5,
+  },
 });
 
 export default CourseCard;
