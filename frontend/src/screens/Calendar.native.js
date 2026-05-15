@@ -398,17 +398,18 @@ const Calendar = ({ route, navigation }) => {
 
                             <View style={styles.taskPreviewContainer}>
                                 {dayTodos.slice(0, 3).map((event) => (
-                                    <View
+                                    <Pressable
                                         key={event.id}
                                         style={[
                                             styles.taskTinyLabel,
                                             { backgroundColor: event.status === 'completed' ? '#e2e8f0' : '#dcfce7' },
                                         ]}
+                                        onPress={() => openEditModal(event)}
                                     >
                                         <Text numberOfLines={1} style={styles.tinyTaskText}>
                                             {event.title}
                                         </Text>
-                                    </View>
+                                    </Pressable>
                                 ))}
                             </View>
                         </Pressable>

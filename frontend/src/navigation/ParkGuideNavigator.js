@@ -11,7 +11,6 @@ import UserCourse from "../screens/UserCourse";
 import UserModule from "../screens/UserModule";
 import UserProfile from "../screens/UserProfile";
 import Calendar from "../screens/Calendar.native";
-import TaskDetails from "../screens/TaskDetails.native";
 import Settings from "../screens/Settings.native";
 import UserAnomaly from "../screens/UserAnomaly";
 import Badge from "../screens/Badge";
@@ -29,16 +28,6 @@ import PaymentScreen from "../screens/Payment";
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
-
-// Stack for To Do tab
-function TodoStackScreen() {
-  return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="To Do Calendar" component={Calendar} />
-      <Stack.Screen name="TaskDetails" component={TaskDetails} />
-    </Stack.Navigator>
-  );
-}
 
 // Mobile tab navigator for park guide
 function MobileTabNavigator() {
@@ -83,20 +72,11 @@ function MobileTabNavigator() {
         />
         <Tab.Screen
           name="To Do"
-          component={TodoStackScreen}
+          component={Calendar}
+          initialParams={{ layout: 'list' }}
           options={{
             tabBarIcon: ({ color }) => <ListTodo color={color} size={20} />,
           }}
-          listeners={({ navigation }) => ({
-            tabPress: (e) => {
-              e.preventDefault();
-
-              navigation.navigate("To Do", {
-                screen: "To Do Calendar",
-                params: { layout: "list" },
-              });
-            },
-          })}
         />
         <Tab.Screen
           name="Badge"

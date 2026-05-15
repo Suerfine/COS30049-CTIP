@@ -46,7 +46,7 @@ const MobileSideBar=({isOpen, onClose})=>{
     const menuItems=[
         {id: 'profile', label:'Profile', icon: UserPen, route:'Profile'},
         {id: 'calendar', label:'Calendar', icon: Calendar, route:'To Do'},
-        {id: 'badges', label:'Badges', icon: Award},
+        {id: 'badges', label:'Badges', icon: Award, route:'Badge'},
         {id: 'settings', label:'Settings', icon: Settings, route:'Settings'},
     ];
 
@@ -86,11 +86,10 @@ const MobileSideBar=({isOpen, onClose})=>{
                                     }
 
                                     navigation.navigate('ParkGuideMobileRoot', {
-                                        screen: item.route, 
-                                        params:{
-                                            screen: 'To Do Calendar',
-                                            params:{layout: 'calendar'}
-                                        } 
+                                        screen: 'To Do',
+                                        params: {
+                                            layout: 'calendar'
+                                        }
                                     });
                                 }}>
                                     <item.icon size={22} color="#333" />

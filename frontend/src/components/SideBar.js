@@ -28,7 +28,6 @@ const SideBar = () => {
         {name: 'Accounts', icon: User2, route:'Account Management'},
         {name: 'Courses', icon: Book, route:'Course Management'},
         {name: 'Enrollment', icon: ClipboardList, route:'Enrollment Management'},
-        // {name:'Payment', icon: CreditCard},
         {name:'Anomalies', icon: Flag, route:'Anomaly Detection'},
         {name:'AR Models', icon: QrCode, route:'AR Models'},
     ];
