@@ -134,6 +134,7 @@ const EnrollmentManagement = () => {
     "failed",
     "dropped",
     "expired",
+    'in_review'
   ];
 
   const paymentStatusOptions = ["All", "pending", "paid", "failed", "refunded"];
