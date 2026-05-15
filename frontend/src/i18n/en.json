@@ -17,7 +17,8 @@
         "pending payment": "Pending Payment",
         "basic":"Basic",
         "advanced":"Advanced",
-        "not enrolled":"Not Enrolled"
+        "not enrolled":"Not Enrolled",
+        "enrollable":"Enrollable"
     },
     "joined":"Joined",
     "since":"since",

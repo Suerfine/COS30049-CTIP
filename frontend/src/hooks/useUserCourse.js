@@ -34,6 +34,7 @@ export const useUserCourse = () => {
     rejected: t("status.rejected"), // admin rejected the enrollment
     notEnrolled: t("status.not enrolled"),
     pendingPayment: t("status.pending payment"),
+    enrollable: t("status.enrollable")
   }), [t]);
 
   const tabs = useMemo(() => ([
@@ -153,6 +154,27 @@ export const useUserCourse = () => {
       return unfulfilled;
     }, [coursesWithStatus]);
 
+    // enrollable courses: enrollable = not yet enrolled AND already fulfilled prerequisites
+    const enrollableCourses = useMemo(()=> {
+      return coursesWithStatus.filter((course) => {
+        // must be not enrolled
+        if (course.enrollmentStatus) return false;
+        // no prerequisite = enrollable
+        if (!course.prerequisite_groups || course.prerequisite_groups.length === 0) return true;
+
+        return course.prerequisite_groups.every((group) => {
+          const prereqs = group.prerequisites || [];
+          return prereqs.some((prereq) => {
+            const prereqCourse = coursesWithStatus.find(
+              (c) => Number(c.id) === Number(prereq.course_id)
+            );
+            return prereqCourse?.enrollmentStatus === "completed";
+          });
+        });
+      })
+    }, [coursesWithStatus]);
+
+
     // filter applied courses
     const appliedCourses = useMemo(() =>
       coursesWithStatus.filter(c => c.enrollmentStatus === "applied"),
@@ -215,7 +237,8 @@ export const useUserCourse = () => {
         (filters.status === "failed" && course.enrollmentStatus === "failed") ||
         (filters.status === "rejected" && course.enrollmentStatus === "rejected") ||
         (filters.status === "pendingPayment" && course.enrollmentStatus === "pending_payment") ||
-        (filters.status === "notEnrolled" && !course.enrollmentStatus);
+        (filters.status === "notEnrolled" && !course.enrollmentStatus) ||
+        (filters.status == "enrollable" && enrollableCourses.some(c => c.id === course.id));
 
       const matchesLocation =
         !filters.location ||
@@ -351,6 +374,7 @@ export const useUserCourse = () => {
     failedCourses,
     rejectedCourses,
     getPreviousEnrollments, openHistory, historyModalVisible, selectedHistory,
-    setHistoryModalVisible
+    setHistoryModalVisible,
+    enrollableCourses
   };
 };
