@@ -49,6 +49,7 @@ export const courseService = {
       const costToSend =
         formData.cost && formData.cost !== "" ? formData.cost : "0";
       data.append("cost", costToSend);
+      data.append("tag_ids", JSON.stringify(formData.tags || []));
       data.append(
         "prerequisite_course_ids",
         JSON.stringify(formData.prerequisites.map((p) => p.id)),

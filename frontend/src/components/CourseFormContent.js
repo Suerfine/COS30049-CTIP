@@ -15,6 +15,14 @@ const CourseFormContent = ({ onSubmit, onCancel, isLoading, initialData, allCour
         return imageValue.uri || null;
     };
 
+    const normalizeImageUrl = (url) => {
+        if (!url) return null;
+        if (typeof url === 'string') {
+            return url.replace(/\\/g, '/');
+        }
+        return url;
+    };
+
     const getInitialTagsByType = (type) => {
         if (!initialData?.tags) return [];
         return initialData.tags
@@ -40,8 +48,8 @@ const CourseFormContent = ({ onSubmit, onCancel, isLoading, initialData, allCour
         cost: initialData?.cost || '',
         expiryWeeks: initialData?.must_complete_in_weeks?.toString() || '',
         badgeExpiry: initialData?.badge_expire_in_months?.toString() || '',
-        image: initialData?.cover_img_url || null,
-        badgeImage: initialData?.badge_img_url || null,
+        image: normalizeImageUrl(initialData?.cover_img_url) || null,
+        badgeImage: normalizeImageUrl(initialData?.badge_img_url) || null,
         status: initialData?.status || 'unreleased',
         locationTags: getInitialTagsByType('location'),
         categoryTags: getInitialTagsByType('category'),

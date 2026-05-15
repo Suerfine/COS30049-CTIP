@@ -339,7 +339,9 @@ async function addCourseTags(
   const existingAssociations = await CourseTag.findAll({
     where: {
       course_id: courseId,
-      tag_id: tagIds,
+      tag_id: {
+        [Op.in]: tagIds,
+      },
     },
     transaction,
     paranoid: false,
@@ -374,31 +376,6 @@ async function addCourseTags(
   }
 
   logger.debug("Course tags added successfully", {
-    courseId,
-    tagCount: tagIds.length,
-  });
-}
-
-async function removeCourseTags(
-  courseId: number,
-  tagIds: number[],
-  transaction: any,
-): Promise<void> {
-  logger.debug("Removing course tags", { courseId, tagIds });
-
-  if (tagIds.length === 0) {
-    return;
-  }
-
-  await CourseTag.destroy({
-    where: {
-      course_id: courseId,
-      tag_id: tagIds,
-    },
-    transaction,
-  });
-
-  logger.debug("Course tags removed successfully", {
     courseId,
     tagCount: tagIds.length,
   });
