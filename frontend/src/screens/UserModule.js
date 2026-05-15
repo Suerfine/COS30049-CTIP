@@ -579,7 +579,7 @@ const UserModule = ({ navigation }) => {
                   source={
                     normalizedCoverUrl
                       ? { uri: normalizedCoverUrl }
-                      : require("../../assets/first_aid.png")
+                      : ''
                   }
                   style={styles.course_cover}
                 />

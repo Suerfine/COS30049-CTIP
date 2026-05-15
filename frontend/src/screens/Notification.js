@@ -74,7 +74,7 @@ const Notification = () => {
                                     }}
                                     style={({ hovered }) => [
                                         styles.dismissBtn,
-                                        hovered && styles.dismissBtnHover // Only the X button glows now
+                                        hovered && styles.dismissBtnHover
                                     ]}
                                     hitSlop={10}
                                 >
@@ -88,7 +88,7 @@ const Notification = () => {
             )}
             
         </View>
-        <SFCFooter/>
+        {currentUser.role !== 'admin' && (<SFCFooter/>)}
         </>
     );
 };
