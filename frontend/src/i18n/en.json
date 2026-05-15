@@ -12,12 +12,13 @@
         "rejected":"Rejected",
         "completed":"Completed",
         "in progress":"In Progress",
-        "in review":"In Review",
+        "in review":"Under Admin Review",
         "applied": "Applied",
         "pending payment": "Pending Payment",
         "basic":"Basic",
         "advanced":"Advanced",
-        "not enrolled":"Not Enrolled"
+        "not enrolled":"Not Enrolled",
+        "enrollable":"Enrollable"
     },
     "joined":"Joined",
     "since":"since",
@@ -116,5 +117,7 @@
     "course expiry reminders":"Course Expiry Reminders",
     "failed to load notification settings":"Failed to load notification settings.",
     "failed to save notification settings":"Failed to save notification settings.",
-    "no todos":"No Todos"
+    "no todos":"No Todos",
+    "upcoming":"Upcoming",
+    "workshop":"Workshop"
 }

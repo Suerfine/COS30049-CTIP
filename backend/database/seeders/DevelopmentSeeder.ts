@@ -38,6 +38,7 @@ import { buildComplianceEvents } from "../factories/AnomalyEventFactory";
 import AnomalyEvent from "../../src/models/AnomalyEvent";
 import "../../src/models";
 import { PaymentStatus } from "../../src/enum/PaymentStatus";
+import { CourseStatus } from "../../src/enum/CourseStatus";
 
 export async function runSeeders(
   user_admin_count: number = 5,
@@ -171,7 +172,12 @@ export async function runSeeders(
       elementsVariance: 1,
     });
 
-    const createdCourse = await Course.create(courseGraph.course);
+    const isReleased = faker.datatype.boolean();
+
+    const createdCourse = await Course.create({
+      ...courseGraph.course,
+      status: isReleased ? CourseStatus.RELEASED : CourseStatus.UNRELEASED,
+    });
     courses.push({
       id: createdCourse.id,
       created_at: createdCourse.created_at,

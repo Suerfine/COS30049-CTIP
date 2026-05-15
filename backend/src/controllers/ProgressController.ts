@@ -16,6 +16,8 @@ import { UserRoles } from "../enum/UserRoles";
 import { hashPassword, verifyPassword } from "../utils/password";
 import { getStorage } from "../services/storage";
 import {Course, Module, Page, Element, Submission, Enrollment} from "../models";
+import getNewEnrollmentStatus from "../utils/getNewEnrollmentStatus";
+
 class HttpError extends Error {
   status: number;
 
@@ -84,6 +86,26 @@ const calculateProgress = async (userId: number, courseId: number, moduleId?: nu
   };
 };
 
+const syncEnrollmentStatus = async (userId: number, courseId: number) => {
+  const enrollment = await Enrollment.findOne({
+    where: {
+      user_id: userId,
+      course_id: courseId,
+    },
+  });
+
+  if (!enrollment) return null;
+
+  const result = await getNewEnrollmentStatus(enrollment);
+
+  if (result.status !== enrollment.status) {
+    enrollment.status = result.status;
+    await enrollment.save();
+  }
+
+  return result;
+};
+
 export const courseProgress = async (
   req: Request<{ courseId: string }>,
   res: Response<ProgressResponse | { message: string }>,
@@ -97,6 +119,7 @@ export const courseProgress = async (
     if (isNaN(courseId)) throw new HttpError(400, "Invalid Course ID");
 
     const result = await calculateProgress(userId, courseId);
+    await syncEnrollmentStatus(userId, courseId);
     return res.status(200).json(result);
   } catch (err) {
     if (err instanceof HttpError) {
@@ -124,6 +147,7 @@ export const moduleProgress = async (
     }
 
     const result = await calculateProgress(userId, courseId, moduleId);
+    await syncEnrollmentStatus(userId, courseId);
     return res.status(200).json(result);
   } catch (err) {
     if (err instanceof HttpError) {

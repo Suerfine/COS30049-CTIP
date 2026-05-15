@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, ScrollView, Pressable, ImageBackground, StatusBar, TextInput } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, ImageBackground, StatusBar, TextInput, Alert } from 'react-native';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { CircleX, ListFilter, SignalZero, ChevronLeft, SlidersHorizontal, Search} from 'lucide-react-native'
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
@@ -159,6 +159,19 @@ const UserCourse=({navigation})=>{
                                         }
                                     })}
                             onEnroll={() => {
+                                if (!course.is_enrollable) {
+                                    const prereqList = course.prerequisiteGroups?.length
+                                        ? course.prerequisiteGroups.map(p => p.title).join(", ")
+                                        : "Unknown prerequisite(s)";
+
+                                    Alert.alert(
+                                        "Prerequisites Not Fulfilled",
+                                        `The following prerequisite(s) have not been fulfilled: ${prereqList}`
+                                    );
+
+                                    return;
+                                }
+
                                 Alert.alert(
                                     "Confirm Enrollment",
                                     `Are you sure you want to enroll in ${course.title}?`,

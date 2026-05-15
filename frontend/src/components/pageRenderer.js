@@ -1,6 +1,6 @@
-import { useState,useEffect, useRef, useMemo } from 'react';
-import { View, Text, Image, StyleSheet, TouchableOpacity, Platform, ActivityIndicator,Linking, useWindowDimensions } from 'react-native';
-import { FileText, Play, Download, HelpCircle, Edit3, editCircle, Trash2,ChevronUp, ChevronDown, CheckCircle2, RotateCcw, AlertCircle, Calendar, Clock, MapPin, ExternalLink} from 'lucide-react-native';
+import { useState, useEffect, useRef, useMemo } from 'react';
+import { View, Text, Image, StyleSheet, TouchableOpacity, Platform, ActivityIndicator, Linking, useWindowDimensions, AccessibilityInfo, Alert } from 'react-native';
+import { FileText, Play, Download, HelpCircle, Edit3, editCircle, Trash2, ChevronUp, ChevronDown, CheckCircle2, RotateCcw, AlertCircle, Calendar, Clock, MapPin, ExternalLink, ChevronLeft, ChevronRight } from 'lucide-react-native';
 import Markdown from 'react-native-markdown-display';
 import * as Progress from 'react-native-progress';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -11,15 +11,15 @@ import { markdownStyles } from './markdownStyle';
 import { UserRoles } from '../enum/UserRoles';
 import { useAuth } from '../context/AuthContext';
 
-const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement, onMoveElement, onProgressUpdate, onRegisterWorkshop, userMarks,pageMetadata,currentAttempts,isPageFinished, isFinalQuiz, enrollmentId, fullHistoryMap, onFetchHistory, onRefreshHistory, scrollToTop, isPublished}) => {
+const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement, onMoveElement, onProgressUpdate, onRegisterWorkshop, userMarks, pageMetadata, currentAttempts, isPageFinished, isFinalQuiz, enrollmentId, fullHistoryMap, onFetchHistory, onRefreshHistory, scrollToTop, isPublished, onSelectPage, progressMap }) => {
     const isAdmin = role === UserRoles.ADMIN;
-    const [videoProgress, setVideoProgress]=useState({});
-    const [quizStates, setQuizStates]=useState({});
+    const [videoProgress, setVideoProgress] = useState({});
+    const [quizStates, setQuizStates] = useState({});
     const [viewedElements, setViewedElements] = useState({});
     const [workshopRegistrations, setWorkshopRegistrations] = useState({});
     const [selectedSessions, setSelectedSessions] = useState({});
     const [autoAddTodo, setAutoAddTodo] = useState(true);
-    const {currentUser}=useAuth();
+    const { currentUser } = useAuth();
     const [finalQuizAnswers, setFinalQuizAnswers] = useState({});
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [finalSummary, setFinalSummary] = useState(null);
@@ -36,7 +36,12 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
         const restoredAnswers = {};
         const restoredQuizStates = {};
         const quizElements = elements.filter(el => el.type === 'quiz_objective');
+        
+        let earnedTotalScore = 0;
+        let totalPossibleScore = 0;
+
         quizElements.forEach(el => {
+            totalPossibleScore += (el.score || 0);
             const submission = userMarks?.[el.id];
             if (submission?.content?.selected !== undefined) {
                 const selectedAnswer = submission.content.selected;
@@ -47,21 +52,16 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
                     isCorrect,
                     submitted: true
                 };
+                if (isCorrect) {
+                    earnedTotalScore += (el.score || 0);
+                }
             }
         });
 
         setLocalAnswers(restoredAnswers);
         setQuizStates(restoredQuizStates);
+
         if (Object.keys(restoredAnswers).length > 0) {
-            let totalPossibleScore = 0;
-            let earnedTotalScore = 0;
-            quizElements.forEach(el => {
-                totalPossibleScore += (el.score || 0);
-                const savedAttempt = restoredQuizStates[el.id];
-                if (savedAttempt && savedAttempt.isCorrect) {
-                    earnedTotalScore += (el.score || 0);
-                }
-            });
             const requiredCorrectAnswers = pageMetadata.page?.passing_score || 12;
             const isPass = earnedTotalScore >= requiredCorrectAnswers;
 
@@ -74,7 +74,7 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
             setShowFinalResults(true);
         }
 
-    }, [userMarks, elements, isFinalQuiz]);
+    }, [userMarks, elements, isFinalQuiz, pageMetadata]);
 
     const handleQuizSelect = (elId, selectedOption) => {
         if (showFinalResults) return;
@@ -84,21 +84,57 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
         }));
     };
 
+    const handleRegisterWorkshop = async (elementId, sessions, selectedIdx, autoAdd, location, link, userId) => {
+        if (selectedIdx === undefined) {
+            alert("Please select a session before registering.");
+            return;
+        }
+        const session = sessions[selectedIdx];
+
+        const submissionContent = {
+            user_id: userId,
+            session_date: session.date,
+            session_time: `${session.startTime} — ${session.endTime}`,
+            location: location || "TBA",
+            auto_add_todo: autoAdd
+        };
+
+        const result = await onProgressUpdate(elementId, 1, submissionContent);
+
+        if (result.success) {
+            window.alert("Registered Successfully!");
+            
+            setWorkshopRegistrations(prev => ({ ...prev, [elementId]: true }));
+        } else {
+            alert(result.error || "Failed to register for workshop. Please try again.");
+        }
+    };
+
     const handleFinalSubmit = async () => {
         const quizElements = elements.filter(el => el.type === 'quiz_objective');
         const maxAllowed = pageMetadata.page?.max_tries || 1;
-        const firstQuizId = quizElements[0]?.id;
-        const currentAttemptCount = fullHistoryMap?.[firstQuizId]?.length || 0;
+        
         if (currentAttemptCount >= maxAllowed) {
-            window.alert(`You have reached the maximum limit of ${maxAllowed} attempts for this assessment.`);
+            if(Platform.OS === 'web'){
+                window.alert(`You have reached the maximum limit of ${maxAllowed} attempts for this assessment.`);
+            }else{
+                Alert.alert(`You have reached the maximum limit of ${maxAllowed} attempts for this assessment.`);
+            }
             return;
         }
+        
         const unansweredQuestions = quizElements.filter(el => localAnswers[el.id] === undefined);
 
         if (unansweredQuestions.length > 0) {
-            alert(`Please answer all questions before submitting. Remaining: ${unansweredQuestions.length}`);
+            if(Platform.OS === 'web'){
+                window.alert(`Please answer all questions before submitting. Remaining: ${unansweredQuestions.length}`);
+            }else{
+                Alert.alert(`Please answer all questions before submitting. Remaining: ${unansweredQuestions.length}`);
+            }
+            
             return;
         }
+
         setIsSubmitting(true);
         try {
             const submissionPromises = quizElements.map(el => {
@@ -114,8 +150,15 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
             await Promise.all(submissionPromises);
             setSubmissionCount(prev => prev + 1);
             if (onRefreshHistory) await onRefreshHistory();
+            
             const requiredCorrectAnswers = pageMetadata.page?.passing_score || 12;
-            const isPass = currentStats.potentialScore >= requiredCorrectAnswers;
+            const totalScore = quizElements.reduce((sum, el) => {
+                const userAnswer = localAnswers[el.id];
+                const isCorrect = userAnswer === el.content.answer;
+                return sum + (isCorrect ? el.score : 0);
+            }, 0);
+
+            const isPass = totalScore >= requiredCorrectAnswers;
 
             setFinalSummary({
                 score: currentStats.potentialScore,
@@ -137,22 +180,16 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
         const quizIds = elements.filter(el => el.type === 'quiz_objective').map(el => el.id);
         if (quizIds.length === 0) return 0;
 
-        const allSubs = [];
+        const sessions = new Set();
         quizIds.forEach(id => {
-            if (fullHistoryMap?.[id]) {
-                allSubs.push(...fullHistoryMap[id]);
-            }
+            const history = fullHistoryMap?.[id] || [];
+            history.forEach(attempt => {
+                const timeKey = Math.floor(new Date(attempt.created_at).getTime() / (1000 * 60 * 30));
+                sessions.add(timeKey);
+            });
         });
 
-        const sessions = [];
-        allSubs.forEach(sub => {
-            const subTime = new Date(sub.created_at).getTime();
-            let existing = sessions.find(s => Math.abs(s - subTime) < 10000); 
-            if (!existing) sessions.push(subTime);
-        });
-
-        const dbCount = sessions.length;
-        return dbCount + submissionCount;
+        return sessions.size;
     }, [fullHistoryMap, elements, submissionCount]);
 
     const handleTryAgain = () => {
@@ -278,37 +315,11 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
         })
     };
 
-    const handleFinalReveal = () => {
-        const answeredCount = Object.keys(finalQuizAnswers).length;
-        const totalQuestions = elements.filter(e => e.type === 'quiz_objective').length;
-
-        if (answeredCount < totalQuestions) {
-            alert(`Please answer all ${totalQuestions} questions before submitting.`);
-            return;
-        }
-
-        setShowFinalResults(true);
-        const totalPossible = elements.reduce((acc, el) => acc + (el.score || 0), 0);
-        const totalEarned = Object.values(finalQuizAnswers).reduce((acc, curr) => acc + curr.earned, 0);
-        
-        setFinalSummary({
-            score: totalEarned,
-            total: totalPossible,
-            status: (totalEarned / totalPossible) >= 0.8 ? 'PASS' : 'FAIL'
-        });
-    };
-
     const confirmDelete = (el) => {
-        console.log("onDeleteElement prop type:", typeof onDeleteElement);
-
         const message = "Are you sure you want to delete this section? This action cannot be undone.";
-    
         if (window.confirm(message)) {
             if (typeof onDeleteElement === 'function') {
                 onDeleteElement(el.id);
-            } else {
-                console.error("CRITICAL: onDeleteElement is still undefined. Check Parent Render.");
-                alert("Technical Error: Delete function not linked.");
             }
         }
     };
@@ -330,130 +341,128 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
     }, [courseId, isAdmin]);
     
     const VideoPlayer = ({ url }) => {
-
-    const getVideoId = (originalUrl) => {
-        let videoId = '';
-
-        if (originalUrl.includes('v=')) {
-            videoId = originalUrl.split('v=')[1].split('&')[0];
-        } else if (originalUrl.includes('youtu.be/')) {
-            videoId = originalUrl.split('youtu.be/')[1];
-        } else if (originalUrl.includes('embed/')) {
-            videoId = originalUrl.split('embed/')[1];
-        }
-
-        return videoId;
-    };
-
-    const videoId = getVideoId(url);
-
-    const embedUrl = `https://www.youtube.com/embed/${videoId}?rel=0&controls=1&playsinline=1`;
-
-    const openInYouTube = async () => {
-        const appUrl = `youtube://watch?v=${videoId}`;
-        const webUrl = `https://www.youtube.com/watch?v=${videoId}`;
-
-        try {
-            const supported = await Linking.canOpenURL(appUrl);
-            if (supported) {
-                await Linking.openURL(appUrl); // open YouTube app
-            } else {
-                await Linking.openURL(webUrl); // fallback browser
+        const getVideoId = (originalUrl) => {
+            let videoId = '';
+            if (originalUrl.includes('v=')) {
+                videoId = originalUrl.split('v=')[1].split('&')[0];
+            } else if (originalUrl.includes('youtu.be/')) {
+                videoId = originalUrl.split('youtu.be/')[1];
+            } else if (originalUrl.includes('embed/')) {
+                videoId = originalUrl.split('embed/')[1];
             }
-        } catch (e) {
-            await Linking.openURL(webUrl);
-        }
-    };
-
-    // ✅ WEB
-    if (Platform.OS === 'web') {
-        return (
-            <View style={{ height: 450 }}>
-                <iframe
-                    src={embedUrl}
-                    width="100%"
-                    height="100%"
-                    frameBorder="0"
-                    allowFullScreen
-                />
-            </View>
-        );
-    }
-
-    // ✅ MOBILE (NO WebView for YouTube)
-    return (
-        <View style={{ height: 220, borderRadius: 12, overflow: 'hidden', backgroundColor: '#000' }}>
-            
-            {/* Optional preview UI */}
-            <TouchableOpacity
-                onPress={openInYouTube}
-                style={{
-                    flex: 1,
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    backgroundColor: '#000'
-                }}
-            >
-                <Text style={{ color: 'white', fontSize: 14 }}>
-                    ▶ Open in YouTube
-                </Text>
-            </TouchableOpacity>
-
-        </View>
-    );
-};
-
-    if (!elements || elements.length === 0) {
-        return (
-            <View style={styles.emptyState}>
-                <Text style={styles.emptyText}>This page has no content yet.</Text>
-            </View>
-        );
-    }
-
-    const handleRegisterWorkshop = async (elementId, sessions, selectedIdx, autoAdd, location, link, userId) => {
-        if (selectedIdx === undefined) {
-            alert("Please select a session before registering.");
-            return;
-        }
-        const session = sessions[selectedIdx];
-
-        const submissionContent = {
-            user_id: userId,
-            session_date: session.date,
-            session_time: `${session.startTime} — ${session.endTime}`,
-            location: location || "TBA",
-            auto_add_todo: autoAdd
+            return videoId;
         };
 
-        const result = await onProgressUpdate(elementId, 1, submissionContent);
+        const videoId = getVideoId(url);
+        const embedUrl = `https://www.youtube.com/embed/${videoId}?rel=0&controls=1&playsinline=1`;
 
-        if (result.success) {
-            window.alert("Registered Successfully!");
-            
-            setWorkshopRegistrations(prev => ({ ...prev, [elementId]: true }));
-        } else {
-            alert(result.error || "Failed to register for workshop. Please try again.");
+        const openInYouTube = async () => {
+            const appUrl = `youtube://watch?v=${videoId}`;
+            const webUrl = `https://www.youtube.com/watch?v=${videoId}`;
+            try {
+                const supported = await Linking.canOpenURL(appUrl);
+                if (supported) {
+                    await Linking.openURL(appUrl);
+                } else {
+                    await Linking.openURL(webUrl);
+                }
+            } catch (e) {
+                await Linking.openURL(webUrl);
+            }
+        };
+
+        if (Platform.OS === 'web') {
+            return (
+                <View style={{ height: 450 }}>
+                    <iframe
+                        src={embedUrl}
+                        width="100%"
+                        height="100%"
+                        frameBorder="0"
+                        allowFullScreen
+                    />
+                </View>
+            );
         }
+
+        return (
+            <View style={{ height: 220, borderRadius: 12, overflow: 'hidden', backgroundColor: '#000' }}>
+                <TouchableOpacity
+                    onPress={openInYouTube}
+                    style={{
+                        flex: 1,
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        backgroundColor: '#000'
+                    }}
+                >
+                    <Text style={{ color: 'white', fontSize: 14 }}>
+                        ▶ Open in YouTube
+                    </Text>
+                </TouchableOpacity>
+            </View>
+        );
     };
 
-    const fetchHistory = async (elementId) => {
-        try {
-            const history = await submissionService.getByElement(enrollmentId, elementId);
-            setHistoryModal({ visible: true, data: history });
-        } catch (err) {
-            alert("Could not load history.");
-        }
-    };
+    const navigationData = useMemo(() => {
+        const flatPages = [];
 
+        const course = pageMetadata?.course;
+        const modules = course?.modules ?? [];
+
+        modules.forEach(mod => {
+            mod.pages?.forEach(p => flatPages.push({ type: 'page', page: p, module: mod }));
+        });
+
+        const currentIndex = flatPages.findIndex(p => {
+            if (p.type !== pageMetadata?.type) return false;
+
+            if (p.type === 'page') return p.page?.id === pageMetadata?.page?.id;
+
+            return p.module?.id === pageMetadata?.module?.id;
+        });
+
+        return {
+            flatPages,
+            currentIndex,
+            isFirst: currentIndex <= 0,
+            isLast: currentIndex >= flatPages.length - 1
+        };
+    }, [pageMetadata]);
+
+    const handleNavigation = (direction) => {
+        const { flatPages, currentIndex } = navigationData;
+
+        if (!flatPages || flatPages.length === 0) return;
+
+        const targetIndex =
+            direction === 'next' ? currentIndex + 1 : currentIndex - 1;
+
+        if (targetIndex < 0 || targetIndex >= flatPages.length) return;
+
+        const target = flatPages[targetIndex];
+        if (!isAdmin && target.type === 'page') {
+            const status = progressMap?.[target.page.id];
+            if (status?.isLocked) {
+                const message = "Next Page is locked. Please complete the current lesson to unlock the next one.";
+                
+                if (Platform.OS === 'web') {
+                    window.alert(message);
+                } else {
+                    Alert.alert("Content Locked", message);
+                }
+                return;
+            }
+        }
+        onSelectPage?.(target);
+        scrollToTop?.();
+    };
     const renderElement = (el, index) => {
         if (!el || !el.id) return null;
         const { type, content, score, id } = el;
-        const elementHistory = fullHistoryMap?.[id] || [];
-        const attemptCount = elementHistory.length;
         const earnedScore = typeof userMarks?.[id] === 'object' 
-        ? (userMarks[id]?.earned_grade ?? 0) 
-        : (userMarks?.[id] ?? 0);
+            ? (userMarks[id]?.earned_grade ?? 0) 
+            : (userMarks?.[id] ?? 0);
         const isAlreadyComplete = earnedScore > 0;
         const isViewed = earnedScore > 0;
         const quiz = quizStates[id] || { 
@@ -461,7 +470,6 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
             isCorrect: isViewed,
             submitted: isViewed 
         };
-        const selected = localAnswers[el.id];
 
         return (
             <IntersectionWrapper key={id} id={id} score={score} type={type} isAlreadyComplete={isAlreadyComplete}>
@@ -522,12 +530,9 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
                                         </View>
                                     );
                                 case 'video':
-                                    const isYoutube = content.url?.includes("youtube") || content.url?.includes("youtu.be");
                                     return (
                                         <View style={styles.videoContainer}>
-                                            {isYoutube ? <VideoPlayer url={content.url} /> : (
-                                                <Video source={{ uri: content.url }} style={styles.videoPlayer} controls />
-                                            )}
+                                            <VideoPlayer url={content.url} />
                                             <View style={styles.videoCardBottom}>
                                                 <View style={styles.videoLabelRow}>
                                                     <Play color="#0a6340" size={16} fill="#0a6340" />
@@ -539,7 +544,6 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
                                     );
                                 case 'quiz_objective':
                                     const revealFeedback = !isFinalQuiz || showFinalResults;
-                                    
                                     return (
                                         <View style={[
                                             styles.quizCard, 
@@ -551,14 +555,11 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
                                                     <Text style={styles.quizTitle}>Knowledge Check</Text>
                                                 </View>
                                             </View>
-                                            
                                             <Text style={styles.question}>{content.question}</Text>
-                                            
                                             {content.options.map((option, idx) => {
                                                 const isSelected = localAnswers[id] === option;
                                                 const showSuccess = revealFeedback && (quiz.submitted || isAdmin) && option === content.answer;
                                                 const showDanger = revealFeedback && quiz.submitted && isSelected && !quiz.isCorrect;
-
                                                 return (
                                                     <TouchableOpacity 
                                                         key={idx}
@@ -595,10 +596,7 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
                                                         <Text style={styles.successText}>Correct! Well done.</Text>
                                                     )}
                                                     {!isFinalQuiz && !quiz.isCorrect && (
-                                                        <TouchableOpacity
-                                                            style={styles.redoBtn}
-                                                            onPress={() => resetQuiz(el.id)}
-                                                        >
+                                                        <TouchableOpacity style={styles.redoBtn} onPress={() => resetQuiz(el.id)}>
                                                             <RotateCcw size={14} color="#0a6340" />
                                                             <Text style={styles.redoText}>Try Again</Text>
                                                         </TouchableOpacity>
@@ -608,22 +606,9 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
                                         </View>                                        
                                     );
                                 case 'workshop':
-                                    const { title, description, sessions, location, link } = content;
-                                    const submissionData = userMarks?.[id];
-                                    const selectedSessionIdx = selectedSessions[id];
-                                    const savedContent = submissionData?.content;
-                                    const isRegisteredInDB = (userMarks?.[id].earned_grade ?? 0) > 0;
+                                    const { title, description, sessions, location } = content;
+                                    const isRegisteredInDB = (userMarks?.[id]?.earned_grade ?? 0) > 0;
                                     const isRegistered = workshopRegistrations[id] || isRegisteredInDB;
-                                    let activeSessionIdx = selectedSessions[id];
-                                    if (isRegistered && savedContent) {
-                                        const foundIdx = sessions?.findIndex(s => 
-                                            s.date === savedContent.session_date && 
-                                            `${s.startTime} — ${s.endTime}` === savedContent.session_time
-                                        );
-                                        if (foundIdx !== -1) {
-                                            activeSessionIdx = foundIdx;
-                                        }
-                                    }
                                     return (
                                         <View style={[styles.workshopCard, isMobile && { flexDirection: 'column' }]}>
                                             <View style={[
@@ -631,101 +616,50 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
                                                 isRegistered && { backgroundColor: '#0a6340' },
                                                 isMobile && { width: '100%', flexDirection: 'row', borderRightWidth: 0, borderBottomWidth: 1, borderBottomColor: '#dcfce7', gap: 10, padding: 10 }
                                             ]}>
-                                                {isRegistered ? (
-                                                    <CheckCircle2 color="white" size={26} />
-                                                ) : (
-                                                    <Calendar color="white" size={26} />
-                                                )}
-                                                <Text style={styles.workshopLabel}>
-                                                    {isRegistered ? "ENROLLED" : "WORKSHOP"}
-                                                </Text>
+                                                {isRegistered ? <CheckCircle2 color="white" size={26} /> : <Calendar color="white" size={26} />}
+                                                <Text style={styles.workshopLabel}>{isRegistered ? "ENROLLED" : "WORKSHOP"}</Text>
                                             </View>
-                                            
                                             <View style={styles.workshopDetails}>
                                                 <Text style={styles.workshopTitle}>{title}</Text>
                                                 <Text style={styles.workshopDesc}>{description}</Text>
-                                                
-                                                <Text style={styles.miniLabel}>{isRegistered ? "Your Registered Session:" : "Available Sessions (Select One):"}</Text>
+                                                <Text style={styles.miniLabel}>{isRegistered ? "Your Registered Session:" : "Available Sessions:"}</Text>
                                                 <View style={styles.sessionList}>
-                                                    {sessions && sessions.map((item, idx) => {
-                                                        const isSelected = activeSessionIdx === idx;
-                                                        if (isRegistered && !isSelected) return null;
+                                                    {sessions?.map((item, idx) => {
+                                                        const isSelected = selectedSessions[id] === idx;
+                                                        if (isRegistered && !isSelected && !isAdmin) return null;
                                                         return (
                                                             <TouchableOpacity 
                                                                 key={idx} 
                                                                 disabled={isAdmin || isRegistered} 
                                                                 onPress={() => setSelectedSessions(prev => ({ ...prev, [id]: idx }))}
-                                                                style={[
-                                                                    styles.sessionItem, 
-                                                                    isSelected && styles.sessionItemSelected,
-                                                                    isRegistered && { borderColor: '#0a6340', backgroundColor: '#f0f9f4' }
-                                                                ]}
+                                                                style={[styles.sessionItem, isSelected && styles.sessionItemSelected]}
                                                             >
                                                                 <View style={styles.sessionDateRow}>
-                                                                <View style={[
-                                                                    styles.radioOutline, 
-                                                                    isSelected && styles.correctRadio,
-                                                                    isRegistered && { borderColor: '#0a6340' }
-                                                                ]}>
-                                                                    {isSelected && <View style={[styles.radioInner, isRegistered && { backgroundColor: '#0a6340' }]} />}
+                                                                    <View style={[styles.radioOutline, isSelected && styles.correctRadio]}>
+                                                                        {isSelected && <View style={styles.radioInner} />}
+                                                                    </View>
+                                                                    <Text style={styles.sessionDateText}>{item.date}</Text>
                                                                 </View>
-                                                                <Text style={[styles.sessionDateText, isSelected && { color: '#0a6340' }]}>
-                                                                    {item.date}
-                                                                </Text>
-                                                            </View>
-                                                            <View style={[styles.sessionTimeRow, isMobile && { justifyContent: 'flex-start', paddingLeft: 30 }]}>
-                                                                <Clock size={14} color={isSelected ? "#0a6340" : "#666"} />
-                                                                <Text style={[styles.sessionTimeText, isSelected && { color: '#0a6340', fontWeight: '600' }]}>
-                                                                    {item.startTime} — {item.endTime}
-                                                                </Text>
-                                                            </View>
+                                                                <View style={[styles.sessionTimeRow, isMobile && { justifyContent: 'flex-start', paddingLeft: 30 }]}>
+                                                                    <Clock size={14} color="#666" />
+                                                                    <Text style={styles.sessionTimeText}>{item.startTime} — {item.endTime}</Text>
+                                                                </View>
                                                             </TouchableOpacity>
                                                         );
                                                     })}
                                                 </View>
-
-                                                {!isAdmin && !isRegistered && (
-                                                    <View style={styles.toggleRow}>
-                                                        <Text style={styles.toggleLabel}>Add to my Todo list automatically?</Text>
-                                                        <TouchableOpacity 
-                                                            onPress={() => setAutoAddTodo(!autoAddTodo)}
-                                                            style={[styles.toggleTrack, autoAddTodo && styles.toggleTrackActive]}
-                                                        >
-                                                            <View style={[styles.toggleThumb, autoAddTodo && styles.toggleThumbActive]} />
-                                                        </TouchableOpacity>
-                                                    </View>
-                                                )}
-
                                                 <View style={styles.footerRow}>
                                                     <View style={styles.infoRow}>
                                                         <MapPin size={14} color="#666" />
                                                         <Text style={styles.infoText}>{location || "TBA"}</Text>
                                                     </View>
-
                                                     {!isAdmin && (
                                                         <TouchableOpacity 
-                                                            style={[
-                                                                styles.joinBtn, 
-                                                                (selectedSessionIdx === undefined || isRegistered) && styles.joinBtnDisabled
-                                                            ]}
-                                                            
-                                                            disabled={selectedSessionIdx === undefined || isRegistered}
-                                                            onPress={async () => {
-                                                                handleRegisterWorkshop(
-                                                                    id, 
-                                                                    sessions, 
-                                                                    selectedSessionIdx, 
-                                                                    autoAddTodo, 
-                                                                    location, 
-                                                                    link,
-                                                                    currentUser.id
-                                                                )
-                                                            }}
+                                                            style={[styles.joinBtn, (selectedSessions[id] === undefined || isRegistered) && styles.joinBtnDisabled]}
+                                                            disabled={selectedSessions[id] === undefined || isRegistered}
+                                                            onPress={() => handleRegisterWorkshop(id, sessions, selectedSessions[id], autoAddTodo, location, '', currentUser.id)}
                                                         >
-                                                            <Text style={styles.joinBtnText}>
-                                                                {isRegistered ? "Registered" : "Register"}
-                                                            </Text>
-                                                            {isRegistered ? <CheckCircle2 size={14} color="white" /> : <ExternalLink size={14} color="white" />}
+                                                            <Text style={styles.joinBtnText}>{isRegistered ? "Registered" : "Register"}</Text>
                                                         </TouchableOpacity>
                                                     )}
                                                 </View>
@@ -746,16 +680,15 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
         <View style={styles.container}>
             {elements.map((el, index) => renderElement(el, index))}
 
-            {/* Compact Submit Bar */}
             {isFinalQuiz && !showFinalResults && (
                 <View style={styles.compactSubmitBar}>
                     <Text style={styles.submitInfoText}>
                         Progress: {currentStats.answeredCount} / {currentStats.totalQuizzes} Answered
                     </Text>
                     <TouchableOpacity
-                        style={[styles.minimalSubmitBtn, isSubmitting && { opacity: 0.5 }]}
+                        style={[styles.minimalSubmitBtn, (isSubmitting || !currentStats.isAllAnswered) && { opacity: 0.5 }]}
                         onPress={handleFinalSubmit}
-                        disabled={isSubmitting}
+                        disabled={isSubmitting || !currentStats.isAllAnswered}
                     >
                         <Text style={styles.minimalSubmitText}>
                             {isSubmitting ? "Submitting..." : "Submit Assessment"}
@@ -764,7 +697,6 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
                 </View>
             )}
 
-            {/* Professional Compact Result Card */}
             {showFinalResults && (
                 <View style={styles.profResultCard}>
                     <View style={[styles.statusIndicator, { backgroundColor: finalSummary?.status === 'PASS' ? '#0a6340' : '#dc2626' }]} />
@@ -773,19 +705,18 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
                             <Text style={styles.resScoreValue}>
                                 {finalSummary?.score} <Text style={styles.resScoreTotal}>/ {finalSummary?.total}</Text>
                             </Text>
-                            {finalSummary?.status === 'PASS' ? (
+                            {currentAttemptCount < (pageMetadata.page?.max_tries || 1) && finalSummary?.status !== 'PASS' ? (
+                                <TouchableOpacity style={styles.redoBtn} onPress={handleTryAgain}>
+                                    <RotateCcw size={14} color="#0a6340" />
+                                    <Text style={styles.redoText}>
+                                        {finalSummary?.status === 'PASS' ? "Improve Score" : "Try Again"}
+                                    </Text>
+                                </TouchableOpacity>
+                            ) : finalSummary?.status === 'PASS' ? (
                                 <View style={styles.successBadge}>
                                     <CheckCircle2 size={16} color="#0a6340" />
                                     <Text style={styles.successBadgeText}>Passed</Text>
                                 </View>
-                            ) : currentAttemptCount < (pageMetadata.page?.max_tries || 1) ? (
-                                <TouchableOpacity
-                                    style={styles.redoBtn}
-                                    onPress={handleTryAgain}
-                                >
-                                    <RotateCcw size={14} color="#0a6340" />
-                                    <Text style={styles.redoText}>Try Again</Text>
-                                </TouchableOpacity>
                             ) : (
                                 <View style={styles.failureNotice}>
                                     <AlertCircle size={14} color="#dc2626" />
@@ -799,6 +730,7 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
                     </View>
                 </View>
             )}
+
             {!isAdmin && isFinalQuiz && (
                 <View style={styles.assessmentFooter}>
                     <View style={styles.footerInfo}>
@@ -806,7 +738,6 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
                             {Math.max(0, (pageMetadata.page?.max_tries || 1) - currentAttemptCount)} retries remaining
                         </Text>
                     </View>
-
                     <TouchableOpacity 
                         onPress={() => onFetchHistory(elements.filter(el => el.type === 'quiz_objective').map(el => el.id))} 
                         style={styles.historyLinkBtn}
@@ -816,6 +747,30 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
                     </TouchableOpacity>
                 </View>
             )}
+
+            {onSelectPage?.type !== 'workshops' && !isAdmin && (
+                <View style={styles.pageNavigationRow}>
+                    <TouchableOpacity style={styles.navBtn} onPress={() => handleNavigation('prev')}
+                        disabled={navigationData.isFirst}
+                        >
+                        <ChevronLeft size={20} color="#666" />
+                        <Text style={styles.navBtnText}>Previous</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={[
+                            styles.navBtn,
+                            styles.navBtnPrimary,
+                            navigationData.isLast && { opacity: 0.4 }
+                        ]}
+                        onPress={() => handleNavigation('next')}
+                        disabled={navigationData.isLast}
+                    >
+                        <Text style={[styles.navBtnText, {color: 'white'}]}>Next Lesson</Text>
+                        <ChevronRight size={20} color="white" />
+                    </TouchableOpacity>
+                </View>
+            )}
+            
         </View>
     );
 };
@@ -1464,8 +1419,43 @@ const styles = StyleSheet.create({
         fontWeight: '700',
         textAlign: 'center',
     },
+    pageNavigationRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginTop: 50,
+        paddingTop: 20,
+        borderTopWidth: 1,
+        borderTopColor: '#eee',
+        gap: 15,
+    },
+    navBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 12,
+        paddingHorizontal: 20,
+        borderRadius: 10,
+        backgroundColor: '#f1f5f9',
+        gap: 8,
+    },
+    navBtnPrimary: {
+        backgroundColor: '#0a6340',
+    },
+    navBtnText: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#475569',
+    },
+    miniBadge: {
+        alignSelf: 'flex-start',
+        paddingHorizontal: 8,
+        paddingVertical: 3,
+        borderRadius: 4,
+    },
+    successBadge:{
+        flexDirection:'row',
+        gap:5,
+        
+    }
 });
 
 export default PageRenderer;
-
-// Try final quiz if pass and still has left attempt can redo or not

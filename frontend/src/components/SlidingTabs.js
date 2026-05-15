@@ -1,49 +1,44 @@
 import React,{ useRef, useEffect, useState } from 'react';
 import { View, Text, Pressable, Animated, StyleSheet } from 'react-native';
 
-const SlidingTabs=({ tabs, activeTab, onTabChange })=>{
+const SlidingTabs=({ tabs, activeTab, onTabChange, fullWidth = false })=>{
     const [containerWidth, setContainerWidth] = useState(0);
-    const initialIndex = tabs.findIndex(t => t.id === activeTab);
-    const slideAnim = useRef(new Animated.Value(initialIndex >= 0 ? initialIndex : 0)).current;
+    const activeIndex = Math.max(0, tabs.findIndex(t => t.id === activeTab));
+    const slideAnim = useRef(new Animated.Value(activeIndex)).current;
 
     useEffect(() => {
-        const index = tabs.findIndex(t => t.id === activeTab);
-        if (index >= 0) {
-            Animated.spring(slideAnim, {
-                toValue: index,
-                useNativeDriver: false,
-                friction: 8,
-                tension: 40,
-            }).start();
-        }
-    }, [activeTab, tabs]);
+        Animated.spring(slideAnim, {
+            toValue: activeIndex,
+            useNativeDriver: false,
+            friction: 8,
+            tension: 40,
+        }).start();
+    }, [activeIndex]);
 
-    const tabWidth = containerWidth / tabs.length;
+    const tabWidth = fullWidth
+        ? containerWidth / tabs.length
+        : 110;
     const translateX = slideAnim.interpolate({
         inputRange: tabs.map((_, i) => i),
         outputRange: tabs.map((_, i) => i * tabWidth),
     });
 
-    const handlePress=(tabId, index)=>{
-        onTabChange(tabId);
-        Animated.spring(slideAnim, {
-            toValue:index,
-            useNativeDriver:false,
-            friction:8,
-            tension:40
-        }).start();
-    };
-
     return (
         <View 
-            style={styles.tabWrapper}
+            style={[
+                styles.tabWrapper,
+                fullWidth ? styles.fullWidth : { width: tabWidth * tabs.length },
+            ]}
             onLayout={(e) => setContainerWidth(e.nativeEvent.layout.width)}
         >
             <View style={styles.tabContainer}>
-                {tabs.map((tab,index)=>(
-                    <Pressable 
-                        key={tab.id} 
-                        style={[styles.tab, { width: tabWidth || `${100 / tabs.length}%` }]}
+                {tabs.map((tab) => (
+                    <Pressable
+                        key={tab.id}
+                        style={[
+                            styles.tab,
+                            { width: fullWidth ? tabWidth : 110 },
+                        ]}
                         onPress={() => onTabChange(tab.id)}
                     >
                         <Text
@@ -75,8 +70,10 @@ const styles=StyleSheet.create({
     tabWrapper:{
         position:'relative',
     },
+    fullWidth: {
+        width: '100%',
+    },
     tabContainer:{
-        width:'100%',
         flexDirection:'row'
     },
     slidingLine:{

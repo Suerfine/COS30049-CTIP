@@ -158,6 +158,18 @@ export const enrollmentService = {
     }
   },
 
+  // Patch: approved enrollments
+  approve: async (enrollmentId) => {
+    try {
+      const id = Number(enrollmentId);
+      const res = await apiClient.patch(API_ENDPOINTS.ENROLLMENT.APPROVE(enrollmentId));
+      return res.data;
+    } catch (err) {
+      console.error("Approve badge error:", err);
+      throw err;
+    }
+  },
+
   /**
    * DELETE: Permanently remove an enrollment record
    */

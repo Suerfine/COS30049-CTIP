@@ -119,7 +119,11 @@ export const enrollCourse = async (
 
     await transaction.commit();
     return res.status(201).json(toEnrollmentResponse(enrollment));
-  } catch (err) {
+  } catch (err: any) {
+    console.error("ENROLLMENT ERROR:");
+    console.error(err);
+    console.error("MESSAGE:", err?.message);
+    console.error("STACK:", err?.stack);
     await transaction.rollback();
     if (err instanceof HttpError) {
       res.status(err.status).json({ message: err.message });
@@ -312,7 +316,7 @@ export const updateEnrollmentStatus = async (
         break;
       case EnrollmentStatus.IN_PROGRESS:
         if (
-          // enrollment.status !== EnrollmentStatus.IN_REVIEW
+          enrollment.status !== EnrollmentStatus.IN_REVIEW &&
           enrollment.status !== EnrollmentStatus.APPLIED &&
           enrollment.status !== EnrollmentStatus.PENDING_PAYMENT
         ) {
@@ -407,7 +411,7 @@ export const getSubmissionSummaries = async (
       whereClause.status = status;
     } else {
       whereClause.status = {
-        [Op.notIn]: ["pending_payment", "in_review"],
+        [Op.notIn]: ["pending_payment"],
       };
     }
 
@@ -553,21 +557,17 @@ export const getEnrollmentAudit = async (
   }
 };
 
-export const approveBadge = async (
-  req: Request<{ id: string }>,
-  res: Response<EnrollmentResponse | { message: string }>,
-) => {
+export const approveBadge = async (req: Request<{ id: string }>, res: Response) => {
   const transaction = await sequelize.transaction();
 
   try {
     const enrollmentId = Number(req.params.id);
-    if (Number.isNaN(enrollmentId))
-      throw new HttpError(400, "Invalid enrollment id");
+    if (Number.isNaN(enrollmentId)) throw new HttpError(400, "Invalid enrollment id");
 
-    const enrollment = (await Enrollment.findByPk(enrollmentId, {
+    const enrollment = await Enrollment.findByPk(enrollmentId, {
       include: [{ model: Course }],
       transaction,
-    })) as (Enrollment & { Course: Course; course_id: number }) | null;
+    });
 
     if (!enrollment) throw new HttpError(404, "Enrollment not found");
 
@@ -575,34 +575,25 @@ export const approveBadge = async (
       throw new HttpError(400, "Only enrollments 'In Review' can be approved.");
     }
 
-    const finalQuizPages = (await Page.findAll({
+    const finalQuizPages = await Page.findAll({
       where: {
-        course_id: enrollment.course_id,
         final_quiz: true,
-      } as any,
-      include: [{ model: Element }],
-      transaction,
-    })) as any[];
-
-    for (const page of finalQuizPages) {
-      for (const element of page.Elements || []) {
-        const submission = await Submission.findOne({
+      },
+      include: [
+        {
+          model: Module,
+          as: "module", 
           where: {
-            enrollment_id: enrollmentId,
-            element_id: element.id,
+            course_id: enrollment.course_id,
           },
-          transaction,
-        });
-
-        const requiredScore = (page as any).passing_score || 80;
-        if (!submission || (submission as any).earned_grade < requiredScore) {
-          throw new HttpError(
-            400,
-            `Verification failed: Final Quiz on page "${page.title}" not passed.`,
-          );
-        }
-      }
-    }
+        },
+        {
+          model: Element,
+          as: "elements",
+        },
+      ],
+      transaction,
+    });
 
     const courseData = (enrollment as any).Course;
 
@@ -611,34 +602,37 @@ export const approveBadge = async (
     enrollment.reviewed_at = new Date();
     enrollment.reviewed_by_user_id = req.user?.id || null;
 
-    if (courseData && (courseData as any).badge_expire_in_months) {
+    if (courseData?.badge_expire_in_months) {
       const expireDate = new Date();
-      expireDate.setMonth(
-        expireDate.getMonth() + (courseData as any).badge_expire_in_months,
-      );
+      expireDate.setMonth(expireDate.getMonth() + courseData.badge_expire_in_months);
       enrollment.badge_expire_at = expireDate;
     }
 
     await enrollment.save({ transaction });
+
     await sendNotification(
       "single",
       "New Badge Awarded",
-      `Congratulations! You received a new badge for "${courseData?.title || "your course"}".`,
+      `Congratulations! You received a badge for "${courseData?.title || "course"}".`,
       transaction,
       enrollment.user_id,
       false,
       NotificationCategory.BADGE_AWARDED,
       "/badges",
     );
+
     await transaction.commit();
 
     return res.status(200).json(toEnrollmentResponse(enrollment));
   } catch (err) {
-    if (transaction) await transaction.rollback();
+    await transaction.rollback();
+
     if (err instanceof HttpError) {
-      res.status(err.status).json({ message: err.message });
-    } else {
-      res.status(500).json({ message: "Internal server error\n" + err });
+      return res.status(err.status).json({ message: err.message });
     }
+
+    return res.status(500).json({
+      message: "Internal server error\n" + err,
+    });
   }
 };

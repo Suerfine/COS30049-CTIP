@@ -48,6 +48,7 @@ export const API_ENDPOINTS = {
     PATCH: (id) => `/enrollments/${id}/approve`,
     HISTORY_BY_ENROLLMENT: (enrollmentId) =>
       `/submission/enrollment/${enrollmentId}`,
+    APPROVE: (id)=> `/enrollments/${id}/approve`,
   },
   WORKSHOP: {
     JOIN_WORKSHOP: (courseId, elementId) =>
@@ -101,5 +102,8 @@ export const API_ENDPOINTS = {
   CHATBOT: {
     SEND_MESSAGE: "/chatbot",
     CREATE_SESSION: "/chatbot/create-session",
+  },
+  SEARCH: {
+    PARK_GUIDE: "/search/park-guide",
   },
 };

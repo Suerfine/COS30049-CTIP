@@ -61,15 +61,19 @@ const UserModule = ({ navigation }) => {
   useEffect(() => {
     if (initialSection === "forum") {
       setSelectedPage({ type: "forum" });
+      return;
     }
-  }, [initialSection, discussionId]);
+
+    setSelectedPage({ type: "overview" });
+  }, [id, initialSection, discussionId]);
 
   const isLocked =
     enrollmentStatus === null ||
     enrollmentStatus === undefined ||
-    enrollmentStatus === "in_review" ||
-    enrollmentStatus === "dropped" ||
-    enrollmentStatus === "expired";
+    enrollmentStatus === "expired" ||
+    enrollmentStatus == "pending_payment" ||
+    enrollmentStatus == "applied" ||
+    enrollmentStatus == "failed";
 
   const { currentUser } = useAuth();
   const {

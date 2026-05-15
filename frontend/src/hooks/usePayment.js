@@ -179,7 +179,7 @@ export const usePayment = (searchQuery = '') => {
         resetPaymentSort,
 
         // actions
-        refreshPayments: fetchPayments,
+        fetchPayments,
         handleVerifyPayment,
         deletePayment
     };

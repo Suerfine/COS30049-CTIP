@@ -12,9 +12,13 @@
         "rejected": "Ditolak",
         "completed": "Selesai",
         "in progress": "Berjalan",
+        "in review":"Sedang Disemak Oleh Admin",
+        "applied": "Memohon",
+        "pending payment": "Pembayaran Belum Selesai",
         "basic": "Asas",
         "advanced": "Lanjutan",
-        "not enrolled": "Tidak Mendaftar"
+        "not enrolled": "Tidak Mendaftar",
+        "enrollable":"Boleh Mendaftar"
     },
     "joined": "Sertai",
     "since": "sejak",
@@ -113,5 +117,7 @@
     "course expiry reminders":"Peringatan Tamat Kursus",
     "failed to load notification settings":"Gagal memuatkan tetapan notifikasi.",
     "failed to save notification settings":"Gagal menyimpan tetapan notifikasi.",
-    "no todos":"Tiada Tugasan"
+    "no todos":"Tiada Tugasan",
+    "upcoming":"Akan Datang",
+    "workshop":"Bengkel"
 }

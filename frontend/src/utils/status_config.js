@@ -9,4 +9,6 @@ export const Status_Config = {
     pending: { color: '#f59e0b', label: 'Pending', bg: '#f5f3ff' },
     paid: { color: '#10b981', label: 'Paid', bg: '#f5f3ff' },
     refunded: { color: '#6b7280', label: 'Refunded', bg: 'f5f3ff' },
+    rejected: {color: '#6b7280', label: 'Rejected', bg: 'f5f3ff'},
+    applied: {color: '#f59e0b', label: 'Applied', bg: '#f5f3ff'}
 };

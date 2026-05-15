@@ -57,9 +57,10 @@ const UserModule = ({ navigation }) => {
   const isLocked =
     enrollmentStatus === null ||
     enrollmentStatus === undefined ||
-    enrollmentStatus === "in_review" ||
-    enrollmentStatus === "dropped" ||
-    enrollmentStatus === "expired";
+    enrollmentStatus === "expired" ||
+    enrollmentStatus == "pending_payment" ||
+    enrollmentStatus == "applied" ||
+    enrollmentStatus == "failed";
 
   const { currentUser } = useAuth();
   const {
@@ -95,8 +96,11 @@ const UserModule = ({ navigation }) => {
   useEffect(() => {
     if (initialSection === "forum") {
       setSelectedPage({ type: "forum" });
+      return;
     }
-  }, [initialSection, discussionId]);
+
+    setSelectedPage({ type: "overview" });
+  }, [id, initialSection, discussionId]);
 
   const scrollToTop = () => {
     scrollViewRef.current?.scrollTo({
@@ -349,6 +353,7 @@ const UserModule = ({ navigation }) => {
         isLocked={isLocked}
         userMarks={userMarks}
         isFailed={isFailed}
+        activePage={selectedPage}
       />
       <ScrollView ref={scrollViewRef}>
         <View style={styles.container}>
@@ -459,6 +464,9 @@ const UserModule = ({ navigation }) => {
                     onRefreshHistory={refreshHistory}
                     scrollToTop={scrollToTop}
                     isFailed={isFailed}
+                    onSelectPage={setSelectedPage}
+                    pageMetadata={{...selectedPage, course: course}}
+                    progressMap={progressMap}
                   />
                 )}
                 <Modal
@@ -525,6 +533,7 @@ const UserModule = ({ navigation }) => {
                       return result;
                     }}
                     userMarks={userMarks}
+                    onSelectPage={selectedPage}
                   />
                 )}
               </View>

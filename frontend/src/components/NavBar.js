@@ -5,12 +5,11 @@ import {
   StyleSheet,
   Pressable,
   Image,
-  TextInput,
   Animated,
   Platform,
   useWindowDimensions
 } from "react-native";
-import { Bell, Search, LogOut, ChevronDown, ChevronUp, Menu, X } from "lucide-react-native";
+import { Bell, LogOut, ChevronDown, ChevronUp, Menu, X } from "lucide-react-native";
 import {
   CommonActions,
   useNavigation,
@@ -18,6 +17,8 @@ import {
 } from "@react-navigation/native";
 import { useAuth } from "../context/AuthContext";
 import { useUserDashboard } from "../hooks/useUserDashboard";
+import ParkGuideSiteSearch from "./ParkGuideSiteSearch";
+import { useUserProfile } from "../hooks/useUserProfile";
 
 // Navigation links animation
 const NavItem = ({ name, route, onPress, isActive }) => {
@@ -61,6 +62,7 @@ const NavItem = ({ name, route, onPress, isActive }) => {
 const NavBar = () => {
   const { user } = useUserDashboard();
   const navigation = useNavigation();
+  const { profileImage } = useUserProfile();
   const { logout } = useAuth();
   const [dropdownVisible, setDropdownVisible] = useState(false);
   const dropdownRef = useRef(null);
@@ -148,14 +150,7 @@ const NavBar = () => {
           </View>
 
           <View style={styles.right}>
-            <View style={styles.search}>
-              <Search size={18} />
-              <TextInput
-                style={styles.input}
-                placeholder="Search..."
-                placeholderTextColor="#8f8f8f"
-              />
-            </View>
+            <ParkGuideSiteSearch navigation={navigation} variant="web" compact />
             <Pressable
               onPress={() => setMobileMenuOpen((prev) => !prev)}
               style={styles.hamburgerBtn}
@@ -284,14 +279,7 @@ const NavBar = () => {
       </View>
 
       <View style={styles.right}>
-        <View style={styles.search}>
-          <Search size={18} />
-          <TextInput
-            style={styles.input}
-            placeholder="Search..."
-            placeholderTextColor="#8f8f8f"
-          />
-        </View>
+        <ParkGuideSiteSearch navigation={navigation} variant="web" compact />
         <Pressable 
           style={styles.notificationBtn}
           onPress={()=>navigation.navigate(
@@ -311,8 +299,8 @@ const NavBar = () => {
                 )}
 
                 <View style={styles.prfpWrapper}>
-                  {user?.profileImage ? (
-                  <Image source={{ uri: user.profileImage }} style={styles.pfp}/>
+                  {profileImage ? (
+                  <Image source={{ uri: profileImage }} style={styles.pfp}/>
                   ) : (
                       <View style={styles.pfpPlaceholder}>
                           <Text style={styles.pfpInitials}>
@@ -452,23 +440,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "flex-end",
     gap: 15,
-  },
-  search: {
-    flexDirection: "row",
-    gap: 3,
-    borderWidth: 1,
-    borderColor: "#8f8f8f",
-    paddingVertical: 5,
-    paddingHorizontal: 3,
-    backgroundColor: "white",
-    borderRadius: 15,
-    alignItems: "center",
-    width: 220,
-  },
-  input: {
-    flex: 1,
-    maxWidth: 220,
-    outlineStyle: "none",
   },
   notificationBtn: {
     padding: 5,

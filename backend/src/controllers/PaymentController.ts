@@ -152,7 +152,7 @@ export const verifyPayment = async (
     const payment = await validatePayment(req.params.payment_id);
     const statusFromUrl = req.params.status as PaymentStatus;
 
-    const adminId = parseId(req.body.admin_id);
+    const adminId = req.user?.id;
     const adminRemark = parseOptionalText(req.body.admin_remark);
 
     if (!adminId) {
@@ -182,7 +182,7 @@ export const verifyPayment = async (
 
     const newEnrollmentStatus =
       statusFromUrl === PaymentStatus.PAID
-        ? EnrollmentStatus.IN_PROGRESS
+        ? EnrollmentStatus.APPLIED
         : EnrollmentStatus.REJECTED;
 
     await enrollment.update(
@@ -207,6 +207,19 @@ export const verifyPayment = async (
         NotificationCategory.ENROLLMENT_SUCCESS,
         `/courses/${enrollment.course_id}`,
       );
+    } else if (statusFromUrl === PaymentStatus.FAILED) {
+      await sendNotification(
+        "single",
+        "Payment Rejected",
+        adminRemark
+          ? `Your payment was rejected: ${adminRemark}`
+          : "Your payment was rejected. Please re-submit a valid receipt.",
+        transaction,
+        enrollment.user_id,
+        false,
+        NotificationCategory.PAYMENT_REJECTED,
+        `/payments`,
+      );
     }
 
     await transaction.commit();
@@ -214,7 +227,11 @@ export const verifyPayment = async (
       message: `Payment verified as ${statusFromUrl} and Enrollment set to ${newEnrollmentStatus}`,
       payment,
     });
-  } catch (err) {
+  } catch (err: any) {
+    console.error("VERIFY PAYMENT ERROR:");
+    console.error(err);
+    console.error(err.message);
+    console.error(err.parent);
     await transaction.rollback();
     if (err instanceof HttpError) {
       return res.status(err.status).json({ message: err.message });

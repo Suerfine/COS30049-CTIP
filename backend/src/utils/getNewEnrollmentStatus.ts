@@ -85,7 +85,7 @@ async function getNewEnrollmentStatus(
           }
 
           // If the page score is greater than the total score for the page, continue to check the next page.
-          if (pageScore > page.passing_score) continue;
+          if (pageScore >= page.passing_score) continue;
 
           // Since, the page score is less than the total score for the page check if it has hit max weeks.
           if (
@@ -111,7 +111,7 @@ async function getNewEnrollmentStatus(
                 element_id: elements.map((e) => e.id),
               },
             });
-            if (attempts >= page.max_tries) {
+            if (attempts > page.max_tries) {
               return {
                 status: EnrollmentStatus.FAILED,
                 message: `Maximum number of attempts for page ${page.title} has been reached.`,
