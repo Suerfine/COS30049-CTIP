@@ -605,10 +605,10 @@ export const getAllCourses = async (
 
     logger.debug("Course fetch parameters", { includeDeleted });
 
-    const courses = await paginateModel(Course, req.query, {
+    // First, get pagination info and course IDs without the many-to-many include
+    const coursesPaginated = await paginateModel(Course, req.query, {
       paranoid: !includeDeleted,
       include: [
-        ...COURSE_PREREQUISITE_INCLUDE,
         {
           model: Module,
           as: "modules",
@@ -622,21 +622,45 @@ export const getAllCourses = async (
       subQuery: false,
     });
 
+    // Then, fetch full course data with all tags for the paginated courses
+    const courseIds = coursesPaginated.data.map((c) => c.id);
+    const courses = await Course.findAll({
+      where: {
+        id: courseIds,
+      },
+      include: COURSE_PREREQUISITE_INCLUDE,
+      paranoid: !includeDeleted,
+    });
+
+    // Create a map of courses with their module counts
+    const moduleCountMap = new Map(
+      coursesPaginated.data.map((c) => [
+        c.id,
+        Number((c.toJSON() as any).module_count ?? 0),
+      ]),
+    );
+
+    // Enhance courses with module counts
+    courses.forEach((course) => {
+      (course.toJSON() as any).module_count =
+        moduleCountMap.get(course.id) || 0;
+    });
+
     logger.info("Courses fetched successfully", {
-      totalElements: courses.totalElements,
-      totalPages: courses.totalPages,
+      totalElements: coursesPaginated.totalElements,
+      totalPages: coursesPaginated.totalPages,
     });
 
     const baseUrl = `${req.protocol}://${req.get("host")}${req.originalUrl}`;
     const formattedResponse = formatPaginateResponse(
-      courses.data.map((c) => toCourseResponse(c, req)),
+      courses.map((c) => toCourseResponse(c, req)),
       req.query,
       true,
       {
-        page: courses.page,
-        size: courses.size,
-        totalElements: courses.totalElements,
-        totalPages: courses.totalPages,
+        page: coursesPaginated.page,
+        size: coursesPaginated.size,
+        totalElements: coursesPaginated.totalElements,
+        totalPages: coursesPaginated.totalPages,
         baseUrl,
       },
     );
