@@ -411,7 +411,7 @@ export const getSubmissionSummaries = async (
       whereClause.status = status;
     } else {
       whereClause.status = {
-        [Op.notIn]: ["pending_payment"],
+        [Op.notIn]: ["pending_payment", "applied"],
       };
     }
 

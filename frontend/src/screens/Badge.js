@@ -1,11 +1,13 @@
-import { View, Text, StyleSheet, ScrollView, Pressable, Image, ActivityIndicator } from 'react-native';
-import { CircleX, SlidersHorizontal, Search } from 'lucide-react-native';
+import React, { useMemo } from 'react';
+import { View, Text, StyleSheet, ScrollView, Pressable, Image, ActivityIndicator, Platform } from 'react-native';
+import { CircleX, SlidersHorizontal, Award, Clock, AlertTriangle, Lock } from 'lucide-react-native';
+import * as Progress from 'react-native-progress';
 
 import { useBadges } from '../hooks/useBadges';
 import FilterSidebar from '../components/FilterSidebar';
-import { useNavigation } from '@react-navigation/native';
 import { formatDate } from '../utils/formatDate';
 import { useTranslation } from 'react-i18next';
+import { useUserDashboard } from '../hooks/useUserDashboard';
 
 const Badge = ({ navigation }) => {
     const {
@@ -22,7 +24,34 @@ const Badge = ({ navigation }) => {
         removeFilter,
         tagOptions
     } = useBadges();
-    const { t, i18n }=useTranslation();
+    
+    const { t } = useTranslation();
+    const sections = useMemo(() => {
+        const achieved = [];
+        const inProgress = [];
+        const nonAchieved = []; 
+        const available = []; 
+        const inReview=[];
+
+        courses.forEach(course => {
+            const enrollment = getEnrollment(course.id);
+            const status = enrollment?.status?.toLowerCase();
+
+            if (!enrollment) {
+                available.push({ course, enrollment: null });
+            } else if (status === 'completed') {
+                achieved.push({ course, enrollment });
+            }else if(status === 'in_review'){
+                inReview.push({course, enrollment});
+            } else if (status === 'in_progress') {
+                inProgress.push({ course, enrollment });
+            } else if (status === 'failed' || status === 'expired' || status === 'rejected') {
+                nonAchieved.push({ course, enrollment });
+            }
+        });
+
+        return { achieved, inProgress, nonAchieved, available, inReview };
+    }, [courses, getEnrollment]);
 
     const statusLabels = {
         all: 'All Status',
@@ -39,85 +68,174 @@ const Badge = ({ navigation }) => {
         );
     }
 
+    const BadgeItem = ({ course, enrollment, type }) => {
+        const isCompleted = type === 'achieved';
+        const isInProgress = type === 'progress';
+        const isAlert = type === 'alert';
+        const isLocked = type === 'locked';
+        const isReview = type === 'review';
+        const expiry = enrollment?.badge_expire_at;
+        const progressValue = course.progress || 0;
+
+        return (
+            <View
+                style={styles.badgeCard}
+            >
+                <View style={styles.imageWrapper}>
+                    <Image
+                        source={{ uri: course.badge_img_url }}
+                        style={[
+                            styles.badgeImage,
+                            (isAlert || isLocked) && styles.grayscaleBadge,
+                            isLocked && { opacity: 0.3 }
+                        ]}
+                    />
+                    {isCompleted && (
+                        <View style={styles.achievedIconTag}>
+                            <Award size={14} color="white" />
+                        </View>
+                    )}
+                    {isLocked && (
+                        <View style={styles.lockIconOverlay}>
+                            <Lock size={16} color="#666" />
+                        </View>
+                    )}
+                </View>
+                
+                <Text style={[styles.courseTitle, isLocked && { color: '#888' }]} numberOfLines={2}>
+                    {course.title}
+                </Text>
+
+                {isCompleted && expiry && (
+                    <Text style={styles.expiryText}>
+                        Expires: {formatDate(new Date(expiry))}
+                    </Text>
+                )}
+
+                {isInProgress && (
+                    <View style={styles.progressContainer}>
+                        <Progress.Bar 
+                            progress={progressValue} 
+                            width={120} 
+                            color="#0a6340" 
+                            unfilledColor="#e0e0e0" 
+                            borderWidth={0}
+                            height={6}
+                        />
+                        <Text style={styles.progressLabel}>{Math.round(progressValue * 100)}% Complete</Text> 
+                    </View>
+                )}
+
+                {isReview && (
+                    <View style={styles.reviewBadgeTag}>
+                        <Clock size={10} color="#856404" />
+                        <Text style={styles.reviewText}>Verification Pending</Text>
+                    </View>
+                )}
+
+                {isAlert && (
+                    <View style={styles.alertLabelRow}>
+                        <AlertTriangle size={12} color="#dc2626" />
+                        <Text style={styles.alertText}>{enrollment?.status?.toUpperCase()}</Text>
+                    </View>
+                )}
+
+                {isLocked && (
+                    <View style={styles.lockedHintRow}>
+                        <Text style={styles.lockedHintText}>Enroll to Earn</Text>
+                    </View>
+                )}
+            </View>
+        );
+    };
+
+    const RenderSection = ({ title, icon, data, type, emptyMsg, hideIfEmpty=false}) => {
+        if (hideIfEmpty && data.length === 0) return null;
+        return (
+        <View style={styles.sectionWrapper}>
+            <View style={styles.sectionHeader}>
+                {icon}
+                <Text style={styles.sectionTitle}>{title}</Text>
+                <View style={styles.badgeCount}>
+                    <Text style={styles.badgeCountText}>{data.length}</Text>
+                </View>
+            </View>
+            
+            {data.length === 0 ? (
+                <Text style={styles.emptySectionText}>{emptyMsg}</Text>
+            ) : (
+                <View style={styles.badgeGrid}>
+                    {data.map(({ course, enrollment }) => (
+                        <BadgeItem 
+                            key={course.id} 
+                            course={course} 
+                            enrollment={enrollment} 
+                            type={type} 
+                        />
+                    ))}
+                </View>
+            )}
+        </View>
+    )};
+
     return (
-        <View style={{ flex: 1, backgroundColor: 'white' }}>
+        <View style={{ flex: 1, backgroundColor: '#fcfcfc' }}>
             <ScrollView style={styles.container}>
                 <View style={styles.headerSection}>
                     <View style={styles.titleRow}>
-                        <Text style={styles.headerTitle}>Badges</Text>
-                        
-                        <View style={styles.filterActions}>
-                            <Pressable 
-                                onPress={() => setFilterVisible(true)}
-                                style={styles.filterButton}
-                            >
-                                <SlidersHorizontal size={18} color="#424242" />
-                            </Pressable>
-                        </View>
+                        <Text style={styles.headerTitle}>My Certifications</Text>
                     </View>
 
                     <View style={styles.pillContainer}>
                         {filters.status !== 'all' && (
                             <View style={styles.pill}>
                                 <Text style={styles.pillText}>{statusLabels[filters.status]}</Text>
-                                <Pressable onPress={() => removeFilter('status')}>
-                                    <CircleX size={14} color="white" />
-                                </Pressable>
+                                <Pressable onPress={() => removeFilter('status')}><CircleX size={14} color="white" /></Pressable>
                             </View>
                         )}
                         {filters.tag !== 'all' && (
                             <View style={styles.pill}>
                                 <Text style={styles.pillText}>{filters.tag}</Text>
-                                <Pressable onPress={() => removeFilter('tag')}>
-                                    <CircleX size={14} color="white" />
-                                </Pressable>
+                                <Pressable onPress={() => removeFilter('tag')}><CircleX size={14} color="white" /></Pressable>
                             </View>
                         )}
                     </View>
                 </View>
 
-                <View style={styles.badgeGrid}>
-                    {courses.length === 0 ? (
-                        <View style={styles.emptyContainer}>
-                            <Text style={styles.emptyText}>No badges found</Text>
-                        </View>
-                    ) : (
-                        courses.map((course) => {
-                            const enrollment = getEnrollment(course.id);
-                            const isEnrolled = !!enrollment;
-                            const isCompleted = enrollment?.status === 'COMPLETED';
-                            const expiry = enrollment?.badge_expire_at;
-                            const formattedDate = expiry ? formatDate(new Date(expiry)) : null;
+                <RenderSection 
+                    title="Achieved Badges" 
+                    data={sections.achieved} 
+                    type="achieved"
+                    emptyMsg="Complete courses to earn professional badges."
+                />
 
-                            return (
-                                <View key={course.id} style={styles.badgeCard}>
-                                    <View style={styles.imageWrapper}>
-                                        <Image
-                                            source={{ uri: course.badge_img_url || 'https://via.placeholder.com/150' }}
-                                            style={[
-                                                styles.badgeImage,
-                                                !isEnrolled && styles.lockedBadge // if locked make grey
-                                            ]}
-                                        />
-                                        {!isEnrolled && (
-                                            <View style={styles.overlay} />
-                                        )}
-                                    </View>
-                                    
-                                    <Text style={styles.courseTitle} numberOfLines={1}>
-                                        {course.title}
-                                    </Text>
-                                    
-                                    {isCompleted && formattedDate && (
-                                        <Text style={styles.expiryText}>
-                                            Expires: {formattedDate}
-                                        </Text>
-                                    )}
-                                </View>
-                            );
-                        })
-                    )}
-                </View>
+                <RenderSection 
+                    title="In Progress" 
+                    data={sections.inProgress} 
+                    type="progress"
+                    emptyMsg="No courses currently active."
+                />
+
+                <RenderSection 
+                    title="Pending Verification" 
+                    data={sections.inReview} 
+                    type="review"
+                    hideIfEmpty={true}
+                />
+
+                <RenderSection 
+                    title="Expired or Failed" 
+                    data={sections.nonAchieved} 
+                    type="alert"
+                    emptyMsg="No expired or failed records."
+                />
+
+                <RenderSection 
+                    title="Available Badges" 
+                    data={sections.available} 
+                    type="locked"
+                    emptyMsg="All available courses have been enrolled."
+                />
             </ScrollView>
 
             <FilterSidebar
@@ -136,7 +254,7 @@ const Badge = ({ navigation }) => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        paddingHorizontal: 60,
+        paddingHorizontal: Platform.OS === 'web' ? 60 : 20,
     },
     centered: {
         flex: 1, 
@@ -145,6 +263,7 @@ const styles = StyleSheet.create({
     },
     headerSection: {
         marginTop: 40,
+        marginBottom: 20,
     },
     titleRow: {
         flexDirection: 'row',
@@ -155,40 +274,73 @@ const styles = StyleSheet.create({
     headerTitle: {
         fontSize: 28,
         fontWeight: 'bold',
-    },
-    filterActions: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    filterBar: {
-        flexDirection: 'row',
-        justifyContent: 'flex-end',
-        borderBottomWidth: 1,
-        borderBottomColor: '#eee',
-        paddingBottom: 15,
+        color: '#1a1a1a',
     },
     filterButton: {
         flexDirection: 'row',
+        alignItems: 'center',
         paddingHorizontal: 15,
         paddingVertical: 8,
-        borderRadius: 8,
+        borderRadius: 20,
         borderWidth: 1,
         borderColor: '#ddd',
+        backgroundColor: 'white',
+        gap: 8,
+    },
+    filterBtnText: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#424242',
+    },
+    sectionWrapper: {
+        marginBottom: 40,
+    },
+    sectionHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 20,
+        gap: 10,
+        borderBottomWidth: 1,
+        borderBottomColor: '#eee',
+        paddingBottom: 10,
+    },
+    sectionTitle: {
+        fontSize: 18,
+        fontWeight: '700',
+        color: '#333',
+    },
+    badgeCount: {
+        backgroundColor: '#eee',
+        paddingHorizontal: 8,
+        paddingVertical: 2,
+        borderRadius: 10,
+    },
+    badgeCountText: {
+        fontSize: 12,
+        fontWeight: 'bold',
+        color: '#666',
     },
     badgeGrid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        gap: 40,
-        paddingVertical: 20,
+        gap: 30,
     },
     badgeCard: {
-        width: 180,
+        width: 160,
         alignItems: 'center',
-        marginBottom: 20,
+        backgroundColor: 'white',
+        padding: 15,
+        borderRadius: 15,
+        borderWidth: 1,
+        borderColor: '#f0f0f0',
+        ...Platform.select({
+            web: { boxShadow: '0px 4px 10px rgba(0,0,0,0.03)' },
+            default: { elevation: 2 }
+        })
     },
     imageWrapper: {
-        width: 140,
-        height: 140,
+        width: 100,
+        height: 100,
         marginBottom: 12,
         position: 'relative',
     },
@@ -197,28 +349,81 @@ const styles = StyleSheet.create({
         height: '100%',
         resizeMode: 'contain',
     },
-    lockedBadge: {
+    achievedIconTag: {
+        position: 'absolute',
+        bottom: -5,
+        right: -5,
+        backgroundColor: '#0a6340',
+        borderRadius: 15,
+        padding: 4,
+        borderWidth: 2,
+        borderColor: 'white',
+    },
+    lockIconOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    grayscaleBadge: {
         tintColor: 'gray',
-        opacity: 0.4,
     },
     courseTitle: {
-        fontSize: 16,
-        fontWeight: '600',
+        fontSize: 13,
+        fontWeight: '700',
         textAlign: 'center',
         color: '#333',
+        height: 40,
     },
     expiryText: {
-        fontSize: 12,
-        color: '#888',
-        marginTop: 4,
+        fontSize: 11,
+        color: '#0a6340',
+        marginTop: 8,
+        fontWeight: '600',
+    },
+    progressContainer: {
+        marginTop: 10,
+        alignItems: 'center',
+        gap: 5,
+    },
+    progressLabel: {
+        fontSize: 9,
+        fontWeight: 'bold',
+        color: '#666',
+    },
+    alertLabelRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: 8,
+        gap: 4,
+    },
+    alertText: {
+        fontSize: 10,
+        color: '#dc2626',
+        fontWeight: 'bold',
+    },
+    lockedHintRow: {
+        marginTop: 8,
+        backgroundColor: '#f1f5f9',
+        paddingHorizontal: 8,
+        paddingVertical: 3,
+        borderRadius: 10,
+    },
+    lockedHintText: {
+        fontSize: 10,
+        color: '#64748b',
+        fontWeight: '700',
+    },
+    emptySectionText: {
+        color: '#999',
+        fontStyle: 'italic',
+        fontSize: 14,
+        marginLeft: 5,
     },
     pillContainer: {
         flexDirection: 'row',
         flexWrap: 'wrap',
         gap: 8,
-        paddingBottom: 20,
-        borderBottomWidth: 1,
-        borderBottomColor: '#eee',
+        marginBottom: 10,
     },
     pill: {
         flexDirection: 'row',
@@ -227,21 +432,13 @@ const styles = StyleSheet.create({
         paddingHorizontal: 12,
         paddingVertical: 6,
         borderRadius: 20,
+        gap: 6,
     },
     pillText: {
-        fontSize: 13,
+        fontSize: 12,
         color: "white",
-        marginRight: 6,
+        fontWeight: '600',
     },
-    emptyContainer: {
-        flex: 1,
-        alignItems: 'center',
-        marginTop: 50,
-    },
-    emptyText: {
-        color: '#999',
-        fontSize: 16,
-    }
 });
 
 export default Badge;

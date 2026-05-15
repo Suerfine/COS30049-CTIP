@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { CircleX, ListFilter, SignalZero, ChevronLeft, SlidersHorizontal, Search} from 'lucide-react-native'
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 import { useFocusEffect, useRoute } from '@react-navigation/native';
+import { Modal } from 'react-native';
 
 // Import other hook and component
 import { useUserDashboard } from '../hooks/useUserDashboard';
@@ -30,9 +31,10 @@ const UserCourse=({navigation})=>{
         coursesWithStatus,
         filteredCourses, courses,
         handleEnrollment, 
-        handleDrop,
+        getUnfulfilledPrerequisites,
         handleApply,
-        removeFilter,allTagList, addTag,searchText, setSearchText, handleSearch,
+        removeFilter,allTagList, addTag,
+        searchText, setSearchText,getPreviousEnrollments, openHistory, historyModalVisible,selectedHistory,setHistoryModalVisible
     }=useUserCourse();
     
     // sync parameter with filter from UserDashboard Explore Categories section
@@ -134,7 +136,7 @@ const UserCourse=({navigation})=>{
                             <Text style={styles.emptyText}>{t('no courses found')}</Text>
                         </View>
                     ) : ( filteredCourses.map(course => {
-                         const numModules = course.module_count ? course.module_count : 0;
+                        const numModules = course.module_count ? course.module_count : 0;
                         return(
                         <CourseCard
                             key={course.id}
@@ -148,8 +150,11 @@ const UserCourse=({navigation})=>{
                             progress={course.progress}
                             // enrollment
                             enrollmentStatus={course.enrollmentStatus}
-                            prerequisiteGroups={course.prerequisiteGroups || []}
-                            myEnrollments={myEnrollments}
+                            previousEnrollments={getPreviousEnrollments(course.id)}
+                            onViewHistory={() =>
+                            openHistory(getPreviousEnrollments(course.id))
+                            }
+                            isEnrollable={course.is_enrollable} 
                             onPress={() => navigation.navigate('ParkGuideMobileRoot', {
                                         screen: 'UserModule', 
                                         params: { 
@@ -160,9 +165,8 @@ const UserCourse=({navigation})=>{
                                     })}
                             onEnroll={() => {
                                 if (!course.is_enrollable) {
-                                    const prereqList = course.prerequisiteGroups?.length
-                                        ? course.prerequisiteGroups.map(p => p.title).join(", ")
-                                        : "Unknown prerequisite(s)";
+                                    const unfulfilled = getUnfulfilledPrerequisites(course);
+                                    const prereqList = unfulfilled.length > 0 ? unfulfilled.join(", ") : "Unknown prerequisite(s)";
 
                                     Alert.alert(
                                         "Prerequisites Not Fulfilled",
@@ -177,18 +181,39 @@ const UserCourse=({navigation})=>{
                                     `Are you sure you want to enroll in ${course.title}?`,
                                     [
                                         { text: "Cancel", style: "cancel" },
-                                        { 
-                                            text: "Enroll", 
-                                            onPress: () => handleEnrollment(course.id) 
+                                        {
+                                            text: "Enroll",
+                                            onPress: () => {
+                                                navigation.navigate('PaymentScreen', { course });
+                                            }
                                         }
                                     ]
                                 );
                             }}
-                            onDrop={() => handleDrop(course.id)}
                         />)
-                })
+                    })
                 )}
                 </View>
+
+                {/* History modal */}
+                <Modal visible={historyModalVisible} transparent={true} animationType="fade" onRequestClose={() => setHistoryModalVisible(false)}>
+                    <View style={styles.modalOverlay}>
+                        <View style={styles.modalContent}>
+                            <Text style={styles.modalTitle}>Enrollment History</Text>
+                            {selectedHistory.map((item, index) => (
+                                <View key={index} style={styles.historyRow}>
+                                    <Text style={styles.historyDate}>Enrolled: {new Date(item.created_at).toLocaleDateString()}</Text>
+                                    <Text style={[styles.historyStatus, { color: item.status === 'failed' ? 'red' : 'orange' }]}>
+                                    Status: {item.status.toUpperCase()}
+                                    </Text>
+                                </View>
+                            ))}
+                            <Pressable onPress={() => setHistoryModalVisible(false)}  style={styles.closeBtn}>
+                                <Text style={{ color: 'white' }}>Close</Text>
+                            </Pressable>
+                        </View>
+                    </View>
+                </Modal>
             </ScrollView>
             <FilterSidebar
                 visible={filterVisible}
@@ -330,6 +355,60 @@ const styles=StyleSheet.create({
         justifyContent: "space-between",
         flexDirection: "row",
         marginBottom:10,
+    },
+    // history modal
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    modalContent: {
+        width: '90%',
+        backgroundColor: 'white',
+        borderRadius: 15,
+        padding: 20,
+        elevation: 5,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 4,
+    },
+    modalTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        marginBottom: 15,
+        textAlign: 'center',
+        color: '#333',
+    },
+    historyRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingVertical: 15,
+        borderBottomWidth: 1,
+        borderBottomColor: '#f1f5f9',
+    },
+    historyDate: {
+        fontSize: 14,
+        color: '#475569',
+        fontWeight: '500',
+    },
+    historyStatus: {
+        fontSize: 12,
+        fontWeight: 'bold',
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 12,
+        textTransform: 'uppercase',
+        overflow: 'hidden',
+    },
+    closeBtn: {
+        marginTop: 25,
+        backgroundColor: '#0a6340',
+        paddingVertical: 14,
+        borderRadius: 10,
+        alignItems: 'center',
     },
 });
 

@@ -74,7 +74,7 @@ const PaymentReview = ({ navigation, route }) => {
                     screen:'Courses'
                 })}
             >
-                <Text style={styles.homeBtnText}>Back to Dashboard</Text>
+                <Text style={styles.homeBtnText}>Back to Courses</Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.supportBtn}>
