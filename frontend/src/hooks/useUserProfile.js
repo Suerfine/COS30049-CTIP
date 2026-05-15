@@ -3,6 +3,8 @@ import { userProfileService } from "../services/userProfileService";
 import { Alert } from "react-native";
 import { useUserDashboard } from './useUserDashboard';
 import { isValidPassword } from "../utils/Validation";
+import * as ImagePicker from 'expo-image-picker';
+import apiClient from "../config/apiConfig";
 
 export const useUserProfile=()=>{
     const {user} = useUserDashboard();
@@ -35,7 +37,8 @@ export const useUserProfile=()=>{
     const [pfpModalVisible, setPfpModalVisible] = useState(false);
     const [passwordModalVisible, setPasswordModalVisible] = useState(false);
 
-    // Dummy image path
+    // image path
+    const [profileImage, setProfileImage] = useState('');
     const [newImagePath, setNewImagePath] = useState('');
 
     // Password visibility
@@ -88,6 +91,37 @@ export const useUserProfile=()=>{
         }
     };
 
+    // handle save pfp
+    const handleSavePfp = async () => {
+        if (!newImagePath) return;
+
+        setLoading(true);
+        try {
+            // Convert blob URI to File (required on web)
+            const response = await fetch(newImagePath);
+            const blob = await response.blob();
+            const extension = blob.type.split('/')[1] || 'jpg';
+            const file = new File([blob], `avatar.${extension}`, { type: blob.type });
+
+            const formData = new FormData();
+            formData.append('pfp', file);
+
+            const res = await apiClient.put(`/users/${user.id}`, formData, {
+                headers: { 'Content-Type': 'multipart/form-data' },
+            });
+
+            setPfpModalVisible(false);
+            setNewImagePath('');
+            return { success: true, pfp_url: res.data?.pfp_url };
+        } catch (err) {
+            window.alert(err.response?.data?.message || 'Failed to update profile picture.');
+            console.log(err);
+            return { success: false };
+        } finally {
+            setLoading(false);
+        }
+    };
+
     // SECURITY
     const handleSaveUsername = async () => {
         try {
@@ -136,6 +170,7 @@ export const useUserProfile=()=>{
                 tel: user.tel || '',
             });
             setUsername(user.username || '');
+            setProfileImage(user.pfp_url || null);
         }
     }, [user]);
 
@@ -145,6 +180,8 @@ export const useUserProfile=()=>{
         updateField,
         username,setUsername,
         password,setPassword,
+        profileImage, 
+        setProfileImage,
         editingUsername, setEditingUsername,
         editingPassword, setEditingPassword,
         pfpModalVisible, setPfpModalVisible,
@@ -154,9 +191,11 @@ export const useUserProfile=()=>{
         showNewPassword, setShowNewPassword,
         currentPassword, setCurrentPassword,
         pickImage,
+        handleSavePfp,
         isEditing, setIsEditing,
         handleSave,
         handleSavePassword,
         handleSaveUsername,
+        loading
     };
 };
