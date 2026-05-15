@@ -38,6 +38,11 @@ export const usePaymentProcess = (course, navigation) => {
   const onConfirmPayment = async () => {
     console.log(course);
     try {
+      if (!course) {
+        Alert.alert("Error", "Course information is missing. Please go back and try again.");
+        return;
+      }
+
       if (!receipt) {
         Alert.alert("Upload receipt first");
         return;

@@ -25,6 +25,7 @@ import MobileSideBar from "../components/MobileSideBar";
 import NavBar from "../components/NavBar";
 import ProfileStack from "./ProfileStack";
 import PaymentReview from "../screens/PaymentReview";
+import PaymentScreen from "../screens/Payment";
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -162,6 +163,9 @@ export default function ParkGuideNavigator() {
           name="ParkGuideMobileRoot"
           component={MobileTabNavigator}
         />
+
+        <Stack.Screen name="PaymentScreen" component={PaymentScreen} />
+        <Stack.Screen name="PaymentReview" component={PaymentReview} />
       </Stack.Navigator>
     );
   }
