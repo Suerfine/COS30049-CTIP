@@ -30,9 +30,10 @@ const UserCourse=({navigation})=>{
         coursesWithStatus,
         filteredCourses, courses,
         handleEnrollment, 
-        handleDrop,
+        getUnfulfilledPrerequisites,
         handleApply,
-        removeFilter,allTagList, addTag,searchText, setSearchText, handleSearch,
+        removeFilter,allTagList, addTag,
+        searchText, setSearchText,getPreviousEnrollments, openHistory, historyModalVisible,selectedHistory,setHistoryModalVisible
     }=useUserCourse();
     
     // sync parameter with filter from UserDashboard Explore Categories section
@@ -148,8 +149,11 @@ const UserCourse=({navigation})=>{
                             progress={course.progress}
                             // enrollment
                             enrollmentStatus={course.enrollmentStatus}
-                            prerequisiteGroups={course.prerequisiteGroups || []}
-                            myEnrollments={myEnrollments}
+                            previousEnrollments={getPreviousEnrollments(course.id)}
+                            onViewHistory={() =>
+                            openHistory(getPreviousEnrollments(course.id))
+                            }
+                            isEnrollable={course.is_enrollable} 
                             onPress={() => navigation.navigate('ParkGuideMobileRoot', {
                                         screen: 'UserModule', 
                                         params: { 
@@ -160,9 +164,8 @@ const UserCourse=({navigation})=>{
                                     })}
                             onEnroll={() => {
                                 if (!course.is_enrollable) {
-                                    const prereqList = course.prerequisiteGroups?.length
-                                        ? course.prerequisiteGroups.map(p => p.title).join(", ")
-                                        : "Unknown prerequisite(s)";
+                                    const unfulfilled = getUnfulfilledPrerequisites(course);
+                                    const prereqList = unfulfilled.length > 0 ? unfulfilled.join(", ") : "Unknown prerequisite(s)";
 
                                     Alert.alert(
                                         "Prerequisites Not Fulfilled",
