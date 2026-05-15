@@ -1,6 +1,6 @@
 # BACKEND
 
-## Instructions to install and run:
+# Instructions to install and run:
 
 ```
 cd ./backend/
@@ -32,6 +32,9 @@ Seeds the database with test data and synchorise the database models. Call this 
 
 Starts the server on live hotreload (the server automatically restarts when it detects changes).
 
+`npm run test {filePath?}`
+Runs the test suite. See [Testing framework](./tests/README.md) section below for more details.
+
 # Project Structure:
 
 ```
@@ -60,6 +63,7 @@ storage/ #All files created during runtime
     dev_db.sqlite
     public/ #Files that wil be mounted and publically available
     private/ #Files that need to be authenticated before serving
+tests/ #All tests
 app.js #Entrypoint of the progam
 package-lock.json
 packagejson

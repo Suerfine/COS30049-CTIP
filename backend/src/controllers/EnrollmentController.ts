@@ -4,11 +4,23 @@ import {
   EnrollmentResponse,
   MyEnrollmentRequestParams,
 } from "../types/Enrollment";
-import { Course, Enrollment, User, Module, Page, Submission, Element } from "../models";
+import {
+  Course,
+  Enrollment,
+  User,
+  Module,
+  Page,
+  Submission,
+  Element,
+  Payment,
+} from "../models";
 import { formatPaginateResponse, paginateModel } from "../utils/paginate";
 import { EnrollmentStatus } from "../enum/EnrollmentStatus";
 import sequelize from "../config/Database";
 import { Op, WhereOptions } from "sequelize";
+import { canUserEnrollCourse } from "../utils/canUserEnrollCourse";
+import { getStorage } from "../services/storage";
+import { PaymentStatus } from "../enum/PaymentStatus";
 import { sendNotification } from "../utils/sendNotification";
 import { NotificationCategory } from "../enum/NotificationCategory";
 
@@ -39,33 +51,76 @@ function toEnrollmentResponse(enrollment: Enrollment): EnrollmentResponse {
 }
 
 export const enrollCourse = async (
-  req: Request<{ course_id: string }, any, any>,
+  req: Request<{ course_id: string }, any, any> & {
+    file?: Express.Multer.File;
+  },
   res: Response<EnrollmentResponse | { message: string }>,
   next: NextFunction,
 ) => {
+  const transaction = await sequelize.transaction();
   try {
     // Validate course_id parameter
     const courseId = Number(req.params.course_id);
-    if (Course.findByPk(courseId) === null) {
+    const course = await Course.findByPk(courseId ?? -1);
+    if (!course) {
       throw new HttpError(404, "Course not found");
     }
 
-    //Validate the user satisfies the prerequisites for the course.
-    //TODO: Implement prerequisite check logic here
-    if (!true) {
-      throw new HttpError(400, "User does not satisfy course prerequisites");
+    // Validate user authentication
+    const user = req.user;
+    if (!user) {
+      throw new HttpError(401, "Unauthorized");
     }
 
+    // Validate a receipt was uploaded
+    if (!req.file) {
+      throw new HttpError(400, "Receipt image is required");
+    }
+
+    //Validate the user satisfies the prerequisites for the course.
+    // TODO: Implement proper prerequisite check based on the course's actual prerequisites instead of just checking if they have completed any course
+
     //Create the enrollment record
-    const enrollment = await Enrollment.create({
-      user_id: req.user!.id,
-      course_id: courseId,
-      // status: EnrollmentStatus.IN_REVIEW,
-      status: EnrollmentStatus.PENDING_PAYMENT,
-      enrolled_at: new Date(),
+    const enrollment = await Enrollment.create(
+      {
+        user_id: user.id,
+        course_id: courseId,
+        // status: EnrollmentStatus.IN_REVIEW,
+        status: EnrollmentStatus.PENDING_PAYMENT,
+        enrolled_at: new Date(),
+      },
+      { transaction },
+    );
+
+    //Create the payment record
+    const payment = await Payment.create(
+      {
+        user_id: user.id,
+        course_id: courseId,
+        enrollment_id: enrollment.id,
+        amount: course.cost,
+        receipt_filepath: "", // Placeholder, will be updated after moving the file to storage
+        status: PaymentStatus.PENDING,
+      },
+      { transaction },
+    );
+
+    // Move the receipt image in private storage
+    const storage = getStorage();
+    const path = await storage.save({
+      buffer: req.file.buffer,
+      filename: `${payment.id}_${Date.now()}_${req.file.originalname}`,
+      mimeType: req.file.mimetype,
+      folder: "private",
+      subfolder: `/receipts/`,
     });
+    payment.receipt_filepath = path;
+    await payment.save({ transaction });
+
+    await transaction.commit();
     return res.status(201).json(toEnrollmentResponse(enrollment));
   } catch (err) {
+    await transaction.rollback();
     if (err instanceof HttpError) {
       res.status(err.status).json({ message: err.message });
     } else {
@@ -247,7 +302,10 @@ export const updateEnrollmentStatus = async (
         break;
       case EnrollmentStatus.IN_REVIEW:
         // XXX: Remove this route. The status should only be set to IN_REVIEW by code.
-        if (enrollment.status !== EnrollmentStatus.IN_PROGRESS && enrollment.status !== EnrollmentStatus.DROPPED) {
+        if (
+          enrollment.status !== EnrollmentStatus.IN_PROGRESS &&
+          enrollment.status !== EnrollmentStatus.DROPPED
+        ) {
           throw new HttpError(400, "Invalid enrollment status transition");
         }
         enrollment.status = newStatus;
@@ -281,9 +339,7 @@ export const updateEnrollmentStatus = async (
         break;
       // NEW: transition to applied
       case EnrollmentStatus.APPLIED:
-        if (
-          enrollment.status !== EnrollmentStatus.PENDING_PAYMENT
-        ) {
+        if (enrollment.status !== EnrollmentStatus.PENDING_PAYMENT) {
           throw new HttpError(400, "Invalid enrollment status transition");
         }
         enrollment.status = newStatus;
@@ -331,7 +387,7 @@ export const deleteEnrollment = async (
 
 export const getSubmissionSummaries = async (
   req: Request<PaginateRequestParams>,
-  res: Response<PaginateResponse<any> | { message: string }>
+  res: Response<PaginateResponse<any> | { message: string }>,
 ): Promise<Response> => {
   try {
     const search =
@@ -340,14 +396,10 @@ export const getSubmissionSummaries = async (
         : undefined;
 
     const status =
-      typeof req.query.status === "string"
-        ? req.query.status
-        : "All";
+      typeof req.query.status === "string" ? req.query.status : "All";
 
     const orderBy =
-      typeof req.query.orderBy === "string"
-        ? req.query.orderBy
-        : "id ASC";
+      typeof req.query.orderBy === "string" ? req.query.orderBy : "id ASC";
 
     const whereClause: any = {};
 
@@ -355,7 +407,7 @@ export const getSubmissionSummaries = async (
       whereClause.status = status;
     } else {
       whereClause.status = {
-        [Op.notIn]: ["pending_payment", "in_review"]
+        [Op.notIn]: ["pending_payment", "in_review"],
       };
     }
 
@@ -385,8 +437,8 @@ export const getSubmissionSummaries = async (
           },
         ],
         paranoid: true,
-        subQuery: false
-      }
+        subQuery: false,
+      },
     );
 
     const baseUrl = `${req.protocol}://${req.get("host")}${req.baseUrl}${req.path}`;
@@ -402,8 +454,7 @@ export const getSubmissionSummaries = async (
           const completionDate = new Date(enrollment.completed_at);
 
           completionDate.setMonth(
-            completionDate.getMonth() +
-              Number(course.badge_expire_in_months)
+            completionDate.getMonth() + Number(course.badge_expire_in_months),
           );
 
           badgeExpiryOn = completionDate.toISOString();
@@ -422,7 +473,7 @@ export const getSubmissionSummaries = async (
         };
       }),
 
-      req.query, 
+      req.query,
       true,
       {
         page: summaries.page,
@@ -430,7 +481,7 @@ export const getSubmissionSummaries = async (
         totalElements: summaries.totalElements,
         totalPages: summaries.totalPages,
         baseUrl,
-      }
+      },
     );
 
     return res.status(200).json(formattedResponse);
@@ -498,9 +549,7 @@ export const getEnrollmentAudit = async (
       return res.status(err.status).json({ message: err.message });
     }
 
-    return res
-      .status(500)
-      .json({ message: "Internal server error\n" + err });
+    return res.status(500).json({ message: "Internal server error\n" + err });
   }
 };
 
@@ -509,15 +558,16 @@ export const approveBadge = async (
   res: Response<EnrollmentResponse | { message: string }>,
 ) => {
   const transaction = await sequelize.transaction();
-  
+
   try {
     const enrollmentId = Number(req.params.id);
-    if (Number.isNaN(enrollmentId)) throw new HttpError(400, "Invalid enrollment id");
+    if (Number.isNaN(enrollmentId))
+      throw new HttpError(400, "Invalid enrollment id");
 
-    const enrollment = await Enrollment.findByPk(enrollmentId, { 
+    const enrollment = (await Enrollment.findByPk(enrollmentId, {
       include: [{ model: Course }],
-      transaction 
-    }) as (Enrollment & { Course: Course; course_id: number }) | null; 
+      transaction,
+    })) as (Enrollment & { Course: Course; course_id: number }) | null;
 
     if (!enrollment) throw new HttpError(404, "Enrollment not found");
 
@@ -525,45 +575,47 @@ export const approveBadge = async (
       throw new HttpError(400, "Only enrollments 'In Review' can be approved.");
     }
 
-    const finalQuizPages = await Page.findAll({
-      where: { 
-        course_id: enrollment.course_id, 
-        final_quiz: true 
-      } as any, 
+    const finalQuizPages = (await Page.findAll({
+      where: {
+        course_id: enrollment.course_id,
+        final_quiz: true,
+      } as any,
       include: [{ model: Element }],
-      transaction
-    }) as any[];
+      transaction,
+    })) as any[];
 
     for (const page of finalQuizPages) {
       for (const element of page.Elements || []) {
         const submission = await Submission.findOne({
-          where: { 
+          where: {
             enrollment_id: enrollmentId,
-            element_id: element.id
+            element_id: element.id,
           },
-          transaction
+          transaction,
         });
 
         const requiredScore = (page as any).passing_score || 80;
         if (!submission || (submission as any).earned_grade < requiredScore) {
           throw new HttpError(
-            400, 
-            `Verification failed: Final Quiz on page "${page.title}" not passed.`
+            400,
+            `Verification failed: Final Quiz on page "${page.title}" not passed.`,
           );
         }
       }
     }
 
-    const courseData = (enrollment as any).Course; 
-    
+    const courseData = (enrollment as any).Course;
+
     enrollment.status = EnrollmentStatus.COMPLETED;
     enrollment.completed_at = new Date();
     enrollment.reviewed_at = new Date();
     enrollment.reviewed_by_user_id = req.user?.id || null;
-    
+
     if (courseData && (courseData as any).badge_expire_in_months) {
       const expireDate = new Date();
-      expireDate.setMonth(expireDate.getMonth() + (courseData as any).badge_expire_in_months);
+      expireDate.setMonth(
+        expireDate.getMonth() + (courseData as any).badge_expire_in_months,
+      );
       enrollment.badge_expire_at = expireDate;
     }
 

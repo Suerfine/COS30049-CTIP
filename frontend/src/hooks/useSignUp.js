@@ -97,13 +97,7 @@ export const useSignUp = () => {
         ic,
         email,
         telephone,
-        file: file
-          ? {
-              uri: file.uri,
-              name: file.name || "resume.pdf",
-              type: file.type || file.mimeType || "application/pdf",
-            }
-          : null,
+        file: file,
       };
 
       await RegisterService.registerUser(userData);

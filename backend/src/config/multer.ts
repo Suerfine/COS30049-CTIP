@@ -83,3 +83,9 @@ export const uploadBadgeImg = () =>
     allowedMimeTypes: ["image/jpeg", "image/png", "image/webp", "image/gif"],
     maxSizeMB: 5,
   });
+
+export const uploadReceipt = () =>
+  createUploader({
+    allowedMimeTypes: ["image/jpeg", "image/png", "image/webp"],
+    maxSizeMB: 5,
+  });

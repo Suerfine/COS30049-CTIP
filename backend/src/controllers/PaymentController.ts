@@ -5,6 +5,7 @@ import { paginateModel, formatPaginateResponse } from "../utils/paginate";
 import { NextFunction, Request, Response } from "express";
 import { Payment, Enrollment, User, Course } from "../models";
 import sequelize from "../config/Database";
+import path from "path";
 import { PaymentStatus } from "../enum/PaymentStatus";
 import { EnrollmentStatus } from "../enum/EnrollmentStatus";
 import { UserRoles } from "../enum/UserRoles";
@@ -15,6 +16,7 @@ import {
 } from "../utils/parseRequest";
 import { sendNotification } from "../utils/sendNotification";
 import { NotificationCategory } from "../enum/NotificationCategory";
+import { DiskStorageService } from "../services/storage/DiskStorageService";
 
 class HttpError extends Error {
   status: number;
@@ -40,12 +42,15 @@ function resolveStoredReceiptPath(storedPath: string): string | null {
     path.resolve(backendRoot, "storage", normalizedStoredPath),
   ];
 
-  return candidates.find((candidate) => {
-    const isAllowed = allowedRoots.some(
-      (root) => candidate === root || candidate.startsWith(`${root}${path.sep}`),
-    );
-    return isAllowed && fs.existsSync(candidate);
-  }) ?? null;
+  return (
+    candidates.find((candidate) => {
+      const isAllowed = allowedRoots.some(
+        (root) =>
+          candidate === root || candidate.startsWith(`${root}${path.sep}`),
+      );
+      return isAllowed && fs.existsSync(candidate);
+    }) ?? null
+  );
 }
 
 async function validatePayment(paymentIdRaw: string): Promise<Payment> {
@@ -68,7 +73,7 @@ async function validatePayment(paymentIdRaw: string): Promise<Payment> {
 export const submitPayment = async (
   req: Request & { file?: { path: string } },
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   const transaction = await sequelize.transaction();
   try {
@@ -129,7 +134,6 @@ export const submitPayment = async (
     await transaction.commit();
 
     return res.status(201).json(payment);
-
   } catch (err) {
     await transaction.rollback();
     if (err instanceof HttpError) {
@@ -142,7 +146,7 @@ export const submitPayment = async (
 export const verifyPayment = async (
   req: Request<{ payment_id: string; status: string }>,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   const transaction = await sequelize.transaction();
   try {
@@ -167,7 +171,7 @@ export const verifyPayment = async (
         processed_by_user_id: adminId,
         processed_at: new Date(),
       },
-      { transaction }
+      { transaction },
     );
 
     const enrollment = await Enrollment.findByPk(payment.enrollment_id, {
@@ -186,9 +190,11 @@ export const verifyPayment = async (
       {
         status: newEnrollmentStatus,
         enrolled_at:
-          statusFromUrl === PaymentStatus.PAID ? new Date() : enrollment.enrolled_at,
+          statusFromUrl === PaymentStatus.PAID
+            ? new Date()
+            : enrollment.enrolled_at,
       },
-      { transaction }
+      { transaction },
     );
 
     if (statusFromUrl === PaymentStatus.PAID) {
@@ -205,11 +211,10 @@ export const verifyPayment = async (
     }
 
     await transaction.commit();
-    return res.json({ 
-      message: `Payment verified as ${statusFromUrl} and Enrollment set to ${newEnrollmentStatus}`, 
-      payment 
+    return res.json({
+      message: `Payment verified as ${statusFromUrl} and Enrollment set to ${newEnrollmentStatus}`,
+      payment,
     });
-
   } catch (err) {
     await transaction.rollback();
     if (err instanceof HttpError) {
@@ -255,12 +260,7 @@ export const getAllPayments = async (
           {
             model: User,
             as: "user",
-            attributes: [
-              "firstname",
-              "lastname",
-              "personal_email",
-              "pfp_url"
-            ],
+            attributes: ["firstname", "lastname", "personal_email", "pfp_url"],
           },
           {
             model: Course,
@@ -285,8 +285,8 @@ export const getAllPayments = async (
           amount: payment.amount,
           status: payment.status,
           receipt_filepath: payment.receipt_filepath
-          ? `${req.protocol}://${req.get("host")}/${payment.receipt_filepath.replace(/^\/+/, "")}`
-          : null,
+            ? `${req.protocol}://${req.get("host")}/${payment.receipt_filepath.replace(/^\/+/, "")}`
+            : null,
           created_at: payment.created_at,
           admin_remark: payment.admin_remark,
           processed_at: payment.processed_at,
@@ -323,9 +323,9 @@ export const getAllPayments = async (
 };
 
 export const getPaymentById = async (
-  req: Request<{ id: string }>, 
+  req: Request<{ id: string }>,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const id = parseId(req.params.id);
@@ -334,8 +334,8 @@ export const getPaymentById = async (
       throw new HttpError(400, "Invalid payment_id");
     }
 
-    const payment = await Payment.findByPk(id, { 
-      include: ["user", "course", "enrollment"] 
+    const payment = await Payment.findByPk(id, {
+      include: ["user", "course", "enrollment"],
     });
 
     if (!payment) {
@@ -396,7 +396,7 @@ export const downloadReceipt = async (
 export const getPaymentsByUser = async (
   req: Request<{ userId: string }>,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const userId = parseId(req.params.userId);
@@ -405,9 +405,9 @@ export const getPaymentsByUser = async (
       throw new HttpError(400, "Invalid user_id");
     }
 
-    const payments = await Payment.findAll({ 
-      where: { user_id: userId }, 
-      order: [["created_at", "DESC"]] 
+    const payments = await Payment.findAll({
+      where: { user_id: userId },
+      order: [["created_at", "DESC"]],
     });
 
     return res.json(payments);
@@ -415,6 +415,49 @@ export const getPaymentsByUser = async (
     if (err instanceof HttpError) {
       return res.status(err.status).json({ message: err.message });
     }
+    next(err);
+  }
+};
+
+export const getReceiptFile = async (
+  req: Request<{ paymentId: string }>,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const paymentId = parseId(req.params.paymentId);
+    if (paymentId === null) {
+      throw new HttpError(400, "Invalid payment_id");
+    }
+
+    const payment = await Payment.findByPk(paymentId);
+    if (!payment) {
+      throw new HttpError(404, "Payment record not found");
+    }
+
+    if (!payment.receipt_filepath) {
+      throw new HttpError(404, "Receipt file not found for this payment");
+    }
+    const storageService = new DiskStorageService();
+    const fileExists = await storageService.exists(payment.receipt_filepath);
+    if (!fileExists) {
+      throw new HttpError(404, "Receipt file does not exist on server");
+    }
+
+    const fileBuffer = await storageService.retrieve(payment.receipt_filepath);
+    const originalFilename = path.basename(payment.receipt_filepath);
+
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${originalFilename}"`,
+    );
+    res.type(path.extname(originalFilename));
+    return res.send(fileBuffer);
+  } catch (err) {
+    if (err instanceof HttpError) {
+      return res.status(err.status).json({ message: err.message });
+    }
+    console.error("Error retrieving receipt file:", err);
     next(err);
   }
 };

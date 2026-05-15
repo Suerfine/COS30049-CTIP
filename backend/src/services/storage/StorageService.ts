@@ -11,5 +11,6 @@ export interface StorageService {
   save(file: SaveFileOptions): Promise<string>;
   delete(filePath: string): Promise<void>;
   exists(filePath: string): Promise<boolean>;
+  retrieve(filePath: string): Promise<Buffer>;
   fullPath(filePath: string): string; // Optional helper to get full path from relative
 }

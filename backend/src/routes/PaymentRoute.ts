@@ -14,7 +14,6 @@ const uploadReceipt = createUploader({
   maxSizeMB: 10,
 });
 
-
 /**
  * @swagger
  * /api/payments:
@@ -179,6 +178,69 @@ paymentRouter.get("/:id", auth, PaymentController.getPaymentById);
 
 /**
  * @swagger
+ * /api/payments/{paymentId}/receipt:
+ *   get:
+ *     summary: Download payment receipt file
+ *     description: Retrieve and download the receipt file associated with a specific payment. Returns the receipt file as a binary attachment.
+ *     tags: [Payments]
+ *     security:
+ *       - OAuth2: ["all"]
+ *     parameters:
+ *       - in: path
+ *         name: paymentId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Payment ID
+ *     responses:
+ *       200:
+ *         description: Receipt file retrieved successfully
+ *         content:
+ *           image/jpeg:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *           image/png:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *           image/webp:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *       400:
+ *         description: Invalid payment_id
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       404:
+ *         description: Payment record not found or receipt file not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         description: Error retrieving receipt file
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+paymentRouter.get(
+  "/:paymentId/receipt",
+  auth,
+  PaymentController.getReceiptFile,
+);
+
+/**
+ * @swagger
  * /api/payments:
  *   post:
  *     summary: Submit a new payment receipt
@@ -253,7 +315,7 @@ paymentRouter.post(
   ],
 
   validate,
-  PaymentController.submitPayment
+  PaymentController.submitPayment,
 );
 
 /**
@@ -341,7 +403,7 @@ paymentRouter.patch(
     body("admin_remark").optional().isString(),
   ],
   validate,
-  PaymentController.verifyPayment 
+  PaymentController.verifyPayment,
 );
 
 export default paymentRouter;

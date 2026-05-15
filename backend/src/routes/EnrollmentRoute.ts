@@ -1,8 +1,10 @@
 import { Router } from "express";
 import * as EnrollmentController from "../controllers/EnrollmentController";
 import { auth } from "../middelware/Auth";
+import { uploadReceipt } from "../config/multer";
 
 const enrollmentRouter = Router();
+const receiptUploader = uploadReceipt();
 
 /**
  * @swagger
@@ -30,6 +32,7 @@ const enrollmentRouter = Router();
 enrollmentRouter.post(
   "/:course_id/enroll",
   auth,
+  receiptUploader.single("receipt"),
   EnrollmentController.enrollCourse,
 );
 

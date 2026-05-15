@@ -9,6 +9,9 @@ export const API_ENDPOINTS = {
     APPROVE: (id) => `/registrations/${id}/approve`,
     REJECT: (id) => `/registrations/${id}/reject`,
   },
+  REGISTRATION: {
+    DOCUMENT: (id) => `/registrations/${id}/document`,
+  },
   COURSE: {
     LIST: "/courses",
     DETAIL: (id) => `/courses/${id}`,
@@ -91,7 +94,7 @@ export const API_ENDPOINTS = {
     SUBMIT: "/payments",
     BY_USER: (userId) => `/payments/user/${userId}`,
     DETAIL: (id) => `/payments/${id}`,
-    RECEIPT: (id) => `/payments/${id}/receipt`,
+    RECEIPT: (paymentId) => `/payments/${paymentId}/receipt`,
     UPDATE_STATUS: (paymentId, status) =>
       `/payments/${paymentId}/status/${status}`,
   },

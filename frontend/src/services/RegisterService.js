@@ -2,6 +2,30 @@ import apiClient from "../config/apiConfig";
 import { API_ENDPOINTS } from "../config/ApiEndpoints";
 import { appendFile } from "../utils/AppendFile";
 
+const base64Alphabet =
+  "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
+const arrayBufferToBase64 = (arrayBuffer) => {
+  const bytes = new Uint8Array(arrayBuffer);
+  let result = "";
+
+  for (let index = 0; index < bytes.length; index += 3) {
+    const byte1 = bytes[index];
+    const byte2 = bytes[index + 1];
+    const byte3 = bytes[index + 2];
+
+    const triplet = ((byte1 || 0) << 16) | ((byte2 || 0) << 8) | (byte3 || 0);
+
+    result += base64Alphabet[(triplet >> 18) & 63];
+    result += base64Alphabet[(triplet >> 12) & 63];
+    result +=
+      index + 1 < bytes.length ? base64Alphabet[(triplet >> 6) & 63] : "=";
+    result += index + 2 < bytes.length ? base64Alphabet[triplet & 63] : "=";
+  }
+
+  return result;
+};
+
 export const RegisterService = {
   // GET: fetch all registration
   getAll: async (
@@ -110,6 +134,31 @@ export const RegisterService = {
       const message =
         error.response?.data?.message || "Failed to reject registration";
       return Promise.reject(message);
+    }
+  },
+
+  // GET: registration resume/document as a data URI
+  getResumeFile: async (id) => {
+    try {
+      const response = await apiClient.get(
+        API_ENDPOINTS.REGISTRATION.DOCUMENT(id),
+        {
+          responseType: "arraybuffer",
+        },
+      );
+
+      const contentType =
+        response.headers?.["content-type"] || "application/pdf";
+      const base64 = arrayBufferToBase64(response.data);
+
+      return {
+        uri: `data:${contentType};base64,${base64}`,
+        contentType,
+      };
+    } catch (error) {
+      throw new Error(
+        error.response?.data?.message || "Failed to retrieve resume file",
+      );
     }
   },
 };
