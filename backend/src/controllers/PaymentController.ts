@@ -114,7 +114,7 @@ export const submitPayment = async (
 
     await enrollment.update(
       {
-        status: EnrollmentStatus.PENDING_PAYMENT,
+        status: EnrollmentStatus.APPLIED,
       },
       { transaction },
     );
