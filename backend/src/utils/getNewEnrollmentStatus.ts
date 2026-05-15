@@ -111,7 +111,7 @@ async function getNewEnrollmentStatus(
                 element_id: elements.map((e) => e.id),
               },
             });
-            if (attempts >= page.max_tries) {
+            if (attempts > page.max_tries) {
               return {
                 status: EnrollmentStatus.FAILED,
                 message: `Maximum number of attempts for page ${page.title} has been reached.`,

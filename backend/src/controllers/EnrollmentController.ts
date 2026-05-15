@@ -119,7 +119,11 @@ export const enrollCourse = async (
 
     await transaction.commit();
     return res.status(201).json(toEnrollmentResponse(enrollment));
-  } catch (err) {
+  } catch (err: any) {
+    console.error("ENROLLMENT ERROR:");
+    console.error(err); 
+    console.error("MESSAGE:", err?.message);
+    console.error("STACK:", err?.stack);
     await transaction.rollback();
     if (err instanceof HttpError) {
       res.status(err.status).json({ message: err.message });
