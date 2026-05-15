@@ -88,6 +88,15 @@ const UserModule = ({ navigation }) => {
     fullHistoryMap,
   );
   const isFailed = localStatus === "failed" || isDeadEnd;
+
+  // Normalize image URLs to use forward slashes instead of backslashes
+  const normalizedBadgeUrl = course?.badge_img_url
+    ? course.badge_img_url.replace(/\\/g, "/")
+    : null;
+  const normalizedCoverUrl = course?.cover_img_url
+    ? course.cover_img_url.replace(/\\/g, "/")
+    : null;
+
   const [selectedPage, setSelectedPage] = useState({ type: "overview" });
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [activeTab, setActiveTab] = useState("Overview");
@@ -325,8 +334,8 @@ const UserModule = ({ navigation }) => {
             <View style={styles.badgePreviewContainer}>
               <Image
                 source={
-                  course.badge_img_url
-                    ? { uri: course.badge_img_url }
+                  normalizedBadgeUrl
+                    ? { uri: normalizedBadgeUrl }
                     : require("../../assets/course_badge.png")
                 }
                 style={styles.largeAchievementBadge}
@@ -465,7 +474,7 @@ const UserModule = ({ navigation }) => {
                     scrollToTop={scrollToTop}
                     isFailed={isFailed}
                     onSelectPage={setSelectedPage}
-                    pageMetadata={{...selectedPage, course: course}}
+                    pageMetadata={{ ...selectedPage, course: course }}
                     progressMap={progressMap}
                   />
                 )}
@@ -568,9 +577,9 @@ const UserModule = ({ navigation }) => {
 
                 <Image
                   source={
-                    course.cover_img_url
-                      ? { uri: course.cover_img_url }
-                      : ''
+                    normalizedCoverUrl
+                      ? { uri: normalizedCoverUrl }
+                      : require("../../assets/first_aid.png")
                   }
                   style={styles.course_cover}
                 />

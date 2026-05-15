@@ -9,6 +9,20 @@ import { isValidCourseTitle, isValidDuration, isValidExpiryWeeks, isValidBadgeEx
 
 const CourseFormContent = ({ onSubmit, onCancel, isLoading, initialData, allCourseList = [], allTagList = [] }) => {
     console.log(initialData);
+    const getImageUri = (imageValue) => {
+        if (!imageValue) return null;
+        if (typeof imageValue === 'string') return imageValue;
+        return imageValue.uri || null;
+    };
+
+    const normalizeImageUrl = (url) => {
+        if (!url) return null;
+        if (typeof url === 'string') {
+            return url.replace(/\\/g, '/');
+        }
+        return url;
+    };
+
     const getInitialTagsByType = (type) => {
         if (!initialData?.tags) return [];
         return initialData.tags
@@ -34,8 +48,8 @@ const CourseFormContent = ({ onSubmit, onCancel, isLoading, initialData, allCour
         cost: initialData?.cost || '',
         expiryWeeks: initialData?.must_complete_in_weeks?.toString() || '',
         badgeExpiry: initialData?.badge_expire_in_months?.toString() || '',
-        image: initialData?.cover_img_url || null,
-        badgeImage: initialData?.badge_img_url || null,
+        image: normalizeImageUrl(initialData?.cover_img_url) || null,
+        badgeImage: normalizeImageUrl(initialData?.badge_img_url) || null,
         status: initialData?.status || 'unreleased',
         locationTags: getInitialTagsByType('location'),
         categoryTags: getInitialTagsByType('category'),
@@ -144,12 +158,14 @@ const CourseFormContent = ({ onSubmit, onCancel, isLoading, initialData, allCour
             quality: 1,
         });
 
-        if (!result.canceled) {
+        if (!result.canceled && result.assets?.[0]) {
+            const pickedAsset = result.assets[0];
+
             if (type === 'badge') {
-                setForm(prev => ({ ...prev, badgeImage: result.assets[0].uri }));
+                setForm(prev => ({ ...prev, badgeImage: pickedAsset }));
                 clearError('badgeImage');
             } else {
-                setForm(prev => ({ ...prev, image: result.assets[0].uri }));
+                setForm(prev => ({ ...prev, image: pickedAsset }));
             }
         }
     };
@@ -388,8 +404,8 @@ const CourseFormContent = ({ onSubmit, onCancel, isLoading, initialData, allCour
                     <View style={styles.upload}>
                         <Text style={styles.label}>Course Cover</Text>
                         <Pressable style={styles.imagePicker} onPress={() => pickImage('cover')}>
-                            {form.image ? (
-                                <Image source={{ uri: form.image }} style={styles.previewImage} />
+                            {getImageUri(form.image) ? (
+                                <Image source={{ uri: getImageUri(form.image) }} style={styles.previewImage} />
                             ) : (
                                 <View style={localStyles.uploadPlaceholder}>
                                     <Image source={require('../../assets/upload_placeholder.png')} style={localStyles.placeholder} />
@@ -400,8 +416,8 @@ const CourseFormContent = ({ onSubmit, onCancel, isLoading, initialData, allCour
 
                         <Text style={[styles.label, { marginTop: 25 }]}>Completion Badge (1:1)</Text>
                         <Pressable style={localStyles.badgePicker} onPress={() => pickImage('badge')}>
-                            {form.badgeImage ? (
-                                <Image source={{ uri: form.badgeImage }} style={localStyles.badgePreview} />
+                            {getImageUri(form.badgeImage) ? (
+                                <Image source={{ uri: getImageUri(form.badgeImage) }} style={localStyles.badgePreview} />
                             ) : (
                                 <View style={localStyles.uploadPlaceholder}>
                                     <Award size={32} color="#ccc" />
