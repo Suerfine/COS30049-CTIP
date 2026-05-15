@@ -13,7 +13,8 @@ import {
   ClockAlert,
   SquarePen,
   Trash2,
-  CheckCircle2
+  CheckCircle2,
+  Award
 } from "lucide-react-native";
 import ProgressBar from "./ProgressBar.js";
 import { useTranslation } from "react-i18next";
@@ -147,6 +148,13 @@ const CourseCard = ({
           style={styles.courseImg}
           accessibilityLabel="Cover Photo of Course"
         />
+        {/* ✅ New "Badge Received" UI */}
+        {enrollmentStatus === EnrollmentStatus.COMPLETED && (
+          <View style={styles.completedBadgeFloating}>
+            <Award size={12} color="#fff" />
+            <Text style={styles.completedBadgeText}>Badge Received</Text>
+          </View>
+        )}
       </View>
 
       <View style={styles.details}>
@@ -240,26 +248,7 @@ const styles = StyleSheet.create({
     resizeMode: "cover", 
     alignSelf: "center",
   },
-  // drop courses toolbar
-  dropToolbarContainer: {
-    position: "absolute",
-    top: 8,
-    right: 8,
-    zIndex: 10,
-  },
-  dropBtn: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: "rgba(0,0,0,0.60)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  dropBtnActive: {
-    backgroundColor: "red",
-    opacity: 2.0,
-  },
-  // course detail
+  
  CourseTitle: {
     borderBottomColor: "#8f8f8f",
     borderBottomWidth: 1,
@@ -444,8 +433,31 @@ const styles = StyleSheet.create({
       color: '#065f46', 
       letterSpacing: 0.5,
   },    
+  completedBadgeFloating: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    backgroundColor: "#0a6340",
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 20,
+    gap: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    elevation: 5,
+    borderWidth: 1,
+    borderColor: "#FFD700", 
+  },
+  completedBadgeText: {
+    color: "white",
+    fontSize: 10,
+    fontWeight: "800",
+    letterSpacing: 0.5,
+  },
 });
 
 export default CourseCard;
-
-// When quiz does not pass but complete the course progress will 100%
