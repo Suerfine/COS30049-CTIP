@@ -85,7 +85,7 @@ const CourseCard = ({
       return (
         <View style={[styles.statusBadge, styles.badgeInReview]}>
           <Text style={styles.statusBadgeText}>
-            {t("status.in_review", "In Review")}
+            {t("status.in_review", "Under Admin Review")}
           </Text>
         </View>
       );

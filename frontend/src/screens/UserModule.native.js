@@ -70,9 +70,10 @@ const UserModule = ({ navigation }) => {
   const isLocked =
     enrollmentStatus === null ||
     enrollmentStatus === undefined ||
-    enrollmentStatus === "in_review" ||
-    enrollmentStatus === "dropped" ||
-    enrollmentStatus === "expired";
+    enrollmentStatus === "expired" ||
+    enrollmentStatus == "pending_payment" ||
+    enrollmentStatus == "applied" ||
+    enrollmentStatus == "failed";
 
   const { currentUser } = useAuth();
   const {
