@@ -7,6 +7,7 @@ export enum NotificationCategory {
   ENROLLMENT_SUCCESS = "enrollment_success",
   BADGE_AWARDED = "badge_awarded",
   COURSE_EXPIRY = "course_expiry",
+  PAYMENT_REJECTED = "payment_rejected",
 }
 
 export const NOTIFICATION_CATEGORY_VALUES = Object.values(NotificationCategory);

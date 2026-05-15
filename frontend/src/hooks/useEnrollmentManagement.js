@@ -135,6 +135,36 @@ export const useEnrollmentManagement = () => {
         });
     };
 
+    // Approve badge
+    const handleApproveBadge = async (enrollmentId) => {
+        try {
+            setLoading(true);
+            const res = await enrollmentService.approve(enrollmentId);
+            await fetchEnrollments();
+            return { success: true, data: res };
+        } catch (err) {
+            console.error("Badge Approval Hook Error:", err);
+            return { success: false, error: err.message };
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Reject badge
+    const handleRejectBadge = async (enrollmentId) => {
+        try {
+            setLoading(true);
+            const res = await enrollmentService.updateStatus(enrollmentId, "failed");
+            await fetchEnrollments();
+            return { success: true, data: res };
+        } catch (err) {
+            console.error("Badge Rejection Hook Error:", err);
+            return { success: false, error: err.message };
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
         fetchEnrollments();
     }, [fetchEnrollments]);
@@ -158,6 +188,7 @@ export const useEnrollmentManagement = () => {
         refreshEnrollments: fetchEnrollments,
         handleUpdateStatus,
         deleteRecord,
-        currentCourseId, setCurrentCourseId
+        currentCourseId, setCurrentCourseId,
+        handleApproveBadge, handleRejectBadge
     };
 };

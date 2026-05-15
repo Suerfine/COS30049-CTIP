@@ -23,7 +23,7 @@ export enum EnrollmentStatus {
   // The park guide has dropped the course midway.
   DROPPED = "dropped",
 
-  // The admin has rejected the park guide's application to enroll in the course or reject the payment
+  // The admin has rejected the park guide's application to enroll in the course or reject the payment or reject the badge issues
   REJECTED = "rejected",
 
   // The park guide has completed the course but badge expired
