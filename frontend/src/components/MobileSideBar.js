@@ -46,7 +46,7 @@ const MobileSideBar=({isOpen, onClose})=>{
     const menuItems=[
         {id: 'profile', label:'Profile', icon: UserPen, route:'Profile'},
         {id: 'calendar', label:'Calendar', icon: Calendar, route:'To Do'},
-        {id: 'badges', label:'Badges', icon: Award},
+        {id: 'badges', label:'Badges', icon: Award, route:'Badge'},
         {id: 'settings', label:'Settings', icon: Settings, route:'Settings'},
     ];
 
