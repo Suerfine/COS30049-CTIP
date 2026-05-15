@@ -177,9 +177,11 @@ const UserCourse=({navigation})=>{
                                     `Are you sure you want to enroll in ${course.title}?`,
                                     [
                                         { text: "Cancel", style: "cancel" },
-                                        { 
-                                            text: "Enroll", 
-                                            onPress: () => handleEnrollment(course.id) 
+                                        {
+                                            text: "Enroll",
+                                            onPress: () => {
+                                                navigation.navigate('PaymentScreen', { course });
+                                            }
                                         }
                                     ]
                                 );

@@ -1,6 +1,7 @@
 import { API_ENDPOINTS } from "../config/ApiEndpoints";
 import apiClient from "../config/apiConfig";
 import { appendFile } from "../utils/AppendFile";
+import { Platform } from "react-native";
 
 export const enrollmentService = {
   /**
@@ -120,23 +121,33 @@ export const enrollmentService = {
    * POST: Create new Enrollment
    */
   enroll: async (courseId, receipt) => {
-    const formData = new FormData();
-    appendFile(formData, "receipt", receipt);
     try {
-      const res = await apiClient.post(
-        API_ENDPOINTS.ENROLLMENT.ENROLL(courseId),
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        },
-      );
+        const formData = new FormData();
+
+        if (Platform.OS === 'web') {
+            formData.append("receipt", receipt.file ?? receipt);
+        } else {
+            formData.append("receipt", {
+                uri: receipt.uri,
+                name: receipt.fileName ?? "receipt.jpg",
+                type: receipt.mimeType ?? "image/jpeg",
+            });
+        }
+
+        const res = await apiClient.post(
+            API_ENDPOINTS.ENROLLMENT.ENROLL(courseId),
+            formData,
+            {
+                headers: Platform.OS === 'web' ? {} : { "Content-Type": "multipart/form-data" }, 
+            }
+        );
+
+        return res.data;
+
     } catch (error) {
-      console.error("Enrollment Error:", error);
-      throw error;
+        console.error("Enrollment Error:", error);
+        throw error;
     }
-    return res.data;
   },
 
   /**
