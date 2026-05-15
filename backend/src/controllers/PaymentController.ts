@@ -207,6 +207,19 @@ export const verifyPayment = async (
         NotificationCategory.ENROLLMENT_SUCCESS,
         `/courses/${enrollment.course_id}`,
       );
+    } else if (statusFromUrl === PaymentStatus.FAILED) {
+      await sendNotification(
+        "single",
+        "Payment Rejected",
+        adminRemark
+          ? `Your payment was rejected: ${adminRemark}`
+          : "Your payment was rejected. Please re-submit a valid receipt.",
+        transaction,
+        enrollment.user_id,
+        false,
+        NotificationCategory.PAYMENT_REJECTED,
+        `/payments`,
+      );
     }
 
     await transaction.commit();
