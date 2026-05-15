@@ -84,6 +84,32 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
         }));
     };
 
+    const handleRegisterWorkshop = async (elementId, sessions, selectedIdx, autoAdd, location, link, userId) => {
+        if (selectedIdx === undefined) {
+            alert("Please select a session before registering.");
+            return;
+        }
+        const session = sessions[selectedIdx];
+
+        const submissionContent = {
+            user_id: userId,
+            session_date: session.date,
+            session_time: `${session.startTime} — ${session.endTime}`,
+            location: location || "TBA",
+            auto_add_todo: autoAdd
+        };
+
+        const result = await onProgressUpdate(elementId, 1, submissionContent);
+
+        if (result.success) {
+            window.alert("Registered Successfully!");
+            
+            setWorkshopRegistrations(prev => ({ ...prev, [elementId]: true }));
+        } else {
+            alert(result.error || "Failed to register for workshop. Please try again.");
+        }
+    };
+
     const handleFinalSubmit = async () => {
         const quizElements = elements.filter(el => el.type === 'quiz_objective');
         const maxAllowed = pageMetadata.page?.max_tries || 1;
@@ -679,14 +705,18 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
                             <Text style={styles.resScoreValue}>
                                 {finalSummary?.score} <Text style={styles.resScoreTotal}>/ {finalSummary?.total}</Text>
                             </Text>
-                            {/* FIX: Redo button allows re-attempts if left regardless of pass/fail status */}
-                            {currentAttemptCount < (pageMetadata.page?.max_tries || 1) ? (
+                            {currentAttemptCount < (pageMetadata.page?.max_tries || 1) && finalSummary?.status !== 'PASS' ? (
                                 <TouchableOpacity style={styles.redoBtn} onPress={handleTryAgain}>
                                     <RotateCcw size={14} color="#0a6340" />
                                     <Text style={styles.redoText}>
                                         {finalSummary?.status === 'PASS' ? "Improve Score" : "Try Again"}
                                     </Text>
                                 </TouchableOpacity>
+                            ) : finalSummary?.status === 'PASS' ? (
+                                <View style={styles.successBadge}>
+                                    <CheckCircle2 size={16} color="#0a6340" />
+                                    <Text style={styles.successBadgeText}>Passed</Text>
+                                </View>
                             ) : (
                                 <View style={styles.failureNotice}>
                                     <AlertCircle size={14} color="#dc2626" />
@@ -1421,6 +1451,11 @@ const styles = StyleSheet.create({
         paddingVertical: 3,
         borderRadius: 4,
     },
+    successBadge:{
+        flexDirection:'row',
+        gap:5,
+        
+    }
 });
 
 export default PageRenderer;
