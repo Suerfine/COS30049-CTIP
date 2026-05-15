@@ -679,10 +679,10 @@ export const getAllUserCourses = async (
   next: NextFunction,
 ) => {
   logger.info("Fetching all user courses", { userId: req.user?.id });
+
   try {
     let responseData: UserCourseEnrollmentResponse[] = [];
 
-    // Retrieve all released courses with tags and prerequisites
     const courses = await Course.findAll({
       where: {
         status: CourseStatus.RELEASED,
@@ -694,17 +694,38 @@ export const getAllUserCourses = async (
           include: [{ model: Prerequisite, as: "prerequisites" }],
         },
         { model: Tag, as: "tags" },
+        {
+          model: Module,
+          as: "modules",
+          attributes: [],
+        },
       ],
+      attributes: {
+        include: [
+          [
+            sequelize.literal(`(
+              SELECT COUNT(DISTINCT m.id)
+              FROM modules m
+              WHERE m.course_id = Course.id
+            )`),
+            "module_count",
+          ],
+        ],
+      },
+      group: ["Course.id"],
+      subQuery: false,
     });
 
-    // For each course, determine if the user can enroll and include enrollment status
+    const moduleCountMap = new Map(
+      courses.map((c) => [
+        c.id,
+        Number((c as any).dataValues?.module_count ?? 0),
+      ]),
+    );
+
     for (const course of courses) {
-      let canEnroll = false;
+      let canEnroll = await canUserEnrollCourse(req.user!, course);
 
-      // Check if user can enroll in this course
-      canEnroll = await canUserEnrollCourse(req.user!, course);
-
-      // Latest enrollment should be most relevant for determining the user's current status in relation to the course
       const enrollment = await Enrollment.findOne({
         where: {
           user_id: req.user!.id,
@@ -713,8 +734,8 @@ export const getAllUserCourses = async (
         order: [["created_at", "DESC"]],
       });
 
-      // Format enrollment to response if exist else return null
       let enrollmentResponse: EnrollmentResponse | null = null;
+
       if (enrollment) {
         enrollmentResponse = {
           id: enrollment.id,
@@ -734,14 +755,15 @@ export const getAllUserCourses = async (
 
       responseData.push({
         ...toCourseResponse(course, req),
+        module_count: moduleCountMap.get(course.id) || 0, 
         status: enrollment ? enrollment.status : null,
         is_enrollable: canEnroll,
         enrollment: enrollmentResponse,
       });
     }
 
-    // Format pagination data
     const baseUrl = `${req.protocol}://${req.get("host")}${req.originalUrl}`;
+
     const formattedResponse = formatPaginateResponse(
       responseData,
       req.query,
@@ -766,6 +788,7 @@ export const getAllUserCourses = async (
       userId: req.user?.id,
       error: err instanceof Error ? err.message : String(err),
     });
+
     if (err instanceof HttpError) {
       res.status(err.status).json({ message: err.message });
     } else {
