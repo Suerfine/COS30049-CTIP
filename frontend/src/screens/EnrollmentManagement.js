@@ -124,6 +124,7 @@ const EnrollmentManagement = () => {
     "expired",
     "Rejected",
     "pending_payment",
+    "applied"
   ];
 
   const ProgressStatusOptions = [

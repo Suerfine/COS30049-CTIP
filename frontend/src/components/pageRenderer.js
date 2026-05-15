@@ -1,6 +1,6 @@
 import { useState,useEffect, useRef, useMemo } from 'react';
 import { View, Text, Image, StyleSheet, TouchableOpacity, Platform, ActivityIndicator,Linking, useWindowDimensions } from 'react-native';
-import { FileText, Play, Download, HelpCircle, Edit3, editCircle, Trash2,ChevronUp, ChevronDown, CheckCircle2, RotateCcw, AlertCircle, Calendar, Clock, MapPin, ExternalLink} from 'lucide-react-native';
+import { FileText, Play, Download, HelpCircle, Edit3, editCircle, Trash2,ChevronUp, ChevronDown, CheckCircle2, RotateCcw, AlertCircle, Calendar, Clock, MapPin, ExternalLink, ChevronLeft, ChevronRight} from 'lucide-react-native';
 import Markdown from 'react-native-markdown-display';
 import * as Progress from 'react-native-progress';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -742,6 +742,28 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
         );
     };
 
+    const handleNavigation = (direction) => {
+        const flatPages = [];
+        pageMetadata.course?.modules?.forEach(mod => {
+            flatPages.push({ type: 'overview', module: mod });
+            mod.pages?.forEach(p => flatPages.push({ type: 'page', page: p, module: mod }));
+            flatPages.push({ type: 'workshops', module: mod });
+        });
+
+        const currentIndex = flatPages.findIndex(p => 
+            (p.type === pageMetadata.type) && 
+            (p.page?.id === pageMetadata.page?.id)
+        );
+
+        if (direction === 'next' && currentIndex < flatPages.length - 1) {
+            onSelectPage?.(flatPages[currentIndex + 1]);
+            scrollToTop?.();
+        } else if (direction === 'prev' && currentIndex > 0) {
+            onSelectPage?.(flatPages[currentIndex - 1]);
+            scrollToTop?.();
+        }
+    };
+
     return (
         <View style={styles.container}>
             {elements.map((el, index) => renderElement(el, index))}
@@ -816,6 +838,23 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
                     </TouchableOpacity>
                 </View>
             )}
+            <View style={styles.pageNavigationRow}>
+                <TouchableOpacity 
+                    style={styles.navBtn} 
+                    onPress={() => handleNavigation('prev')}
+                >
+                    <ChevronLeft size={20} color="#666" />
+                    <Text style={styles.navBtnText}>Previous</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity 
+                    style={[styles.navBtn, styles.navBtnPrimary]} 
+                    onPress={() => handleNavigation('next')}
+                >
+                    <Text style={[styles.navBtnText, {color: 'white'}]}>Next Lesson</Text>
+                    <ChevronRight size={20} color="white" />
+                </TouchableOpacity>
+            </View>
         </View>
     );
 };

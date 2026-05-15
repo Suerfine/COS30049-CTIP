@@ -114,7 +114,7 @@ export const submitPayment = async (
 
     await enrollment.update(
       {
-        status: EnrollmentStatus.APPLIED,
+        status: EnrollmentStatus.PENDING_PAYMENT,
       },
       { transaction },
     );
@@ -182,7 +182,7 @@ export const verifyPayment = async (
 
     const newEnrollmentStatus =
       statusFromUrl === PaymentStatus.PAID
-        ? EnrollmentStatus.IN_PROGRESS
+        ? EnrollmentStatus.APPLIED
         : EnrollmentStatus.REJECTED;
 
     await enrollment.update(
