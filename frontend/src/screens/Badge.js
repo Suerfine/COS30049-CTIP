@@ -78,8 +78,7 @@ const Badge = ({ navigation }) => {
         const progressValue = course.progress || 0;
 
         return (
-            <Pressable 
-                onPress={() => isLocked && navigation.navigate('ParkGuideStack', { screen: 'CourseDetails', params: { id: course.id } })}
+            <View
                 style={styles.badgeCard}
             >
                 <View style={styles.imageWrapper}>
@@ -146,7 +145,7 @@ const Badge = ({ navigation }) => {
                         <Text style={styles.lockedHintText}>Enroll to Earn</Text>
                     </View>
                 )}
-            </Pressable>
+            </View>
         );
     };
 
