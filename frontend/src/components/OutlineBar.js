@@ -4,7 +4,7 @@ import { Plus, ChevronRight, ChevronDown, Search, Trash2, Lock, CheckCircle2, XC
 import { useOutline } from '../hooks/useOutline';
 import * as Progress from 'react-native-progress';
 
-const OutlineBar = ({ course, progressMap = {}, onSelectPage, editable, isCollapsed, isLocked, isFailed, isPublished }) => {
+const OutlineBar = ({ course, progressMap = {}, onSelectPage, editable, isCollapsed, isLocked, isFailed, isPublished, activePage }) => {
     const {
         allModules,
         expandedModule,
@@ -24,6 +24,21 @@ const OutlineBar = ({ course, progressMap = {}, onSelectPage, editable, isCollap
     const [localSearch, setLocalSearch] = useState("");
 
     if (!course) return null;
+
+    useEffect(() => {
+        if (activePage) {
+            setSelectedItem(activePage);
+        }
+    }, [activePage]);
+
+    useEffect(() => {
+        if (activePage?.type === 'page' && activePage.page?.module_id) {
+            const mid = activePage.page.module_id;
+            if (expandedModule !== mid) {
+                toggleModule(mid); 
+            }
+        }
+    }, [activePage]);
 
     const handleSelect = (item) => {
         if (isLocked && item.type !== 'overview') return;

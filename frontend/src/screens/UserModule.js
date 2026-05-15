@@ -353,6 +353,7 @@ const UserModule = ({ navigation }) => {
         isLocked={isLocked}
         userMarks={userMarks}
         isFailed={isFailed}
+        activePage={selectedPage}
       />
       <ScrollView ref={scrollViewRef}>
         <View style={styles.container}>
@@ -463,6 +464,9 @@ const UserModule = ({ navigation }) => {
                     onRefreshHistory={refreshHistory}
                     scrollToTop={scrollToTop}
                     isFailed={isFailed}
+                    onSelectPage={setSelectedPage}
+                    pageMetadata={{...selectedPage, course: course}}
+                    progressMap={progressMap}
                   />
                 )}
                 <Modal
@@ -529,6 +533,7 @@ const UserModule = ({ navigation }) => {
                       return result;
                     }}
                     userMarks={userMarks}
+                    onSelectPage={selectedPage}
                   />
                 )}
               </View>
