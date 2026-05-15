@@ -10,6 +10,7 @@ import WebView from 'react-native-webview';
 import { markdownStyles } from './markdownStyle';
 import { UserRoles } from '../enum/UserRoles';
 import { useAuth } from '../context/AuthContext';
+import { enrollmentService } from '../services/EnrollmentService';
 
 const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement, onMoveElement, onProgressUpdate, onRegisterWorkshop, userMarks, pageMetadata, currentAttempts, isPageFinished, isFinalQuiz, enrollmentId, fullHistoryMap, onFetchHistory, onRefreshHistory, scrollToTop, isPublished, onSelectPage, progressMap }) => {
     const isAdmin = role === UserRoles.ADMIN;
@@ -148,6 +149,7 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
                 });
             });
             await Promise.all(submissionPromises);
+
             setSubmissionCount(prev => prev + 1);
             if (onRefreshHistory) await onRefreshHistory();
             
@@ -167,6 +169,14 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
             });
             
             setShowFinalResults(true);
+            if (!isPass && newAttemptTotal >= maxAllowed) {
+                console.log("Forcing course failure status due to exhausted attempts...");
+                try {
+                    await enrollmentService.updateStatus(enrollmentId, 'failed');
+                } catch (failErr) {
+                    console.error("Failed to manually update status to failed:", failErr);
+                }
+            }
 
         } catch (err) {
             console.error("Submission failed", err);
@@ -184,13 +194,13 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
         quizIds.forEach(id => {
             const history = fullHistoryMap?.[id] || [];
             history.forEach(attempt => {
-                const timeKey = Math.floor(new Date(attempt.created_at).getTime() / (1000 * 60 * 30));
+                const timeKey = Math.floor(new Date(attempt.created_at).getTime() / 20000);
                 sessions.add(timeKey);
             });
         });
 
-        return sessions.size;
-    }, [fullHistoryMap, elements, submissionCount]);
+        return sessions.size; 
+    }, [fullHistoryMap, elements]);
 
     const handleTryAgain = () => {
         setLocalAnswers({});
