@@ -12,7 +12,7 @@
         "rejected":"Rejected",
         "completed":"Completed",
         "in progress":"In Progress",
-        "in review":"In Review",
+        "in review":"Under Admin Review",
         "applied": "Applied",
         "pending payment": "Pending Payment",
         "basic":"Basic",
