@@ -18,6 +18,7 @@ import {
 import { useAuth } from "../context/AuthContext";
 import { useUserDashboard } from "../hooks/useUserDashboard";
 import ParkGuideSiteSearch from "./ParkGuideSiteSearch";
+import { useUserProfile } from "../hooks/useUserProfile";
 
 // Navigation links animation
 const NavItem = ({ name, route, onPress, isActive }) => {
@@ -61,6 +62,7 @@ const NavItem = ({ name, route, onPress, isActive }) => {
 const NavBar = () => {
   const { user } = useUserDashboard();
   const navigation = useNavigation();
+  const { profileImage } = useUserProfile();
   const { logout } = useAuth();
   const [dropdownVisible, setDropdownVisible] = useState(false);
   const dropdownRef = useRef(null);
@@ -297,8 +299,8 @@ const NavBar = () => {
                 )}
 
                 <View style={styles.prfpWrapper}>
-                  {user?.profileImage ? (
-                  <Image source={{ uri: user.profileImage }} style={styles.pfp}/>
+                  {profileImage ? (
+                  <Image source={{ uri: profileImage }} style={styles.pfp}/>
                   ) : (
                       <View style={styles.pfpPlaceholder}>
                           <Text style={styles.pfpInitials}>
