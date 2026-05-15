@@ -104,20 +104,20 @@ async function getNewEnrollmentStatus(
           }
 
           // Also check if max attempts have been reached for the page (if applicable).
-          if (page.max_tries) {
-            const attempts = await Submission.count({
-              where: {
-                enrollment_id: enrollment.id,
-                element_id: elements.map((e) => e.id),
-              },
-            });
-            if (attempts > page.max_tries) {
-              return {
-                status: EnrollmentStatus.FAILED,
-                message: `Maximum number of attempts for page ${page.title} has been reached.`,
-              };
-            }
-          }
+          // if (page.max_tries) {
+          //   const attempts = await Submission.count({
+          //     where: {
+          //       enrollment_id: enrollment.id,
+          //       element_id: elements.map((e) => e.id),
+          //     },
+          //   });
+          //   if (attempts > page.max_tries) {
+          //     return {
+          //       status: EnrollmentStatus.FAILED,
+          //       message: `Maximum number of attempts for page ${page.title} has been reached.`,
+          //     };
+          //   }
+          // }
         }
       }
 
