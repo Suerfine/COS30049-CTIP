@@ -23,6 +23,7 @@ export const AuthProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
   const [accessToken, setAccessToken] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [profileImage, setProfileImage] = useState(null);
 
   // Initialize auth state on mount
   useEffect(() => {
@@ -31,7 +32,10 @@ export const AuthProvider = ({ children }) => {
         const storedUser=await AsyncStorage.getItem("currentUser");
         const storedToken=await AsyncStorage.getItem("accessToken");
         if(storedUser && storedToken){
-          setCurrentUser(JSON.parse(storedUser));
+          const parsedUser = JSON.parse(storedUser);
+
+          setCurrentUser(parsedUser);
+          setProfileImage(parsedUser?.pfp || null);
           setAccessToken(storedToken);
 
           if(typeof document !== "undefined"){
@@ -61,6 +65,7 @@ export const AuthProvider = ({ children }) => {
       await AsyncStorage.setItem("accessToken", token);
       setAccessToken(token);
       setCurrentUser(user);
+      setProfileImage(user?.pfp || null);
       return user;
     }catch(err){
       console.error("Auth Login Error: ", err);
@@ -72,6 +77,7 @@ export const AuthProvider = ({ children }) => {
     await AsyncStorage.multiRemove(["currentUser", "accessToken"]);
     setCurrentUser(null);
     setAccessToken(null);
+    setProfileImage(null);
   }, []);
 
   useEffect(() => {
@@ -86,10 +92,12 @@ export const AuthProvider = ({ children }) => {
       currentUser,
       accessToken,
       isLoading,
+      profileImage,
+      setProfileImage,
       login,
       logout,
     }),
-    [currentUser, accessToken, isLoading],
+    [currentUser, accessToken, isLoading, profileImage],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
