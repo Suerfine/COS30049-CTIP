@@ -36,6 +36,7 @@ import {
 import { buildRegistrationHistory } from "../factories/RegistrationFactory";
 import { buildComplianceEvents } from "../factories/AnomalyEventFactory";
 import AnomalyEvent from "../../src/models/AnomalyEvent";
+import ArModel from "../../src/models/ArModel";
 import "../../src/models";
 import { PaymentStatus } from "../../src/enum/PaymentStatus";
 
@@ -311,6 +312,49 @@ export async function runSeeders(
       }
     }
   }
+
+  // Seed default AR models from default_ar / default_pattern directories
+  console.log("Seeding default AR models...");
+  const defaultArModels = [
+    {
+      title: "Map",
+      description: "A 3D model of a map.",
+      model_path: "public/ar/default_ar/map.glb",
+      model_format: "glb",
+      model_size_bytes: 256288,
+      mime_type: "model/gltf-binary",
+      original_filename: "map.glb",
+      pattern_path: "public/ar/default_pattern/pattern-SFC_Logo.patt",
+    },
+    {
+      title: "Plant",
+      description: "A 3D model of plant.",
+      model_path: "public/ar/default_ar/plant.glb",
+      model_format: "glb",
+      model_size_bytes: 105468804,
+      mime_type: "model/gltf-binary",
+      original_filename: "plant.glb",
+      pattern_path: "public/ar/default_pattern/pattern-SFC_Logo.patt",
+    },
+    {
+      title: "Orangutan",
+      description: "A 3D model of an orangutan.",
+      model_path: "public/ar/default_ar/orangutan_test.glb",
+      model_format: "glb",
+      model_size_bytes: 10323468,
+      mime_type: "model/gltf-binary",
+      original_filename: "orangutan_test.glb",
+      pattern_path: "public/ar/default_pattern/pattern-SFC_Logo.patt",
+    },
+  ];
+
+  for (const arModelData of defaultArModels) {
+    await ArModel.create({
+      ...arModelData,
+      created_by_user_id: createdAdminUser.id,
+    });
+  }
+  console.log(`✅ Seeded ${defaultArModels.length} default AR models`);
 
   // Seed sensors for IoT monitoring
   console.log("Seeding sensors...");

@@ -88,6 +88,17 @@ export const AnomalyService = {
     }
   },
 
+  // PATCH: mark an anomaly event as resolved
+  resolve: async (eventId) => {
+    try {
+      const response = await apiClient.patch(`/Anomaly-events/${eventId}/resolve`);
+      return response.data;
+    } catch (error) {
+      console.error("Resolve Anomaly Error:", error);
+      throw error;
+    }
+  },
+
   // GET: get anomaly statistics
   getStatistics: async () => {
     try {

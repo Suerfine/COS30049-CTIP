@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   Image,
   ActivityIndicator,
   Alert,
+  Platform,
 } from "react-native";
 import { PlusCircle, ExternalLink, Download, QrCode, Trash2 } from "lucide-react-native";
 import QRCode from "qrcode";
@@ -16,6 +17,33 @@ import { useArModels } from "../hooks/useArModels";
 import ModalLayout from "../components/ModalLayout";
 import ArModelFormContent from "../components/ArModelFormContent";
 import { formatDate } from "../utils/formatDate";
+import apiClient from "../config/apiConfig";
+
+const backendBase = (apiClient.defaults.baseURL || "").replace(/\/api$/, "");
+const SFC_LOGO_URL = `${backendBase}/public/ar/sfclogo/SFC_Logo.png`;
+
+const getViewerUrl = (url) => {
+  if (!url) {
+    return "";
+  }
+
+  try {
+    const parsed = new URL(url);
+    parsed.hostname = "localhost";
+    return parsed.toString();
+  } catch {
+    return url;
+  }
+};
+
+const loadImage = (src) =>
+  new Promise((resolve, reject) => {
+    const img = new window.Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = src;
+  });
 
 const buildMarkerPng = async (viewerUrl) => {
   const qrDataUrl = await QRCode.toDataURL(viewerUrl, {
@@ -24,15 +52,13 @@ const buildMarkerPng = async (viewerUrl) => {
     margin: 1,
   });
 
-  const img = await new Promise((resolve, reject) => {
-    const image = new window.Image();
-    image.onload = () => resolve(image);
-    image.onerror = reject;
-    image.src = qrDataUrl;
-  });
+  const [qrImg, logoImg] = await Promise.all([
+    loadImage(qrDataUrl),
+    loadImage(SFC_LOGO_URL).catch(() => null),
+  ]);
 
   const borderSize = 140;
-  const size = img.width + borderSize * 2;
+  const size = qrImg.width + borderSize * 2;
   const canvas = document.createElement("canvas");
   canvas.width = size;
   canvas.height = size;
@@ -45,9 +71,26 @@ const buildMarkerPng = async (viewerUrl) => {
   ctx.fillStyle = "#000";
   ctx.fillRect(0, 0, size, size);
   ctx.fillStyle = "#fff";
-  ctx.fillRect(borderSize, borderSize, img.width, img.height);
+  ctx.fillRect(borderSize, borderSize, qrImg.width, qrImg.height);
   ctx.imageSmoothingEnabled = false;
-  ctx.drawImage(img, borderSize, borderSize, img.width, img.height);
+  ctx.drawImage(qrImg, borderSize, borderSize, qrImg.width, qrImg.height);
+
+  if (logoImg) {
+    const logoSize = Math.round(qrImg.width * 0.22);
+    const logoPadding = 8;
+    const centerX = borderSize + qrImg.width / 2;
+    const centerY = borderSize + qrImg.height / 2;
+
+    ctx.fillStyle = "#fff";
+    ctx.fillRect(
+      centerX - logoSize / 2 - logoPadding,
+      centerY - logoSize / 2 - logoPadding,
+      logoSize + logoPadding * 2,
+      logoSize + logoPadding * 2,
+    );
+    ctx.imageSmoothingEnabled = true;
+    ctx.drawImage(logoImg, centerX - logoSize / 2, centerY - logoSize / 2, logoSize, logoSize);
+  }
 
   return canvas.toDataURL("image/png");
 };
@@ -57,6 +100,7 @@ const AdminArModels = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [markerById, setMarkerById] = useState({});
   const [markerLoading, setMarkerLoading] = useState({});
+  const [markerError, setMarkerError] = useState({});
 
   const handleAdd = () => {
     setModalVisible(true);
@@ -74,21 +118,38 @@ const AdminArModels = () => {
     }
   };
 
-  const handleGenerateMarker = async (model) => {
-    if (!model?.ar_viewer_url) {
+  const handleGenerateMarker = useCallback(async (model) => {
+    const viewerUrl = getViewerUrl(model?.ar_viewer_url);
+    if (!viewerUrl) {
       return;
     }
 
     setMarkerLoading((prev) => ({ ...prev, [model.id]: true }));
+    setMarkerError((prev) => ({ ...prev, [model.id]: false }));
     try {
-      const marker = await buildMarkerPng(model.ar_viewer_url);
+      const marker = await buildMarkerPng(viewerUrl);
       setMarkerById((prev) => ({ ...prev, [model.id]: marker }));
     } catch (error) {
       console.error("Marker generation failed", error);
+      setMarkerError((prev) => ({ ...prev, [model.id]: true }));
     } finally {
       setMarkerLoading((prev) => ({ ...prev, [model.id]: false }));
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    models.forEach((model) => {
+      if (
+        model?.id &&
+        model.ar_viewer_url &&
+        !markerById[model.id] &&
+        !markerLoading[model.id] &&
+        !markerError[model.id]
+      ) {
+        handleGenerateMarker(model);
+      }
+    });
+  }, [handleGenerateMarker, markerById, markerError, markerLoading, models]);
 
   const downloadMarker = (modelId) => {
     const marker = markerById[modelId];
@@ -103,29 +164,38 @@ const AdminArModels = () => {
   };
 
   const openViewer = (url) => {
-    if (url) {
-      window.open(url, "_blank");
+    const viewerUrl = getViewerUrl(url);
+    if (viewerUrl) {
+      window.open(viewerUrl, "_blank");
     }
   };
 
   const handleDelete = (model) => {
-    Alert.alert(
-      "Delete Model",
-      `Are you sure you want to delete "${model.title}"?`,
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: async () => {
-            const success = await deleteModel(model.id);
-            if (!success) {
-              Alert.alert("Error", "Failed to delete the model. Please try again.");
-            }
-          },
-        },
-      ]
-    );
+    const executeDelete = async () => {
+      const success = await deleteModel(model.id);
+      if (!success) {
+        if (Platform.OS === "web") {
+          window.alert("Failed to delete the model. Please try again.");
+        } else {
+          Alert.alert("Error", "Failed to delete the model. Please try again.");
+        }
+      }
+    };
+
+    if (Platform.OS === "web") {
+      if (window.confirm(`Are you sure you want to delete "${model.title}"?`)) {
+        executeDelete();
+      }
+    } else {
+      Alert.alert(
+        "Delete Model",
+        `Are you sure you want to delete "${model.title}"?`,
+        [
+          { text: "Cancel", style: "cancel" },
+          { text: "Delete", style: "destructive", onPress: executeDelete },
+        ]
+      );
+    }
   };
 
   return (
@@ -162,6 +232,8 @@ const AdminArModels = () => {
             models.map((model) => {
               const marker = markerById[model.id];
               const isMarkerLoading = markerLoading[model.id];
+              const hasMarkerError = markerError[model.id];
+              const viewerUrl = getViewerUrl(model.ar_viewer_url);
               const sizeMb = model.model_size_bytes
                 ? (model.model_size_bytes / (1024 * 1024)).toFixed(2)
                 : "0";
@@ -182,21 +254,6 @@ const AdminArModels = () => {
                   </Text>
                   
                   <View style={styles.actions}>
-                    {/* 1. Generate Marker Button */}
-                    <Pressable
-                      style={({ hovered }) => [
-                        styles.actionButton,
-                        hovered && styles.actionHover,
-                      ]}
-                      onPress={() => handleGenerateMarker(model)}
-                    >
-                      <QrCode size={16} color="#4b5563" />
-                      <Text style={styles.actionText}>
-                        {isMarkerLoading ? "Generating..." : "Generate Marker"}
-                      </Text>
-                    </Pressable>
-
-                    {/* 2. Open Viewer Button */}
                     <Pressable
                       style={({ hovered }) => [
                         styles.actionButton,
@@ -208,7 +265,6 @@ const AdminArModels = () => {
                       <Text style={styles.actionText}>Open Viewer</Text>
                     </Pressable>
 
-                    {/* 3. Download PNG Button */}
                     <Pressable
                       style={({ hovered }) => [
                         styles.actionButton,
@@ -222,7 +278,6 @@ const AdminArModels = () => {
                       <Text style={[styles.actionText, !marker && styles.disabledText]}>Download PNG</Text>
                     </Pressable>
 
-                    {/* 4. Delete Button */}
                     <Pressable
                       style={({ hovered }) => [
                         styles.actionButton,
@@ -236,6 +291,12 @@ const AdminArModels = () => {
                     </Pressable>
                   </View>
 
+                  {viewerUrl ? (
+                    <Text style={styles.viewerUrl} selectable>
+                      Viewer link: {viewerUrl}
+                    </Text>
+                  ) : null}
+
                   {marker ? (
                     <View style={styles.markerPreview}>
                       <Image
@@ -244,6 +305,13 @@ const AdminArModels = () => {
                         accessibilityLabel={`QR marker for ${model.title}`}
                       />
                     </View>
+                  ) : isMarkerLoading ? (
+                    <View style={styles.markerStatus}>
+                      <QrCode size={16} color="#6b7280" />
+                      <Text style={styles.markerStatusText}>Generating QR marker...</Text>
+                    </View>
+                  ) : hasMarkerError ? (
+                    <Text style={styles.markerError}>QR marker could not be generated.</Text>
                   ) : null}
                 </View>
               );
@@ -355,6 +423,11 @@ const styles = StyleSheet.create({
   deleteText: {
     color: "#dc2626",
   },
+  viewerUrl: {
+    color: "#2563eb",
+    fontSize: 12,
+    marginTop: 10,
+  },
   markerPreview: {
     marginTop: 16,
     alignItems: "flex-start",
@@ -365,6 +438,21 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     borderColor: "#e5e7eb",
+  },
+  markerStatus: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginTop: 16,
+  },
+  markerStatusText: {
+    color: "#6b7280",
+    fontSize: 13,
+  },
+  markerError: {
+    color: "#dc2626",
+    fontSize: 13,
+    marginTop: 16,
   },
   empty: {
     textAlign: "center",

@@ -1,10 +1,11 @@
-import { AlertTriangle, Book, ClipboardList, Flag, MapPin, RefreshCcw, User, RotateCcw, Pin } from "lucide-react-native";
+import { AlertTriangle, Book, CheckCircle, ClipboardList, Flag, MapPin, RefreshCcw, User, RotateCcw, Pin } from "lucide-react-native";
 import React, { useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { CircleMarker, MapContainer, Popup, TileLayer, Tooltip, useMap } from "react-leaflet";
 import { useTranslation } from "react-i18next";
 
 import { useAnomalyMapEvents } from "../hooks/useAnomalyMapEvents";
+import { AnomalyService } from "../services/AnomalyService";
 import { formatDate } from "../utils/formatDate";
 import { DEFAULT_MAP_CENTER, LEAFLET_CSS, EVENT_LABELS, SEVERITY_CONFIG } from "../utils/AnomalyConstant";
 import { useAdminDashboard } from "../hooks/useAdminDashboard";
@@ -101,7 +102,7 @@ const MapViewport = ({ events, center }) => {
   return null;
 };
 
-const HoverDetailCard = ({ event, isPinned }) => {
+const HoverDetailCard = ({ event, isPinned, onResolve, resolving }) => {
   const severity = getEventSeverity(event.event_type);
   const confidence = getConfidenceLabel(event.metadata);
 
@@ -109,7 +110,7 @@ const HoverDetailCard = ({ event, isPinned }) => {
     <View style={styles.hoverCard}>
       <View style={styles.hoverHeader}>
         <Text style={styles.hoverTitle}>{getEventTypeLabel(event.event_type)}</Text>
-        
+
         <View style={[styles.hoverBadge, { backgroundColor: SEVERITY_CONFIG[severity].fillColor }]}>
           <Text style={styles.hoverBadgeText}>{SEVERITY_CONFIG[severity].label}</Text>
         </View>
@@ -119,10 +120,30 @@ const HoverDetailCard = ({ event, isPinned }) => {
         Coordinates: {Number(event.latitude).toFixed(6)}, {Number(event.longitude).toFixed(6)}
       </Text>
       <Text style={styles.hoverRow}>User: {getUserLabel(event)}</Text>
-      <View style={{ flexDirection: "row", justifyContent: "space-between", }}>
-        {confidence ? <Text style={styles.hoverRow}>Confidence: {confidence}</Text> : null}
+      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+        {confidence ? <Text style={styles.hoverRow}>Confidence: {confidence}</Text> : <View />}
         {isPinned && <Pin size={14} color="#b96363" fill="#b96363" />}
       </View>
+      {isPinned && (
+        <Pressable
+          onPress={onResolve}
+          disabled={resolving}
+          style={({ hovered }) => [
+            styles.resolveBtn,
+            hovered && !resolving && styles.resolveBtnHover,
+            resolving && styles.resolveBtnDisabled,
+          ]}
+        >
+          {resolving ? (
+            <ActivityIndicator size="small" color="white" />
+          ) : (
+            <>
+              <CheckCircle size={13} color="white" />
+              <Text style={styles.resolveBtnText}>Mark Resolved</Text>
+            </>
+          )}
+        </Pressable>
+      )}
     </View>
   );
 };
@@ -140,6 +161,18 @@ const AdminDashboard = () => {
 
   const [hoveredAnomaly, setHoveredAnomaly] = useState(null);
   const [selectedAnomaly, setSelectedAnomaly] = useState(null);
+  const [resolvingId, setResolvingId] = useState(null);
+
+  const handleResolve = async (event) => {
+    setResolvingId(event.id);
+    try {
+      await AnomalyService.resolve(event.id);
+      setSelectedAnomaly(null);
+      await refresh();
+    } finally {
+      setResolvingId(null);
+    }
+  };
   const mapCenter = useMemo(() => getMapCenter(events), [events]);
 
   const severityCounts = useMemo(
@@ -194,8 +227,8 @@ const AdminDashboard = () => {
         </View>
         <View style={styles.adminCard}>
           <View>
-            <Text style={styles.label}>Mapped Anomalies</Text>
-            <Text style={styles.value}>{stats.totalAnomalies}</Text>
+            <Text style={styles.label}>Active Anomalies</Text>
+            <Text style={styles.value}>{severityCounts.high}</Text>
           </View>
           <View style={[styles.iconContainer, styles.alertTheme]}>
             <Flag size={30} color="#dc2626" />
@@ -282,9 +315,11 @@ const AdminDashboard = () => {
           )}
 
           {!mapLoading && !mapError && (selectedAnomaly || hoveredAnomaly) ? (
-            <HoverDetailCard 
-              event={selectedAnomaly || hoveredAnomaly} 
+            <HoverDetailCard
+              event={selectedAnomaly || hoveredAnomaly}
               isPinned={!!selectedAnomaly}
+              onResolve={() => handleResolve(selectedAnomaly)}
+              resolving={resolvingId === selectedAnomaly?.id}
             />
           ) : null}
 
@@ -674,6 +709,28 @@ const styles = StyleSheet.create({
   },
   dismissBtnHover: {
     backgroundColor: "#fee2e2",
+  },
+  resolveBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    marginTop: 10,
+    paddingVertical: 7,
+    paddingHorizontal: 12,
+    backgroundColor: "#0a6340",
+    borderRadius: 6,
+  },
+  resolveBtnHover: {
+    backgroundColor: "#065f2e",
+  },
+  resolveBtnDisabled: {
+    backgroundColor: "#9ca3af",
+  },
+  resolveBtnText: {
+    color: "white",
+    fontSize: 12,
+    fontWeight: "600",
   },
 });
 
