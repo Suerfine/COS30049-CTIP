@@ -1087,7 +1087,7 @@ const EnrollmentManagement = () => {
                           style={[styles.actionBtn, styles.outlineBtn]}
                           onPress={() => setRejectModalVisible(true)}
                         >
-                          <Text style={styles.outlineBtnText}>Not Received</Text>
+                          <Text style={styles.outlineBtnText}>Rejected</Text>
                         </Pressable>
 
                         <Pressable
@@ -1468,9 +1468,11 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0,0,0,0.6)",
     justifyContent: "center",
     alignItems: "center",
+    padding: 20,
   },
   auditModalContent: {
-    width: "70%",
+    width: "100%",
+    maxWidth: 800,
     maxHeight: "95%",
     backgroundColor: "#fff",
     borderRadius: 20,
@@ -1554,8 +1556,9 @@ const styles = StyleSheet.create({
     color: "#666",
   },
   paymentModalContent: {
-    width: "60%",
-    maxHeight: "90%",
+    width: "100%",
+    maxWidth: 800,
+    maxHeight: "95%",
     backgroundColor: "#fff",
     borderRadius: 20,
     padding: 25,
@@ -1761,23 +1764,23 @@ const styles = StyleSheet.create({
   },
   row: {
     flexDirection: "row",
-    gap: 10,
+    gap: 12,
+    width: "100%",
   },
   actionBtn: {
+    flex: 1,
     height: 48,
     borderRadius: 6,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    width: 170,
   },
   outlineBtn: {
     backgroundColor: "transparent",
     borderWidth: 1.5,
     borderColor: "#e5e7eb",
     paddingHorizontal: 16,
-    width: 170,
   },
   outlineBtnText: {
     color: "#4b5563",
@@ -1802,7 +1805,8 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   rejectModalContent: {
-    width: "40%",
+    width: "100%",
+    maxWidth: 800,
     backgroundColor: "white",
     borderRadius: 20,
     padding: 24,
