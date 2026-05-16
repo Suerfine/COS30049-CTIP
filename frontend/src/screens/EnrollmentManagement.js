@@ -659,12 +659,12 @@ const EnrollmentManagement = () => {
       pageNumbers.push(i);
     }
     return (
-      <View style={[styles.paginationContainer, styles.row]}>
+      <View style={styles.paginationContainer}>
         <Text style={styles.pageInfo}>
           Showing {displayData.length > 0 ? indexOfFirstItem + 1 : 0} to{" "}
           {indexOfLastItem} of {activeTotalElements} records
         </Text>
-        <View style={styles.row}>
+        <View style={styles.paginationControls}>
           <Pressable
             disabled={activeCurrentPage === 1}
             onPress={() => setActivePage(1)}
@@ -1386,11 +1386,17 @@ const styles = StyleSheet.create({
     gap: 5,
   },
   paginationContainer: {
+    flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     paddingVertical: 15,
     paddingHorizontal: 20,
     backgroundColor: "white",
+  },
+  paginationControls: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-end",
   },
   pageInfo: {
     color: "#666",
