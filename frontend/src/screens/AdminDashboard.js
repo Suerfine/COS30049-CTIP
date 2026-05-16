@@ -431,11 +431,12 @@ const styles = StyleSheet.create({
     flex: 1, 
     flexDirection: "row",
     gap: 20,
-    minHeight: 0,
+    minHeight: 560,
     paddingHorizontal: 20,
   },
   mapRowCompact: {
     flexDirection: "column",
+    minHeight: 0,
   },
   mapSection: {
     backgroundColor: "white",
@@ -443,11 +444,13 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     flex: 2,
     minWidth: 520,
+    minHeight: 560,
     borderWidth: 1,
     borderColor: "#e5e7eb",
   },
   mapSectionCompact: {
     minWidth: 0,
+    minHeight: 0,
   },
   latestUpdatesSection: {
     backgroundColor: "white",
@@ -455,12 +458,14 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     flex: 1,
     minWidth: 360,
+    minHeight: 560,
     maxHeight: 560,
     borderWidth: 1,
     borderColor: "#e5e7eb",
   },
   latestUpdatesSectionCompact: {
     minWidth: 0,
+    minHeight: 0,
     maxHeight: "none",
   },
   sectionHeader: {

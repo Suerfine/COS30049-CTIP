@@ -137,8 +137,18 @@ export async function runSeeders(
       user_id: user.id,
     });
 
-    for (const event of events) {
-      await Event.create(event as any);
+    for (const [index, event] of events.entries()) {
+      await Event.create({
+        ...event,
+        type:
+          index === 0 || index === 2
+            ? EventType.WORKSHOP
+            : EventType.NORMAL,
+        status:
+          index === 1 || index === 2
+            ? EventStatus.COMPLETED
+            : EventStatus.PENDING,
+      } as any);
     }
   }
   
@@ -394,11 +404,56 @@ export async function runSeeders(
       period_unit: "day",
     });
 
+    await Event.bulkCreate([
+      {
+        user_id: createdParkGuideUser.id,
+        title: "Attend mangrove restoration workshop",
+        description:
+          "Join the practical restoration workshop and review the field checklist.",
+        event_start_at: addDays(now, 3),
+        event_end_at: addDays(now, 3),
+        type: EventType.WORKSHOP,
+        status: EventStatus.PENDING,
+        period_frequency: 0,
+        period_unit: "day",
+      },
+      {
+        user_id: createdParkGuideUser.id,
+        title: "Submit completed patrol report",
+        description: "Upload the final patrol notes from the previous route.",
+        event_start_at: addDays(now, -3),
+        event_end_at: addDays(now, -3),
+        type: EventType.NORMAL,
+        status: EventStatus.COMPLETED,
+        period_frequency: 0,
+        period_unit: "day",
+      },
+      {
+        user_id: createdParkGuideUser.id,
+        title: "Complete workshop reflection",
+        description:
+          "Record key takeaways from the recent conservation workshop.",
+        event_start_at: addDays(now, -5),
+        event_end_at: addDays(now, -5),
+        type: EventType.WORKSHOP,
+        status: EventStatus.COMPLETED,
+        period_frequency: 0,
+        period_unit: "day",
+      },
+    ]);
+
     const publicDiscussion = await Discussion.create({
       course_id: learningCourse.id,
       user_id: createdAdminUser.id,
       title: "Wildlife handling during guided tours",
       is_public: true,
+    });
+
+    const privateDiscussion = await Discussion.create({
+      course_id: learningCourse.id,
+      user_id: createdParkGuideUser.id,
+      title: "Question about private trail briefing",
+      is_public: false,
     });
 
     await Message.bulkCreate([
@@ -413,6 +468,18 @@ export async function runSeeders(
         user_id: createdParkGuideUser.id,
         content:
           "I would keep visitors at a safe distance and avoid disturbing nesting areas.",
+      },
+      {
+        discussion_id: privateDiscussion.id,
+        user_id: createdParkGuideUser.id,
+        content:
+          "Could I get feedback on the route briefing before tomorrow's guided walk?",
+      },
+      {
+        discussion_id: privateDiscussion.id,
+        user_id: createdAdminUser.id,
+        content:
+          "Yes. Please emphasize weather changes, hydration, and the restricted nesting zone.",
       },
     ]);
 

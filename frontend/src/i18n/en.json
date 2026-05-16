@@ -52,6 +52,7 @@
     },
     "badges":"Badges",
     "anomaly":"Anomaly",
+    "courses":"Courses",
     "todo list":"Todo List",
     "list":"List",
     "here you can find all courses":"Here you can find all courses",
@@ -119,5 +120,16 @@
     "failed to save notification settings":"Failed to save notification settings.",
     "no todos":"No Todos",
     "upcoming":"Upcoming",
-    "workshop":"Workshop"
+    "workshop":"Workshop",
+    "Here you can find all courses": "Here you can find all courses",
+    "All Courses":"All Courses",
+    "Preferences":"Preferences",
+    "Security":"Security",
+    "Notification":"Notification",
+    "Logout":"Logout",
+    "registration": "Registration",
+    "accounts": "Accounts",
+    "enrollment": "Enrollment",
+    "ar models": "AR Models",
+    "account security":"Account Security"
 }
