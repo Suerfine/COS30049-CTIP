@@ -40,6 +40,8 @@ import {
   TextInput,
   ActivityIndicator,
   Modal,
+  ScrollView,
+  useWindowDimensions,
 } from "react-native";
 import WebView from "react-native-webview";
 
@@ -79,6 +81,8 @@ const RegistrationManagement = () => {
   const [resumeLoading, setResumeLoading] = useState(false);
   const [resumeUri, setResumeUri] = useState("");
   const [resumeError, setResumeError] = useState("");
+  const { width } = useWindowDimensions();
+  const isCompact = width < 640;
 
   const handleNextPage = () => {
     if (currentPage < totalPages) {
@@ -325,10 +329,10 @@ const RegistrationManagement = () => {
   };
 
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.pageScroll} contentContainerStyle={styles.container}>
       <Text style={styles.title}>Registration Management</Text>
-      <View style={[styles.toolbar, styles.row]}>
-        <View style={styles.row}>
+      <View style={[styles.toolbar, isCompact && styles.toolbarCompact]}>
+        <View style={[styles.toolbarRow, isCompact && styles.toolbarGroupCompact]}>
           <Pressable
             onPress={resetSort}
             style={({ hovered }) => [
@@ -384,6 +388,7 @@ const RegistrationManagement = () => {
                   >
                     <Text
                       style={[
+                        styles.menuItemText,
                         currentStatus === status && styles.menuItemTextActive,
                       ]}
                     >
@@ -398,25 +403,34 @@ const RegistrationManagement = () => {
       </View>
 
       <View style={styles.tableContainer}>
-        <FlatList
-          style={styles.table}
-          data={currentUsers}
-          ListHeaderComponent={renderHeader}
-          renderItem={renderUserItem}
-          keyExtractor={(item) => item.id.toString()}
-          ListEmptyComponent={
-            <View style={styles.tableRow}>
-              <Text style={{ flex: 1, paddingVertical: 2 }}>
-                No Users Found.
-              </Text>
-            </View>
-          }
-        />
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator
+          contentContainerStyle={styles.tableScrollContent}
+        >
+          <View style={styles.tableInner}>
+            <FlatList
+              style={styles.table}
+              scrollEnabled={false}
+              data={currentUsers}
+              ListHeaderComponent={renderHeader}
+              renderItem={renderUserItem}
+              keyExtractor={(item) => item.id.toString()}
+              ListEmptyComponent={
+                <View style={styles.tableRow}>
+                  <Text style={{ flex: 1, paddingVertical: 2 }}>
+                    No Users Found.
+                  </Text>
+                </View>
+              }
+            />
+          </View>
+        </ScrollView>
       </View>
       {totalPages > 1 ? renderPagination() : null}
       {/* Side panel: show user details */}
       {selectedUser && (
-        <View style={styles.sidePanel}>
+        <View style={[styles.sidePanel, isCompact && styles.sidePanelCompact]}>
           <View style={styles.panelHeader}>
             <Text style={styles.panelTitle}>User Information</Text>
             <Pressable onPress={() => setSelectedUser(null)}>
@@ -611,13 +625,15 @@ const RegistrationManagement = () => {
           </View>
         </View>
       </Modal>
-    </View>
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  pageScroll: {
     flex: 1,
+  },
+  container: {
     paddingVertical: 20,
     paddingHorizontal: 40,
   },
@@ -632,17 +648,25 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
   },
   tableContainer: {
-    flex: 1,
+    width: "100%",
+  },
+  tableInner: {
+    minWidth: 900,
+    width: "100%",
+  },
+  tableScrollContent: {
+    minWidth: "100%",
   },
   title: {
     fontSize: 25,
     fontWeight: 500,
   },
   search: {
-    gap: 7,
     borderWidth: 1,
     borderColor: "#8f8f8f",
-    minWidth: 300,
+    minWidth: 180,
+    maxWidth: 300,
+    flexShrink: 1,
     padding: 5,
     backgroundColor: "white",
     borderRadius: 15,
@@ -656,9 +680,24 @@ const styles = StyleSheet.create({
     outlineStyle: "none",
   },
   toolbar: {
-    justifyContent: "space-between",
     marginVertical: 20,
     zIndex: 500,
+    alignItems: "center",
+  },
+  toolbarCompact: {
+    flexDirection: "column",
+    alignItems: "stretch",
+    gap: 12,
+  },
+  toolbarRow: {
+    width: "100%",
+    flexDirection: "row",
+    alignItems: "center",
+    minWidth: 0,
+    gap: 12,
+  },
+  toolbarGroupCompact: {
+    flexWrap: "wrap",
   },
   btn: {
     flexDirection: "row",
@@ -764,6 +803,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 10,
     zIndex: 600,
+  },
+  sidePanelCompact: {
+    width: "100%",
   },
   panelHeader: {
     flexDirection: "row",
@@ -894,6 +936,9 @@ const styles = StyleSheet.create({
     padding: 14,
     alignItems: "center",
   },
+  menuItemText: {
+    whiteSpace: "nowrap",
+  },
   menuItemActive: {
     backgroundColor: "#7d9f7a",
   },
@@ -921,7 +966,6 @@ const styles = StyleSheet.create({
   iconBtn: {
     alignSelf: "center",
     padding: 8,
-    marginRight: 20,
     color: "#217837",
     borderRadius: 50,
     backgroundColor: "white",

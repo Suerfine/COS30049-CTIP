@@ -9,6 +9,7 @@ import {
   FlatList,
   Image,
   Modal,
+  useWindowDimensions,
 } from "react-native";
 import {
   RotateCcw,
@@ -114,6 +115,8 @@ const EnrollmentManagement = () => {
   const [receiptLoading, setReceiptLoading] = useState(false);
   const [receiptError, setReceiptError] = useState("");
   const [selectedAuditId, setSelectedAuditId] = useState(null);
+  const { width } = useWindowDimensions();
+  const isCompact = width < 480;
 
   const enrollmentStatusOptions = [
     "All",
@@ -739,6 +742,7 @@ const EnrollmentManagement = () => {
         <SlidingTabs
           tabs={tabs}
           activeTab={activeTab}
+          collapseOnCompact
           onTabChange={(id) => {
             setActiveTab(id);
             if (id === "enrollment") {
@@ -751,8 +755,8 @@ const EnrollmentManagement = () => {
           }}
         />
 
-        <View style={[styles.toolbar, styles.row]}>
-          <View style={styles.row}>
+        <View style={[styles.toolbar, isCompact && styles.toolbarCompact]}>
+          <View style={[styles.toolbarRow, isCompact && styles.toolbarGroupCompact]}>
             <Pressable onPress={activeResetConfig} style={styles.iconBtn}>
               <RotateCcw size={20} />
             </Pressable>
@@ -814,6 +818,7 @@ const EnrollmentManagement = () => {
                         numberOfLines={1}
                         ellipsizeMode="tail"
                         style={[
+                          styles.menuItemText,
                           getActiveStatus() === status &&
                           styles.menuItemTextActive,
                         ]}
@@ -825,43 +830,52 @@ const EnrollmentManagement = () => {
                 </View>
               )}
             </View>
+            {activeTab === "enrollment" && (
+              <Pressable
+                onPress={() => setFilterVisible(true)}
+                style={() => [styles.iconBtn]}
+              >
+                <Filter size={20} color={filterVisible ? "#0a6340" : "#666"} />
+              </Pressable>
+            )}
           </View>
-          {activeTab === "enrollment" && (
-            <Pressable
-              onPress={() => setFilterVisible(true)}
-              style={() => [styles.iconBtn]}
-            >
-              <Filter size={20} color={filterVisible ? "#0a6340" : "#666"} />
-            </Pressable>
-          )}
         </View>
 
         <View style={styles.tableContainer}>
-          <FlatList
-            style={styles.table}
-            data={displayData}
-            loading={loading}
-            ListHeaderComponent={
-              isEnrollment
-                ? renderEnrollmentHeader
-                : isSubmission
-                  ? renderSubmissionsHeader
-                  : renderPaymentHeader
-            }
-            renderItem={
-              isEnrollment
-                ? renderEnrollmentItem
-                : isSubmission
-                  ? renderSubmissionsItem
-                  : renderPaymentItem
-            }
-            keyExtractor={(item) => item.id.toString()}
-            ListEmptyComponent={
-              <View style={styles.tableRow}>
-                <Text>{loading ? "Loading..." : "No Record Found."}</Text>
-              </View>
-            }
-          />
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator
+            contentContainerStyle={styles.tableScrollContent}
+          >
+            <View style={styles.tableInner}>
+              <FlatList
+                style={styles.table}
+                scrollEnabled={false}
+                data={displayData}
+                loading={loading}
+                ListHeaderComponent={
+                  isEnrollment
+                    ? renderEnrollmentHeader
+                    : isSubmission
+                      ? renderSubmissionsHeader
+                      : renderPaymentHeader
+                }
+                renderItem={
+                  isEnrollment
+                    ? renderEnrollmentItem
+                    : isSubmission
+                      ? renderSubmissionsItem
+                      : renderPaymentItem
+                }
+                keyExtractor={(item) => item.id.toString()}
+                ListEmptyComponent={
+                  <View style={styles.tableRow}>
+                    <Text>{loading ? "Loading..." : "No Record Found."}</Text>
+                  </View>
+                }
+              />
+            </View>
+          </ScrollView>
         </View>
 
         {activeTotalPages > 1 && renderPagination()}
@@ -1205,9 +1219,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
   },
   toolbar: {
-    justifyContent: "space-between",
     marginVertical: 20,
     zIndex: 500,
+    alignItems: "center",
+  },
+  toolbarCompact: {
+    flexDirection: "column",
+    alignItems: "stretch",
+    gap: 12,
+  },
+  toolbarRow: {
+    width: "100%",
+    flexDirection: "row",
+    alignItems: "center",
+    minWidth: 0,
+    gap: 12,
+  },
+  toolbarGroupCompact: {
+    flexWrap: "wrap",
   },
   table: {
     flexShrink: 1,
@@ -1221,10 +1250,14 @@ const styles = StyleSheet.create({
     flexDirection: "row",
   },
   search: {
-    gap: 7,
     borderWidth: 1,
     borderColor: "#8f8f8f",
-    minWidth: 300,
+    width: "auto",
+    flexBasis: 260,
+    minWidth: 140,
+    maxWidth: 300,
+    flexGrow: 1,
+    flexShrink: 1,
     padding: 5,
     backgroundColor: "white",
     borderRadius: 15,
@@ -1240,7 +1273,6 @@ const styles = StyleSheet.create({
   iconBtn: {
     alignSelf: "center",
     padding: 8,
-    marginRight: 20,
     color: "#217837",
     borderRadius: 50,
     backgroundColor: "white",
@@ -1252,7 +1284,10 @@ const styles = StyleSheet.create({
   menuItem: {
     padding: 14,
     alignItems: "center",
-    width: "100px",
+    width: "100%",
+  },
+  menuItemText: {
+    whiteSpace: "nowrap",
   },
   menuItemActive: {
     backgroundColor: "#7d9f7a",
@@ -1274,13 +1309,15 @@ const styles = StyleSheet.create({
     elevation: 5,
     borderWidth: 1,
     borderColor: "#f0f0f0",
+    width: 160,
   },
   dropdownWrapper: {
     position: "relative",
+    flexShrink: 0,
   },
   pillTrigger: {
     border: "1px solid #0a6340",
-    width: 110,
+    width: 160,
     flexDirection: "row",
     gap: 10,
     height: 35,
@@ -1291,7 +1328,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     userSelect: "none",
     backgroundColor: "white",
-    paddingLeft: 4,
+    paddingHorizontal: 12,
   },
   tableHeader: {
     backgroundColor: "#0a6340",
@@ -1399,7 +1436,14 @@ const styles = StyleSheet.create({
     color: "white",
   },
   tableContainer: {
-    flex: 1,
+    width: "100%",
+  },
+  tableInner: {
+    minWidth: 980,
+    width: "100%",
+  },
+  tableScrollContent: {
+    minWidth: "100%",
   },
   modalOverlay: {
     flex: 1,
@@ -1682,9 +1726,8 @@ const styles = StyleSheet.create({
     marginTop: 25,
   },
   downloadBtn: {
-    flex: 1,
     backgroundColor: "#f59e0b",
-    paddingVertical: 14,
+    paddingVertical: 8,
     borderRadius: 12,
     alignItems: "center",
   },

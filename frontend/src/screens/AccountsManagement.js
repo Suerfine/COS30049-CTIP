@@ -37,6 +37,7 @@ import {
   Image,
   TextInput,
   Platform,
+  useWindowDimensions,
 } from "react-native";
 
 // Import other components and hooks
@@ -73,6 +74,8 @@ const AccountManagement = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [editForm, setEditForm] = useState(null);
+  const { width } = useWindowDimensions();
+  const isCompact = width < 420;
 
   const handleStartEdit = () => {
     setEditForm({ ...selectedAcc });
@@ -346,10 +349,10 @@ const AccountManagement = () => {
 
   // Loading
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.pageScroll} contentContainerStyle={styles.container}>
       <Text style={styles.title}>Account Management</Text>
-      <View style={[styles.toolbar, styles.row]}>
-        <View style={styles.row}>
+      <View style={[styles.toolbar, isCompact && styles.toolbarCompact]}>
+        <View style={[styles.toolbarRow, isCompact && styles.toolbarGroupCompact]}>
           <Pressable
             onPress={resetSort}
             style={({ hovered }) => [
@@ -401,6 +404,7 @@ const AccountManagement = () => {
                   >
                     <Text
                       style={[
+                        styles.menuItemText,
                         currentRole === role && styles.menuItemTextActive,
                       ]}
                     >
@@ -411,14 +415,18 @@ const AccountManagement = () => {
               </View>
             )}
           </View>
+          <Pressable
+            onPress={handleAdd}
+            style={({ hovered }) => [
+              styles.btn,
+              styles.addUserBtn,
+              hovered && styles.btnHover,
+            ]}
+          >
+            <Plus size={16} />
+            <Text style={styles.btnText}>Add User</Text>
+          </Pressable>
         </View>
-        <Pressable
-          onPress={handleAdd}
-          style={({ hovered }) => [styles.btn, hovered && styles.btnHover]}
-        >
-          <Plus size={16} />
-          <Text style={styles.btnText}>Add User</Text>
-        </Pressable>
       </View>
       {/* Create Users Modal */}
       <ModalLayout
@@ -438,25 +446,34 @@ const AccountManagement = () => {
       </ModalLayout>
 
       <View style={styles.tableContainer}>
-        <FlatList
-          style={styles.table}
-          data={currentAcc}
-          ListHeaderComponent={renderHeader}
-          renderItem={renderUserItem}
-          keyExtractor={(item) => item.id.toString()}
-          ListEmptyComponent={
-            <View style={styles.tableRow}>
-              <Text style={{ flex: 1, paddingVertical: 2 }}>
-                No Users Found.
-              </Text>
-            </View>
-          }
-        />
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator
+          contentContainerStyle={styles.tableScrollContent}
+        >
+          <View style={styles.tableInner}>
+            <FlatList
+              style={styles.table}
+              scrollEnabled={false}
+              data={currentAcc}
+              ListHeaderComponent={renderHeader}
+              renderItem={renderUserItem}
+              keyExtractor={(item) => item.id.toString()}
+              ListEmptyComponent={
+                <View style={styles.tableRow}>
+                  <Text style={{ flex: 1, paddingVertical: 2 }}>
+                    No Users Found.
+                  </Text>
+                </View>
+              }
+            />
+          </View>
+        </ScrollView>
       </View>
       {totalPages > 1 ? renderPagination() : null}
       {/* Side panel: show user details */}
       {selectedAcc && (
-        <View style={styles.sidePanel}>
+        <View style={[styles.sidePanel, isCompact && styles.sidePanelCompact]}>
           <ScrollView styles={styles.ScrollView}>
             <View style={styles.panelHeader}>
               <Text style={styles.panelTitle}>User Information</Text>
@@ -692,13 +709,15 @@ const AccountManagement = () => {
           </ScrollView>
         </View>
       )}
-    </View>
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  pageScroll: {
     flex: 1,
+  },
+  container: {
     paddingVertical: 20,
     paddingHorizontal: 40,
   },
@@ -712,17 +731,28 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
   },
   tableContainer: {
-    flex: 1,
+    width: "100%",
+  },
+  tableInner: {
+    minWidth: 980,
+    width: "100%",
+  },
+  tableScrollContent: {
+    minWidth: "100%",
   },
   title: {
     fontSize: 25,
     fontWeight: 500,
   },
   search: {
-    gap: 7,
     borderWidth: 1,
     borderColor: "#8f8f8f",
-    minWidth: 300,
+    width: "auto",
+    flexBasis: 300,
+    minWidth: 80,
+    maxWidth: 300,
+    flexShrink: 1,
+    flexGrow: 1,
     padding: 5,
     backgroundColor: "white",
     borderRadius: 15,
@@ -736,9 +766,24 @@ const styles = StyleSheet.create({
     outlineStyle: "none",
   },
   toolbar: {
-    justifyContent: "space-between",
     marginVertical: 20,
-    zIndex: 500,
+    alignItems: "center",
+    zIndex: 600,
+  },
+  toolbarCompact: {
+    flexDirection: "column",
+    alignItems: "stretch",
+  },
+  toolbarRow: {
+    width: "100%",
+    flexDirection: "row",
+    alignItems: "center",
+    minWidth: 0,
+    gap: 12,
+    flexWrap: "nowrap",
+  },
+  toolbarGroupCompact: {
+    flexWrap: "wrap",
   },
   btnText: {
     color: "white",
@@ -862,6 +907,9 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     zIndex: 600,
   },
+  sidePanelCompact: {
+    width: "100%",
+  },
   panelHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -916,10 +964,6 @@ const styles = StyleSheet.create({
     position: "absolute",
     zIndex: 400,
   },
-  menuItem: {
-    padding: 14,
-    alignItems: "center",
-  },
   floatingMenu: {
     position: "absolute",
     right: 7,
@@ -963,7 +1007,6 @@ const styles = StyleSheet.create({
   iconBtn: {
     alignSelf: "center",
     padding: 8,
-    marginRight: 20,
     color: "#217837",
     borderRadius: 50,
     backgroundColor: "white",
@@ -982,7 +1025,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 4,
     alignItems: "center",
-    alignSelf: "center",
+    marginLeft: "auto",
+    flexShrink: 0,
     backgroundColor: "#217837",
     borderRadius: 50,
     color: "white",
@@ -1017,9 +1061,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#f0f0f0",
     userSelect: "none",
+    zIndex: 600,
   },
   dropdownWrapper: {
     position: "relative",
+    flexShrink: 0,
   },
   pillText: {
     fontSize: 14,
@@ -1029,6 +1075,9 @@ const styles = StyleSheet.create({
   menuItem: {
     padding: 14,
     alignItems: "center",
+  },
+  menuItemText: {
+    whiteSpace: "nowrap",
   },
   menuItemActive: {
     backgroundColor: "#7d9f7a",
@@ -1041,7 +1090,6 @@ const styles = StyleSheet.create({
   },
   pillTrigger: {
     border: "1px solid #0a6340",
-    width: 110,
     flexDirection: "row",
     gap: 10,
     height: 35,
@@ -1052,7 +1100,8 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     userSelect: "none",
     backgroundColor: "white",
-    paddingLeft: 4,
+    paddingHorizontal: 12,
+    minWidth: 110,
   },
 });
 

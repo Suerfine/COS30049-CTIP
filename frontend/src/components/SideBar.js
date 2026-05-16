@@ -6,7 +6,7 @@ import { useNavigationState, useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import { useUserDashboard } from '../hooks/useUserDashboard';
 
-const SideBar = () => {
+const SideBar = ({ mobile = false, onNavigate }) => {
     const {logout} =useAuth();
     const { user } = useUserDashboard();
     const navigation=useNavigation();
@@ -38,9 +38,11 @@ const SideBar = () => {
 
     return (
         // SideBar
-        <View style={styles.sidebar}>
+        <View style={[styles.sidebar, mobile && styles.sidebarMobile]}>
             <View style={styles.link}>
-                <Image source={require('../../assets/sfc_logo.png')} style={styles.logo} accessibilityLabel='Logo of SFC'/>
+                <View style={styles.brandRow}>
+                    <Image source={require('../../assets/sfc_logo.png')} style={styles.logo} accessibilityLabel='Logo of SFC'/>
+                </View>
                 {menuItems.map((item) => {
                     const IconComponent=item.icon;
                     const isExactMatch= displayRoute===item.route;
@@ -58,7 +60,7 @@ const SideBar = () => {
                                         navigation.navigate('AdminStack',{
                                             screen:item.route
                                         })
-
+                                        onNavigate?.();
                                     }}
                                 >
                                     <IconComponent style={styles.navIcon} />
@@ -73,9 +75,12 @@ const SideBar = () => {
             <View style={styles.linkbtn}>
                 <Pressable
                     style={styles.menuItem}
-                    onPress={() => navigation.navigate('AdminStack', {
-                        screen: 'Notification Management'
-                    })}
+                    onPress={() => {
+                        navigation.navigate('AdminStack', {
+                            screen: 'Notification Management'
+                        });
+                        onNavigate?.();
+                    }}
                 >
                     <Bell style={styles.navIcon} />
                     <Text style={styles.navText}>Notification</Text>
@@ -122,6 +127,17 @@ const styles = StyleSheet.create({
         borderRightWidth:1,
         backgroundColor:"white"
     },
+    sidebarMobile:{
+        width:'100%',
+        minHeight:'auto',
+        borderRightWidth:0,
+    },
+    brandRow:{
+        minHeight:72,
+        flexDirection:'row',
+        alignItems:'center',
+        justifyContent:'center',
+    },
     link:{
         gap:15,
         paddingBottom:25,
@@ -136,7 +152,7 @@ const styles = StyleSheet.create({
         gap:10,
         paddingHorizontal:10,
         paddingVertical:8,
-        minWidth:166,
+        minWidth:0,
         borderRadius:'5px',
         alignItems:'center'
     },

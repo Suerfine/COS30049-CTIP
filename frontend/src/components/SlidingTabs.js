@@ -1,8 +1,12 @@
 import React,{ useRef, useEffect, useState } from 'react';
-import { View, Text, Pressable, Animated, StyleSheet } from 'react-native';
+import { View, Text, Pressable, Animated, StyleSheet, useWindowDimensions } from 'react-native';
+import { ChevronDown, ChevronUp } from 'lucide-react-native';
 
-const SlidingTabs=({ tabs, activeTab, onTabChange, fullWidth = false })=>{
+const SlidingTabs=({ tabs, activeTab, onTabChange, fullWidth = false, collapseOnCompact = false })=>{
     const [containerWidth, setContainerWidth] = useState(0);
+    const [dropdownOpen, setDropdownOpen] = useState(false);
+    const { width } = useWindowDimensions();
+    const useDropdown = collapseOnCompact && width < 700;
     const activeIndex = Math.max(0, tabs.findIndex(t => t.id === activeTab));
     const slideAnim = useRef(new Animated.Value(activeIndex)).current;
 
@@ -22,6 +26,36 @@ const SlidingTabs=({ tabs, activeTab, onTabChange, fullWidth = false })=>{
         inputRange: tabs.map((_, i) => i),
         outputRange: tabs.map((_, i) => i * tabWidth),
     });
+
+    if (useDropdown) {
+        const activeLabel = tabs.find((tab) => tab.id === activeTab)?.label || tabs[0]?.label;
+        return (
+            <View style={styles.dropdownWrapper}>
+                <Pressable style={styles.dropdownTrigger} onPress={() => setDropdownOpen((prev) => !prev)}>
+                    <Text style={styles.dropdownTriggerText}>{activeLabel}</Text>
+                    {dropdownOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                </Pressable>
+                {dropdownOpen && (
+                    <View style={styles.dropdownMenu}>
+                        {tabs.map((tab) => (
+                            <Pressable
+                                key={tab.id}
+                                style={[styles.dropdownItem, activeTab === tab.id && styles.dropdownItemActive]}
+                                onPress={() => {
+                                    onTabChange(tab.id);
+                                    setDropdownOpen(false);
+                                }}
+                            >
+                                <Text style={[styles.dropdownItemText, activeTab === tab.id && styles.dropdownItemTextActive]}>
+                                    {tab.label}
+                                </Text>
+                            </Pressable>
+                        ))}
+                    </View>
+                )}
+            </View>
+        );
+    }
 
     return (
         <View 
@@ -94,6 +128,51 @@ const styles=StyleSheet.create({
     tabText:{
         fontSize:14,
         color:'#666',
+    },
+    dropdownWrapper: {
+        position: 'relative',
+        zIndex: 800,
+        Width: '100%',
+    },
+    dropdownTrigger: {
+        minHeight: 42,
+        borderWidth: 1,
+        borderColor: '#d1d5db',
+        borderRadius: 10,
+        backgroundColor: 'white',
+        paddingHorizontal: 14,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    dropdownTriggerText: {
+        fontWeight: '600',
+        color: '#111827',
+    },
+    dropdownMenu: {
+        position: 'absolute',
+        top: 48,
+        left: 0,
+        right: 0,
+        backgroundColor: 'white',
+        borderWidth: 1,
+        borderColor: '#e5e7eb',
+        borderRadius: 10,
+        overflow: 'hidden',
+    },
+    dropdownItem: {
+        paddingHorizontal: 14,
+        paddingVertical: 12,
+    },
+    dropdownItemActive: {
+        backgroundColor: '#f0fdf4',
+    },
+    dropdownItemText: {
+        color: '#374151',
+    },
+    dropdownItemTextActive: {
+        color: '#0a6340',
+        fontWeight: '700',
     },
 })
 
