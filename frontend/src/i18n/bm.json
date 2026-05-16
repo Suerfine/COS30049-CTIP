@@ -119,5 +119,10 @@
     "failed to save notification settings":"Gagal menyimpan tetapan notifikasi.",
     "no todos":"Tiada Tugasan",
     "upcoming":"Akan Datang",
-    "workshop":"Bengkel"
+    "workshop":"Bengkel",
+    "registration": "Pendaftaran",
+    "accounts": "Akaun",
+    "courses": "Kursus",
+    "enrollment": "Pendaftaran Kursus",
+    "ar models": "Model AR"
 }
