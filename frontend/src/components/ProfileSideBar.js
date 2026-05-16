@@ -8,11 +8,13 @@ import {
 } from "react-native";
 import { LockKeyhole, UserRoundPen, Settings2 } from "lucide-react-native";
 import { useNavigationState, useNavigation } from "@react-navigation/native";
+import { useTranslation } from 'react-i18next';
 
 const ProfileSideBar = () => {
   const navigation = useNavigation();
   const { width } = useWindowDimensions();
   const isMobile = width < 768;
+  const {i18n, t}=useTranslation();
 
   const currentRoute = useNavigationState((state) => {
     let route = state.routes[state.index];
@@ -30,9 +32,9 @@ const ProfileSideBar = () => {
   });
 
   const menuItems = [
-    { name: "Profile", icon: UserRoundPen, route: "UserProfile" },
-    { name: "Preferences", icon: Settings2, route: "Preferences" },
-    { name: "Security", icon: LockKeyhole, route: "Security" },
+    { name: t('profile'), icon: UserRoundPen, route: "UserProfile" },
+    { name: t('Preferences'), icon: Settings2, route: "Preferences" },
+    { name: t('Security'), icon: LockKeyhole, route: "Security" },
   ];
 
   return (

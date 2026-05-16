@@ -52,6 +52,7 @@
     },
     "badges": "Lencana",
     "anomaly": "Anomali",
+    "courses": "Kursus",
     "todo list": "Senarai Tugasan",
     "list": "Senarai",
     "here you can find all courses": "Di sini anda boleh mencari semua kursus",
@@ -119,5 +120,11 @@
     "failed to save notification settings":"Gagal menyimpan tetapan notifikasi.",
     "no todos":"Tiada Tugasan",
     "upcoming":"Akan Datang",
-    "workshop":"Bengkel"
+    "workshop":"Bengkel",
+    "Here you can find all courses":"Di sini anda boleh jumpa semua kursus",
+    "All Courses": "Semua kursus",
+    "Preferences":"Keutamaan",
+    "Security":"Keselamatan",
+    "Notification":"Pemberitahuan",
+    "Logout":"Log Keluar"
 }
