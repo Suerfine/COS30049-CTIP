@@ -543,8 +543,9 @@ const AccountManagement = () => {
                     }
                   }}
                 >
-                  <SquarePen size={16} color="white" />
-                  <Text style={styles.editBtnText}>Change Photo</Text>
+                  <View style={styles.editBtnWrapper}>
+                  <SquarePen size={16} color="black" />
+                  </View>
                 </Pressable>
               )}
 
@@ -821,9 +822,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   SideBarPlaceholder: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
+    width: 130,
+    height: 130,
+    borderRadius: 65,
     backgroundColor: "#2c5c189d",
     borderWidth: 3,
     borderColor: "white",
@@ -929,21 +930,19 @@ const styles = StyleSheet.create({
     alignSelf: "center",
   },
   editProfilePicBtn: {
+    position: "absolute",
     flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    backgroundColor: "#0a6340",
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 6,
-    marginTop: 12,
-    alignSelf: "center",
+    top: 120,
+    left: 200,
+    width: 60,
+    height: 35,
   },
-  editBtnText: {
-    color: "white",
-    fontSize: 14,
-    fontWeight: "500",
+  editBtnWrapper: {
+    backgroundColor: "#ffc95c",
+    padding: 6,
+    borderRadius: 60,
+    borderColor: 'white',
+    borderWidth: 3,
   },
   panelContent: {
     padding: 20,

@@ -5,10 +5,12 @@ import { CommonActions } from '@react-navigation/native';
 import { useNavigationState, useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import { useUserDashboard } from '../hooks/useUserDashboard';
+import { useUserProfile } from '../hooks/useUserProfile';
 
 const SideBar = ({ mobile = false, onNavigate }) => {
     const {logout} =useAuth();
     const { user } = useUserDashboard();
+    const {profileImage} = useUserProfile();
     const navigation=useNavigation();
     const currentRoute = useNavigationState((state) => {
         if (!state) return null;
@@ -89,8 +91,8 @@ const SideBar = ({ mobile = false, onNavigate }) => {
             <View style={styles.admin}>
                 <View style={styles.adminInfo}>
                     {/* Profile  */}
-                    {user?.pfp_url ? (
-                        <Image source={{ uri: user.pfp_url }} style={styles.profilePic}/>
+                    {profileImage ? (
+                        <Image source={{ uri: profileImage }} style={styles.profilePic}/>
                         ) : (
                             <View style={styles.pfpPlaceholder}>
                                 <Text style={styles.pfpInitials}>
@@ -214,6 +216,16 @@ const styles = StyleSheet.create({
         height: 40,
         borderRadius: 60,
         backgroundColor: '#2f6618fe',
+        borderWidth: 1,
+        borderColor: '#ccc',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    profilePic:{
+        width: 40,
+        height: 40,
+        borderRadius: 60,
+        marginRight: 6,
         borderWidth: 1,
         borderColor: '#ccc',
         alignItems: 'center',
