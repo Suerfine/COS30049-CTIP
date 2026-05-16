@@ -119,5 +119,10 @@
     "failed to save notification settings":"Failed to save notification settings.",
     "no todos":"No Todos",
     "upcoming":"Upcoming",
-    "workshop":"Workshop"
+    "workshop":"Workshop",
+    "registration": "Registration",
+    "accounts": "Accounts",
+    "courses": "Courses",
+    "enrollment": "Enrollment",
+    "ar models": "AR Models"
 }
