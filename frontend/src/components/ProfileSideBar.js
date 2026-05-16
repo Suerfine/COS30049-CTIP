@@ -52,11 +52,13 @@ const ProfileSideBar = () => {
                 !isActive && hovered && styles.hoverStyle,
               ]}
               onPress={() => {
-                setActivePage(item.name);
-                navigation.navigate("ProfileStack", {
-                  screen: item.route,
+                navigation.navigate("ParkGuideStack", {
+                    screen: "ProfileStack",
+                    params: {
+                    screen: item.route,
+                    },
                 });
-              }}
+                }}
             >
               <IconComponent size={22} color={isActive ? "white" : "black"} />
               {!isMobile && (
