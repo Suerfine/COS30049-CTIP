@@ -50,184 +50,211 @@ const UserCourse = ({ navigation }) => {
     }, [filterCategory]);
 
     const { width } = useWindowDimensions();
+    const isMobile = width < 768;
     const cardStyles = useMemo(() => {
         if (Platform.OS !== 'web') {
-            return { width: '100%', gap: 0 };
+            return { width: '100%' };
         }
 
         let columns = 4;
-        if (width < 600) columns = 1;
-        else if (width < 900) columns = 2;
-        else if (width < 1200) columns = 3;
 
-        const gapPercent = 2; 
-        const calculatedWidth = (100 - (gapPercent * (columns - 1))) / columns;
+        if (width < 600) return { width: '100%' };
+        if (width < 900) return { width: 'calc(50% - 12px)' };
+        if (width < 1200) return { width: 'calc(33.333% - 16px)' };
 
-        return {
-            width: `${calculatedWidth}%`,
-            gap: `${gapPercent}%`
-        };
+        const gap = 45;
+        const containerPadding = width >= 768 ? 120 : 30;
+        const availableWidth = width - containerPadding;
+
+        const cardWidth =
+            (availableWidth - gap * (columns - 1)) / columns;
+
+        return { width: 'calc(25% - 18px)' };
     }, [width]);
 
     return (
         <View style={{ flex: 1 }}>
-            <ScrollView style={styles.container}>
-                <View style={styles.courseContainer}>
-                    {/* Background Image */}
-                    <ImageBackground 
-                        source={require('../../assets/forest.png')}
-                        style={styles.backgroundImage}
-                    >
-                        <View style={styles.courseHeader}>
-                            <View>
-                                <Text style={styles.description}>Here you can find all courses</Text>
-                                <Text style={styles.title}>All Courses</Text>
+            <View style={ styles.page }>
+                <ScrollView 
+                    style={styles.container}
+                    contentContainerStyle={styles.scrollContent}
+                >
+                    <View style={styles.courseContainer}>
+                        {/* Background Image */}
+                        <ImageBackground 
+                            source={require('../../assets/forest.png')}
+                            style={styles.backgroundImage}
+                        >
+                            <View style={styles.courseHeader}>
+                                <View>
+                                    <Text style={styles.description}>Here you can find all courses</Text>
+                                    <Text style={styles.title}>All Courses</Text>
+                                </View>
                             </View>
-                        </View>
-                    </ImageBackground>
-                </View>
-                <View>
-                    <View style={styles.filterContainer}>
-                        <SlidingTabs tabs={tabs} activeTab={allcourseFilter} onTabChange={(id)=>setAllCourseFilter(id)}/>
-                        <View style={styles.toolbar}>
-                            <View style={styles.search}>
-                            <Search size={18} />
-                            <TextInput
-                                style={styles.input}
-                                value={searchText}
-                                onChangeText={setSearchText}
-                                placeholder="Search..."
-                                placeholderTextColor="#8f8f8f"
+                        </ImageBackground>
+                    </View>
+                    <View>
+                        <View style={[
+                            styles.filterContainer,
+                            isMobile && styles.filterContainerMobile
+                        ]}>
+                            <SlidingTabs 
+                                tabs={tabs} 
+                                activeTab={allcourseFilter} 
+                                onTabChange={(id)=>setAllCourseFilter(id)}
+                                fullWidth={isMobile}
                             />
-                            </View>
+                            <View style={styles.toolbar}>
+                                <View style={styles.search}>
+                                <Search size={18} />
+                                <TextInput
+                                    style={styles.input}
+                                    value={searchText}
+                                    onChangeText={setSearchText}
+                                    placeholder="Search..."
+                                    placeholderTextColor="#8f8f8f"
+                                />
+                                </View>
 
-                            <Pressable 
-                                onPress={() => {
-                                    setTempFilters(filters);
-                                    setFilterVisible(true);
-                                }}
-                                style={({ hovered }) => [
-                                    styles.filter,
-                                    hovered && styles.filterHover, 
-                                ]}
-                            >
-                                <SlidersHorizontal/>
-                            </Pressable>
+                                <Pressable 
+                                    onPress={() => {
+                                        setTempFilters(filters);
+                                        setFilterVisible(true);
+                                    }}
+                                    style={({ hovered }) => [
+                                        styles.filter,
+                                        hovered && styles.filterHover, 
+                                    ]}
+                                >
+                                    <SlidersHorizontal/>
+                                </Pressable>
+                            </View>
+                        </View>
+                        <View style={styles.pillContainer}>
+                            {/* Status Pill */}
+                            {filters.status !== 'all' && (
+                                <View style={styles.pill}>
+                                    <Text style={styles.pillText}>{statusLabels[filters.status]}</Text>
+                                    <Pressable onPress={() => removeFilter('status')}>
+                                        <CircleX size={16} color="white" />
+                                    </Pressable>
+                                </View>
+                            )}
+
+                            {/* Location Pills */}
+                            {Array.isArray(filters.location) && filters.location.map((locName) => (
+                                <View key={locName} style={[styles.pill, { backgroundColor: '#18704d' }]}>
+                                    <Text style={styles.pillText}>{locName}</Text>
+                                    <Pressable onPress={() => removeFilter('location', locName)}>
+                                        <CircleX size={16} color="white" />
+                                    </Pressable>
+                                </View>
+                            ))}
+                
+                            {/* Category Pills */}
+                            {Array.isArray(filters.category) && filters.category.map((catName) => (
+                                <View key={catName} style={styles.pill}>
+                                    <Text style={styles.pillText}>{catName}</Text>
+                                    <Pressable onPress={() => removeFilter('category', catName)}>
+                                        <CircleX size={16} color="white" />
+                                    </Pressable>
+                                </View>
+                                    ))}
+                        </View>
+                        <View style={styles.cardOuterContainer}>
+                            <View style={styles.cardContainer}>
+                                {filteredCourses.length === 0?(
+                                    <View style={styles.emptyContainer}>
+                                        <Text style={styles.emptyText}>{t('No courses found')}</Text>
+                                    </View>
+                                ) : ( filteredCourses.map(course => {
+                                    const numModules = course.module_count ? course.module_count : 0;
+                                    return(
+                                    <View
+                                        key={course.id}
+                                        style={[
+                                            styles.cardWrapper,
+                                            {
+                                                width: cardStyles.width,
+                                            }
+                                        ]}
+                                    >
+                                        <CourseCard
+                                            key={course.id}
+                                            id={course.id}
+                                            coverImgUrl={course.cover_img_url}
+                                            courseTitle={course.title}
+                                            numModules={numModules || 16}
+                                            duration={course.expected_completion_weeks}
+                                            expiry={course.must_complete_in_weeks}
+                                            userType={userType}
+                                            progress={course.progress}
+                                            // enrollment
+                                            enrollmentStatus={course.enrollmentStatus}
+                                            previousEnrollments={getPreviousEnrollments(course.id)}
+                                            onViewHistory={() =>
+                                            openHistory(getPreviousEnrollments(course.id))
+                                            }
+                                            isEnrollable={course.is_enrollable} 
+                                            // handlers
+                                            onPress={() => navigation.navigate('ParkGuideStack', {
+                                                screen: 'UserModule', 
+                                                params: { 
+                                                    id: course.id,
+                                                    enrollmentStatus: course.enrollmentStatus ?? null,
+                                                    enrollmentId: course.enrollmentId
+                                                }
+                                            })}
+                                            onEnroll={() => {
+                                                console.log("onEnroll fired, is_enrollable:", course.is_enrollable);
+                                                console.log("getUnfulfilledPrerequisites:", getUnfulfilledPrerequisites); // should be a function, not undefined
+                                            if (!course.is_enrollable) {
+                                                const unfulfilled = getUnfulfilledPrerequisites(course);
+                                                console.log("unfulfilled result:", unfulfilled);
+                                                const prereqList = unfulfilled.length > 0
+                                                ? unfulfilled.join(", ")
+                                                : "Unknown prerequisite(s)";
+                                                window.alert(`The following prerequisite(s) has not been fulfilled: ${prereqList}`);
+                                                return;
+                                            }
+                                            navigation.navigate('ParkGuideStack', {
+                                                screen: 'Payment',
+                                                params: { course}
+                                            });
+                                            }}
+                                            style={{ width: '100%' }}
+                                        />
+                                        {/* History Modal */}
+                                        <Modal visible={historyModalVisible} transparent animationType="fade">
+                                            <View style={styles.modalOverlay}>
+                                            <View style={styles.modalContent}>
+                                                <Text style={styles.modalTitle}>Enrollment History</Text>
+                                                {selectedHistory.map((item, index) => (
+                                                <View key={index} style={styles.historyRow}>
+                                                    <Text style={styles.historyDate}>Enrolled: {new Date(item.created_at).toLocaleDateString()}</Text>
+                                                    <Text style={[styles.historyStatus, { color: item.status === 'failed' ? 'red' : 'orange' }]}>
+                                                    Status: {item.status.toUpperCase()}
+                                                    </Text>
+                                                </View>
+                                                ))}
+                                                <Pressable onPress={() => setHistoryModalVisible(false)} style={styles.closeBtn}>
+                                                <Text style={{color: 'white'}}>Close</Text>
+                                                </Pressable>
+                                            </View>
+                                            </View>
+                                        </Modal>
+                                    </View>)
+                                })
+                            )}
+                            </View>
                         </View>
                     </View>
-                    <View style={styles.pillContainer}>
-                        {/* Status Pill */}
-                        {filters.status !== 'all' && (
-                            <View style={styles.pill}>
-                                <Text style={styles.pillText}>{statusLabels[filters.status]}</Text>
-                                <Pressable onPress={() => removeFilter('status')}>
-                                    <CircleX size={16} color="white" />
-                                </Pressable>
-                            </View>
-                        )}
-
-                        {/* Location Pills */}
-                        {Array.isArray(filters.location) && filters.location.map((locName) => (
-                            <View key={locName} style={[styles.pill, { backgroundColor: '#18704d' }]}>
-                                <Text style={styles.pillText}>{locName}</Text>
-                                <Pressable onPress={() => removeFilter('location', locName)}>
-                                    <CircleX size={16} color="white" />
-                                </Pressable>
-                            </View>
-                        ))}
+                    <View style={styles.footerWrapper}>
+                        <SFCFooter />
+                    </View>
+                </ScrollView>  
+            </View>
             
-                        {/* Category Pills */}
-                        {Array.isArray(filters.category) && filters.category.map((catName) => (
-                            <View key={catName} style={styles.pill}>
-                                <Text style={styles.pillText}>{catName}</Text>
-                                <Pressable onPress={() => removeFilter('category', catName)}>
-                                    <CircleX size={16} color="white" />
-                                </Pressable>
-                            </View>
-                                  ))}
-                    </View>
-                    <View style={[styles.cardContainer, { columnGap: cardStyles.gap }]}>
-                        {filteredCourses.length === 0?(
-                            
-                            <View style={styles.emptyContainer}>
-                                <Text style={styles.emptyText}>{t('No courses found')}</Text>
-                            </View>
-                        ) : ( filteredCourses.map(course => {
-                            const numModules = course.module_count ? course.module_count : 0;
-                            return(
-                            <View key={course.id} style={[styles.cardWrapper, { flexBasis: cardStyles.width, minWidth: cardStyles.width }]}>
-                                <CourseCard
-                                    key={course.id}
-                                    id={course.id}
-                                    coverImgUrl={course.cover_img_url}
-                                    courseTitle={course.title}
-                                    numModules={numModules || 16}
-                                    duration={course.expected_completion_weeks}
-                                    expiry={course.must_complete_in_weeks}
-                                    userType={userType}
-                                    progress={course.progress}
-                                    // enrollment
-                                    enrollmentStatus={course.enrollmentStatus}
-                                    previousEnrollments={getPreviousEnrollments(course.id)}
-                                    onViewHistory={() =>
-                                    openHistory(getPreviousEnrollments(course.id))
-                                    }
-                                    isEnrollable={course.is_enrollable} 
-                                    // handlers
-                                    onPress={() => navigation.navigate('ParkGuideStack', {
-                                        screen: 'UserModule', 
-                                        params: { 
-                                            id: course.id,
-                                            enrollmentStatus: course.enrollmentStatus ?? null,
-                                            enrollmentId: course.enrollmentId
-                                        }
-                                    })}
-                                    onEnroll={() => {
-                                        console.log("onEnroll fired, is_enrollable:", course.is_enrollable);
-                                        console.log("getUnfulfilledPrerequisites:", getUnfulfilledPrerequisites); // should be a function, not undefined
-                                    if (!course.is_enrollable) {
-                                        const unfulfilled = getUnfulfilledPrerequisites(course);
-                                        console.log("unfulfilled result:", unfulfilled);
-                                        const prereqList = unfulfilled.length > 0
-                                        ? unfulfilled.join(", ")
-                                        : "Unknown prerequisite(s)";
-                                        window.alert(`The following prerequisite(s) has not been fulfilled: ${prereqList}`);
-                                        return;
-                                    }
-                                    navigation.navigate('ParkGuideStack', {
-                                        screen: 'Payment',
-                                        params: { course}
-                                    });
-                                    }}
-                                    style={{ width: '100%' }}
-                                />
-                                {/* History Modal */}
-                                <Modal visible={historyModalVisible} transparent animationType="fade">
-                                    <View style={styles.modalOverlay}>
-                                    <View style={styles.modalContent}>
-                                        <Text style={styles.modalTitle}>Enrollment History</Text>
-                                        {selectedHistory.map((item, index) => (
-                                        <View key={index} style={styles.historyRow}>
-                                            <Text style={styles.historyDate}>Enrolled: {new Date(item.created_at).toLocaleDateString()}</Text>
-                                            <Text style={[styles.historyStatus, { color: item.status === 'failed' ? 'red' : 'orange' }]}>
-                                            Status: {item.status.toUpperCase()}
-                                            </Text>
-                                        </View>
-                                        ))}
-                                        <Pressable onPress={() => setHistoryModalVisible(false)} style={styles.closeBtn}>
-                                        <Text style={{color: 'white'}}>Close</Text>
-                                        </Pressable>
-                                    </View>
-                                    </View>
-                                </Modal>
-                            </View>)
-                        })
-                    )}
-                    </View>
-                </View>
-                <SFCFooter/>
-            </ScrollView>
-
             <FilterSidebar
                 visible={filterVisible}
                 allTagList={allTagList}
@@ -280,18 +307,23 @@ const styles = StyleSheet.create({
         marginTop:10,
         flexDirection: 'row'
     },
+    cardOuterContainer: {
+        marginHorizontal: Platform.OS === 'web' ? 60 : 15,
+        marginBottom: 20,
+        alignItems: 'center',
+    },
     cardContainer: {
+        width: '100%',
+        maxWidth: 1500,
         flexDirection: 'row',
         flexWrap: 'wrap',
-        marginHorizontal: Platform.OS === 'web' ? 60 : 15, 
         justifyContent: 'flex-start',
-        rowGap: 30,      
-        marginBottom: 20,
         alignItems: 'stretch',
+        gap: 24,
     },
     cardWrapper: {
         flexGrow: 0, 
-        flexShrink: 1,
+        flexShrink: 0,
         display: 'flex',
     },
     filterContainer:{
@@ -301,8 +333,14 @@ const styles = StyleSheet.create({
         justifyContent:'space-between',
         borderBottomColor:'#42424255',
         borderBottomWidth:1,
-        marginHorizontal:60,
-        paddingBottom:5
+        marginHorizontal: Platform.OS === 'web' ? 60 : 15,
+        paddingBottom:5,
+        gap: 15,
+    },
+    filterContainerMobile: {
+        flexDirection: 'column',
+        alignItems: 'stretch',
+        marginHorizontal: 15,
     },
     filter:{
         flexDirection:'row',
@@ -351,7 +389,8 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: "#8f8f8f",
         minWidth: 200,
-        padding: 3,
+        flex: 1,
+        padding: 6,
         backgroundColor: "white",
         borderRadius: 15,
         alignItems: "center",
@@ -422,6 +461,19 @@ const styles = StyleSheet.create({
         paddingVertical: 14,
         borderRadius: 10,
         alignItems: 'center',
+    },
+    page: {
+        flex: 1,
+    },
+    container: {
+        flex: 1,
+    },
+    scrollContent: {
+        flexGrow: 1,
+        minHeight: '100%',
+    },
+    footerWrapper: {
+        marginTop: 'auto',
     },
 });
 
