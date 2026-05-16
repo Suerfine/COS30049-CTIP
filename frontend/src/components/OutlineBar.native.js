@@ -17,7 +17,7 @@ const OutlineBar = ({ course, progressMap = {}, onSelectPage, editable, isOpen, 
         deleteModule,
         addPage,
         updatePageTitle,
-        deletePage
+        deletePage,
     } = useOutline(course);
 
     const slideAnim = useRef(new Animated.Value(-width)).current;
