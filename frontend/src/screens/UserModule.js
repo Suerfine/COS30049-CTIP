@@ -309,12 +309,15 @@ const UserModule = ({ navigation }) => {
           )}
         </View>
         {/* Render the dynamic content */}
+      {course.description !== "undefined" && (
         <View style={styles.markdownContainer}>
           <Markdown style={markdownStyles}>
             {course?.description ||
               "_No content provided yet. Click edit to start._"}
           </Markdown>
         </View>
+      )}
+        
 
         {/* Badge Achievement Section */}
         <View>
