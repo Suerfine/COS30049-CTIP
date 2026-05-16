@@ -52,6 +52,7 @@
     },
     "badges": "Lencana",
     "anomaly": "Anomali",
+    "courses": "Kursus",
     "todo list": "Senarai Tugasan",
     "list": "Senarai",
     "here you can find all courses": "Di sini anda boleh mencari semua kursus",
@@ -120,9 +121,15 @@
     "no todos":"Tiada Tugasan",
     "upcoming":"Akan Datang",
     "workshop":"Bengkel",
-    "registration": "Pendaftaran",
+    "Here you can find all courses":"Di sini anda boleh jumpa semua kursus",
+    "All Courses": "Semua kursus",
+    "Preferences":"Keutamaan",
+    "Security":"Keselamatan",
+    "Notification":"Pemberitahuan",
+    "Logout":"Log Keluar",
+    "registration": "Daftar",
     "accounts": "Akaun",
-    "courses": "Kursus",
-    "enrollment": "Pendaftaran Kursus",
-    "ar models": "Model AR"
+    "enrollment": "Pendaftaran",
+    "ar models": "Model AR",
+    "account security":"Keselamatan Akaun"
 }
