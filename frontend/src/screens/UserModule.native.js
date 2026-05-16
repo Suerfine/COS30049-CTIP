@@ -55,10 +55,13 @@ const UserModule = ({ navigation }) => {
   const hasfailedRef = useRef(false);
   const scrollViewRef = useRef(null);
   const [selectedPage, setSelectedPage] = useState({ type: "overview" });
+  const [pendingDiscussionId, setPendingDiscussionId] = useState(discussionId);
   const [outlineOpen, setOutlineOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
 
   useEffect(() => {
+    setPendingDiscussionId(discussionId);
+
     if (initialSection === "forum") {
       setSelectedPage({ type: "forum" });
       return;
@@ -487,7 +490,8 @@ const UserModule = ({ navigation }) => {
             ) : selectedPage?.type === "forum" ? (
               <DiscussionSection
                 courseId={id}
-                initialDiscussionId={discussionId}
+                initialDiscussionId={pendingDiscussionId}
+                onInitialDiscussionOpened={() => setPendingDiscussionId(null)}
                 navigation={navigation}
                 styles={styles}
               />

@@ -761,6 +761,7 @@ const styles = StyleSheet.create({
     ...Platform.select({
       web: { outlineStyle: "none" },
     }),
+    marginLeft:10
   },
   toolbar: {
     marginVertical: 20,
