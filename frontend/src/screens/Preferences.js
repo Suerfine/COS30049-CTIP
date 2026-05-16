@@ -28,43 +28,43 @@ const Preferences = () => {
       };
 
     const [notifModalVisible, setNotifModalVisible] = useState(false);
-  return (
-      <View style={styles.container}>
-              <View style={styles.section}>
-                  <Text style={styles.sectionTitle}>{t('general')}</Text>
-                  <View style={styles.listGroup}>
-                      {/* Language */}
-                      <Pressable style={styles.listItem}
-                      onPress={openLanguageModal}
-                      >
-                          <View style={styles.listItemLoading}>
-                              <View style={[styles.iconBox,{ backgroundColor: '#e8f5e9' }]}>
-                                  <Languages size={20} color="#0a6340"/>
-                              </View>
-                              <Text style={styles.listItemText}>
-                                  {t('language')}
-                              </Text>
-                          </View>
-                          <View style={styles.row}>
-                              <Text style={styles.selectionText}>{getLanguageDisplay()}</Text>
-                              <ChevronRight size={18} color="#ccc"/>
-                          </View>
-                      </Pressable>
+    return (
+        <View style={styles.container}>
+            <View style={styles.section}>
+                <Text style={styles.sectionTitle}>{t('general')}</Text>
+                <View style={styles.listGroup}>
+                    {/* Language */}
+                    <Pressable style={styles.listItem}
+                    onPress={openLanguageModal}
+                    >
+                        <View style={styles.listItemLoading}>
+                            <View style={[styles.iconBox,{ backgroundColor: '#e8f5e9' }]}>
+                                <Languages size={20} color="#0a6340"/>
+                            </View>
+                            <Text style={styles.listItemText}>
+                                {t('language')}
+                            </Text>
+                        </View>
+                        <View style={styles.row}>
+                            <Text style={styles.selectionText}>{getLanguageDisplay()}</Text>
+                            <ChevronRight size={18} color="#ccc"/>
+                        </View>
+                    </Pressable>
 
-                      <View style={styles.divider}/>
+                    <View style={styles.divider}/>
 
-                      {/* Notification */}
-                      <Pressable style={styles.listItem} onPress={() => setNotifModalVisible(true)}>
-                          <View style={styles.listItemLoading}>
-                              <View style={[styles.iconBox, {backgroundColor:'#fff3e0'}]}>
-                                  <Bell size={20} color="#f57c00"/>
-                              </View>
-                              <Text style={styles.listItemText}>{t("notification")}</Text>
-                          </View>
-                          <ChevronRight size={18} color="#ccc"/>
-                      </Pressable>
-                  </View>
-              </View>
+                    {/* Notification */}
+                    <Pressable style={styles.listItem} onPress={() => setNotifModalVisible(true)}>
+                        <View style={styles.listItemLoading}>
+                            <View style={[styles.iconBox, {backgroundColor:'#fff3e0'}]}>
+                                <Bell size={20} color="#f57c00"/>
+                            </View>
+                            <Text style={styles.listItemText}>{t("notification")}</Text>
+                        </View>
+                        <ChevronRight size={18} color="#ccc"/>
+                    </Pressable>
+                </View>
+            </View>
 
             {/* Render modal */}
             <LanguageModal

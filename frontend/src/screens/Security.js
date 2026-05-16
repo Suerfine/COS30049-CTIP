@@ -1,5 +1,5 @@
 import {useState, useEffect} from 'react';
-import { View, Text, TextInput, StyleSheet, Pressable, ScrollView, Image, ImageBackground, Dimensions, Modal, Alert} from 'react-native';
+import { View, Text, TextInput, StyleSheet, Pressable, ScrollView, Image, ImageBackground, Dimensions, Modal, Alert, useWindowDimensions} from 'react-native';
 import { SquarePen } from 'lucide-react-native';
 import { Eye, EyeOff } from 'lucide-react-native';
 
@@ -25,6 +25,8 @@ const Security = ({ navigation }) => {
     }=useUserProfile();
     const {t, i18n}=useTranslation();
     const [errors, setErrors] = useState({});
+    const { width } = useWindowDimensions();
+    const isMobile = width < 768;
 
     const clearError = (field) => {
         setErrors(prev => {
@@ -51,13 +53,19 @@ const Security = ({ navigation }) => {
         <View style={styles.container}>
             <ScrollView>
                 {/* Account Security */}
-                <View style={styles.section}>
+                <View style={[
+                    styles.section,
+                    isMobile && styles.sectionMobile
+                ]}>
                     <Text style={styles.sectionTitle}>Account Security</Text>
 
                     {/* Username */}
                     <View style={styles.securityField}>
                         <Text style={styles.fieldLabel}>{t('username')}</Text>
-                        <View style={styles.securityRow}>
+                        <View style={[
+                            styles.securityRow,
+                            isMobile && styles.securityRowMobile
+                        ]}>
                         <TextInput
                             style={[styles.input, styles.securityInput, !editingUsername && styles.inputDisabled]}
                             value={username}
@@ -161,7 +169,9 @@ const styles = StyleSheet.create({
     },
     section:{
         backgroundColor: 'white',
-        marginHorizontal: 200,
+        width: '90%',
+        maxWidth: 900,
+        alignSelf: 'center',
         marginVertical: 16,
         borderRadius: 12,
         padding: 30,
@@ -170,6 +180,10 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.06,
         shadowRadius: 4,
         elevation: 2,
+    },
+    sectionMobile: {
+        width: '92%',
+        padding: 18,
     },
     sectionHeader:{
         flexDirection: 'row',
@@ -193,6 +207,9 @@ const styles = StyleSheet.create({
         borderRadius: 8,
         paddingHorizontal: 14,
         paddingVertical: 10,
+        alignItems: 'center',
+        justifyContent: 'center',
+        minWidth: 80,
     },
     cancelBtnText:{
         fontSize: 13,
@@ -228,6 +245,7 @@ const styles = StyleSheet.create({
         marginBottom: 6,
     },
     input:{
+        width: '100%',
         borderWidth: 1,
         borderColor: '#2f6618fe',
         borderRadius: 8,
@@ -248,10 +266,17 @@ const styles = StyleSheet.create({
     securityRow:{
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 20,
+        gap: 12,
+        flexWrap: 'wrap',
+    },
+    securityRowMobile: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
     },
     securityInput:{
         flex: 1,
+        minWidth: 0,
     },
     changeBtn:{
         borderWidth: 1,
@@ -259,6 +284,9 @@ const styles = StyleSheet.create({
         borderRadius: 8,
         paddingHorizontal: 16,
         paddingVertical: 10,
+        alignItems: 'center',
+        justifyContent: 'center',
+        minWidth: 90,
     },
     changeBtnText:{
         fontSize: 13,
