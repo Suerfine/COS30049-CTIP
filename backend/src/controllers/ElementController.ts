@@ -196,6 +196,22 @@ export const createElement = async (
       throw new HttpError(400, "content must be a valid JSON object");
     }
 
+    if (body.type === "image") {
+      if (req.file) {
+        const pathString = `private/elements/images/${req.file.filename}`;
+        
+        content = {
+          ...content,
+          url: pathString.replace(/\\/g, '/'),
+        };
+      } else if (!content.url) {
+        throw new HttpError(
+          400,
+          "Image URL or an uploaded file is required for image type elements",
+        );
+      }
+    }
+
     const element = await Element.create({
       page_id: pageId,
       order,
@@ -282,6 +298,12 @@ export const bulkCreateElements = async (
         );
       }
 
+      if (elementReq.type === "image") {
+        if (fileMap[i]) {
+          contentData.url = `private/elements/images/${fileMap[i].filename}`;
+        }
+      }
+
       const element = await Element.create({
         page_id: pageId,
         order,
@@ -352,13 +374,24 @@ export const updateElement = async (
       updates.score = score;
     }
 
+    let currentContent =
+      typeof element.content === "string"
+        ? JSON.parse(element.content)
+        : element.content || {};
     if (body.content !== undefined) {
       const newContent = parseJsonField(body.content);
       if (newContent === null) {
         throw new HttpError(400, "content must be a valid JSON object");
       }
+      currentContent = newContent;
+      updates.content = currentContent;
+    }
 
-      updates.content = newContent;
+    if (element.type === "image") {
+      if (req.file) {
+        currentContent.url = `private/elements/images/${req.file.filename}`;
+        updates.content = currentContent;
+      }
     }
 
     if (Object.keys(updates).length === 0) {
@@ -460,6 +493,10 @@ export const bulkUpdateElements = async (
         updates.score = score;
       }
 
+      let currentContent =
+        typeof element.content === "string"
+          ? JSON.parse(element.content)
+          : element.content || {};
       if (elementReq.content !== undefined) {
         const newContent = parseJsonField(elementReq.content);
         if (newContent === null) {
@@ -468,8 +505,15 @@ export const bulkUpdateElements = async (
             `Element ${i}: content must be a valid JSON object`,
           );
         }
+        currentContent = newContent;
+        updates.content = currentContent;
+      }
 
-        updates.content = newContent;
+      if (element.type === "image") {
+        if (fileMap[i]) {
+          currentContent.url = `private/elements/images/${fileMap[i].filename}`;
+          updates.content = currentContent;
+        }
       }
 
       if (Object.keys(updates).length === 0) {

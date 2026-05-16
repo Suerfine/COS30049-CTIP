@@ -11,6 +11,7 @@ import {
   Modal,
   TextInput,
   TouchableOpacity,
+  Platform
 } from "react-native";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import {
@@ -45,6 +46,7 @@ import {
 } from "lucide-react-native";
 import DiscussionSection from "../components/DiscussionSection.js";
 import Markdown from "react-native-markdown-display";
+import * as DocumentPicker from 'expo-document-picker';
 
 // Import Components
 import OutlineBar from "../components/OutlineBar.js";
@@ -263,50 +265,87 @@ const EditCourseDetail = () => {
       }
     }
 
-    const payload = {
-      page_id: selectedPage.page.id,
-      type: currentElementType,
-      order: editingElementId ? undefined : elements.length + 1,
-      score:
-        currentElementType === "workshop"
-          ? 1
-          : parseInt(newElementData.score) || 1,
-      content: {},
-    };
-
-    switch (currentElementType) {
-      case "text":
-        payload.content = { text: newElementData.text };
-        break;
-      case "image":
-        payload.content = {
-          url: newElementData.url,
-          caption: newElementData.transcript,
-        };
-        break;
-      case "video":
-        payload.content = {
-          url: newElementData.url,
-          transcript: newElementData.transcript,
-        };
-        break;
-      case "quiz_objective":
-        payload.content = {
-          question: newElementData.question,
-          options: newElementData.options,
-          answer: newElementData.answer,
-        };
-        break;
-      case "workshop":
-        payload.content = { ...newElementData.workshop };
-        break;
-    }
-
     let success;
-    if (editingElementId) {
-      success = await updateExistingElement(editingElementId, payload);
+
+    if (currentElementType === "image") {
+      if (!newElementData.imageFile && !editingElementId) {
+        alert("Please upload an image file before saving.");
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("type", "image");
+      
+      // Calculate order
+      const calculatedOrder = editingElementId ? undefined : elements.length + 1;
+      if (calculatedOrder) {
+        formData.append("order", String(calculatedOrder));
+      }
+      
+      formData.append("score", String(parseInt(newElementData.score) || 1));
+
+      const contentMetadata = {
+        caption: newElementData.transcript || "",
+        url: editingElementId ? (newElementData.url || "") : ""
+      };
+      formData.append("content", JSON.stringify(contentMetadata));
+
+      if (newElementData.imageFile) {
+        if (Platform.OS === 'web') {
+          formData.append("file", newElementData.imageFile);
+        } else {
+          formData.append("file", {
+            uri: newElementData.imageFile.uri.replace("file://", ""),
+            name: newElementData.imageFile.name,
+            type: newElementData.imageFile.mimeType || "image/jpeg"
+          });
+        }
+      }
+      if (editingElementId) {
+        success = await updateExistingElement(editingElementId, formData);
+      } else {
+        success = await createNewElement(formData);
+      }
+
     } else {
-      success = await createNewElement(payload);
+      const payload = {
+        page_id: selectedPage.page.id,
+        type: currentElementType,
+        order: editingElementId ? undefined : elements.length + 1,
+        score:
+          currentElementType === "workshop"
+            ? 1
+            : parseInt(newElementData.score) || 1,
+        content: {},
+      };
+
+      switch (currentElementType) {
+        case "text":
+          payload.content = { text: newElementData.text };
+          break;
+        case "video":
+          payload.content = {
+            url: newElementData.url,
+            transcript: newElementData.transcript,
+          };
+          break;
+        case "quiz_objective":
+          payload.content = {
+            question: newElementData.question,
+            options: newElementData.options,
+            answer: newElementData.answer,
+          };
+          break;
+        case "workshop":
+          payload.content = { ...newElementData.workshop };
+          break;
+      }
+
+      if (editingElementId) {
+        success = await updateExistingElement(editingElementId, payload);
+      } else {
+        success = await createNewElement(payload);
+      }
     }
 
     if (success) {
@@ -322,6 +361,7 @@ const EditCourseDetail = () => {
         options: ["", "", "", ""],
         answer: "",
         score: 1,
+        imageFile: null, 
         workshop: {
           title: "",
           description: "",
@@ -974,35 +1014,87 @@ const EditCourseDetail = () => {
                   </View>
                 )}
 
-                {(currentElementType === "image" ||
-                  currentElementType === "video") && (
+                {currentElementType === 'image' && (
                   <View style={{ marginTop: 10 }}>
-                    <Text style={styles.inputLabel}>Source URL</Text>
-                    <TextInput
-                      style={styles.inputField}
-                      value={newElementData.url}
-                      onChangeText={(v) =>
-                        setNewElementData({ ...newElementData, url: v })
-                      }
-                      placeholder="https://..."
-                    />
-                    <Text style={styles.inputLabel}>
-                      {currentElementType === "image"
-                        ? "Caption"
-                        : "Transcript"}
-                    </Text>
-                    <TextInput
-                      style={styles.inputField}
-                      multiline
-                      value={newElementData.transcript}
-                      onChangeText={(v) =>
-                        setNewElementData({ ...newElementData, transcript: v })
-                      }
-                      placeholder="Enter description..."
-                      placeholderTextColor="grey"
-                    />
+                      <Text style={styles.inputLabel}>Upload Image Asset</Text>
+                      
+                      <View style={styles.uploadRow}>
+                          <TouchableOpacity 
+                              style={styles.pickerBtn} 
+                              onPress={async () => {
+                                  try {
+                                      const res = await DocumentPicker.getDocumentAsync({
+                                          type: 'image/*',
+                                          copyToCacheDirectory: true
+                                      });
+                                      
+                                      if (!res.canceled && res.assets && res.assets.length > 0) {
+                                        const pickedFile = res.assets[0];
+                                          if (Platform.OS === 'web') {
+                                          const response = await fetch(pickedFile.uri);
+                                          const fileBlob = await response.blob();
+                                          
+                                          const nativeFile = new File([fileBlob], pickedFile.name, { type: pickedFile.mimeType || 'image/jpeg' });
+                                          
+                                          setNewElementData(prev => ({
+                                              ...prev,
+                                              imageFile: nativeFile,
+                                              url: pickedFile.name
+                                          }));
+                                      } else {
+                                          setNewElementData(prev => ({
+                                              ...prev,
+                                              imageFile: pickedFile,
+                                              url: pickedFile.name
+                                          }));
+                                      }
+                                      }
+                                  } catch (err) {
+                                      console.error("Error picking file:", err);
+                                  }
+                              }}
+                          >
+                              <Text style={styles.pickerBtnText}>Choose File</Text>
+                          </TouchableOpacity>
+                          
+                          <Text style={styles.uploadStatusText} numberOfLines={1}>
+                              {newElementData.imageFile ? newElementData.imageFile.name : "No file chosen"}
+                          </Text>
+                      </View>
+
+                      <Text style={styles.inputLabel}>Caption / Description</Text>
+                      <TextInput 
+                          style={styles.inputField} 
+                          multiline 
+                          value={newElementData.transcript} 
+                          onChangeText={(v) => setNewElementData({...newElementData, transcript: v})} 
+                          placeholder="Enter description..." 
+                          placeholderTextColor="grey"
+                      />
                   </View>
-                )}
+              )}
+
+              {currentElementType === 'video' && (
+                  <View style={{ marginTop: 10 }}>
+                      <Text style={styles.inputLabel}>Source URL</Text>
+                      <TextInput 
+                          style={styles.inputField} 
+                          value={newElementData.url} 
+                          onChangeText={(v) => setNewElementData({...newElementData, url: v})} 
+                          placeholder="https://youtube.com/..." 
+                          placeholderTextColor="grey"
+                      />
+                      <Text style={styles.inputLabel}>Transcript</Text>
+                      <TextInput 
+                          style={styles.inputField} 
+                          multiline 
+                          value={newElementData.transcript} 
+                          onChangeText={(v) => setNewElementData({...newElementData, transcript: v})} 
+                          placeholder="Enter video transcript..." 
+                          placeholderTextColor="grey"
+                      />
+                  </View>
+              )}
 
                 {currentElementType === "quiz_objective" && (
                   <View style={styles.quizEditorContainer}>
@@ -1735,6 +1827,7 @@ const styles = StyleSheet.create({
   },
   tagGroup: {
     gap: 8,
+    marginTop:12
   },
   tagLabel: {
     fontSize: 12,
@@ -1915,6 +2008,33 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: "#6b7280",
     textAlign: "center",
+  },
+  uploadRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f5f5f5',
+    borderRadius: 8,
+    padding: 6,
+    marginBottom: 15,
+    borderWidth: 1,
+    borderColor: '#eee',
+    gap: 12,
+  },
+  pickerBtn: {
+    backgroundColor: '#0a6340',
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 6,
+  },
+  pickerBtnText: {
+    color: 'white',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  uploadStatusText: {
+    fontSize: 13,
+    color: '#666',
+    flex: 1,
   },
 });
 
