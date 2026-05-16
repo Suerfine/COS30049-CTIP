@@ -21,7 +21,17 @@ export const useAccountManagement=()=>{
         try{
             const response=await AccountService.getAll(currentPage, 10, searchQuery, sortConfig, currentRole);
             const rawUsers=Array.isArray(response) ? response : (response.data || response.users || []);
-            const initializedData=rawUsers.map(u=>({...u, selected:false}));
+            const initializedData=rawUsers.map((u)=>({
+                ...u,
+                selected:false,
+                profileImage:
+                    u.profileImage ||
+                    u.pfp_url ||
+                    u.pfp ||
+                    u.user_profile_image ||
+                    u.profile_image ||
+                    null,
+            }));
             setAccounts(initializedData);
             setTotalUsers(response.totalElements);
             setTotalPages(response.totalPages);

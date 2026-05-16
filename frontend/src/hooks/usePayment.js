@@ -44,6 +44,7 @@ export const usePayment = (searchQuery = '') => {
                     profileImage:
                         p.profileImage ||
                         p.user_profile_image ||
+                        p.user_profile_img ||
                         null
                 }))
             );

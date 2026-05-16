@@ -128,6 +128,7 @@ export const useSubmissionManagement = () => {
         auditData,
         auditLoading,
         fetchEnrollmentAudit,
-        refreshSubmissions: fetchSubmissions, resetSubmissionSort
+        refreshSubmissions: fetchSubmissions, resetSubmissionSort, 
+        fetchSubmissions
     };
 };

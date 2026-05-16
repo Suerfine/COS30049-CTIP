@@ -105,6 +105,14 @@ const AccountManagement = () => {
     }
   };
 
+  const getProfileImageUri = (item) =>
+    item?.profileImage ||
+    item?.pfp_url ||
+    item?.pfp ||
+    item?.user_profile_image ||
+    item?.profile_image ||
+    null;
+
   const onDeletePress = () => {
     if (!selectedAcc) return;
     const confirmDelete = () => {
@@ -213,9 +221,9 @@ const AccountManagement = () => {
     >
       <Text style={{ flex: 1, textAlign: "center" }}>{item.id}</Text>
       <View style={[{ flex: 3 }, styles.userInfo, styles.row]}>
-        {item.profileImage ? (
+        {getProfileImageUri(item) ? (
           <Image
-            source={{ uri: item.profileImage }}
+            source={{ uri: getProfileImageUri(item) }}
             style={styles.avatar}
             accessibilityLabel={`Profile Image of ${item.firstname + " " + item.lastname}`}
           />
@@ -229,7 +237,9 @@ const AccountManagement = () => {
         <Text>{item.firstname + " " + item.lastname}</Text>
       </View>
       <Text style={{ flex: 2 }}>{item.username}</Text>
-      <Text style={{ flex: 3 }}>{item.username + "@example.com"}</Text>
+      {/* Work Email */}
+      <Text style={{ flex: 3 }}>{item.username + "@sfc.gov.my"}</Text>
+      {/* Role */}
       <Text style={{ flex: 1 }}>
         {item.role === "admin" ? "Admin" : "Park Guide"}
       </Text>
@@ -492,9 +502,9 @@ const AccountManagement = () => {
                   </View>
                 )}
               </View>
-              {selectedAcc.profileImage ? (
+              {getProfileImageUri(selectedAcc) ? (
                 <Image
-                  source={{ uri: selectedAcc?.profileImage }}
+                  source={{ uri: getProfileImageUri(selectedAcc) }}
                   style={styles.largeAvatar}
                 />
               ) : (
@@ -763,9 +773,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
   },
   avatar: {
-    width: 37,
-    height: 37,
-    borderRadius: 20,
+    width: 35,
+    height: 35,
+    borderRadius: 60,
+    borderWidth: 3,
+    borderColor: "white",
   },
   pfpPlaceholder: {
     width: 37,
