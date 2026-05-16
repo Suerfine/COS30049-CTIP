@@ -246,10 +246,6 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     overflow: "hidden",
     borderColor: "#897474",
-    width: Platform.select({
-      web: 300,
-      default: 200,
-    }),
   },
   imageWrapper: {
     width: "100%",
