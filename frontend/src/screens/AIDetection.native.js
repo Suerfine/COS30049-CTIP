@@ -1,10 +1,11 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TextInput, Button, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TextInput, Button, Alert, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 
 import apiClient from '../config/apiConfig';
 import { DetectionService } from '../services/DetectionService';
 import { userDashboardService } from '../services/userDashboardService';
+import { Camera } from 'lucide-react-native';
 
 const SKELETON_EDGES = [
   [0, 1], [0, 2], [1, 3], [2, 4],
@@ -231,8 +232,44 @@ export default function DetectionScreen() {
   }
 
   // --- MAIN UI ---
-  if (!permission) return <View />;
-  if (!permission.granted) return <Text style={{marginTop: 50, color: 'white'}} onPress={requestPermission}>Grant Camera Permission</Text>;
+  if (!permission) {
+    return (
+      <View style={styles.loadingView}>
+        <ActivityIndicator size="large" color="#4CAF50" />
+      </View>
+    );
+  }
+  if (!permission.granted) {
+    return (
+      <View style={styles.permissionContainer}>
+        <View style={styles.permissionCard}>
+          <View style={styles.iconCircle}>
+            <Text style={styles.cameraIcon}><Camera color="grey"/></Text>
+          </View>
+          
+          <Text style={styles.permissionTitle}>Camera Access Required</Text>
+          
+          <Text style={styles.permissionDescription}>
+            To perform real-time AI compliance monitoring and keep our park safe, 
+            the application requires permission to access your device's camera stream.
+          </Text>
+
+          <TouchableOpacity 
+            style={styles.actionBtn} 
+            onPress={requestPermission}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.actionBtnText}>Grant Camera Permission</Text>
+          </TouchableOpacity>
+
+          <Text style={styles.permissionNotice}>
+            Your privacy is guarded. The video stream is processed completely locally 
+            for on-site edge model inference.
+          </Text>
+        </View>
+      </View>
+    );
+  }
   if (userLoading) return <View style={styles.loadingView}><Text style={{color: '#888'}}>Loading user...</Text></View>;
 
   return (
@@ -372,4 +409,72 @@ const styles = StyleSheet.create({
   label: { fontSize: 14, fontWeight: '600', marginTop: 15, marginBottom: 5, color: '#ccc' },
   input: { borderWidth: 1, borderColor: '#444', padding: 10, borderRadius: 5, backgroundColor: '#333', marginBottom: 10, color: 'white' },
   buttonContainer: { marginVertical: 8 },
+
+  permissionContainer: {
+    flex: 1,
+    backgroundColor: '#ffffff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  permissionCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 32,
+    width: '100%',
+    maxWidth: 420,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#2d2d2d',
+  },
+  iconCircle: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: 'rgba(76, 175, 80, 0.12)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(76, 175, 80, 0.3)',
+  },
+  cameraIcon: {
+    fontSize: 32,
+  },
+  permissionTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#000000',
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  permissionDescription: {
+    fontSize: 14,
+    color: '#aaaaaa',
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: 28,
+  },
+  actionBtn: {
+    backgroundColor: '#4CAF50',
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    width: '100%',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  actionBtnText: {
+    color: '#ffffff',
+    fontSize: 15,
+    fontWeight: 'bold',
+    letterSpacing: 0.3,
+  },
+  permissionNotice: {
+    fontSize: 11,
+    color: '#666666',
+    textAlign: 'center',
+    lineHeight: 16,
+    fontStyle: 'italic',
+  },
 });
