@@ -116,12 +116,35 @@ export const enrollmentService = {
     }
   },
 
+  getAllNoPagination: async () => {
+    let page = 1;
+    const size = 100;
+    let all = [];
+    let totalPages = 1;
+
+    do {
+      const res = await enrollmentService.getAll(page, size);
+
+      const data = res?.data || [];
+      all = [...all, ...data];
+
+      totalPages = res?.totalPages || 1;
+      page++;
+    } while (page <= totalPages);
+
+    return all;
+  },
+
   /**
    * GET: Filter enrollments based on user id locally
    */
   getByUserId: async (userId) => {
-    const allEnrollments = await enrollmentService.getAll();
-    return allEnrollments.filter((enroll) => enroll.user_id === userId);
+      const allEnrollments = await enrollmentService.getAllNoPagination(); 
+      console.log("ALL enrollment:", allEnrollments);
+
+      return allEnrollments.filter(
+          (enroll) => enroll.user_id === userId
+      );
   },
 
   /**
