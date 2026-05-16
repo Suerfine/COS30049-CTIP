@@ -664,9 +664,12 @@ const styles = StyleSheet.create({
   search: {
     borderWidth: 1,
     borderColor: "#8f8f8f",
-    minWidth: 180,
+    width: "auto",
+    flexBasis: 300,
+    minWidth: 80,
     maxWidth: 300,
     flexShrink: 1,
+    flexGrow: 1,
     padding: 5,
     backgroundColor: "white",
     borderRadius: 15,
@@ -677,7 +680,10 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     paddingVertical: 2,
-    outlineStyle: "none",
+    ...Platform.select({
+      web: { outlineStyle: "none" },
+    }),
+    marginLeft:10
   },
   toolbar: {
     marginVertical: 20,
