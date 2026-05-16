@@ -12,6 +12,15 @@ const getData = (res) => res?.data?.data ?? res?.data ?? [];
 const formatName = (user) =>
   user ? `${user.firstname} ${user.lastname}` : null;
 
+const getUserProfileImage = (user, fallbackImage) =>
+  fallbackImage ||
+  user?.profileImage ||
+  user?.pfp_url ||
+  user?.pfp ||
+  user?.user_profile_image ||
+  user?.profile_image ||
+  null;
+
 const base64Alphabet =
   "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
@@ -70,14 +79,20 @@ export const paymentService = {
       const users = userRes?.data?.data || [];
 
       let enriched = payments.map((p) => {
-        const user = users.find((u) => Number(u.id) === Number(p.user_id));
+        const user = users.find(
+          (u) =>
+            Number(u.id) === Number(p.user_id) ||
+            (p.user_email && u.personal_email === p.user_email),
+        );
+        const name = formatName(user) || p.user_fullname || `User #${p.user_id || 'unknown'}`;
+        const imageSource = getUserProfileImage(user, p.user_profile_image || p.user_profile_img);
 
         return {
           ...p,
-          fullName: user
-            ? `${user.firstname} ${user.lastname}`
-            : `User #${p.user_id}`,
-          user_profile_image: user?.profile_image || null,
+          fullName: name,
+          user_fullname: p.user_fullname || name,
+          user_profile_image: imageSource,
+          profileImage: imageSource,
         };
       });
 
