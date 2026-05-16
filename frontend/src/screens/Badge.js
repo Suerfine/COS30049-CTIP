@@ -180,49 +180,56 @@ const Badge = ({ navigation }) => {
     )};
 
     return (
-        <View style={{ flex: 1, backgroundColor: '#fcfcfc' }}>
-            <ScrollView style={styles.container}>
-                <View style={styles.headerSection}>
-                    <View style={styles.titleRow}>
-                        <Text style={styles.headerTitle}>My Certifications</Text>
+        <View style={styles.page}>
+            <ScrollView
+                style={styles.container}
+                contentContainerStyle={styles.scrollContent}
+            >   
+                <View style={styles.contentWrapper}>
+                    <View style={styles.headerSection}>
+                        <View style={styles.titleRow}>
+                            <Text style={styles.headerTitle}>My Certifications</Text>
+                        </View>
                     </View>
+
+                    <RenderSection 
+                        title="Achieved Badges" 
+                        data={sections.achieved} 
+                        type="achieved"
+                        emptyMsg="Complete courses to earn professional badges."
+                    />
+
+                    <RenderSection 
+                        title="In Progress" 
+                        data={sections.inProgress} 
+                        type="progress"
+                        emptyMsg="No courses currently active."
+                    />
+
+                    <RenderSection 
+                        title="Pending Verification" 
+                        data={sections.inReview} 
+                        type="review"
+                        hideIfEmpty={true}
+                    />
+
+                    <RenderSection 
+                        title="Expired or Failed" 
+                        data={sections.nonAchieved} 
+                        type="alert"
+                        emptyMsg="No expired or failed records."
+                    />
+
+                    <RenderSection 
+                        title="Available Badges" 
+                        data={sections.available} 
+                        type="locked"
+                        emptyMsg="All available courses have been enrolled."
+                    />
                 </View>
-
-                <RenderSection 
-                    title="Achieved Badges" 
-                    data={sections.achieved} 
-                    type="achieved"
-                    emptyMsg="Complete courses to earn professional badges."
-                />
-
-                <RenderSection 
-                    title="In Progress" 
-                    data={sections.inProgress} 
-                    type="progress"
-                    emptyMsg="No courses currently active."
-                />
-
-                <RenderSection 
-                    title="Pending Verification" 
-                    data={sections.inReview} 
-                    type="review"
-                    hideIfEmpty={true}
-                />
-
-                <RenderSection 
-                    title="Expired or Failed" 
-                    data={sections.nonAchieved} 
-                    type="alert"
-                    emptyMsg="No expired or failed records."
-                />
-
-                <RenderSection 
-                    title="Available Badges" 
-                    data={sections.available} 
-                    type="locked"
-                    emptyMsg="All available courses have been enrolled."
-                />
-                <SFCFooter/>
+                <View style={styles.footerWrapper}>
+                    <SFCFooter />
+                </View>
             </ScrollView>
 
             <FilterSidebar
@@ -241,6 +248,8 @@ const Badge = ({ navigation }) => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+    },
+    contentWrapper: {
         paddingHorizontal: Platform.OS === 'web' ? 60 : 20,
     },
     centered: {
@@ -405,6 +414,17 @@ const styles = StyleSheet.create({
         fontStyle: 'italic',
         fontSize: 14,
         marginLeft: 5,
+    },
+    page: {
+        flex: 1,
+        backgroundColor: '#fcfcfc',
+    },
+    scrollContent: {
+        flexGrow: 1,
+        minHeight: '100%',
+    },
+    footerWrapper: {
+        marginTop: 'auto',
     },
 });
 
