@@ -82,6 +82,7 @@ const EnrollmentManagement = () => {
     auditLoading,
     fetchEnrollmentAudit,
     resetSubmissionSort,
+    fetchSubmissions
   } = useSubmissionManagement();
 
   const {
@@ -547,6 +548,7 @@ const EnrollmentManagement = () => {
         await fetchEnrollmentAudit(id);
         await setSubmissionCurrentPage((p) => p);
         await fetchEnrollments();
+        await fetchSubmissions();
       } else {
         alert("Failed to approve: " + result.error);
       }
@@ -566,6 +568,7 @@ const EnrollmentManagement = () => {
       await fetchEnrollmentAudit(id);
       await setSubmissionCurrentPage((p) => p);
       await fetchEnrollments();
+      await fetchSubmissions();
     } else {
       alert("Error rejecting badge: " + result.error);
     }
@@ -931,7 +934,7 @@ const EnrollmentManagement = () => {
           onRequestClose={() => setAuditModalVisible(false)}
         >
           <View style={styles.modalOverlay}>
-            <View style={styles.auditModalContent}>
+            <View style={[styles.auditModalContent, isCompact && styles.auditModalContentCompact]}>
               <View style={styles.modalHeader}>
                 <Text style={styles.modalTitle}>
                   {auditLoading
@@ -1012,7 +1015,7 @@ const EnrollmentManagement = () => {
           onRequestClose={() => setPaymentModalVisible(false)}
         >
           <View style={styles.modalOverlay}>
-            <View style={styles.paymentModalContent}>
+            <View style={[styles.paymentModalContent, isCompact && styles.paymentModalContentCompact]}>
               <View style={styles.modalHeader}>
                 <Text style={styles.modalTitle}>Payment Details</Text>
 
@@ -1085,14 +1088,14 @@ const EnrollmentManagement = () => {
                           style={[styles.actionBtn, styles.outlineBtn]}
                           onPress={() => setRejectModalVisible(true)}
                         >
-                          <Text style={styles.outlineBtnText}>Reject</Text>
+                          <Text style={styles.outlineBtnText}>Received</Text>
                         </Pressable>
 
                         <Pressable
                           style={[styles.actionBtn, styles.solidApproveBtn]}
                           onPress={handleApprovePayment}
                         >
-                          <Text style={styles.solidBtnText}>Approve</Text>
+                          <Text style={styles.solidBtnText}>Not Received</Text>
                         </Pressable>
                       </View>
                     )}
@@ -1109,7 +1112,7 @@ const EnrollmentManagement = () => {
           onRequestClose={() => setRejectModalVisible(false)}
         >
           <View style={styles.modalOverlay}>
-            <View style={styles.rejectModalContent}>
+            <View style={[styles.rejectModalContent, isCompact && styles.rejectModalContentCompact]}>
               <View style={styles.modalHeader}>
                 <Text style={styles.modalTitle}>Reject Payment</Text>
 
@@ -1264,9 +1267,6 @@ const styles = StyleSheet.create({
     fontSize: 25,
     fontWeight: 500,
     marginBottom: 5,
-  },
-  row: {
-    flexDirection: "row",
   },
   search: {
     borderWidth: 1,
@@ -1477,6 +1477,11 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 25,
   },
+  auditModalContentCompact: {
+    width: "92%",
+    maxHeight: "90%",
+    padding: 16,
+  },
   modalHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -1555,6 +1560,11 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     borderRadius: 20,
     padding: 25,
+  },
+  paymentModalContentCompact: {
+    width: "92%",
+    maxHeight: "90%",
+    padding: 16,
   },
   paymentUserSection: {
     flexDirection: "row",
@@ -1797,6 +1807,10 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
     borderRadius: 20,
     padding: 24,
+  },
+  rejectModalContentCompact: {
+    width: "92%",
+    padding: 16,
   },
   rejectLabel: {
     fontSize: 14,

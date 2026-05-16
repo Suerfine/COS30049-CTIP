@@ -173,7 +173,7 @@ const NavBar = () => {
               {navLinks.map((item) => (
                 <Pressable
                   key={item.name}
-                  style={styles.mobileMenuItem}
+                  style={({hovered})=>[styles.mobileMenuItem, hovered && styles.mobileHoverContainer]}
                   onPress={() => {
                     setMobileMenuOpen(false);
 
@@ -182,19 +182,22 @@ const NavBar = () => {
                     });
                   }}
                 >
-                  <Text
-                    style={[
-                      styles.mobileMenuText,
-                      displayRoute === item.route && styles.activeText,
-                    ]}
-                  >
-                    {item.name}
-                  </Text>
+                  {({ hovered }) => (
+                    <Text
+                      style={[
+                        styles.mobileMenuText,
+                        hovered && styles.mobileHoverText,
+                        displayRoute === item.route && styles.activeText,
+                      ]}
+                    >
+                      {item.name}
+                    </Text>
+                  )}
                 </Pressable>
               ))}
 
               <Pressable
-                style={styles.mobileMenuItem}
+                style={({hovered})=>[styles.mobileMenuItem, hovered && styles.mobileHoverContainer]}
                 onPress={() => {
                   setMobileMenuOpen(false);
 
@@ -207,7 +210,7 @@ const NavBar = () => {
               </Pressable>
 
               <Pressable
-                style={styles.mobileMenuItem}
+                style={({hovered})=>[styles.mobileMenuItem, hovered && styles.mobileHoverContainer]}
                 onPress={() => {
                   setMobileMenuOpen(false);
 
@@ -223,7 +226,7 @@ const NavBar = () => {
               </Pressable>
 
               <Pressable
-                style={styles.mobileMenuItem}
+                style={({hovered})=>[styles.mobileMenuItem, styles.mobileHoverContainer]}
                 onPress={handleLogout}
               >
                 <Text
@@ -539,7 +542,6 @@ const styles = StyleSheet.create({
     borderBottomColor: "#ddd",
     zIndex: 9999,
     paddingVertical: 10,
-
     shadowColor: "#000",
     shadowOpacity: 0.1,
     shadowRadius: 8,
@@ -564,6 +566,12 @@ const styles = StyleSheet.create({
     zIndex: 9998,
     elevation: 5,
   },
+  mobileHoverText:{
+    color:"#efab21"
+  },
+  mobileHoverContainer:{
+    backgroundColor:'#cbcbcb1e'
+  }
 });
 
 export default NavBar;

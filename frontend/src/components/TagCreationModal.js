@@ -7,7 +7,8 @@ import {
     Pressable, 
     Modal, 
     ActivityIndicator, 
-    Platform 
+    Platform,
+    ScrollView
 } from 'react-native';
 import { Tag, X } from 'lucide-react-native';
 
@@ -33,6 +34,11 @@ const TagCreationModal = ({ visible, onCancel, onSave, isLoading }) => {
             onRequestClose={handleClose}
         >
             <View style={styles.modalOverlay}>
+                <ScrollView
+                    style={styles.modalScroll}
+                    contentContainerStyle={styles.modalScrollContent}
+                    showsVerticalScrollIndicator={false}
+                >
                 <View style={styles.tagModalContent}>
                     {/* Header */}
                     <View style={styles.modalHeader}>
@@ -102,6 +108,7 @@ const TagCreationModal = ({ visible, onCancel, onSave, isLoading }) => {
                         </Pressable>
                     </View>
                 </View>
+                </ScrollView>
             </View>
         </Modal>
     );
@@ -113,10 +120,20 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(0, 0, 0, 0.5)',
         justifyContent: 'center',
         alignItems: 'center',
+        padding: 20,
+    },
+    modalScroll: {
+        width: '100%',
+    },
+    modalScrollContent: {
+        flexGrow: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     tagModalContent: {
-        width: '90%',
+        width: '100%',
         maxWidth: 400,
+        maxHeight: '90%',
         backgroundColor: 'white',
         borderRadius: 16,
         padding: 24,
@@ -171,6 +188,7 @@ const styles = StyleSheet.create({
     typeRow: {
         flexDirection: 'row',
         gap: 12,
+        flexWrap: 'wrap',
         marginBottom: 24,
     },
     typeBtn: {
@@ -200,6 +218,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'flex-end',
         gap: 12,
+        flexWrap: 'wrap',
         marginTop: 8,
     },
     cancelBtn: {
