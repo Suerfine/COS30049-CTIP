@@ -547,7 +547,6 @@ const EnrollmentManagement = () => {
         setAuditModalVisible(false);
         await fetchEnrollmentAudit(id);
         await setSubmissionCurrentPage((p) => p);
-        await fetchEnrollments();
         await fetchSubmissions();
       } else {
         alert("Failed to approve: " + result.error);
@@ -1759,7 +1758,7 @@ const styles = StyleSheet.create({
   },
   downloadBtn: {
     backgroundColor: "#f59e0b",
-    paddingVertical: 8,
+    paddingVertical: 4,
     borderRadius: 12,
     alignItems: "center",
   },
