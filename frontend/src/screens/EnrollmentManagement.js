@@ -506,7 +506,7 @@ const EnrollmentManagement = () => {
           {formatDate(item.completed_at) || "N/A"}
         </Text>
         <Text style={{ flex: 2 }}>
-          {item.badge_expiry_on ? formatDate(item.badge_expiry_on) : "N/A"}
+          {item.badge_expire_at ? formatDate(item.badge_expire_at) : "N/A"}
         </Text>
       </Pressable>
     );
@@ -1087,7 +1087,7 @@ const EnrollmentManagement = () => {
                           style={[styles.actionBtn, styles.outlineBtn]}
                           onPress={() => setRejectModalVisible(true)}
                         >
-                          <Text style={styles.outlineBtnText}>Rejected</Text>
+                          <Text style={styles.outlineBtnText}>Not Received</Text>
                         </Pressable>
 
                         <Pressable
@@ -1468,11 +1468,9 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0,0,0,0.6)",
     justifyContent: "center",
     alignItems: "center",
-    padding: 20,
   },
   auditModalContent: {
-    width: "100%",
-    maxWidth: 800,
+    width: "70%",
     maxHeight: "95%",
     backgroundColor: "#fff",
     borderRadius: 20,
@@ -1556,9 +1554,8 @@ const styles = StyleSheet.create({
     color: "#666",
   },
   paymentModalContent: {
-    width: "100%",
-    maxWidth: 800,
-    maxHeight: "95%",
+    width: "60%",
+    maxHeight: "90%",
     backgroundColor: "#fff",
     borderRadius: 20,
     padding: 25,
@@ -1764,23 +1761,23 @@ const styles = StyleSheet.create({
   },
   row: {
     flexDirection: "row",
-    gap: 12,
-    width: "100%",
+    gap: 10,
   },
   actionBtn: {
-    flex: 1,
     height: 48,
     borderRadius: 6,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
+    width: 170,
   },
   outlineBtn: {
     backgroundColor: "transparent",
     borderWidth: 1.5,
     borderColor: "#e5e7eb",
     paddingHorizontal: 16,
+    width: 170,
   },
   outlineBtnText: {
     color: "#4b5563",
@@ -1805,8 +1802,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   rejectModalContent: {
-    width: "100%",
-    maxWidth: 800,
+    width: "40%",
     backgroundColor: "white",
     borderRadius: 20,
     padding: 24,
