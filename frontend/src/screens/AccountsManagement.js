@@ -26,6 +26,7 @@ import {
   ArrowDownWideNarrow,
   RotateCcw,
   UserRoundKey,
+  SquarePen,
 } from "lucide-react-native";
 import React, { useState } from "react";
 import {
@@ -65,9 +66,11 @@ const AccountManagement = () => {
     refresh,
     handleUpdateAccount,
     handleDeleteAccount,
+    pickProfilePicture,
     currentRole,
     setCurrentRole,
   } = useAccountManagement();
+  const [pendingImage, setPendingImage] = useState(null);
   const [selectedAcc, setSelectedAcc] = useState(null);
   const [activeMenuId, setActiveMenuId] = useState(null);
   const [isOpen, setIsOpen] = useState(false);
@@ -93,10 +96,11 @@ const AccountManagement = () => {
   };
 
   const onSaveEdit = async () => {
-    const result = await handleUpdateAccount(selectedAcc.id, editForm);
+    const result = await handleUpdateAccount(selectedAcc.id, editForm, pendingImage ?? null);
     try {
       setIsEditing(false);
       setActiveMenuId(null);
+      setPendingImage(null);
       await refresh();
       setSelectedAcc(editForm);
     } catch (err) {
@@ -357,10 +361,15 @@ const AccountManagement = () => {
 
   // Loading
   return (
-    <ScrollView style={styles.pageScroll} contentContainerStyle={styles.container}>
+    <ScrollView
+      style={styles.pageScroll}
+      contentContainerStyle={styles.container}
+    >
       <Text style={styles.title}>Account Management</Text>
       <View style={[styles.toolbar, isCompact && styles.toolbarCompact]}>
-        <View style={[styles.toolbarRow, isCompact && styles.toolbarGroupCompact]}>
+        <View
+          style={[styles.toolbarRow, isCompact && styles.toolbarGroupCompact]}
+        >
           <Pressable
             onPress={resetSort}
             style={({ hovered }) => [
@@ -386,7 +395,9 @@ const AccountManagement = () => {
               style={styles.pillTrigger}
               onPress={() => setIsOpen(!isOpen)}
             >
-              <Text style={styles.pillText}>{currentRole !== 'All' ? currentRole : 'Role'}</Text>
+              <Text style={styles.pillText}>
+                {currentRole !== "All" ? currentRole : "Role"}
+              </Text>
               {isOpen ? (
                 <ChevronUp size={16} color="#4b5563" />
               ) : (
@@ -535,19 +546,33 @@ const AccountManagement = () => {
                   </View>
                 )}
               </View>
-              {getProfileImageUri(selectedAcc) ? (
+              {(isEditing && pendingImage?.uri) || getProfileImageUri(selectedAcc) ? (
                 <Image
-                  source={{ uri: getProfileImageUri(selectedAcc) }}
+                  source={{ uri: isEditing && pendingImage?.uri 
+                    ? pendingImage.uri 
+                    : getProfileImageUri(selectedAcc) }}
                   style={styles.largeAvatar}
                 />
               ) : (
                 <View style={styles.SideBarPlaceholder}>
                   <Text style={styles.sideBarInitials}>
-                    {selectedAcc?.firstname
-                      ? selectedAcc.firstname[0].toUpperCase()
-                      : "?"}
+                    {selectedAcc?.firstname ? selectedAcc.firstname[0].toUpperCase() : "?"}
                   </Text>
                 </View>
+              )}
+              {isEditing && (
+                <Pressable
+                  style={styles.editProfilePicBtn}
+                  onPress={async () => {
+                    const picked = await pickProfilePicture();
+                    if (picked) {
+                      setPendingImage(picked);
+                    }
+                  }}
+                >
+                  <SquarePen size={16} color="white" />
+                  <Text style={styles.editBtnText}>Change Photo</Text>
+                </Pressable>
               )}
 
               {isEditing ? (
@@ -703,7 +728,7 @@ const AccountManagement = () => {
               {isEditing && (
                 <View style={[styles.row, styles.actionBtn]}>
                   <Pressable
-                    onPress={() => setIsEditing(false)}
+                    onPress={() => {setIsEditing(false); setPendingImage(null)}}
                     style={styles.Btn}
                   >
                     <Text>Cancel</Text>
@@ -936,6 +961,23 @@ const styles = StyleSheet.create({
     width: 130,
     height: 130,
     alignSelf: "center",
+  },
+  editProfilePicBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: "#0a6340",
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 6,
+    marginTop: 12,
+    alignSelf: "center",
+  },
+  editBtnText: {
+    color: "white",
+    fontSize: 14,
+    fontWeight: "500",
   },
   panelContent: {
     padding: 20,
