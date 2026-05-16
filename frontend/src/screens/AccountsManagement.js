@@ -241,7 +241,7 @@ const AccountManagement = () => {
       {/* Username */}
       <Text style={{ flex: 2 }}>{item.username}</Text>
       {/* Work Email */}
-      <Text style={{ flex: 3 }}>{item.username + " @example.com"}</Text>
+      <Text style={{ flex: 3 }}>{item.username + "@sfc.gov.my"}</Text>
       {/* Role */}
       <Text style={{ flex: 1 }}>
         {item.role === "admin" ? "Admin" : "Park Guide"}
