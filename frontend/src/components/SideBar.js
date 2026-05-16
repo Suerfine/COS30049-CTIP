@@ -129,6 +129,7 @@ const styles = StyleSheet.create({
     },
     sidebarMobile:{
         width:'100%',
+        maxWidth:'none',
         minHeight:'auto',
         borderRightWidth:0,
     },
@@ -143,9 +144,11 @@ const styles = StyleSheet.create({
         paddingBottom:25,
         borderBottomWidth: 1,
         borderBottomColor: '#ccc',
+        width:'100%',
     },
     linkbtn:{
-        paddingTop:8
+        paddingTop:8,
+        width:'100%',
     },
     menuItem:{
         flexDirection:'row',
@@ -153,6 +156,7 @@ const styles = StyleSheet.create({
         paddingHorizontal:10,
         paddingVertical:8,
         minWidth:0,
+        width:'100%',
         borderRadius:'5px',
         alignItems:'center'
     },

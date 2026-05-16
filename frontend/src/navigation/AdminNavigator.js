@@ -31,11 +31,14 @@ export default function AdminNavigator() {
         <View style={styles.mobileHeader}>
           <Pressable
             style={styles.mobileMenuButton}
-            onPress={() => setIsMobileSidebarOpen(true)}
+            onPress={() => setIsMobileSidebarOpen((prev) => !prev)}
           >
-            <Menu size={22} color="#0a6340" />
+            {isMobileSidebarOpen ? (
+              <X size={22} color="#0a6340" />
+            ) : (
+              <Menu size={22} color="#0a6340" />
+            )}
           </Pressable>
-          <Text style={styles.mobileHeaderTitle}>Admin Panel</Text>
         </View>
       )}
 
@@ -51,12 +54,6 @@ export default function AdminNavigator() {
               onPress={() => setIsMobileSidebarOpen(false)}
             />
             <View style={styles.drawer}>
-              <View style={styles.drawerHeader}>
-                <Text style={styles.drawerTitle}>Navigation</Text>
-                <Pressable onPress={() => setIsMobileSidebarOpen(false)}>
-                  <X size={20} color="#374151" />
-                </Pressable>
-              </View>
               <SideBar mobile onNavigate={() => setIsMobileSidebarOpen(false)} />
             </View>
           </>
@@ -120,11 +117,6 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     backgroundColor: "#f0fdf4",
   },
-  mobileHeaderTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#111827",
-  },
   backdrop: {
     position: "absolute",
     top: 0,
@@ -145,19 +137,5 @@ const styles = StyleSheet.create({
     zIndex: 1001,
     borderRightWidth: 1,
     borderRightColor: "#e5e7eb",
-  },
-  drawerHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 18,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#e5e7eb",
-  },
-  drawerTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#111827",
   },
 });

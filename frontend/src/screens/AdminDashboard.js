@@ -212,12 +212,12 @@ const AdminDashboard = () => {
 
       <View style={[styles.mapRow, isCompact && styles.mapRowCompact]}>
         <View style={[styles.mapSection, isCompact && styles.mapSectionCompact]}>
-          <View style={styles.mapHeader}>
+          <View style={[styles.mapHeader, isCompact && styles.mapHeaderCompact]}>
             <View>
               <Text style={styles.mapTitle}>Anomaly Map</Text>
             <Text style={styles.mapSubtitle}>All anomaly events with valid coordinates</Text>
           </View>
-          <View style={styles.mapActions}>
+          <View style={[styles.mapActions, isCompact && styles.mapActionsCompact]}>
             <View style={styles.legend}>
               <View style={styles.legendItem}>
                 <View style={[styles.legendDot, { backgroundColor: SEVERITY_CONFIG.high.fillColor }]} />
@@ -499,6 +499,10 @@ const styles = StyleSheet.create({
     borderBottomColor: "#e5e7eb",
     zIndex: 1000,
   },
+  mapHeaderCompact: {
+    flexDirection: "column",
+    alignItems: "flex-start",
+  },
   mapTitle: {
     fontSize: 20,
     fontWeight: "700",
@@ -515,6 +519,10 @@ const styles = StyleSheet.create({
     gap: 14,
     flexWrap: "wrap",
     justifyContent: "flex-end",
+  },
+  mapActionsCompact: {
+    width: "100%",
+    justifyContent: "space-between",
   },
   legend: {
     flexDirection: "row",
