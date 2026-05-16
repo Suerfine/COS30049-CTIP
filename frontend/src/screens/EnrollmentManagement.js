@@ -915,7 +915,7 @@ const EnrollmentManagement = () => {
           }}
           // Rejected
           onUnenroll={async (id) => {
-            const res = await handleUpdateStatus(id, "dropped");
+            const res = await handleUpdateStatus(id, "rejected");
             if (res.success) setDetailModalVisible(false);
           }}
           onDelete={async (id) => {
