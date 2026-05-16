@@ -97,15 +97,21 @@ const AccountManagement = () => {
   };
 
   const onSaveEdit = async () => {
-    try {
-      const result = await handleUpdateAccount(selectedAcc.id, editForm);
+    const result = await handleUpdateAccount(
+      selectedAcc.id,
+      editForm,
+      pendingImage ?? null
+    );
+    if (result?.success) {
       setIsEditing(false);
       setActiveMenuId(null);
+      setSelectedAcc({
+        ...editForm,
+        profileImage: pendingImage?.uri ?? getProfileImageUri(selectedAcc),
+      });
       setPendingImage(null);
-      await refresh();
-      setSelectedAcc(editForm);
-    } catch (err) {
-      console.error("Failed to update:", err);
+    } else {
+      console.error("Failed to update:", result?.serverError);
     }
   };
 

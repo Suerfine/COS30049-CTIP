@@ -109,9 +109,10 @@ export const useAccountManagement = () => {
             await AccountService.updateProfilePicture(IdleDeadline, imageFile);
         }
         const result = await AccountService.update(IdleDeadline, formData);
-        if (refresh) {
-            await refresh();
-        }
+        // if (refresh) {
+        //     await refresh();
+        // }
+        await fetchAccounts();
         return { success: true, data: result };
     } catch (errString) {
         return { success: false, serverError: errString };
