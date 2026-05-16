@@ -82,6 +82,7 @@ const EnrollmentManagement = () => {
     auditLoading,
     fetchEnrollmentAudit,
     resetSubmissionSort,
+    fetchSubmissions
   } = useSubmissionManagement();
 
   const {
@@ -547,6 +548,7 @@ const EnrollmentManagement = () => {
         await fetchEnrollmentAudit(id);
         await setSubmissionCurrentPage((p) => p);
         await fetchEnrollments();
+        await fetchSubmissions();
       } else {
         alert("Failed to approve: " + result.error);
       }
@@ -566,6 +568,7 @@ const EnrollmentManagement = () => {
       await fetchEnrollmentAudit(id);
       await setSubmissionCurrentPage((p) => p);
       await fetchEnrollments();
+      await fetchSubmissions();
     } else {
       alert("Error rejecting badge: " + result.error);
     }
