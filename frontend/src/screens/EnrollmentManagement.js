@@ -1088,7 +1088,7 @@ const EnrollmentManagement = () => {
                           style={[styles.actionBtn, styles.outlineBtn]}
                           onPress={() => setRejectModalVisible(true)}
                         >
-                          <Text style={styles.outlineBtnText}>Not Received</Text>
+                          <Text style={styles.outlineBtnText}>Rejected</Text>
                         </Pressable>
 
                         <Pressable
@@ -1806,7 +1806,8 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   rejectModalContent: {
-    width: "40%",
+    width: "100%",
+    maxWidth: 800,
     backgroundColor: "white",
     borderRadius: 20,
     padding: 24,
