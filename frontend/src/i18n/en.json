@@ -126,5 +126,9 @@
     "Preferences":"Preferences",
     "Security":"Security",
     "Notification":"Notification",
-    "Logout":"Logout"
+    "Logout":"Logout",
+    "registration": "Registration",
+    "accounts": "Accounts",
+    "enrollment": "Enrollment",
+    "ar models": "AR Models"
 }

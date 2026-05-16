@@ -126,5 +126,9 @@
     "Preferences":"Keutamaan",
     "Security":"Keselamatan",
     "Notification":"Pemberitahuan",
-    "Logout":"Log Keluar"
+    "Logout":"Log Keluar",
+    "registration": "Daftar",
+    "accounts": "Akaun",
+    "enrollment": "Pendaftaran",
+    "ar models": "Model AR"
 }
