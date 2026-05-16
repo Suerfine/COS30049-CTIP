@@ -83,7 +83,10 @@ const SideBar = () => {
                 </Pressable>
             </View>
             <View style={styles.admin}>
-                <View style={styles.adminInfo}>
+                <Pressable
+                    style={({ hovered }) => [styles.adminInfo, hovered && styles.hoverStyle]}
+                    onPress={() => navigation.navigate('AdminStack', { screen: 'User Profile' })}
+                >
                     {/* Profile  */}
                     {user?.pfp_url ? (
                         <Image source={{ uri: user.pfp_url }} style={styles.profilePic}/>
@@ -98,7 +101,7 @@ const SideBar = () => {
                             <Text>{user?.firstname}</Text>
                             <Text style={styles.role}>{user?.role === 'admin' && 'Admin'}</Text>
                         </View>
-                </View>
+                </Pressable>
                 <Pressable
                     style={({ hovered }) => [
                         styles.logout,

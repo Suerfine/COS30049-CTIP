@@ -11,7 +11,7 @@ import {
   Dimensions,
   Modal,
 } from "react-native";
-import { SquarePen } from "lucide-react-native";
+import { SquarePen, ShieldCheck } from "lucide-react-native";
 import { Eye, EyeOff, FileUp } from "lucide-react-native";
 
 // Import other hooks and components
@@ -283,6 +283,20 @@ const UserProfile = ({ navigation }) => {
                 </View>
             </View>
             </View>
+
+            {/* Security */}
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>Security</Text>
+              </View>
+              <Pressable
+                style={({ hovered }) => [styles.securityBtn, hovered && styles.securityBtnHover]}
+                onPress={() => navigation.navigate('Security')}
+              >
+                <ShieldCheck size={18} color="#2f6618fe" />
+                <Text style={styles.securityBtnText}>Password & Two-Factor Authentication</Text>
+              </Pressable>
+            </View>
         </ScrollView>
         </View>
     );
@@ -474,6 +488,25 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     marginTop: 2,
     textAlign: "left",
+  },
+  securityBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    borderWidth: 1,
+    borderColor: "#2f6618fe",
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    alignSelf: "flex-start",
+  },
+  securityBtnHover: {
+    backgroundColor: "#e6f2e6",
+  },
+  securityBtnText: {
+    fontSize: 14,
+    color: "#2f6618fe",
+    fontWeight: "500",
   },
 });
 
