@@ -15,16 +15,35 @@ const UsersFormContent = ({ onSubmit, onCancel, isLoading }) => {
 
     const validateForm = () => {
         let tempErrors = {};
-        if (!form.fname.trim()) tempErrors.fname = "* First name is required.";
-        else if (!isOnlyLetters(form.fname)) tempErrors.fname = "* First name must only contain letters.";
-        if (!form.lname.trim()) tempErrors.lname = "* Last name is required.";
-        else if (!isOnlyLetters(form.lname)) tempErrors.lname = "* Last name must only contain letters.";
-        if (!form.ic.trim()) tempErrors.ic = "* IC/Passport No. is required.";
-        if (!form.email.trim()) tempErrors.email = "* Personal Email is required.";
-        else if (!isValidEmail(form.email)) tempErrors.email = "* Personal Email is invalid format.";
-        if (!form.telefon.trim()) tempErrors.telefon = "* Phone Number is required.";
-        else if (!phoneRegex.test(form.telefon)) tempErrors.telefon = "* Invalid phone number.";
+        if (!form.fname.trim()) {
+            tempErrors.fname = "* First name is required."
+        }
+        else if (!isOnlyLetters(form.fname)){
+            tempErrors.fname = "* First name must only contain letters."
+        };
+        if (!form.lname.trim()) {
+            tempErrors.lname = "* Last name is required."
+        }
+        else if (!isOnlyLetters(form.lname)) {
+            tempErrors.lname = "* Last name must only contain letters."
+        };
+        if (!form.ic.trim()) {
+            tempErrors.ic = "* IC/Passport No. is required."
+        };
+        if (!form.email.trim()) {
+            tempErrors.email = "* Personal Email is required."
+        }
+        else if (!isValidEmail(form.email)) {
+            tempErrors.email = "* Personal Email is invalid format."
+        };
+        if (!form.telefon.trim()) {
+            tempErrors.telefon = "* Phone Number is required."
+        }
+        else if (!phoneRegex.test(form.telefon)) {
+            tempErrors.telefon = "* Invalid phone number."
+        };
         setErrors(tempErrors);
+
         return Object.keys(tempErrors).length === 0;
     };
 
@@ -58,26 +77,31 @@ const UsersFormContent = ({ onSubmit, onCancel, isLoading }) => {
                         <View style={localStyles.fieldGroup}>
                             <Text style={styles.label}>First Name:</Text>
                             <TextInput style={styles.input} value={form.fname} placeholder='John' placeholderTextColor="#8f8f8f" onChangeText={(text) => setForm({ ...form, fname: text })} />
+                            {errors.fname && <Text style={localStyles.errorText}>{errors.fname}</Text>}
                         </View>
                         <View style={localStyles.fieldGroup}>
                             <Text style={styles.label}>Last Name:</Text>
                             <TextInput style={styles.input} value={form.lname} placeholder='Doe' placeholderTextColor="#8f8f8f" onChangeText={(text) => setForm({ ...form, lname: text })} />
+                            {errors.lname && <Text style={localStyles.errorText}>{errors.lname}</Text>}
                         </View>
                     </View>
 
                     <View style={localStyles.singleFieldGroup}>
                         <Text style={styles.label}>Passport/IC:</Text>
                         <TextInput style={styles.input} value={form.ic} onChangeText={(text) => setForm({ ...form, ic: text })} />
+                        {errors.ic && <Text style={localStyles.errorText}>{errors.ic}</Text>}
                     </View>
 
                     <View style={[localStyles.rowFields, isCompact && localStyles.rowCompact]}>
                         <View style={localStyles.fieldGroup}>
                             <Text style={styles.label}>Email:</Text>
                             <TextInput style={styles.input} value={form.email} placeholder='address@email.com' placeholderTextColor="#8f8f8f" onChangeText={(text) => setForm({ ...form, email: text })} />
+                            {errors.email && <Text style={localStyles.errorText}>{errors.email}</Text>}
                         </View>
                         <View style={localStyles.fieldGroup}>
                             <Text style={styles.label}>Telefon:</Text>
                             <TextInput style={styles.input} value={form.telefon} placeholder='012-3456789' placeholderTextColor="#8f8f8f" onChangeText={(text) => setForm({ ...form, telefon: text })} />
+                            {errors.telefon && <Text style={localStyles.errorText}>{errors.telefon}</Text>}
                         </View>
                     </View>
 
@@ -106,17 +130,12 @@ const UsersFormContent = ({ onSubmit, onCancel, isLoading }) => {
                             <View style={localStyles.uploadPlaceholder}>
                                 <Image source={require('../../assets/upload_placeholder.png')} accessibilityLabel='Upload Placeholder Image' style={localStyles.placeholder} />
                                 <Text style={localStyles.muted}>Select your image</Text>
+                                
                             </View>
                         )}
                     </Pressable>
                 </View>
             </View>
-
-            {Object.values(errors).length > 0 ? (
-                <Text style={{ color: 'red', marginTop: 15 }}>
-                    {Object.values(errors).find(msg => msg !== null && msg !== "")}
-                </Text>
-            ) : null}
 
             <Pressable style={styles.Btn} onPress={handleSubmit} disabled={isLoading}>
                 {isLoading ? <ActivityIndicator color="white" /> : <Text style={{ fontWeight: '600' }}>Add User</Text>}
@@ -145,8 +164,7 @@ const localStyles = StyleSheet.create({
         minWidth: 220,
     },
     fullWidth: {
-        width: '100%',
-        flex: 0,
+        width: '100%'
     },
     rowHeader: {
         flexDirection: 'row',
@@ -217,6 +235,9 @@ const localStyles = StyleSheet.create({
     muted: {
         color: "#646464",
         fontSize: 13,
+    },
+    errorText:{
+        color: 'red', 
     }
 });
 
