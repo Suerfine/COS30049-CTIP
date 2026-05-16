@@ -6,9 +6,15 @@ import { parseNestedFormData } from "../utils/parseNestedFormData";
 
 const elementRouter = Router({ mergeParams: true });
 
-const uploadElementDocument = uploadPrivateDocument({
-  subfolder: "elements/documents",
+const uploadElementAsset = uploadPrivateDocument({
+  subfolder: "elements/images",
   allowedMimeTypes: [
+    // Image Formats
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+    "image/gif",
+    // Document Formats
     "application/pdf",
     "application/msword",
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -142,7 +148,8 @@ elementRouter.get("/", auth, ElementController.getAllElements);
 elementRouter.post(
   "/",
   auth,
-  uploadElementDocument.single("file"),
+  uploadElementAsset.single("file"),
+  parseNestedForm,
   ElementController.createElement,
 );
 
@@ -367,7 +374,8 @@ elementRouter.get("/:element_id", auth, ElementController.getElementById);
 elementRouter.put(
   "/:element_id",
   auth,
-  uploadElementDocument.single("file"),
+  uploadElementAsset.single("file"),
+  parseNestedForm,
   ElementController.updateElement,
 );
 

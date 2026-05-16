@@ -16,10 +16,20 @@ export const ElementService={
     },
 
     // POST: create a new element
-    create: async(courseId, moduleId, pageId, payload)=>{
+    create: async (courseId, moduleId, pageId, payload) => {
         try {
             const url = API_ENDPOINTS.COURSE.ELEMENTS(courseId, moduleId, pageId);
-            const response = await apiClient.post(url, payload);
+            console.log("debug:", payload);
+            const config = payload instanceof FormData 
+                ? { 
+                    headers: { 
+                        'Content-Type': 'multipart/form-data',
+                        'Accept': 'application/json'
+                    } 
+                  }
+                : { headers: { 'Content-Type': 'application/json' } };
+
+            const response = await apiClient.post(url, payload, config);
             return response.data;
         } catch (error) {
             console.error("Create Element Error:", error);

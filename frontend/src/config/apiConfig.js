@@ -4,7 +4,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import Constants from 'expo-constants';
 import { triggerLogout } from "../context/AuthContext";
 
-const BASE_URL=()=>{
+export const BASE_URL=()=>{
     const hostFromExpo=Constants?.expoConfig?.hostUri?.split(':')?.[0];
     const defaultHost=Platform.OS==='android' ? '10.0.2.2': 'localhost';
     const API_HOST=hostFromExpo || defaultHost;
