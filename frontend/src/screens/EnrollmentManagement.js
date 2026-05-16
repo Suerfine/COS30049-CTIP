@@ -1088,14 +1088,14 @@ const EnrollmentManagement = () => {
                           style={[styles.actionBtn, styles.outlineBtn]}
                           onPress={() => setRejectModalVisible(true)}
                         >
-                          <Text style={styles.outlineBtnText}>Received</Text>
+                          <Text style={styles.outlineBtnText}>Not Received</Text>
                         </Pressable>
 
                         <Pressable
                           style={[styles.actionBtn, styles.solidApproveBtn]}
                           onPress={handleApprovePayment}
                         >
-                          <Text style={styles.solidBtnText}>Not Received</Text>
+                          <Text style={styles.solidBtnText}>Received</Text>
                         </Pressable>
                       </View>
                     )}
