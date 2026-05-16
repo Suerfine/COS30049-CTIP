@@ -87,8 +87,8 @@ const UserCourse = ({ navigation }) => {
                         >
                             <View style={styles.courseHeader}>
                                 <View>
-                                    <Text style={styles.description}>Here you can find all courses</Text>
-                                    <Text style={styles.title}>All Courses</Text>
+                                    <Text style={styles.description}>{t('Here you can find all courses')}</Text>
+                                    <Text style={styles.title}>{t('All Courses')}</Text>
                                 </View>
                             </View>
                         </ImageBackground>

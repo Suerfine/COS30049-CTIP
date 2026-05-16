@@ -19,6 +19,7 @@ import { useAuth } from "../context/AuthContext";
 import { useUserDashboard } from "../hooks/useUserDashboard";
 import ParkGuideSiteSearch from "./ParkGuideSiteSearch";
 import { useUserProfile } from "../hooks/useUserProfile";
+import { useTranslation } from 'react-i18next';
 
 // Navigation links animation
 const NavItem = ({ name, route, onPress, isActive }) => {
@@ -70,6 +71,7 @@ const NavBar = () => {
   const isMobile = width < 1024;
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { t, i18n }=useTranslation();
 
   const currentRoute = useNavigationState((state) => {
     let route = state.routes[state.index];
@@ -122,11 +124,11 @@ const NavBar = () => {
   };
 
   // Navigation Links
-  const navLinks = [
-    { name: "Courses", route: "Courses" },
-    { name: "Badge", route: "Badge" },
-    { name: "Anomaly", route: "Anomaly" },
-  ];
+const navLinks = [
+    { name: t('courses'), route: "Courses" },
+    { name: t('badges'),   route: "Badge"   },
+    { name: t('anomaly'), route: "Anomaly" },
+];
 
   if (isMobile) {
     return (
@@ -206,7 +208,7 @@ const NavBar = () => {
                   });
                 }}
               >
-                <Text style={styles.mobileMenuText}>Notifications</Text>
+                <Text style={styles.mobileMenuText}>{t('Notification')}</Text>
               </Pressable>
 
               <Pressable
@@ -222,7 +224,7 @@ const NavBar = () => {
                   });
                 }}
               >
-                <Text style={styles.mobileMenuText}>Profile</Text>
+                <Text style={styles.mobileMenuText}>{t('Profile')}</Text>
               </Pressable>
 
               <Pressable
@@ -235,7 +237,7 @@ const NavBar = () => {
                     { color: "red" },
                   ]}
                 >
-                  Logout
+                  {t('Logout')}
                 </Text>
               </Pressable>
             </View>
@@ -349,7 +351,7 @@ const NavBar = () => {
                   }
                 })}
               >
-                <Text>Preference</Text>
+                <Text>{t('Preferences')}</Text>
               </Pressable>
 
               {/* security */}
@@ -364,7 +366,7 @@ const NavBar = () => {
                   }
                 })}
               >
-                <Text>Security</Text>
+                <Text>{t('Security')}</Text>
               </Pressable>
 
               <Pressable
@@ -375,7 +377,7 @@ const NavBar = () => {
                   <LogOut size={16} />
 
                   <Text style={{ color: "red" }}>
-                    Logout
+                    {t('Logout')}
                   </Text>
                 </View>
               </Pressable>
