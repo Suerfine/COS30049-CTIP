@@ -1,5 +1,5 @@
-import { createContext, useContext, useMemo, useState, useEffect, useCallback } from "react";
-import { authService } from "../services/authService";
+import { createContext, useContext, useMemo, useState, useEffect, useCallback, useRef } from "react";
+import { authService, decodeJwtPayload } from "../services/authService";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const AuthContext = createContext(null);
@@ -24,6 +24,14 @@ export const AuthProvider = ({ children }) => {
   const [accessToken, setAccessToken] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [profileImage, setProfileImage] = useState(null);
+  const expiryTimeoutRef = useRef(null);
+
+  const clearExpiryTimer = useCallback(() => {
+    if (expiryTimeoutRef.current) {
+      clearTimeout(expiryTimeoutRef.current);
+      expiryTimeoutRef.current = null;
+    }
+  }, []);
 
   // Initialize auth state on mount
   useEffect(() => {
@@ -34,9 +42,23 @@ export const AuthProvider = ({ children }) => {
         if(storedUser && storedToken){
           const parsedUser = JSON.parse(storedUser);
 
+          // Validate token expiry
+          const payload = decodeJwtPayload(storedToken);
+          if (payload?.exp && Date.now() / 1000 >= payload.exp) {
+            // token expired - clear stored auth
+            await AsyncStorage.multiRemove(["currentUser", "accessToken"]);
+            setCurrentUser(null);
+            setAccessToken(null);
+            setProfileImage(null);
+            return;
+          }
+
           setCurrentUser(parsedUser);
           setProfileImage(parsedUser?.pfp || null);
           setAccessToken(storedToken);
+
+          // Schedule automatic logout when token expires
+          scheduleTokenExpiry(storedToken);
 
           if(typeof document !== "undefined"){
             document.title="SFC";
@@ -66,6 +88,8 @@ export const AuthProvider = ({ children }) => {
       setAccessToken(token);
       setCurrentUser(user);
       setProfileImage(user?.pfp || null);
+      // Schedule automatic logout when token expires
+      scheduleTokenExpiry(token);
       return user;
     }catch(err){
       console.error("Auth Login Error: ", err);
@@ -74,11 +98,37 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = useCallback(async () => {
+    clearExpiryTimer();
     await AsyncStorage.multiRemove(["currentUser", "accessToken"]);
     setCurrentUser(null);
     setAccessToken(null);
     setProfileImage(null);
-  }, []);
+  }, [clearExpiryTimer]);
+
+  const scheduleTokenExpiry = useCallback(
+    (token) => {
+      try {
+        const payload = decodeJwtPayload(token);
+        const exp = payload?.exp;
+        if (!exp) return;
+
+        const msUntilExpiry = exp * 1000 - Date.now();
+        if (msUntilExpiry <= 0) {
+          // Token already expired
+          logout();
+          return;
+        }
+
+        clearExpiryTimer();
+        expiryTimeoutRef.current = setTimeout(() => {
+          logout();
+        }, msUntilExpiry);
+      } catch (err) {
+        console.error("Error scheduling token expiry:", err);
+      }
+    },
+    [logout, clearExpiryTimer],
+  );
 
   useEffect(() => {
     registerLogoutHandler(logout);

@@ -1,7 +1,7 @@
 import { Platform } from "react-native";
 import apiClient from "../config/apiConfig";
 
-const decodeJwtPayload = (token) => {
+export const decodeJwtPayload = (token) => {
   const tokenParts = String(token || "").split(".");
   if (tokenParts.length !== 3) {
     return {};

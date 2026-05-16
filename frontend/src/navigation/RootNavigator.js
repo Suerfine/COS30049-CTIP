@@ -16,7 +16,7 @@ import { UserRoles } from "../enum/UserRoles";
 const Stack = createStackNavigator();
 
 export default function RootNavigator() {
-  const { currentUser, isLoading, userToken } = useAuth();
+  const { currentUser, isLoading, accessToken } = useAuth();
 
   // Show loading indicator while auth state is being determined
   if (isLoading) {
