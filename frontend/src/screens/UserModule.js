@@ -40,6 +40,7 @@ import { useCourseProgress } from "../components/useCourseProgress.js";
 import AIChatBot from "../components/AIChatbot.js";
 import { useTranslation } from "react-i18next";
 import DiscussionSection from "../components/DiscussionSection.js";
+import { enrollmentService } from "../services/EnrollmentService.js";
 
 const UserModule = ({ navigation }) => {
   const route = useRoute();
@@ -51,16 +52,18 @@ const UserModule = ({ navigation }) => {
     initialSection,
     discussionId,
   } = route.params;
+  const [resolvedEnrollmentStatus, setResolvedEnrollmentStatus] = useState(enrollmentStatus);
+  const [resolvedEnrollmentId, setResolvedEnrollmentId] = useState(enrollmentId);
   const [localStatus, setLocalStatus] = useState(initialStatus);
   const hasfailedRef = useRef(false);
 
   const isLocked =
-    enrollmentStatus === null ||
-    enrollmentStatus === undefined ||
-    enrollmentStatus === "expired" ||
-    enrollmentStatus == "pending_payment" ||
-    enrollmentStatus == "applied" ||
-    enrollmentStatus == "failed";
+    resolvedEnrollmentStatus === null ||
+    resolvedEnrollmentStatus === undefined ||
+    resolvedEnrollmentStatus === "expired" ||
+    resolvedEnrollmentStatus == "pending_payment" ||
+    resolvedEnrollmentStatus == "applied" ||
+    resolvedEnrollmentStatus == "failed";
 
   const { currentUser } = useAuth();
   const {
@@ -78,7 +81,7 @@ const UserModule = ({ navigation }) => {
     refreshHistory,
     handleFetchHistory,
     failEnrollment,
-  } = useCourseDetails(id, enrollmentId);
+  } = useCourseDetails(id, resolvedEnrollmentId);
   const { allCourseList } = useCourses();
   const [chatOpen, setChatOpen] = useState(false);
 
@@ -102,6 +105,38 @@ const UserModule = ({ navigation }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [activeTab, setActiveTab] = useState("Overview");
   const scrollViewRef = useRef(null);
+
+  useEffect(() => {
+    setResolvedEnrollmentStatus(enrollmentStatus);
+    setResolvedEnrollmentId(enrollmentId);
+    setLocalStatus(initialStatus);
+  }, [id, enrollmentStatus, enrollmentId, initialStatus]);
+
+  useEffect(() => {
+    if (resolvedEnrollmentStatus !== undefined && resolvedEnrollmentId !== undefined) return;
+
+    let isMounted = true;
+
+    const loadEnrollmentContext = async () => {
+      const response = await enrollmentService.getMyEnrollments();
+      const enrollments = response?.data ?? response ?? [];
+      const matchingEnrollment = enrollments.find(
+        (enrollment) => String(enrollment.course_id) === String(id),
+      );
+
+      if (!isMounted || !matchingEnrollment) return;
+
+      setResolvedEnrollmentStatus(matchingEnrollment.status ?? null);
+      setResolvedEnrollmentId(matchingEnrollment.id ?? null);
+      setLocalStatus(matchingEnrollment.status ?? null);
+    };
+
+    loadEnrollmentContext();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [id, resolvedEnrollmentStatus, resolvedEnrollmentId]);
 
   useEffect(() => {
     setPendingDiscussionId(discussionId);
