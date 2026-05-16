@@ -10,6 +10,8 @@ import {
   ImageBackground,
   Dimensions,
   Modal,
+  Platform,
+  useWindowDimensions
 } from "react-native";
 import { SquarePen } from "lucide-react-native";
 import { Eye, EyeOff, FileUp } from "lucide-react-native";
@@ -48,6 +50,8 @@ const UserProfile = ({ navigation }) => {
   const [originalData, setOriginalData] = useState(null);
   const [errors, setErrors] = useState({}); 
   const { handleUpload, file, setFile} = useSignUp();
+  const { width } = useWindowDimensions();
+  const isSmallScreen = width < 768;
 
   // validate form
   const validateForm = () => {
@@ -154,7 +158,10 @@ const UserProfile = ({ navigation }) => {
             </View>
 
             {/* Personal Information */}
-            <View style={styles.section}>
+            <View style={[
+              styles.section,
+              isSmallScreen && styles.sectionMobile
+            ]}>
             <View style={styles.sectionHeader}>
                 <Text style={styles.sectionTitle}>Personal Information</Text>
                 <View style={styles.actionButtons}>
@@ -190,7 +197,10 @@ const UserProfile = ({ navigation }) => {
             </View>
 
             {/* first name, last name and IC row*/}
-            <View style={styles.fieldRow}>
+            <View style={[
+              styles.fieldRow,
+              isSmallScreen && styles.fieldRowMobile
+            ]}>
                 <View style={styles.fieldGroup}>
                 <Text style={styles.fieldLabel}>First Name</Text>
                 <TextInput
@@ -228,7 +238,10 @@ const UserProfile = ({ navigation }) => {
                 </View>
             </View>
 
-            <View style={styles.fieldRow}>
+            <View style={[
+              styles.fieldRow,
+              isSmallScreen && styles.fieldRowMobile
+            ]}>
                 <View style={styles.fieldGroup}>
                 <Text style={styles.fieldLabel}>IC / Passport No.</Text>
                 <TextInput
@@ -242,7 +255,10 @@ const UserProfile = ({ navigation }) => {
                 </View>
             </View>
 
-            <View style={styles.fieldRow}>
+            <View style={[
+              styles.fieldRow,
+              isSmallScreen && styles.fieldRowMobile
+            ]}>
                 <View style={styles.fieldGroup}>
                 <Text style={styles.fieldLabel}>Email</Text>
                 <TextInput
@@ -360,7 +376,9 @@ const styles = StyleSheet.create({
   // Personal info section
   section: {
     backgroundColor: "white",
-    marginHorizontal: 100,
+    width: "90%",
+    maxWidth: 1000,
+    alignSelf: "center",
     marginVertical: 16,
     borderRadius: 12,
     padding: 30,
@@ -370,14 +388,19 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
+  sectionMobile: {
+    width: "92%",
+    padding: 18,
+  },
   sectionHeader: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start",
     justifyContent: "space-between",
     marginBottom: 20,
+    gap: 12,
+    flexWrap: "wrap",
   },
   sectionTitle: {
-    marginBottom: 20,
     fontSize: 17,
     fontWeight: "700",
     color: "black",
@@ -385,6 +408,7 @@ const styles = StyleSheet.create({
   actionButtons: {
     flexDirection: "row",
     gap: 12,
+    flexWrap: "wrap",
   },
   cancelBtn: {
     borderWidth: 1,
@@ -414,11 +438,14 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 40,
     marginBottom: 25,
-    flexWrap: "wrap",
+  },
+  fieldRowMobile: {
+    flexDirection: "column",
+    gap: 16,
   },
   fieldGroup: {
     flex: 1,
-    minWidth: 140,
+    minWidth: 0,
   },
   fieldLabel: {
     fontSize: 13,
@@ -427,6 +454,7 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   input: {
+    width: "100%",
     borderWidth: 1,
     borderColor: "#2f6618fe",
     borderRadius: 8,
