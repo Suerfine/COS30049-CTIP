@@ -1,11 +1,14 @@
 import React, { useState, useEffect} from 'react';
-import { View, Text, StyleSheet, Pressable, Image} from 'react-native';
+import { View, Text, StyleSheet, Pressable, Image, useWindowDimensions } from 'react-native';
 import {Book, ClipboardList,Bell, UserPlus, User2, LockKeyhole, UserRoundPen, Settings2} from 'lucide-react-native'
 import { CommonActions } from '@react-navigation/native';
 import { useNavigationState, useNavigation } from '@react-navigation/native';
 
 const ProfileSideBar = () => {
-    const navigation=useNavigation();
+    const navigation = useNavigation();
+    const { width } = useWindowDimensions();
+    const isMobile = width < 768;
+
     const currentRoute = useNavigationState((state) => {
     let route = state.routes[state.index];
 
@@ -26,25 +29,37 @@ const ProfileSideBar = () => {
     const [activePage, setActivePage] = useState("Profile");
 
     return (
-        <View style={styles.sidebar}>
+        <View style={[styles.sidebar, isMobile && styles.sidebarSmall]}>
             <View style={styles.link}>
                 {menuItems.map((item) => {
                     const IconComponent=item.icon;
                     const isActive = currentRoute === item.route || currentRoute === item.parentRoute;
                     
                     return(
-                        <Pressable key={item.name}
-                            style={({hovered})=>[styles.menuItem, isActive && styles.activeIcon, !isActive && hovered && styles.hoverStyle]}
-                                onPress={() => {
+                        <Pressable
+                            key={item.name}
+                            style={({ hovered }) => [
+                                styles.menuItem,
+                                isMobile && styles.menuItemSmall,
+                                isActive && styles.activeIcon,
+                                !isActive && hovered && styles.hoverStyle
+                            ]}
+                            onPress={() => {
                                 setActivePage(item.name);
-                                console.log("NAV TEST:", item.route);
                                 navigation.navigate("ProfileStack", {
                                     screen: item.route,
                                 });
                             }}
                         >
-                            <IconComponent style={styles.navIcon} />
-                            <Text style={[styles.navText, isActive && styles.activeText]}>{item.name}</Text>
+                            <IconComponent
+                                size={22}
+                                color={isActive ? 'white' : 'black'}
+                            />
+                            {!isMobile && (
+                                <Text style={[styles.navText, isActive && styles.activeText]}>
+                                    {item.name}
+                                </Text>
+                            )}
                         </Pressable>
                     )
                 })}
@@ -55,15 +70,19 @@ const ProfileSideBar = () => {
 
 const styles = StyleSheet.create({
     sidebar:{
-        maxWidth:'220px',
-        minHeight:'100vh',
-        userSelect:'none',
-        paddingHorizontal:20,
+        width: 220,
+        minHeight: '100vh',
+        userSelect: 'none',
+        paddingHorizontal: 20,
         paddingTop: 30,
-        flex:1,
-        borderRightColor:'#3f3f3f4d',
-        borderRightWidth:1,
-        backgroundColor:"white",
+        borderRightColor: '#3f3f3f4d',
+        borderRightWidth: 1,
+        backgroundColor: "white",
+    },
+    sidebarSmall: {
+        width: 72,
+        paddingHorizontal: 10,
+        alignItems: 'center',
     },
     link:{
         gap:30,
@@ -81,12 +100,19 @@ const styles = StyleSheet.create({
         borderRadius:'5px',
         alignItems:'center'
     },
+    menuItemSmall: {
+        width: 48,
+        height: 48,
+        paddingHorizontal: 0,
+        paddingVertical: 0,
+        justifyContent: 'center',
+        gap: 0,
+    },
     navText:{
         fontSize:15,
     },
     activeIcon:{
         backgroundColor:'#0a6340',
-        color:'white'
     },
     activeText:{
         color:'white'
