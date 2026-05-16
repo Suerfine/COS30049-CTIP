@@ -3,7 +3,12 @@ const dotenv = require("dotenv");
 dotenv.config();
 console.log("Loaded JWT_SECRET:", Boolean(process.env.JWT_SECRET));
 
-import express, { Application, Request, Response } from "express";
+import express, {
+  Application,
+  NextFunction,
+  Request,
+  Response,
+} from "express";
 import path from "path";
 import cors from "cors";
 import swaggerUi from "swagger-ui-express";
@@ -221,6 +226,27 @@ app.use(
 
 // Mount ALL routes on /api
 app.use("/api", routes);
+
+app.use(
+  (
+    err: Error & { status?: number },
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) => {
+    if (err.name === "MulterError" || err.message.startsWith("Invalid file type.")) {
+      return res.status(400).json({ message: err.message });
+    }
+
+    if (typeof err.status === "number") {
+      return res.status(err.status).json({ message: err.message });
+    }
+
+    return res
+      .status(500)
+      .json({ message: err.message || "Internal server error" });
+  },
+);
 
 const startServer = async (): Promise<void> => {
   try {
