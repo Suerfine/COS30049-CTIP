@@ -419,8 +419,7 @@ const styles=StyleSheet.create({
     },
     input:{
         flex:1,
-        maxWidth:140,
-        outlineStyle:'none'
+        outlineStyle:'none',
     },
     selected:{
         backgroundColor:'#A5D6A7'

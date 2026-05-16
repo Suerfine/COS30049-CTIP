@@ -44,17 +44,18 @@ const OutlineBar = ({ course, progressMap = {}, onSelectPage, editable, isOpen, 
         }
     }, [isOpen]);
     useEffect(() => {
-        if (localSearch.length > 0) {
-            allModules.forEach(module => {
-                const hasMatch = module.pages?.some(p =>
+        if (localSearch.trim().length > 0) {
+            const matchingModule = allModules.find(module =>
+                module.pages?.some(p =>
                     p.title.toLowerCase().includes(localSearch.toLowerCase())
-                );
-                if (hasMatch && expandedModule !== module.id) {
-                    toggleModule(module.id);
-                }
-            });
+                )
+            );
+
+            if (matchingModule && expandedModule !== matchingModule.id) {
+                toggleModule(matchingModule.id);
+            }
         }
-    }, [localSearch, allModules]);
+    }, [localSearch]);
 
     if (!shouldRender || !course) return null;
 
