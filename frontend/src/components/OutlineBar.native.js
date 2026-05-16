@@ -17,7 +17,7 @@ const OutlineBar = ({ course, progressMap = {}, onSelectPage, editable, isOpen, 
         deleteModule,
         addPage,
         updatePageTitle,
-        deletePage
+        deletePage,
     } = useOutline(course);
 
     const slideAnim = useRef(new Animated.Value(-width)).current;
@@ -44,17 +44,18 @@ const OutlineBar = ({ course, progressMap = {}, onSelectPage, editable, isOpen, 
         }
     }, [isOpen]);
     useEffect(() => {
-        if (localSearch.length > 0) {
-            allModules.forEach(module => {
-                const hasMatch = module.pages?.some(p =>
+        if (localSearch.trim().length > 0) {
+            const matchingModule = allModules.find(module =>
+                module.pages?.some(p =>
                     p.title.toLowerCase().includes(localSearch.toLowerCase())
-                );
-                if (hasMatch && expandedModule !== module.id) {
-                    toggleModule(module.id);
-                }
-            });
+                )
+            );
+
+            if (matchingModule && expandedModule !== matchingModule.id) {
+                toggleModule(matchingModule.id);
+            }
         }
-    }, [localSearch, allModules]);
+    }, [localSearch]);
 
     if (!shouldRender || !course) return null;
 
@@ -67,7 +68,8 @@ const OutlineBar = ({ course, progressMap = {}, onSelectPage, editable, isOpen, 
 
     const getHighlightedText = (text, query) => {
         if (!query || !text) return <Text>{text}</Text>;
-        const parts = text.split(new RegExp(`(${query})`, 'gi'));
+        const sanitizedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const parts = text.split(new RegExp(`(${sanitizedQuery})`, 'gi'));
         return (
             <Text>
                 {parts.map((part, i) =>

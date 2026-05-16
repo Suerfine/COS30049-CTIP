@@ -63,7 +63,8 @@ const OutlineBar = ({ course, progressMap = {}, onSelectPage, editable, isCollap
 
     const getHighlightedText = (text, query) => {
         if (!query || !text) return <Text>{text}</Text>;
-        const parts = text.split(new RegExp(`(${query})`, 'gi'));
+        const sanitizedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const parts = text.split(new RegExp(`(${sanitizedQuery})`, 'gi'));
         return (
             <Text>
                 {parts.map((part, i) =>
@@ -419,8 +420,7 @@ const styles=StyleSheet.create({
     },
     input:{
         flex:1,
-        maxWidth:140,
-        outlineStyle:'none'
+        outlineStyle:'none',
     },
     selected:{
         backgroundColor:'#A5D6A7'
