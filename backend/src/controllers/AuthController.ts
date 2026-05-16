@@ -52,7 +52,7 @@ export const token = async (
       expiresIn: "1h",
     });
 
-    user.updated_at = new Date();
+    user.last_login_at = new Date();
     await user.save();
 
     res.status(200).json({
