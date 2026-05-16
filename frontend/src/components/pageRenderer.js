@@ -350,6 +350,39 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
         }
     }, [courseId, isAdmin]);
     
+    // Populate workshop registration state from server-provided `userMarks` so
+    // registered session details persist after page reload.
+    useEffect(() => {
+        if (!elements || elements.length === 0) return;
+
+        elements.forEach(el => {
+            if (el.type !== 'workshop') return;
+
+            const mark = userMarks?.[el.id];
+            if (mark && (mark.earned_grade || 0) > 0) {
+                // mark as registered in local state
+                setWorkshopRegistrations(prev => ({ ...prev, [el.id]: true }));
+
+                // try to infer which session the user signed up for and set it
+                try {
+                    const sessionDate = mark.content?.session_date;
+                    const sessionTime = mark.content?.session_time;
+                    if (sessionDate && sessionTime && el.content?.sessions) {
+                        const foundIdx = el.content.sessions.findIndex(s => {
+                            const timeStr = `${s.startTime} — ${s.endTime}`;
+                            return s.date === sessionDate && timeStr === sessionTime;
+                        });
+                        if (foundIdx !== -1) {
+                            setSelectedSessions(prev => ({ ...prev, [el.id]: foundIdx }));
+                        }
+                    }
+                } catch (e) {
+                    console.warn('Failed to restore selected session for workshop', el.id, e);
+                }
+            }
+        });
+    }, [userMarks, elements]);
+    
     const VideoPlayer = ({ url }) => {
         const getVideoId = (originalUrl) => {
             let videoId = '';

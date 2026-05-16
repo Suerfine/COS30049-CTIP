@@ -118,7 +118,7 @@ export const createAnomalyEvent = async (
       undefined,
       false,
       NotificationCategory.ANOMALY_ALERT,
-      "/admin/dashboard",
+      "/anomaly-events",
     );
 
     await sendNotification(
