@@ -1,6 +1,6 @@
 import {useState, useEffect} from 'react';
 import { View, Text, TextInput, StyleSheet, Pressable, ScrollView, Image, ImageBackground, Dimensions, Modal, Alert} from 'react-native';
-import { SquarePen } from 'lucide-react-native';
+import { SquarePen, ShieldCheck, ShieldOff } from 'lucide-react-native';
 import { Eye, EyeOff } from 'lucide-react-native';
 
 // Import other hooks and components
@@ -9,6 +9,7 @@ import ModalLayout from '../components/ModalLayout';
 import { ModalStyle } from '../components/ModalStyle';
 import { useUserProfile } from '../hooks/useUserProfile';
 import { useTranslation } from 'react-i18next';
+import { totpService } from '../services/totpService';
 
 const Security = ({ navigation }) => {
     const {
@@ -25,6 +26,32 @@ const Security = ({ navigation }) => {
     }=useUserProfile();
     const {t, i18n}=useTranslation();
     const [errors, setErrors] = useState({});
+
+    // 2FA disable flow
+    const [disableModalVisible, setDisableModalVisible] = useState(false);
+    const [disableCode, setDisableCode] = useState('');
+    const [disableError, setDisableError] = useState('');
+    const [disableLoading, setDisableLoading] = useState(false);
+    const totpEnabled = user?.totp_enabled ?? false;
+
+    const handleDisable2FA = async () => {
+        if (disableCode.length !== 6) {
+            setDisableError('* Please enter the 6-digit code from your authenticator app.');
+            return;
+        }
+        setDisableError('');
+        setDisableLoading(true);
+        try {
+            await totpService.disable(disableCode);
+            setDisableModalVisible(false);
+            setDisableCode('');
+            window.alert('Two-factor authentication has been disabled.');
+        } catch (err) {
+            setDisableError(err.message);
+        } finally {
+            setDisableLoading(false);
+        }
+    };
 
     const clearError = (field) => {
         setErrors(prev => {
@@ -131,8 +158,8 @@ const Security = ({ navigation }) => {
                         </View>
 
                         {/* Change password modal */}
-                        <ModalLayout 
-                            visible={passwordModalVisible} 
+                        <ModalLayout
+                            visible={passwordModalVisible}
                             onClose={() => setPasswordModalVisible(false)}
                         >
                             <ChangePasswordContent
@@ -150,6 +177,90 @@ const Security = ({ navigation }) => {
                         </ModalLayout>
                     </View>
                 </View>
+
+                {/* Two-Factor Authentication */}
+                <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>Two-Factor Authentication</Text>
+
+                    <View style={styles.twoFARow}>
+                        <View style={styles.twoFAInfo}>
+                            {totpEnabled
+                                ? <ShieldCheck size={22} color="#2f6618fe" />
+                                : <ShieldOff size={22} color="#8f8f8f" />}
+                            <View style={styles.twoFAText}>
+                                <Text style={styles.twoFAStatus}>
+                                    {totpEnabled ? 'Enabled' : 'Disabled'}
+                                </Text>
+                                <Text style={styles.twoFAHint}>
+                                    {totpEnabled
+                                        ? 'Your account is protected with an authenticator app.'
+                                        : 'Add an extra layer of security to your account.'}
+                                </Text>
+                            </View>
+                        </View>
+
+                        {totpEnabled ? (
+                            <Pressable
+                                style={({ hovered }) => [styles.dangerBtn, hovered && styles.dangerBtnHover]}
+                                onPress={() => setDisableModalVisible(true)}
+                            >
+                                <Text style={styles.dangerBtnText}>Disable</Text>
+                            </Pressable>
+                        ) : (
+                            <Pressable
+                                style={({ hovered }) => [styles.changeBtn, hovered && styles.hoverBtn]}
+                                onPress={() => navigation.navigate('TotpSetup')}
+                            >
+                                <Text style={styles.changeBtnText}>Enable</Text>
+                            </Pressable>
+                        )}
+                    </View>
+                </View>
+
+                {/* Disable 2FA modal */}
+                <ModalLayout
+                    visible={disableModalVisible}
+                    onClose={() => { setDisableModalVisible(false); setDisableCode(''); setDisableError(''); }}
+                >
+                    <View style={styles.disableModal}>
+                        <Text style={styles.disableModalTitle}>Disable Two-Factor Authentication</Text>
+                        <Text style={styles.disableModalHint}>
+                            Enter the 6-digit code from your authenticator app to confirm.
+                        </Text>
+                        <TextInput
+                            style={styles.codeInput}
+                            value={disableCode}
+                            onChangeText={(v) => {
+                                setDisableCode(v.replace(/[^0-9]/g, '').slice(0, 6));
+                                if (disableError) setDisableError('');
+                            }}
+                            placeholder="000000"
+                            placeholderTextColor="#8f8f8f"
+                            keyboardType="number-pad"
+                            maxLength={6}
+                            editable={!disableLoading}
+                            autoFocus
+                        />
+                        {!!disableError && <Text style={styles.errorText}>{disableError}</Text>}
+                        <View style={styles.disableModalButtons}>
+                            <Pressable
+                                style={({ hovered }) => [styles.cancelBtn, hovered && styles.hoverBtnOutline]}
+                                onPress={() => { setDisableModalVisible(false); setDisableCode(''); setDisableError(''); }}
+                            >
+                                <Text style={styles.cancelBtnText}>{t('cancel')}</Text>
+                            </Pressable>
+                            <Pressable
+                                style={[styles.dangerBtn, disableLoading && styles.disabledBtn]}
+                                onPress={handleDisable2FA}
+                                disabled={disableLoading}
+                            >
+                                <Text style={styles.dangerBtnText}>
+                                    {disableLoading ? 'Disabling...' : 'Disable 2FA'}
+                                </Text>
+                            </Pressable>
+                        </View>
+                    </View>
+                </ModalLayout>
             </ScrollView>
         </View>
     );
@@ -280,6 +391,43 @@ const styles = StyleSheet.create({
         marginTop: 2,
         textAlign: "left",
     },
+    // 2FA section
+    twoFARow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        flexWrap: 'wrap',
+        gap: 16,
+    },
+    twoFAInfo: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        gap: 12,
+        flex: 1,
+    },
+    twoFAText: { gap: 4 },
+    twoFAStatus: { fontSize: 14, fontWeight: '700', color: '#1f4f13' },
+    twoFAHint: { fontSize: 13, color: '#60735b', maxWidth: 380 },
+    dangerBtn: {
+        borderWidth: 1,
+        borderColor: '#b42318',
+        borderRadius: 8,
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+    },
+    dangerBtnHover: { backgroundColor: '#fde8e8' },
+    dangerBtnText: { fontSize: 13, color: '#b42318', fontWeight: '500' },
+    disabledBtn: { opacity: 0.6 },
+    disableModal: { gap: 14 },
+    disableModalTitle: { fontSize: 17, fontWeight: '700', color: '#1f4f13' },
+    disableModalHint: { fontSize: 14, color: '#60735b' },
+    codeInput: {
+        borderWidth: 1, borderColor: '#d4ddd3', borderRadius: 12,
+        paddingHorizontal: 15, height: 56, fontSize: 24,
+        fontWeight: '700', color: '#1f4f13', backgroundColor: '#fbfdfb',
+        textAlign: 'center', letterSpacing: 10, outlineStyle: 'none',
+    },
+    disableModalButtons: { flexDirection: 'row', gap: 12, justifyContent: 'flex-end' },
 });
 
 export default Security;

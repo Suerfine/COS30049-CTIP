@@ -52,6 +52,7 @@ function toUserResponse(user: User, req: Request<any>): UserResponse {
     personal_email: user.personal_email,
     tel: user.tel,
     pfp_url: full_url_pfp,
+    totp_enabled: user.totp_enabled ?? false,
     last_login_at: user.last_login_at,
     created_at: user.created_at,
     updated_at: user.updated_at,

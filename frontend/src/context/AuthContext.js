@@ -52,6 +52,11 @@ export const AuthProvider = ({ children }) => {
     try{
       await AsyncStorage.clear();
       const payload=await authService.login(email,password);
+
+      if (payload?.requires_totp) {
+        return payload;
+      }
+
       const user=payload?.user || null;
       const token=payload?.access_token || null;
       if (!user || !token) {
@@ -66,6 +71,24 @@ export const AuthProvider = ({ children }) => {
       console.error("Auth Login Error: ", err);
       throw err;
     }
+  };
+
+  const completeLogin = async (access_token, email) => {
+    const tokenParts = String(access_token || "").split(".");
+    let payload = {};
+    if (tokenParts.length === 3) {
+      try {
+        const normalized = tokenParts[1].replace(/-/g, "+").replace(/_/g, "/");
+        const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=");
+        payload = JSON.parse(globalThis.atob(padded));
+      } catch {}
+    }
+    const user = { id: payload?.id, role: payload?.role || "park_guide", personal_email: email };
+    await AsyncStorage.setItem("currentUser", JSON.stringify(user));
+    await AsyncStorage.setItem("accessToken", access_token);
+    setAccessToken(access_token);
+    setCurrentUser(user);
+    return user;
   };
 
   const logout = useCallback(async () => {
@@ -88,6 +111,7 @@ export const AuthProvider = ({ children }) => {
       isLoading,
       login,
       logout,
+      completeLogin,
     }),
     [currentUser, accessToken, isLoading],
   );

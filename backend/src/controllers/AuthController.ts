@@ -41,10 +41,22 @@ export const token = async (
     }
 
     const jwtSecret = process.env.JWT_SECRET;
-    console.log("JWT Secret:", jwtSecret);
 
     if (!jwtSecret) {
       res.status(500).json({ message: "JWT is not configured" });
+      return;
+    }
+
+    if (user.totp_enabled) {
+      const totpSessionToken = jwt.sign(
+        { type: "totp_challenge", id: user.id },
+        jwtSecret,
+        { expiresIn: "5m" },
+      );
+      res.status(200).json({
+        requires_totp: true,
+        totp_session_token: totpSessionToken,
+      });
       return;
     }
 
@@ -52,7 +64,7 @@ export const token = async (
       expiresIn: "1h",
     });
 
-    user.updated_at = new Date();
+    user.last_login_at = new Date();
     await user.save();
 
     res.status(200).json({

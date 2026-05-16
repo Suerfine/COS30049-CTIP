@@ -6,6 +6,7 @@ import Landing from "../screens/Landing";
 import Login from "../screens/Login";
 import SignUp from "../screens/SignUp";
 import ForgotPassword from "../screens/ForgotPassword";
+import TotpVerify from "../screens/TotpVerify";
 
 const Stack = createStackNavigator();
 
@@ -42,6 +43,13 @@ export default function UnloggedInNavigator() {
       <Stack.Screen
         name="ForgotPassword"
         component={ForgotPassword}
+        options={{
+          animationEnabled: true,
+        }}
+      />
+      <Stack.Screen
+        name="TotpVerify"
+        component={TotpVerify}
         options={{
           animationEnabled: true,
         }}

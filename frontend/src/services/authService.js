@@ -30,6 +30,14 @@ export const authService = {
         password,
       });
 
+      if (response.data.requires_totp) {
+        return {
+          requires_totp: true,
+          totp_session_token: response.data.totp_session_token,
+          email,
+        };
+      }
+
       const { access_token, token_type } = response.data;
       const payload = decodeJwtPayload(access_token);
       return {
@@ -51,6 +59,21 @@ export const authService = {
       throw new Error(
         "Unable to connect to server. Please check backend is running.",
       );
+    }
+  },
+
+  async verifyTotp(totp_session_token, code) {
+    try {
+      const response = await apiClient.post("/token/totp", {
+        totp_session_token,
+        code,
+      });
+      return response.data;
+    } catch (error) {
+      if (error.response) {
+        throw new Error(error.response.data?.message || "Verification failed");
+      }
+      throw new Error("Unable to connect to server.");
     }
   },
 };
