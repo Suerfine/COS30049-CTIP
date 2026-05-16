@@ -381,6 +381,14 @@ const EnrollmentManagement = () => {
     </View>
   );
 
+  const getProfileImageUri = (item) =>
+    item?.profileImage ||
+    item?.pfp_url ||
+    item?.pfp ||
+    item?.user_profile_image ||
+    item?.profile_image ||
+    null;
+
   const renderEnrollmentItem = ({ item }) => {
     const statusConfig = Status_Config[item.status?.toLowerCase()] || {
       color: "#8f8f8f",
@@ -399,8 +407,8 @@ const EnrollmentManagement = () => {
         ]}
       >
         <View style={[{ flex: 3 }, styles.userInfo, styles.row]}>
-          {item.profileImage ? (
-            <Image source={{ uri: item.profileImage }} style={styles.avatar} />
+          {getProfileImageUri(item) ? (
+            <Image source={{ uri: getProfileImageUri(item) }} style={styles.avatar} />
           ) : (
             <View style={styles.pfpPlaceholder}>
               <Text style={styles.pfpInitials}>
@@ -450,8 +458,8 @@ const EnrollmentManagement = () => {
         ]}
       >
         <View style={[{ flex: 3 }, styles.userInfo, styles.row]}>
-          {item.profileImage ? (
-            <Image source={{ uri: item.profileImage }} style={styles.avatar} />
+          {getProfileImageUri(item) ? (
+            <Image source={{ uri: getProfileImageUri(item) }} style={styles.avatar} />
           ) : (
             <View style={styles.pfpPlaceholder}>
               <Text style={styles.pfpInitials}>
@@ -584,9 +592,9 @@ const EnrollmentManagement = () => {
         ]}
       >
         <View style={[{ flex: 4 }, styles.userInfo, styles.row]}>
-          {item.user_profile_image ? (
+          {getProfileImageUri(item) ? (
             <Image
-              source={{ uri: item.user_profile_image }}
+              source={{ uri: getProfileImageUri(item) }}
               style={styles.avatar}
             />
           ) : (

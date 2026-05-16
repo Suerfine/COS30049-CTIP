@@ -70,6 +70,13 @@ export const enrollmentService = {
           fullName: user
             ? `${user.firstname} ${user.lastname}`
             : `User #${enroll.user_id}`,
+          profileImage:
+            user?.profileImage ||
+            user?.pfp_url ||
+            user?.pfp ||
+            user?.user_profile_image ||
+            user?.profile_image ||
+            null,
           courseName: course ? course.title : `Course #${enroll.course_id}`,
           course: course,
           expiry_date: expiryDate,

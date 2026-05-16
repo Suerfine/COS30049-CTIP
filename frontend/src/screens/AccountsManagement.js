@@ -101,6 +101,14 @@ const AccountManagement = () => {
     }
   };
 
+  const getProfileImageUri = (item) =>
+    item?.profileImage ||
+    item?.pfp_url ||
+    item?.pfp ||
+    item?.user_profile_image ||
+    item?.profile_image ||
+    null;
+
   const onDeletePress = () => {
     if (!selectedAcc) return;
     const confirmDelete = () => {
@@ -212,9 +220,9 @@ const AccountManagement = () => {
       <Text style={{ flex: 1, textAlign: "center" }}>{item.id}</Text>
       {/* Full Name and profile image */}
       <View style={[{ flex: 3 }, styles.userInfo, styles.row]}>
-        {item.profileImage ? (
+        {getProfileImageUri(item) ? (
           <Image
-            source={{ uri: item.profileImage }}
+            source={{ uri: getProfileImageUri(item) }}
             style={styles.avatar}
             accessibilityLabel={`Profile Image of ${item.firstname + " " + item.lastname}`}
           />
@@ -510,9 +518,9 @@ const AccountManagement = () => {
                   </View>
                 )}
               </View>
-              {selectedAcc.profileImage ? (
+              {getProfileImageUri(selectedAcc) ? (
                 <Image
-                  source={{ uri: selectedAcc?.profileImage }}
+                  source={{ uri: getProfileImageUri(selectedAcc) }}
                   style={styles.largeAvatar}
                 />
               ) : (
@@ -761,8 +769,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
   },
   avatar: {
-    width: 90,
-    height: 90,
+    width: 35,
+    height: 35,
     borderRadius: 60,
     borderWidth: 3,
     borderColor: "white",
