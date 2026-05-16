@@ -915,6 +915,7 @@ const EditCourseDetail = () => {
           <View
             style={[
               styles.selectionCard,
+              isCompact && styles.selectionCardCompact,
               currentElementType === "text" && { height: "80%", maxWidth: 800 },
             ]}
           >
@@ -1753,6 +1754,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0,0,0,0.5)",
     justifyContent: "center",
     alignItems: "center",
+    padding: 20,
   },
   selectionCard: {
     backgroundColor: "white",
@@ -1761,6 +1763,11 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 25,
     maxHeight: "80%",
+  },
+  selectionCardCompact: {
+    width: "100%",
+    maxHeight: "90%",
+    padding: 16,
   },
   inputField: {
     backgroundColor: "#f5f5f5",

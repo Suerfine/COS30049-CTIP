@@ -7,6 +7,7 @@ export const ModalStyle=StyleSheet.create({
     row:{
         flexDirection:'row',
         gap:5,
+        flexWrap:'wrap',
     },
     header:{
         justifyContent:'space-between',
@@ -21,7 +22,8 @@ export const ModalStyle=StyleSheet.create({
         borderRightWidth:1,
         borderRightColor: '#ddd',
         paddingRight:20,
-        minWidth:450,
+        minWidth:0,
+        flex:1,
     },
     upload:{
         padding:20,
@@ -38,7 +40,7 @@ export const ModalStyle=StyleSheet.create({
         padding:12,
         marginBottom:10,
         flex:1,
-        minWidth:220,
+        minWidth:0,
         maxHeight: 35,
     },
     imagePicker: { 
