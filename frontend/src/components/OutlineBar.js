@@ -481,10 +481,12 @@ const styles=StyleSheet.create({
         flex: 1,
         backgroundColor: 'rgba(0,0,0,0.4)',
         justifyContent: 'center',
-        alignItems: 'center'
+        alignItems: 'center',
+        padding: 20,
     },
     confirmCard: {
-        width: 350,
+        width: '100%',
+        maxWidth: 350,
         backgroundColor: 'white',
         borderRadius: 15,
         padding: 25,
@@ -507,7 +509,8 @@ const styles=StyleSheet.create({
     confirmActionRow: {
         flexDirection: 'row',
         gap: 10,
-        width: '100%'
+        width: '100%',
+        flexWrap: 'wrap',
     },
     confirmBtn: {
         flex: 1,

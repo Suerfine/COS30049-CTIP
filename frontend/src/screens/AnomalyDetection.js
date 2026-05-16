@@ -22,12 +22,15 @@ import {
   ActivityIndicator,
   Modal,
   ScrollView,
+  useWindowDimensions,
 } from "react-native";
 
 import { useAnomalyDetection } from "../hooks/useAnomalyDetection";
 import { formatDate } from "../utils/formatDate";
 
 const AnomalyDetection = () => {
+  const { width, height } = useWindowDimensions();
+  const isCompact = width < 700;
   const {
     anomalies,
     currentPage,
@@ -296,7 +299,12 @@ const AnomalyDetection = () => {
           onPress={() => setShowMapModal(false)}
         >
           <View style={styles.modalContent} onStartShouldSetResponder={() => true}>
-            <View style={styles.mapContainer}>
+            <View
+              style={[
+                styles.mapContainer,
+                isCompact && { height: Math.min(height * 0.75, 520) },
+              ]}
+            >
               <View style={styles.mapHeader}>
                 <Text style={styles.mapTitle}>
                   {getEventTypeLabel(selectedAnomaly.event_type)}
@@ -628,6 +636,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0, 0, 0, 0.5)",
     justifyContent: "center",
     alignItems: "center",
+    padding: 20,
   },
   modalContent: {
     backgroundColor: "white",
