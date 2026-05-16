@@ -131,7 +131,7 @@ const AdminCourse = ({ navigation }) => {
       </ModalLayout>
 
       {/* Search and Filter */}
-      <View style={styles.toolbar}>
+      <View style={[styles.toolbar, width < 700 && styles.toolbarCompact]}>
         <View style={styles.search}>
           <Search size={18} />
           <TextInput
@@ -363,6 +363,11 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     marginTop: 20,
+  },
+  toolbarCompact: {
+    flexDirection: "column",
+    alignItems: "stretch",
+    gap: 12,
   },
   pillContainer:{
     flexDirection:'row',

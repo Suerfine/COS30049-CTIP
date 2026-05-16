@@ -8,6 +8,7 @@ import {
   Image,
   ActivityIndicator,
   Alert,
+  useWindowDimensions,
 } from "react-native";
 import { PlusCircle, ExternalLink, Download, QrCode, Trash2 } from "lucide-react-native";
 import QRCode from "qrcode";
@@ -57,6 +58,8 @@ const AdminArModels = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [markerById, setMarkerById] = useState({});
   const [markerLoading, setMarkerLoading] = useState({});
+  const { width } = useWindowDimensions();
+  const isCompact = width < 700;
 
   const handleAdd = () => {
     setModalVisible(true);
@@ -130,7 +133,7 @@ const AdminArModels = () => {
 
   return (
     <ScrollView style={styles.container}>
-      <View style={styles.header}>
+      <View style={[styles.header, isCompact && styles.headerCompact]}>
         <View>
           <Text style={styles.subtitle}>Manage AR-ready models and markers.</Text>
           <Text style={styles.title}>AR Model Library</Text>
@@ -265,6 +268,11 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 20,
+  },
+  headerCompact: {
+    flexDirection: "column",
+    alignItems: "flex-start",
+    gap: 12,
   },
   title: {
     fontSize: 24,

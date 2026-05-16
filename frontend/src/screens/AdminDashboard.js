@@ -1,6 +1,6 @@
 import { AlertTriangle, Book, ClipboardList, Flag, MapPin, RefreshCcw, User, RotateCcw, Pin } from "lucide-react-native";
 import React, { useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { CircleMarker, MapContainer, Popup, TileLayer, Tooltip, useMap } from "react-leaflet";
 import { useTranslation } from "react-i18next";
 import { useNavigation } from "@react-navigation/native";
@@ -145,6 +145,8 @@ const AdminDashboard = () => {
 
   const [hoveredAnomaly, setHoveredAnomaly] = useState(null);
   const [selectedAnomaly, setSelectedAnomaly] = useState(null);
+  const { width } = useWindowDimensions();
+  const isCompact = width < 1200;
   const mapCenter = useMemo(() => getMapCenter(events), [events]);
 
   const severityCounts = useMemo(
@@ -169,8 +171,8 @@ const AdminDashboard = () => {
   return (
     <ScrollView style={styles.screenContainer}>
       <style>{LEAFLET_CSS}</style>
-      <View style={styles.cards}>
-        <View style={styles.adminCard}>
+      <View style={[styles.cards, isCompact && styles.cardsCompact]}>
+        <View style={[styles.adminCard, isCompact && styles.adminCardCompact]}>
           <View>
             <Text style={styles.label}>Total Users</Text>
             <Text style={styles.value}>{stats.totalUsers}</Text>
@@ -179,7 +181,7 @@ const AdminDashboard = () => {
             <User size={30} color="#4338ca" />
           </View>
         </View>
-        <View style={styles.adminCard}>
+        <View style={[styles.adminCard, isCompact && styles.adminCardCompact]}>
           <View>
             <Text style={styles.label}>Total Courses</Text>
             <Text style={styles.value}>{stats.totalCourses}</Text>
@@ -188,7 +190,7 @@ const AdminDashboard = () => {
             <Book size={30} color="#ea580c" />
           </View>
         </View>
-        <View style={styles.adminCard}>
+        <View style={[styles.adminCard, isCompact && styles.adminCardCompact]}>
           <View>
             <Text style={styles.label}>Total Enrollments</Text>
             <Text style={styles.value}>{stats.totalEnrollments}</Text>
@@ -197,7 +199,7 @@ const AdminDashboard = () => {
             <ClipboardList size={30} color="#16a34a" />
           </View>
         </View>
-        <View style={styles.adminCard}>
+        <View style={[styles.adminCard, isCompact && styles.adminCardCompact]}>
           <View>
             <Text style={styles.label}>Mapped Anomalies</Text>
             <Text style={styles.value}>{stats.totalAnomalies}</Text>
@@ -208,14 +210,14 @@ const AdminDashboard = () => {
         </View>
       </View>
 
-      <View style={styles.mapRow}>
-        <View style={styles.mapSection}>
-          <View style={styles.mapHeader}>
+      <View style={[styles.mapRow, isCompact && styles.mapRowCompact]}>
+        <View style={[styles.mapSection, isCompact && styles.mapSectionCompact]}>
+          <View style={[styles.mapHeader, isCompact && styles.mapHeaderCompact]}>
             <View>
               <Text style={styles.mapTitle}>Anomaly Map</Text>
             <Text style={styles.mapSubtitle}>All anomaly events with valid coordinates</Text>
           </View>
-          <View style={styles.mapActions}>
+          <View style={[styles.mapActions, isCompact && styles.mapActionsCompact]}>
             <View style={styles.legend}>
               <View style={styles.legendItem}>
                 <View style={[styles.legendDot, { backgroundColor: SEVERITY_CONFIG.high.fillColor }]} />
@@ -302,7 +304,7 @@ const AdminDashboard = () => {
         </View>
       </View>
 
-      <View style={styles.latestUpdatesSection}>
+      <View style={[styles.latestUpdatesSection, isCompact && styles.latestUpdatesSectionCompact]}>
           <View style={styles.sectionHeader}>
             <View>
               <Text style={styles.sectionTitle}>Latest Updates</Text>
@@ -386,6 +388,11 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     flex: 1,
   },
+  adminCardCompact: {
+    width: "48%", 
+    minWidth: "48%", // Ensures explicit control over width bounds
+    flex: 0,         
+  },
   label: {
     fontSize: 14,
     color: "#666",
@@ -408,7 +415,13 @@ const styles = StyleSheet.create({
     flexWrap: "nowrap",
     marginHorizontal: 20,
     marginVertical: 10,
-    height: 120,
+    minHeight: 120, 
+  },
+  cardsCompact: {
+    flexWrap: "wrap",
+    height: "auto",
+    justifyContent: "space-between",
+    gap: 10, 
   },
   usersTheme: { backgroundColor: "#eef2ff" },
   coursesTheme: { backgroundColor: "#fff7ed" },
@@ -421,6 +434,9 @@ const styles = StyleSheet.create({
     minHeight: 0,
     paddingHorizontal: 20,
   },
+  mapRowCompact: {
+    flexDirection: "column",
+  },
   mapSection: {
     backgroundColor: "white",
     borderRadius: 8,
@@ -429,6 +445,9 @@ const styles = StyleSheet.create({
     minWidth: 520,
     borderWidth: 1,
     borderColor: "#e5e7eb",
+  },
+  mapSectionCompact: {
+    minWidth: 0,
   },
   latestUpdatesSection: {
     backgroundColor: "white",
@@ -439,6 +458,10 @@ const styles = StyleSheet.create({
     maxHeight: 560,
     borderWidth: 1,
     borderColor: "#e5e7eb",
+  },
+  latestUpdatesSectionCompact: {
+    minWidth: 0,
+    maxHeight: "none",
   },
   sectionHeader: {
     flexDirection: "row",
@@ -476,6 +499,10 @@ const styles = StyleSheet.create({
     borderBottomColor: "#e5e7eb",
     zIndex: 1000,
   },
+  mapHeaderCompact: {
+    flexDirection: "column",
+    alignItems: "flex-start",
+  },
   mapTitle: {
     fontSize: 20,
     fontWeight: "700",
@@ -492,6 +519,10 @@ const styles = StyleSheet.create({
     gap: 14,
     flexWrap: "wrap",
     justifyContent: "flex-end",
+  },
+  mapActionsCompact: {
+    width: "100%",
+    justifyContent: "space-between",
   },
   legend: {
     flexDirection: "row",

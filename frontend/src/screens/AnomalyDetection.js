@@ -21,6 +21,7 @@ import {
   TextInput,
   ActivityIndicator,
   Modal,
+  ScrollView,
 } from "react-native";
 
 import { useAnomalyDetection } from "../hooks/useAnomalyDetection";
@@ -333,7 +334,7 @@ const AnomalyDetection = () => {
   };
 
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.pageScroll} contentContainerStyle={styles.container}>
       <Text style={styles.title}>Anomaly Detection</Text>
 
       <View style={[styles.toolbar, styles.row]}>
@@ -383,32 +384,43 @@ const AnomalyDetection = () => {
       ) : (
         <>
           <View style={styles.tableContainer}>
-            <FlatList
-              style={styles.table}
-              data={anomalies}
-              ListHeaderComponent={renderHeader}
-              renderItem={renderAnomalyItem}
-              keyExtractor={(item) => item.id.toString()}
-              ListEmptyComponent={
-                <View style={styles.emptyContainer}>
-                  <AlertTriangle size={48} color="#d1d5db" />
-                  <Text style={styles.emptyText}>No anomalies detected</Text>
-                </View>
-              }
-            />
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator
+              contentContainerStyle={styles.tableScrollContent}
+            >
+              <View style={styles.tableInner}>
+                <FlatList
+                  style={styles.table}
+                  scrollEnabled={false}
+                  data={anomalies}
+                  ListHeaderComponent={renderHeader}
+                  renderItem={renderAnomalyItem}
+                  keyExtractor={(item) => item.id.toString()}
+                  ListEmptyComponent={
+                    <View style={styles.emptyContainer}>
+                      <AlertTriangle size={48} color="#d1d5db" />
+                      <Text style={styles.emptyText}>No anomalies detected</Text>
+                    </View>
+                  }
+                />
+              </View>
+            </ScrollView>
           </View>
           {totalPages > 1 ? renderPagination() : null}
         </>
       )}
 
       {renderMapModal()}
-    </View>
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  pageScroll: {
     flex: 1,
+  },
+  container: {
     paddingVertical: 20,
     paddingHorizontal: 40,
   },
@@ -456,9 +468,16 @@ const styles = StyleSheet.create({
     outlineStyle: "none",
   },
   tableContainer: {
-    flex: 1,
+    width: "100%",
     backgroundColor: "white",
     borderRadius: 0,
+  },
+  tableScrollContent: {
+    minWidth: "100%",
+  },
+  tableInner: {
+    minWidth: 860,
+    width: "100%",
   },
   table: {
     backgroundColor: "white",

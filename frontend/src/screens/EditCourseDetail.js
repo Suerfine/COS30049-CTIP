@@ -11,6 +11,7 @@ import {
   Modal,
   TextInput,
   TouchableOpacity,
+  useWindowDimensions,
   Platform
 } from "react-native";
 import { useRoute, useNavigation } from "@react-navigation/native";
@@ -43,6 +44,8 @@ import {
   Settings,
   Lock,
   ShieldCheck,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react-native";
 import DiscussionSection from "../components/DiscussionSection.js";
 import Markdown from "react-native-markdown-display";
@@ -73,9 +76,12 @@ const EditCourseDetail = () => {
   const auth = useAuth();
   const currentUser = auth?.currentUser;
   const { allCourseList } = useCourses();
+  const { width } = useWindowDimensions();
+  const isCompact = width < 900;
 
   const [selectedPage, setSelectedPage] = useState({ type: "overview" });
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isMobileOutlineOpen, setIsMobileOutlineOpen] = useState(false);
   const [activeStyles, setActiveStyles] = useState([]);
   const [editingElementId, setEditingElementId] = useState(null);
 
@@ -582,18 +588,55 @@ const EditCourseDetail = () => {
     );
   };
 
+  const selectedPageLabel =
+    selectedPage?.type === "page"
+      ? selectedPage.page?.title
+      : selectedPage?.type === "forum"
+        ? "Discussion Forum"
+        : selectedPage?.type === "workshops"
+          ? "Course Workshops"
+          : "Course Overview";
+
   return (
-    <View style={styles.rowContainer}>
+    <View style={[styles.rowContainer, isCompact && styles.rowContainerCompact]}>
       {/* Outlinebar */}
-      <OutlineBar
-        course={course}
-        onSelectPage={setSelectedPage}
-        editable={true}
-        isCollapsed={isCollapsed}
-        isPublished={course.status === "released" ? true : false}
-      />
+      {!isCompact && (
+        <OutlineBar
+          course={course}
+          onSelectPage={setSelectedPage}
+          editable={true}
+          isCollapsed={isCollapsed}
+          isPublished={course.status === "released" ? true : false}
+        />
+      )}
       <ScrollView style={{ height: "100vh" }}>
         <View style={styles.container}>
+          {isCompact && (
+            <View style={styles.mobileOutlineBlock}>
+              <Pressable
+                style={styles.mobileOutlineTrigger}
+                onPress={() => setIsMobileOutlineOpen((prev) => !prev)}
+              >
+                <View>
+                  <Text style={styles.mobileOutlineLabel}>Course section</Text>
+                  <Text style={styles.mobileOutlineValue}>{selectedPageLabel}</Text>
+                </View>
+                {isMobileOutlineOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+              </Pressable>
+              {isMobileOutlineOpen && (
+                <OutlineBar
+                  course={course}
+                  onSelectPage={(page) => {
+                    setSelectedPage(page);
+                    setIsMobileOutlineOpen(false);
+                  }}
+                  editable={true}
+                  isPublished={course.status === "released" ? true : false}
+                  dropdown
+                />
+              )}
+            </View>
+          )}
           {/* Background Image */}
           <ImageBackground
             source={require("../../assets/forest.png")}
@@ -724,7 +767,7 @@ const EditCourseDetail = () => {
                 <View style={styles.headerRow}>
                   <View style={styles.content}>
                     <Text style={styles.courseTitle}>{course.title}</Text>
-                    <View style={styles.statsRow}>
+                    <View style={[styles.statsRow, isCompact && styles.statsRowCompact]}>
                       <View style={styles.statChip}>
                         <Clock size={16} color="#363636" />
                         <Text style={styles.statLabel}>
@@ -1353,6 +1396,38 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: "row",
   },
+  rowContainerCompact: {
+    flexDirection: "column",
+  },
+  mobileOutlineBlock: {
+    marginTop: 12,
+    marginBottom: 10,
+    gap: 10,
+    zIndex: 20,
+  },
+  mobileOutlineTrigger: {
+    minHeight: 56,
+    borderWidth: 1,
+    borderColor: "#d1d5db",
+    borderRadius: 12,
+    backgroundColor: "white",
+    paddingHorizontal: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  mobileOutlineLabel: {
+    fontSize: 11,
+    color: "#6b7280",
+    textTransform: "uppercase",
+    fontWeight: "700",
+  },
+  mobileOutlineValue: {
+    marginTop: 3,
+    fontSize: 15,
+    color: "#111827",
+    fontWeight: "600",
+  },
   backgroundImage: {
     width: "100%",
     borderRadius: 20,
@@ -1387,8 +1462,12 @@ const styles = StyleSheet.create({
   },
   statsRow: {
     flexDirection: "row",
-    gap: 12,
-    marginBottom: 20,
+    gap: 8,
+    marginVertical: 20,
+  },
+  statsRowCompact: {
+    flexDirection: "column",
+    alignItems: "flex-start",
   },
   courseTitle: {
     fontSize: 20,
@@ -1397,10 +1476,8 @@ const styles = StyleSheet.create({
   statChip: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 20,
+    gap: 4,
+    paddingHorizontal: 10,
   },
   statLabel: {
     color: "#363636",
@@ -1507,8 +1584,10 @@ const styles = StyleSheet.create({
   course_cover: {
     alignSelf: "center",
     borderRadius: 13,
-    width: "800px",
-    height: "400px",
+    width: "100%",
+    maxWidth: 800,
+    aspectRatio: 2,
+    height: undefined,
     marginBottom: 20,
   },
   contentWrapper: {

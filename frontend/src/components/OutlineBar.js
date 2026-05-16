@@ -4,7 +4,7 @@ import { Plus, ChevronRight, ChevronDown, Search, Trash2, Lock, CheckCircle2, XC
 import { useOutline } from '../hooks/useOutline';
 import * as Progress from 'react-native-progress';
 
-const OutlineBar = ({ course, progressMap = {}, onSelectPage, editable, isCollapsed, isLocked, isFailed, isPublished, activePage }) => {
+const OutlineBar = ({ course, progressMap = {}, onSelectPage, editable, isCollapsed, isLocked, isFailed, isPublished, activePage, dropdown = false }) => {
     const {
         allModules,
         expandedModule,
@@ -92,7 +92,7 @@ const OutlineBar = ({ course, progressMap = {}, onSelectPage, editable, isCollap
     }, [localSearch]);
 
     return (
-        <View style={[styles.outlinebar, isCollapsed && styles.collapsed]}>
+        <View style={[styles.outlinebar, dropdown && styles.dropdownOutline, isCollapsed && styles.collapsed]}>
 
             {/* SEARCH */}
             {!isCollapsed && (
@@ -374,6 +374,15 @@ const styles=StyleSheet.create({
     },
     collapsed:{
         maxWidth:'0px',
+    },
+    dropdownOutline:{
+        width:'100%',
+        minHeight:'auto',
+        maxHeight:420,
+        borderWidth:1,
+        borderColor:'#e5e7eb',
+        borderRadius:12,
+        overflow:'hidden',
     },
     overview:{
         fontSize:16,

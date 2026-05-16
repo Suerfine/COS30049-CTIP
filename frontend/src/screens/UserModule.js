@@ -660,9 +660,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 20,
   },
   statLabel: {
     color: "#363636",
@@ -894,8 +891,10 @@ const styles = StyleSheet.create({
   course_cover: {
     alignSelf: "center",
     borderRadius: 13,
-    width: "800px",
-    height: "400px",
+    width: "100%",
+    maxWidth: 800,
+    aspectRatio: 2,
+    height: undefined,
     marginBottom: 20,
   },
   contentWrapper: {
@@ -1018,11 +1017,6 @@ const styles = StyleSheet.create({
     color: "#374151",
     textTransform: "uppercase",
     letterSpacing: 0.5,
-  },
-  statsRow: {
-    flexDirection: "row",
-    gap: 24,
-    marginBottom: 12,
   },
   guideStatChip: {
     flexDirection: "column",
