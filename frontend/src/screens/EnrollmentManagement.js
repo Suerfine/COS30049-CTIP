@@ -63,6 +63,8 @@ const EnrollmentManagement = () => {
     fetchEnrollments,
     handleApproveBadge,
     handleRejectBadge,
+    selectedUserHistory,
+    getUserEnrollments,setSelectedUserHistory
   } = useEnrollmentManagement();
 
   // Progress
@@ -104,7 +106,6 @@ const EnrollmentManagement = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [detailModalVisible, setDetailModalVisible] = useState(false);
   const [selectedUserEnrollment, setSelectedUserEnrollment] = useState(null);
-  const [selectedUserHistory, setSelectedUserHistory] = useState([]);
   const [paymentModalVisible, setPaymentModalVisible] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState(null);
   const [filterVisible, setFilterVisible] = useState(false);
@@ -266,12 +267,9 @@ const EnrollmentManagement = () => {
       .join(" ");
   };
 
-  const handleRowPress = (enrollment) => {
+  const handleRowPress = async (enrollment) => {
     setSelectedUserEnrollment(enrollment);
-    const userHistory = enrollments.filter(
-      (e) => e.user_id === enrollment.user_id,
-    );
-    setSelectedUserHistory(userHistory);
+    await getUserEnrollments(enrollment.user_id);
     setDetailModalVisible(true);
   };
 
