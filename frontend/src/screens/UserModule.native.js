@@ -491,6 +491,9 @@ const UserModule = ({ navigation }) => {
                     onRefreshHistory={refreshHistory}
                     scrollToTop={scrollToTop}
                     isFailed={isFailed}
+                    onSelectPage={setSelectedPage}
+                    pageMetadata={{ ...selectedPage, course: course }}
+                    progressMap={progressMap}
                   />
                 )}
 
