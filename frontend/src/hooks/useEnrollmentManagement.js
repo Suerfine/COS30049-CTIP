@@ -170,13 +170,7 @@ export const useEnrollmentManagement = () => {
     try {
         const enrollments =
             await enrollmentService.getByUserId(userId);
-
-        const completedEnrollments= enrollments.filter(
-            (enrollment) =>
-                enrollment.status?.toLowerCase() === "completed"
-        );
-        console.log(userId);
-        setSelectedUserHistory(completedEnrollments);
+        setSelectedUserHistory(enrollments);
     } catch (err) {
         console.error(
             "Get User Enrollment Error:",
