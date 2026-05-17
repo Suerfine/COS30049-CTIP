@@ -39,7 +39,9 @@ async function createParkGuideUser(): Promise<User> {
   });
 }
 
-async function createPendingRegistration(overrides: Partial<Registration> = {}) {
+async function createPendingRegistration(
+  overrides: Partial<Registration> = {},
+) {
   return Registration.create({
     user_id: null,
     reviewed_by_user_id: null,
@@ -130,6 +132,63 @@ describe("Registration Controller Integration Tests", () => {
     expect(response.body.message).toContain("pending registration");
   });
 
+  it("POST /api/registrations - allows a new registration if previous one was rejected", async () => {
+    // Create an existing rejected registration with the same identifying details
+    await Registration.create({
+      status: RegistrationStatus.REJECTED,
+      firstname: "Alya",
+      lastname: "Rahman",
+      identification: "REG-001",
+      personal_email: "alya.rahman@example.com",
+      tel: "0123456789",
+      document_filepath: "private/registrations/test/document.pdf",
+    });
+
+    // Attempt to submit a new registration for the same applicant
+    const response = await request(app)
+      .post("/api/registrations")
+      .field("firstname", "Alya")
+      .field("lastname", "Rahman")
+      .field("identification", "REG-001")
+      .field("personal_email", "alya.rahman@example.com")
+      .field("tel", "0123456789")
+      .attach("file", PDF_BUFFER, {
+        filename: "resume.pdf",
+        contentType: "application/pdf",
+      });
+
+    expect(response.status).toBe(200);
+    expect(response.body.status).toBe(RegistrationStatus.PENDING);
+  });
+
+  it("POST /api/registrations - rejects a new registration if they have an approved registration", async () => {
+    // Create an existing approved registration with the same identifying details
+    await Registration.create({
+      status: RegistrationStatus.APPROVED,
+      firstname: "Alya",
+      lastname: "Rahman",
+      identification: "REG-001",
+      personal_email: "alya.rahman@example.com",
+      tel: "0123456789",
+      document_filepath: "private/registrations/test/document.pdf",
+    });
+
+    // Attempt to submit a new registration for the same applicant
+    const response = await request(app)
+      .post("/api/registrations")
+      .field("firstname", "Alya")
+      .field("lastname", "Rahman")
+      .field("identification", "REG-001")
+      .field("personal_email", "alya.rahman@example.com")
+      .field("tel", "0123456789")
+      .attach("file", PDF_BUFFER, {
+        filename: "resume.pdf",
+        contentType: "application/pdf",
+      });
+
+    expect(response.status).toBe(400);
+  });
+
   it("POST /api/registrations - rejects registration without a required PDF document", async () => {
     // Submit all required text fields but intentionally omit the required document
     const response = await request(app)
@@ -159,7 +218,9 @@ describe("Registration Controller Integration Tests", () => {
       });
 
     expect(response.status).toBe(400);
-    expect(response.body.message).toBe("Invalid file type. Allowed: application/pdf");
+    expect(response.body.message).toBe(
+      "Invalid file type. Allowed: application/pdf",
+    );
   });
 
   it("GET /api/registrations - returns registrations", async () => {

@@ -88,10 +88,12 @@ export const createRegistration = async (
 ) => {
   const transaction = await sequelize.transaction();
   try {
-    // Check if there's already a pending registration with the same firstname and lastname, identification or personal_email
+    // Check if there's already a pending/approved registration with the same firstname and lastname, identification or personal_email
     const existingRegistration = await Registration.findOne({
       where: {
-        status: RegistrationStatus.PENDING,
+        status: {
+          [Op.in]: [RegistrationStatus.PENDING, RegistrationStatus.APPROVED],
+        },
         [Op.or]: [
           { firstname: req.body.firstname, lastname: req.body.lastname },
           { identification: req.body.identification },
@@ -102,7 +104,7 @@ export const createRegistration = async (
     if (existingRegistration) {
       throw new HttpError(
         400,
-        "A pending registration with the same details already exists",
+        "A pending or approved registration with the same details already exists",
       );
     }
 
