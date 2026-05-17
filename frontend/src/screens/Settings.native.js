@@ -40,6 +40,7 @@ const Settings=({navigation})=>{
 
     const [errors, setErrors] = useState({});
     const [notifModalVisible, setNotifModalVisible] = useState(false);
+    const {profileImage} = useUserProfile();
 
     const clearError = (field) => {
         setErrors(prev => {
@@ -82,8 +83,8 @@ const Settings=({navigation})=>{
                 }}
                 >
                 <View style={styles.info}>
-                    {user?.profileImage ? (
-                    <Image source={{ uri: user.profileImage }} style={styles.avatar}/>
+                    {profileImage ? (
+                    <Image source={{ uri: profileImage }} style={styles.avatar}/>
                     ) : (
                         <View style={styles.pfpPlaceholder}>
                             <Text style={styles.pfpInitials}>
