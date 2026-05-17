@@ -89,53 +89,21 @@ export const createRegistration = async (
   const transaction = await sequelize.transaction();
   try {
     // Check if there's already a pending registration with the same firstname and lastname, identification or personal_email
-    const existingUser = await User.findOne({
-    where: {
-      [Op.or]: [
-        { identification: req.body.identification },
-        { personal_email: req.body.personal_email },
-      ],
-    },
-  });
-
-  if (existingUser) {
-    throw new HttpError(
-      400,
-      "A user with this identification or email already exists",
-    );
-  }
-
-  // Check all existing registrations (including rejected/approved)
-  const existingRegistration = await Registration.findOne({
-    where: {
-      [Op.or]: [
-        { identification: req.body.identification },
-        { personal_email: req.body.personal_email },
-      ],
-    },
-    paranoid: false,
-  });
+    const existingRegistration = await Registration.findOne({
+      where: {
+        status: RegistrationStatus.PENDING,
+        [Op.or]: [
+          { firstname: req.body.firstname, lastname: req.body.lastname },
+          { identification: req.body.identification },
+          { personal_email: req.body.personal_email },
+        ],
+      },
+    });
     if (existingRegistration) {
-      if (existingRegistration.status === RegistrationStatus.PENDING) {
-        throw new HttpError(
-          400,
-          "A pending registration already exists",
-        );
-      }
-
-      if (existingRegistration.status === RegistrationStatus.APPROVED) {
-        throw new HttpError(
-          400,
-          "This registration has already been approved",
-        );
-      }
-
-      if (existingRegistration.status === RegistrationStatus.REJECTED) {
-        throw new HttpError(
-          400,
-          "This identification or email has already submitted a registration",
-        );
-      }
+      throw new HttpError(
+        400,
+        "A pending registration with the same details already exists",
+      );
     }
 
     // Validate file upload
