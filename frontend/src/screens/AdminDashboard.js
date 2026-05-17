@@ -1,90 +1,82 @@
-import {
-  AlertTriangle,
-  Book,
-  CheckCircle,
-  ClipboardList,
-  Flag,
-  MapPin,
-  RefreshCcw,
-  User,
-  RotateCcw,
-  Pin,
-} from "lucide-react-native";
+import { AlertTriangle, Book, ClipboardList, Flag, MapPin, RefreshCcw, User, RotateCcw, Pin } from "lucide-react-native";
 import React, { useEffect, useMemo, useState } from "react";
-import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-  useWindowDimensions,
-} from "react-native";
-import {
-  CircleMarker,
-  MapContainer,
-  TileLayer,
-  useMap,
-} from "react-leaflet";
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
+import { CircleMarker, MapContainer, Popup, TileLayer, Tooltip, useMap } from "react-leaflet";
+import { useTranslation } from "react-i18next";
+import { useNavigation } from "@react-navigation/native";
 
 import { useAnomalyMapEvents } from "../hooks/useAnomalyMapEvents";
-import { AnomalyService } from "../services/AnomalyService";
 import { formatDate } from "../utils/formatDate";
-import {
-  DEFAULT_MAP_CENTER,
-  SEVERITY_CONFIG,
-  EVENT_LABELS,
-} from "../utils/AnomalyConstant";
+import { DEFAULT_MAP_CENTER, LEAFLET_CSS, EVENT_LABELS, SEVERITY_CONFIG } from "../utils/AnomalyConstant";
 import { useAdminDashboard } from "../hooks/useAdminDashboard";
-import { useNotification } from "../hooks/useNotification";
+import { useNotification } from '../hooks/useNotification';
 import { useAuth } from "../context/AuthContext";
-import { useNavigation } from "@react-navigation/native";
 import { navigateNotification } from "../utils/navigateNotification";
 
-/* ---------------- Helpers ---------------- */
+const getEventTypeLabel = (eventType) => {
+  if (!eventType) {
+    return "Unknown";
+  }
 
-const getEventTypeLabel = (eventType) =>
-  EVENT_LABELS[eventType?.toLowerCase()] || eventType || "Unknown";
+  return EVENT_LABELS[eventType.toLowerCase()] || eventType;
+};
 
-const getEventSeverity = (type) => {
-  const t = type?.toLowerCase();
-  if (["forest_fire", "flooding"].includes(t)) return "high";
+const getEventSeverity = (eventType) => {
+  const normalizedType = eventType?.toLowerCase();
+
+  if (["forest_fire", "flooding"].includes(normalizedType)) {
+    return "high";
+  }
+
   if (
     [
       "plucking_plants",
       "hitting_animal",
-      "trespassing",
+      "extended_plant_touch",
+      "extended_animal_touch",
       "loud_noise",
-    ].includes(t)
-  )
+      "trespassing",
+    ].includes(normalizedType)
+  ) {
     return "high";
+  }
+
   return "low";
 };
 
 const getUserLabel = (event) => {
   const user = event.user;
-  return (
-    [user?.firstname, user?.lastname].filter(Boolean).join(" ") ||
-    user?.username ||
-    `User ${event.user_id}`
-  );
+  const fullName = [user?.firstname, user?.lastname].filter(Boolean).join(" ");
+
+  return fullName || user?.username || `User ${event.user_id || "-"}`;
+};
+
+const getConfidenceLabel = (metadata) => {
+  const rawConfidence = metadata?.detection_confidence ?? metadata?.confidence;
+  const confidence = Number(rawConfidence);
+
+  if (!Number.isFinite(confidence)) {
+    return null;
+  }
+
+  return `${Math.round(confidence * 100)}%`;
 };
 
 const getMapCenter = (events) => {
-  if (!events.length) return DEFAULT_MAP_CENTER;
+  if (!events.length) {
+    return DEFAULT_MAP_CENTER;
+  }
 
-  const sum = events.reduce(
-    (acc, e) => ({
-      lat: acc.lat + Number(e.latitude),
-      lng: acc.lng + Number(e.longitude),
+  const totals = events.reduce(
+    (acc, event) => ({
+      latitude: acc.latitude + Number(event.latitude),
+      longitude: acc.longitude + Number(event.longitude),
     }),
-    { lat: 0, lng: 0 }
+    { latitude: 0, longitude: 0 }
   );
 
-  return [sum.lat / events.length, sum.lng / events.length];
+  return [totals.latitude / events.length, totals.longitude / events.length];
 };
-
-/* ---------------- Map Viewport ---------------- */
 
 const MapViewport = ({ events, center }) => {
   const map = useMap();
@@ -96,172 +88,273 @@ const MapViewport = ({ events, center }) => {
     }
 
     if (events.length === 1) {
-      map.setView(
-        [Number(events[0].latitude), Number(events[0].longitude)],
-        15
-      );
+      map.setView([Number(events[0].latitude), Number(events[0].longitude)], 15);
       return;
     }
 
     map.fitBounds(
-      events.map((e) => [Number(e.latitude), Number(e.longitude)]),
-      { padding: [30, 30], maxZoom: 15 }
+      events.map((event) => [Number(event.latitude), Number(event.longitude)]),
+      {
+        padding: [28, 28],
+        maxZoom: 15,
+      }
     );
-  }, [events, center, map]);
+  }, [center, events, map]);
 
   return null;
 };
 
-/* ---------------- Hover Card ---------------- */
-
-const HoverDetailCard = ({ event, isPinned, onResolve, resolving }) => {
+const HoverDetailCard = ({ event, isPinned }) => {
   const severity = getEventSeverity(event.event_type);
+  const confidence = getConfidenceLabel(event.metadata);
 
   return (
     <View style={styles.hoverCard}>
-      <Text style={styles.hoverTitle}>
-        {getEventTypeLabel(event.event_type)}
-      </Text>
-
+      <View style={styles.hoverHeader}>
+        <Text style={styles.hoverTitle}>{getEventTypeLabel(event.event_type)}</Text>
+        
+        <View style={[styles.hoverBadge, { backgroundColor: SEVERITY_CONFIG[severity].fillColor }]}>
+          <Text style={styles.hoverBadgeText}>{SEVERITY_CONFIG[severity].label}</Text>
+        </View>
+      </View>
+      <Text style={styles.hoverRow}>Detected: {formatDate(event.created_at)}</Text>
       <Text style={styles.hoverRow}>
-        Time: {formatDate(event.created_at)}
+        Coordinates: {Number(event.latitude).toFixed(6)}, {Number(event.longitude).toFixed(6)}
       </Text>
-
-      <Text style={styles.hoverRow}>
-        User: {getUserLabel(event)}
-      </Text>
-
-      <Text style={styles.hoverRow}>
-        Lat/Lng: {Number(event.latitude)}, {Number(event.longitude)}
-      </Text>
-
-      {isPinned && (
-        <Pressable
-          onPress={onResolve}
-          disabled={resolving}
-          style={styles.resolveBtn}
-        >
-          {resolving ? (
-            <ActivityIndicator color="white" />
-          ) : (
-            <>
-              <CheckCircle size={14} color="white" />
-              <Text style={styles.resolveBtnText}>Resolve</Text>
-            </>
-          )}
-        </Pressable>
-      )}
+      <Text style={styles.hoverRow}>User: {getUserLabel(event)}</Text>
+      <View style={{ flexDirection: "row", justifyContent: "space-between", }}>
+        {confidence ? <Text style={styles.hoverRow}>Confidence: {confidence}</Text> : null}
+        {isPinned && <Pin size={14} color="#b96363" fill="#b96363" />}
+      </View>
     </View>
   );
 };
 
-/* ---------------- MAIN COMPONENT ---------------- */
-
 const AdminDashboard = () => {
-  const { events, loading, error, refresh } = useAnomalyMapEvents();
-  const { stats } = useAdminDashboard();
-  const { notifications, fetchNotifications } = useNotification();
-  const { currentUser } = useAuth();
+  const { t } = useTranslation();
   const navigation = useNavigation();
+  const { currentUser } = useAuth();
+  const { events, loading: mapLoading, error: mapError, refresh } = useAnomalyMapEvents();
+  const { stats } = useAdminDashboard();
+  const { 
+    notifications, 
+    loading: notificationsLoading, 
+    error: notificationsError, 
+    fetchNotifications
+  } = useNotification();
 
+  const [hoveredAnomaly, setHoveredAnomaly] = useState(null);
+  const [selectedAnomaly, setSelectedAnomaly] = useState(null);
   const { width } = useWindowDimensions();
   const isCompact = width < 1200;
-
-  const [selected, setSelected] = useState(null);
-  const [hovered, setHovered] = useState(null);
-  const [resolvingId, setResolvingId] = useState(null);
-
   const mapCenter = useMemo(() => getMapCenter(events), [events]);
 
-  const severityCounts = useMemo(() => {
-    return events.reduce(
-      (acc, e) => {
-        acc[getEventSeverity(e.event_type)]++;
-        return acc;
-      },
-      { high: 0, low: 0 }
-    );
-  }, [events]);
+  const severityCounts = useMemo(
+    () =>
+      events.reduce(
+        (acc, event) => {
+          acc[getEventSeverity(event.event_type)] += 1;
+          return acc;
+        },
+        { high: 0, medium: 0, low: 0 }
+      ),
+    [events]
+  );
 
-  const handleResolve = async (event) => {
-    setResolvingId(event.id);
-    try {
-      await AnomalyService.resolve(event.id);
-      setSelected(null);
-      refresh();
-    } finally {
-      setResolvingId(null);
-    }
-  };
+  const latestNotifications = useMemo(() => {
+    return (notifications || [])
+      .slice()
+      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+      .slice(0, 20);
+  }, [notifications]);
 
   return (
-    <ScrollView style={styles.screen}>
-      <View style={styles.cards}>
-        <Text>Total Users: {stats.totalUsers}</Text>
-        <Text>Total Courses: {stats.totalCourses}</Text>
-        <Text>Total Enrollments: {stats.totalEnrollments}</Text>
-        <Text>Active Anomalies: {severityCounts.high}</Text>
+    <ScrollView style={styles.screenContainer}>
+      <style>{LEAFLET_CSS}</style>
+      <View style={[styles.cards, isCompact && styles.cardsCompact]}>
+        <View style={[styles.adminCard, isCompact && styles.adminCardCompact]}>
+          <View>
+            <Text style={styles.label}>{t('total')} {t('users')}</Text>
+            <Text style={styles.value}>{stats.totalUsers}</Text>
+          </View>
+          <View style={[styles.iconContainer, styles.usersTheme]}>
+            <User size={30} color="#4338ca" />
+          </View>
+        </View>
+        <View style={[styles.adminCard, isCompact && styles.adminCardCompact]}>
+          <View>
+            <Text style={styles.label}>{t("total")} {t("courses")}</Text>
+            <Text style={styles.value}>{stats.totalCourses}</Text>
+          </View>
+          <View style={[styles.iconContainer, styles.coursesTheme]}>
+            <Book size={30} color="#ea580c" />
+          </View>
+        </View>
+        <View style={[styles.adminCard, isCompact && styles.adminCardCompact]}>
+          <View>
+            <Text style={styles.label}>{t("total")} {t("enrollments")}</Text>
+            <Text style={styles.value}>{stats.totalEnrollments}</Text>
+          </View>
+          <View style={[styles.iconContainer, styles.enrollTheme]}>
+            <ClipboardList size={30} color="#16a34a" />
+          </View>
+        </View>
+        <View style={[styles.adminCard, isCompact && styles.adminCardCompact]}>
+          <View>
+            <Text style={styles.label}>{t("mapped anomalies")}</Text>
+            <Text style={styles.value}>{stats.totalAnomalies}</Text>
+          </View>
+          <View style={[styles.iconContainer, styles.alertTheme]}>
+            <Flag size={30} color="#dc2626" />
+          </View>
+        </View>
       </View>
 
-      {/* MAP */}
-      <View style={styles.mapContainer}>
-        {loading ? (
-          <ActivityIndicator />
-        ) : error ? (
-          <Text>Error loading map</Text>
-        ) : (
-          <MapContainer center={mapCenter} zoom={13} style={styles.map}>
-            <MapViewport events={events} center={mapCenter} />
+      <View style={[styles.mapRow, isCompact && styles.mapRowCompact]}>
+        <View style={[styles.mapSection, isCompact && styles.mapSectionCompact]}>
+          <View style={[styles.mapHeader, isCompact && styles.mapHeaderCompact]}>
+            <View>
+              <Text style={styles.mapTitle}>{t("anomaly map")}</Text>
+            <Text style={styles.mapSubtitle}>{t("all anomaly events with valid coordinates")}</Text>
+          </View>
+          <View style={[styles.mapActions, isCompact && styles.mapActionsCompact]}>
+            <View style={styles.legend}>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendDot, { backgroundColor: SEVERITY_CONFIG.high.fillColor }]} />
+                <Text style={styles.legendText}>{t("anomaly live count")}: {severityCounts.high}</Text>
+              </View>
+            </View>
+            <Pressable
+              onPress={refresh}
+              style={({ hovered }) => [styles.refreshBtn, hovered && styles.refreshBtnHover]}
+            >
+              <RefreshCcw size={17} color="#0a6340" />
+              <Text style={styles.refreshText}>{t("refresh")}</Text>
+            </Pressable>
+          </View>
+        </View>
 
-            <TileLayer
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        <View style={styles.mapShell}>
+          {mapLoading ? (
+            <View style={styles.mapState}>
+              <ActivityIndicator size="large" color="#0a6340" />
+              <Text style={styles.stateText}>{t("loading")} {t("anomaly map")}...</Text>
+            </View>
+          ) : mapError ? (
+            <View style={styles.mapState}>
+              <AlertTriangle size={42} color="#dc2626" />
+              <Text style={styles.errorText}>{t("failed to load anomaly map")}</Text>
+              <Text style={styles.errorDetail}>{mapError}</Text>
+              <Pressable
+                onPress={refresh}
+                style={({ hovered }) => [styles.retryBtn, hovered && styles.retryBtnHover]}
+              >
+                <Text style={styles.retryText}>{t("try again")}</Text>
+              </Pressable>
+            </View>
+          ) : (
+            <MapContainer center={mapCenter} zoom={13} scrollWheelZoom style={webStyles.map}>
+              <MapViewport events={events} center={mapCenter} />
+              <TileLayer
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              />
+              {events.map((event) => {
+                const severity = getEventSeverity(event.event_type);
+                const severityConfig = SEVERITY_CONFIG[severity];
+
+                return (
+                  <CircleMarker
+                    key={event.id}
+                    center={[Number(event.latitude), Number(event.longitude)]}
+                    radius={8}
+                    eventHandlers={{
+                      mouseover: () => setHoveredAnomaly(event),
+                      mouseout: () => setHoveredAnomaly(null),
+                      click: () => {
+                        setSelectedAnomaly(prev => prev?.id === event.id ? null : event);
+                      },
+                    }}
+                    pathOptions={{
+                      color: selectedAnomaly?.id === event.id ? "#161515" : severityConfig.color,
+                      fillColor: severityConfig.fillColor,
+                      fillOpacity: 0.82,
+                      weight: selectedAnomaly?.id === event.id ? 3 : 2,
+                    }}
+                  >
+                  </CircleMarker>
+                );
+              })}
+            </MapContainer>
+          )}
+
+          {!mapLoading && !mapError && (selectedAnomaly || hoveredAnomaly) ? (
+            <HoverDetailCard 
+              event={selectedAnomaly || hoveredAnomaly} 
+              isPinned={!!selectedAnomaly}
             />
+          ) : null}
 
-            {events.map((event) => {
-              const severity = getEventSeverity(event.event_type);
-
-              return (
-                <CircleMarker
-                  key={event.id}
-                  center={[
-                    Number(event.latitude),
-                    Number(event.longitude),
-                  ]}
-                  radius={8}
-                  pathOptions={{
-                    color: severity === "high" ? "red" : "green",
-                    fillOpacity: 0.7,
-                  }}
-                  eventHandlers={{
-                    click: () =>
-                      setSelected((prev) =>
-                        prev?.id === event.id ? null : event
-                      ),
-                    mouseover: () => setHovered(event),
-                    mouseout: () => setHovered(null),
-                  }}
-                />
-              );
-            })}
-          </MapContainer>
-        )}
-
-        {/* Hover Card */}
-        {(selected || hovered) && (
-          <HoverDetailCard
-            event={selected || hovered}
-            isPinned={!!selected}
-            onResolve={() => handleResolve(selected)}
-            resolving={resolvingId === selected?.id}
-          />
-        )}
+          {!mapLoading && !mapError && events.length === 0 ? (
+            <View style={styles.emptyOverlay}>
+              <MapPin size={32} color="#9ca3af" />
+              <Text style={styles.emptyText}>{t("no coordinate-bearing anomalies found")}</Text>
+            </View>
+          ) : null}
+        </View>
       </View>
 
-      {/* NOTIFICATIONS */}
-      <View style={styles.notifications}>
-        {notifications?.map((n) => (
-          <Text key={n.id}>{n.title}</Text>
-        ))}
+      <View style={[styles.latestUpdatesSection, isCompact && styles.latestUpdatesSectionCompact]}>
+          <View style={styles.sectionHeader}>
+            <View>
+              <Text style={styles.sectionTitle}>{t("latest updates")}</Text>
+              <Text style={styles.sectionSubtitle}>20 {t("most recent notifications")}</Text>
+            </View>
+            <Pressable onPress={fetchNotifications} disabled={notificationsLoading} style={styles.refreshBtn}>
+              <RotateCcw size={20} color="#666" />
+            </Pressable>
+          </View>
+
+          {notificationsError ? (
+            <View style={styles.centerContainer}>
+              <Text style={styles.errorText}>{t("failed to load updates")}</Text>
+              <Text style={styles.errorDetail}>{notificationsError}</Text>
+            </View>
+          ) : notificationsLoading ? (
+            <View style={styles.centerContainer}>
+              <ActivityIndicator size="large" color="#2f6618fe" />
+            </View>
+          ) : latestNotifications.length === 0 ? (
+            <View style={styles.centerContainer}>
+              <Text style={styles.emptyText}>{t('no notifications')}</Text>
+            </View>
+          ) : (
+            <ScrollView style={styles.latestUpdatesList}>
+              {latestNotifications.map((notification) => (
+                <Pressable
+                  key={notification.id}
+                  onPress={() => navigateNotification(navigation, notification.url, currentUser)}
+                  style={({ hovered, pressed }) => [
+                    styles.notificationItem,
+                    hovered && styles.notificationItemHover,
+                    pressed && styles.notificationItemPressed,
+                  ]}
+                >
+                  <View style={styles.notificationContent}>
+                    <View style={styles.titleRow}>
+                      <Text style={styles.notificationTitle}>{notification.title}</Text>
+                    </View>
+                    <Text style={styles.notificationMessage}>{notification.message}</Text>
+                    <Text style={styles.notificationDate}>
+                      {new Date(notification.created_at).toLocaleDateString()} at{' '}
+                      {new Date(notification.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </Text>
+                  </View>
+                </Pressable>
+              ))}
+            </ScrollView>
+          )}
+        </View>
       </View>
     </ScrollView>
   );
@@ -269,7 +362,7 @@ const AdminDashboard = () => {
 
 const styles = StyleSheet.create({
   screenContainer: {
-    height: "100vh",
+    height: '100vh', 
     backgroundColor: "#f6f8f7",
     padding: 20,
     gap: 20,
@@ -296,9 +389,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   adminCardCompact: {
-    width: "48%",
+    width: "48%", 
     minWidth: "48%", // Ensures explicit control over width bounds
-    flex: 0,
+    flex: 0,         
   },
   label: {
     fontSize: 14,
@@ -322,20 +415,20 @@ const styles = StyleSheet.create({
     flexWrap: "nowrap",
     marginHorizontal: 20,
     marginVertical: 10,
-    minHeight: 120,
+    minHeight: 120, 
   },
   cardsCompact: {
     flexWrap: "wrap",
     height: "auto",
     justifyContent: "space-between",
-    gap: 10,
+    gap: 10, 
   },
   usersTheme: { backgroundColor: "#eef2ff" },
   coursesTheme: { backgroundColor: "#fff7ed" },
   enrollTheme: { backgroundColor: "#f0fdf4" },
   alertTheme: { backgroundColor: "#fef2f2" },
   mapRow: {
-    flex: 1,
+    flex: 1, 
     flexDirection: "row",
     gap: 20,
     minHeight: 560,
@@ -637,28 +730,6 @@ const styles = StyleSheet.create({
   },
   dismissBtnHover: {
     backgroundColor: "#fee2e2",
-  },
-  resolveBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    marginTop: 10,
-    paddingVertical: 7,
-    paddingHorizontal: 12,
-    backgroundColor: "#0a6340",
-    borderRadius: 6,
-  },
-  resolveBtnHover: {
-    backgroundColor: "#065f2e",
-  },
-  resolveBtnDisabled: {
-    backgroundColor: "#9ca3af",
-  },
-  resolveBtnText: {
-    color: "white",
-    fontSize: 12,
-    fontWeight: "600",
   },
 });
 
