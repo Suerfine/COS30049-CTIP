@@ -241,5 +241,8 @@ function instrumentRouter(router: Router) {
     }
   });
 }
-instrumentRouter(router);
+if (process.env.SHOULD_INSTRUMENT_ROUTES === "true") {
+  console.log("Instrumenting route handlers for debugging...");
+  instrumentRouter(router);
+}
 export default router;
