@@ -1,9 +1,10 @@
 import apiClient from "../config/apiConfig";
+import { API_ENDPOINTS } from "../config/ApiEndpoints";
 
 export const totpService = {
   async setup() {
     try {
-      const response = await apiClient.post("/totp/setup");
+      const response = await apiClient.post(API_ENDPOINTS.TOTP.SETUP);
       return response.data;
     } catch (error) {
       throw new Error(error.response?.data?.message || "Failed to start 2FA setup");
@@ -12,7 +13,7 @@ export const totpService = {
 
   async verifySetup(secret, code) {
     try {
-      const response = await apiClient.post("/totp/verify-setup", { secret, code });
+      const response = await apiClient.post(API_ENDPOINTS.TOTP.VERIFY_SETUP, { secret, code });
       return response.data;
     } catch (error) {
       throw new Error(error.response?.data?.message || "Failed to verify code");
@@ -21,7 +22,7 @@ export const totpService = {
 
   async disable(code) {
     try {
-      const response = await apiClient.post("/totp/disable", { code });
+      const response = await apiClient.post(API_ENDPOINTS.TOTP.DISABLE, { code });
       return response.data;
     } catch (error) {
       throw new Error(error.response?.data?.message || "Failed to disable 2FA");
