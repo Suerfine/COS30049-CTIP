@@ -45,7 +45,7 @@ export const useRegisterManagement=()=>{
         try{
            const result=await RegisterService.approve(formData.id);
            await fetchUsers();
-           setSelectedUsers(null);
+           setSelectedUser(null);
             
            return{
             success:true,

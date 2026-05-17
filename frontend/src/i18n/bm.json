@@ -64,6 +64,7 @@
     "personal information": "Maklumat Peribadi",
     "first name": "Nama Pertama",
     "last name": "Nama Keluarga",
+    "forgot password":"Lupa Kata Laluan?",
     "ic": "Kad Pengenalan",
     "passport": "Pasport",
     "email": "Emel",
@@ -187,5 +188,13 @@
     "search_item_ai_detection_title": "Pengesanan AI",
     "search_item_ai_detection_desc": "Buka alat pengesanan AI dan pemantauan anomali",
     "search_item_chatbot_title": "Chatbot AI",
-    "search_item_chatbot_desc": "Cari pembantu kursus untuk sokongan pembelajaran"
+    "search_item_chatbot_desc": "Cari pembantu kursus untuk sokongan pembelajaran",
+
+    "new password prompt": "Sila masukkan kata laluan baharu.",
+    "password validation": "Kata laluan mesti sekurang-kurangnya 6 aksara dan mengandungi huruf, nombor dan simbol.",
+    "new password validation": "Kata laluan baharu mesti berbeza daripada kata laluan semasa.",
+    "current password is incorrect": "Kata laluan semasa tidak betul.",
+    "failed to change password": "Gagal menukar kata laluan.",
+    "enter current password": "Masukkan kata laluan semasa",
+    "min 6 chars, letters and numbers": "Minimum 6 aksara, huruf dan nombor"
 }
