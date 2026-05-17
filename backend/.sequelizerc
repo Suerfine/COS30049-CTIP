@@ -1,6 +1,8 @@
-{
-  "config": "./backend/config/config.js",
-  "models-path": "./src/models",
-  "seeders-path": "./database/seeders",
-  "migrations-path": "./database/migrations"
-}
+const path = require('path');
+
+module.exports = {
+  "config": path.resolve(__dirname, "config/config.js"),
+  "models-path": path.resolve(__dirname, "src/models"),
+  "seeders-path": path.resolve(__dirname, "database/seeders"),
+  "migrations-path": path.resolve(__dirname, "database/migrations")
+};

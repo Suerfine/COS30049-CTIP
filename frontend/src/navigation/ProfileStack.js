@@ -5,6 +5,7 @@ import ProfileSideBar from "../components/ProfileSideBar";
 import UserProfile from "../screens/UserProfile";
 import Preferences from "../screens/Preferences";
 import Security from "../screens/Security";
+import TotpSetup from "../screens/TotpSetup";
 
 import { View } from "react-native";
 
@@ -26,6 +27,7 @@ export default function ProfileStack() {
         <Stack.Screen name="UserProfile" component={UserProfile} />
         <Stack.Screen name="Preferences" component={Preferences} />
         <Stack.Screen name="Security" component={Security} />
+        <Stack.Screen name="TotpSetup" component={TotpSetup} />
       </Stack.Navigator>
     </ProfileWrapper>
   );

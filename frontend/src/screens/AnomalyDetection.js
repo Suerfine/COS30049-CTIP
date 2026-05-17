@@ -8,6 +8,7 @@ import {
   ChevronRight,
   ChevronsRight,
   AlertTriangle,
+  CheckCircle,
   Circle,
   MapPin,
 } from "lucide-react-native";
@@ -45,7 +46,10 @@ const AnomalyDetection = () => {
     loading,
     error,
     refresh,
+    resolveAnomaly,
   } = useAnomalyDetection();
+
+  const [resolvingId, setResolvingId] = useState(null);
 
   const [selectedAnomaly, setSelectedAnomaly] = useState(null);
   const [showMapModal, setShowMapModal] = useState(false);
@@ -87,15 +91,10 @@ const AnomalyDetection = () => {
         )}
       </Pressable>
       <Pressable
-        onPress={() => requestSort("coordinates")}
+        onPress={() => none}
         style={[styles.headerRow, { flex: 2.5 }]}
       >
         <Text style={styles.headerText}>Coordinates</Text>
-        {sortConfig.key === "coordinates" && sortConfig.direction === "asc" ? (
-          <ArrowUpNarrowWide size={14} color="white" />
-        ) : (
-          <ArrowDownWideNarrow size={14} color="white" />
-        )}
       </Pressable>
       <Pressable
         onPress={() => requestSort("created_at")}
@@ -110,6 +109,12 @@ const AnomalyDetection = () => {
       </Pressable>
       <Text style={[styles.headerRow, { flex: 0.8, textAlign: "center" }]}>
         <Text style={styles.headerText}>User</Text>
+      </Text>
+      <Text style={[styles.headerRow, { flex: 1.2, textAlign: "center" }]}>
+        <Text style={styles.headerText}>Status</Text>
+      </Text>
+      <Text style={[styles.headerRow, { flex: 1, textAlign: "center" }]}>
+        <Text style={styles.headerText}>Action</Text>
       </Text>
     </View>
   );
@@ -164,6 +169,50 @@ const AnomalyDetection = () => {
       <Text style={{ flex: 0.8, textAlign: "center" }}>
         {item.user_id || "—"}
       </Text>
+
+      {/* Status */}
+      <View style={{ flex: 1.2, alignItems: "center" }}>
+        {item.is_resolved ? (
+          <View style={styles.resolvedBadge}>
+            <CheckCircle size={12} color="#059669" />
+            <Text style={styles.resolvedBadgeText}>Resolved</Text>
+          </View>
+        ) : (
+          <View style={styles.unresolvedBadge}>
+            <Circle size={12} color="#dc2626" />
+            <Text style={styles.unresolvedBadgeText}>Open</Text>
+          </View>
+        )}
+      </View>
+
+      {/* Resolve Action */}
+      <View style={{ flex: 1, alignItems: "center" }}>
+        {!item.is_resolved && (
+          <Pressable
+            onPress={async (e) => {
+              e.stopPropagation?.();
+              setResolvingId(item.id);
+              try {
+                await resolveAnomaly(item.id);
+              } finally {
+                setResolvingId(null);
+              }
+            }}
+            disabled={resolvingId === item.id}
+            style={({ hovered }) => [
+              styles.resolveBtn,
+              hovered && styles.resolveBtnHover,
+              resolvingId === item.id && styles.resolveBtnDisabled,
+            ]}
+          >
+            {resolvingId === item.id ? (
+              <ActivityIndicator size="small" color="white" />
+            ) : (
+              <Text style={styles.resolveBtnText}>Resolve</Text>
+            )}
+          </Pressable>
+        )}
+      </View>
     </Pressable>
   );
 
@@ -708,6 +757,57 @@ const styles = StyleSheet.create({
   mapTimestamp: {
     fontSize: 12,
     color: "#6b7280",
+  },
+  resolvedBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    backgroundColor: "#f0fdf4",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#bbf7d0",
+  },
+  resolvedBadgeText: {
+    fontSize: 11,
+    color: "#059669",
+    fontWeight: "600",
+  },
+  unresolvedBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    backgroundColor: "#fef2f2",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#fecaca",
+  },
+  unresolvedBadgeText: {
+    fontSize: 11,
+    color: "#dc2626",
+    fontWeight: "600",
+  },
+  resolveBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    backgroundColor: "#0a6340",
+    borderRadius: 6,
+    minWidth: 64,
+    alignItems: "center",
+  },
+  resolveBtnHover: {
+    backgroundColor: "#065f2e",
+  },
+  resolveBtnDisabled: {
+    backgroundColor: "#9ca3af",
+  },
+  resolveBtnText: {
+    color: "white",
+    fontSize: 12,
+    fontWeight: "600",
   },
 });
 

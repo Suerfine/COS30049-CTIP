@@ -34,18 +34,9 @@ Element.belongsTo(Page, { foreignKey: "page_id", as: "page" });
 
 User.hasMany(Enrollment, { foreignKey: "user_id", as: "enrollments" });
 Enrollment.belongsTo(User, { foreignKey: "user_id", as: "user" });
-User.belongsToMany(Course, {
-  through: Enrollment,
-  foreignKey: "user_id",
-  otherKey: "course_id",
-  as: "enrolled_courses",
-});
-Course.belongsToMany(User, {
-  through: Enrollment,
-  foreignKey: "course_id",
-  otherKey: "user_id",
-  as: "enrolled_users",
-});
+// Removed belongsToMany to allow multiple enrollments per user per course
+// User.belongsToMany(Course, {...});
+// Course.belongsToMany(User, {...});
 Course.hasMany(Enrollment, { foreignKey: "course_id", as: "enrollments" });
 Enrollment.belongsTo(Course, { foreignKey: "course_id", as: "course" });
 
@@ -178,10 +169,19 @@ Course.hasMany(Payment, { foreignKey: "course_id", as: "payments" });
 Payment.belongsTo(Course, { foreignKey: "course_id", as: "course" });
 
 Enrollment.hasOne(Payment, { foreignKey: "enrollment_id", as: "payment" });
-Payment.belongsTo(Enrollment, { foreignKey: "enrollment_id", as: "enrollment" });
+Payment.belongsTo(Enrollment, {
+  foreignKey: "enrollment_id",
+  as: "enrollment",
+});
 
-User.hasMany(Payment, { foreignKey: "processed_by_user_id", as: "processed_payments" });
-Payment.belongsTo(User, { foreignKey: "processed_by_user_id", as: "processed_by" });
+User.hasMany(Payment, {
+  foreignKey: "processed_by_user_id",
+  as: "processed_payments",
+});
+Payment.belongsTo(User, {
+  foreignKey: "processed_by_user_id",
+  as: "processed_by",
+});
 
 export {
   User,

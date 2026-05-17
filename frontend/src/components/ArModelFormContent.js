@@ -1,11 +1,15 @@
-import React, { useState } from "react";
-import { View, Text, TextInput, Pressable, StyleSheet } from "react-native";
+import React, { useEffect, useState } from "react";
+import { View, Text, TextInput, Pressable, StyleSheet, Platform } from "react-native";
 import { X, Upload } from "lucide-react-native";
 import * as DocumentPicker from "expo-document-picker";
+import apiClient from "../config/apiConfig";
 import { ModalStyle as styles } from "./ModalStyle";
 
 const MAX_MODEL_SIZE_BYTES = 10 * 1024 * 1024;
 const ALLOWED_EXTENSIONS = ["glb", "gltf"];
+const DEFAULT_PATTERN_NAME = "pattern-SFC_Logo.patt";
+const backendBase = (apiClient.defaults.baseURL || "").replace(/\/api$/, "");
+const DEFAULT_PATTERN_URL = `${backendBase}/public/ar/default_pattern/${DEFAULT_PATTERN_NAME}`;
 
 const ArModelFormContent = ({ onSubmit, onCancel, isLoading }) => {
   const [title, setTitle] = useState("");
@@ -16,6 +20,39 @@ const ArModelFormContent = ({ onSubmit, onCancel, isLoading }) => {
   const [warning, setWarning] = useState("");
 
   const isTooLarge = modelFile?.size && modelFile.size > MAX_MODEL_SIZE_BYTES;
+
+  useEffect(() => {
+    if (patternFile || Platform.OS !== "web") {
+      return;
+    }
+
+    let isActive = true;
+
+    const loadDefaultPattern = async () => {
+      try {
+        const response = await fetch(DEFAULT_PATTERN_URL);
+        if (!response.ok) {
+          return;
+        }
+        const blob = await response.blob();
+        if (typeof File === "undefined" || !isActive) {
+          return;
+        }
+        const file = new File([blob], DEFAULT_PATTERN_NAME, {
+          type: blob.type || "text/plain",
+        });
+        setPatternFile(file);
+      } catch {
+        // Default pattern remains optional if the fetch fails.
+      }
+    };
+
+    loadDefaultPattern();
+
+    return () => {
+      isActive = false;
+    };
+  }, [patternFile]);
 
   const pickModel = async () => {
     setError("");

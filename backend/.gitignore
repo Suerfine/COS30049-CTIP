@@ -143,6 +143,12 @@ vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
 
+# SSL certificates
+certs/
+
+# SQLite test database
+test/integration-test.sqlite
+
 # Storage files
 storage/*
 !storage/public/

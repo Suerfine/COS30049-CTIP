@@ -11,6 +11,7 @@ import tagRouter from "./TagRoute";
 import anomalyEventRouter from "./AnomalyEventRoute";
 import arModelRouter from "./ArModelRoute";
 import * as AuthController from "../controllers/AuthController";
+import * as TotpController from "../controllers/TotpController";
 import progressRouter from "./ProgressRoute";
 import sensorLogRouter from "./SensorLogRoute";
 import * as ElementController from "../controllers/ElementController";
@@ -77,6 +78,10 @@ router.use("/users", userRouter);
  *                   example: Invalid credentials
  */
 router.post("/token", AuthController.token);
+router.post("/token/totp", TotpController.verifyLogin);
+router.post("/totp/setup", auth, TotpController.setup);
+router.post("/totp/verify-setup", auth, TotpController.verifySetup);
+router.post("/totp/disable", auth, TotpController.disable);
 
 /*===============================
 =     REGISTRATION ROUTES      =
@@ -236,5 +241,8 @@ function instrumentRouter(router: Router) {
     }
   });
 }
-instrumentRouter(router);
+if (process.env.SHOULD_INSTRUMENT_ROUTES === "true") {
+  console.log("Instrumenting route handlers for debugging...");
+  instrumentRouter(router);
+}
 export default router;

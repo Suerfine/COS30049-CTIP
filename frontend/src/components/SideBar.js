@@ -133,7 +133,10 @@ const SideBar = ({ mobile = false, onNavigate }) => {
             </View>
 
             <View style={styles.admin}>
-                <View style={styles.adminInfo}>
+                <Pressable
+                    style={({ hovered }) => [styles.adminInfo, hovered && styles.hoverStyle]}
+                    onPress={() => navigation.navigate('AdminStack', { screen: 'User Profile' })}
+                >
                     {/* Profile  */}
                     {profileImage ? (
                         <Image source={{ uri: profileImage }} style={styles.profilePic}/>
@@ -148,7 +151,7 @@ const SideBar = ({ mobile = false, onNavigate }) => {
                             <Text>{user?.firstname}</Text>
                             <Text style={styles.role}>{user?.role === 'admin' && 'Admin'}</Text>
                         </View>
-                </View>
+                </Pressable>
                 <Pressable
                     style={({ hovered }) => [
                         styles.logout,

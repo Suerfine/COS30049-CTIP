@@ -20,6 +20,8 @@ class User extends Model<InferAttributes<User>, InferCreationAttributes<User>> {
   declare role: UserRoles;
   declare password_hash: string;
   declare pfp_url: CreationOptional<string | null>;
+  declare totp_secret: CreationOptional<string | null>;
+  declare totp_enabled: CreationOptional<boolean>;
   declare last_login_at: CreationOptional<Date | null>;
   declare created_at: CreationOptional<Date>;
   declare updated_at: CreationOptional<Date>;
@@ -71,6 +73,16 @@ User.init(
     pfp_url: {
       type: DataTypes.STRING(512),
       allowNull: true,
+    },
+    totp_secret: {
+      type: DataTypes.STRING(64),
+      allowNull: true,
+      defaultValue: null,
+    },
+    totp_enabled: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
     },
     last_login_at: {
       type: DataTypes.DATE,

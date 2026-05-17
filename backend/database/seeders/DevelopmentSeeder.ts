@@ -37,6 +37,7 @@ import {
 import { buildRegistrationHistory } from "../factories/RegistrationFactory";
 import { buildComplianceEvents } from "../factories/AnomalyEventFactory";
 import AnomalyEvent from "../../src/models/AnomalyEvent";
+import ArModel from "../../src/models/ArModel";
 import "../../src/models";
 import { PaymentStatus } from "../../src/enum/PaymentStatus";
 import { CourseStatus } from "../../src/enum/CourseStatus";
@@ -141,9 +142,7 @@ export async function runSeeders(
       await Event.create({
         ...event,
         type:
-          index === 0 || index === 2
-            ? EventType.WORKSHOP
-            : EventType.NORMAL,
+          index === 0 || index === 2 ? EventType.WORKSHOP : EventType.NORMAL,
         status:
           index === 1 || index === 2
             ? EventStatus.COMPLETED
@@ -151,7 +150,7 @@ export async function runSeeders(
       } as any);
     }
   }
-  
+
   // Creating courses with modules, pages, and elements
   const tags: TagFactoryAttributes[] = buildTags(15);
   const createdTags = [] as Array<{ id: number }>;
@@ -239,7 +238,6 @@ export async function runSeeders(
 
   if (courses.length > 0) {
     for (const parkGuideUser of createdParkGuideUsers) {
-
       // Only get released courses
       const releasedCourses: EnrollmentFactoryCourse[] = [];
 
@@ -304,15 +302,9 @@ export async function runSeeders(
         await Payment.create({
           ...paymentData,
           status: finalPaymentStatus,
-          processed_by_user_id: isApproved
-            ? createdAdminUser.id
-            : null,
-          processed_at: isApproved
-            ? new Date()
-            : null,
-          admin_remark: isApproved
-            ? "Automated seed approval"
-            : null,
+          processed_by_user_id: isApproved ? createdAdminUser.id : null,
+          processed_at: isApproved ? new Date() : null,
+          admin_remark: isApproved ? "Automated seed approval" : null,
         });
       }
     }
@@ -566,6 +558,48 @@ export async function runSeeders(
       },
     ]);
   }
+  // Seed default AR models from default_ar / default_pattern directories
+  console.log("Seeding default AR models...");
+  const defaultArModels = [
+    {
+      title: "Map",
+      description: "A 3D model of a map.",
+      model_path: "public/ar/default_ar/map.glb",
+      model_format: "glb",
+      model_size_bytes: 256288,
+      mime_type: "model/gltf-binary",
+      original_filename: "map.glb",
+      pattern_path: "public/ar/default_pattern/pattern-SFC_Logo.patt",
+    },
+    {
+      title: "Plant",
+      description: "A 3D model of plant.",
+      model_path: "public/ar/default_ar/plant.glb",
+      model_format: "glb",
+      model_size_bytes: 105468804,
+      mime_type: "model/gltf-binary",
+      original_filename: "plant.glb",
+      pattern_path: "public/ar/default_pattern/pattern-SFC_Logo.patt",
+    },
+    {
+      title: "Orangutan",
+      description: "A 3D model of an orangutan.",
+      model_path: "public/ar/default_ar/orangutan_test.glb",
+      model_format: "glb",
+      model_size_bytes: 10323468,
+      mime_type: "model/gltf-binary",
+      original_filename: "orangutan_test.glb",
+      pattern_path: "public/ar/default_pattern/pattern-SFC_Logo.patt",
+    },
+  ];
+
+  for (const arModelData of defaultArModels) {
+    await ArModel.create({
+      ...arModelData,
+      created_by_user_id: createdAdminUser.id,
+    });
+  }
+  console.log(`✅ Seeded ${defaultArModels.length} default AR models`);
 
   // Seed sensors for IoT monitoring
   console.log("Seeding sensors...");
@@ -597,11 +631,12 @@ export async function runSeeders(
       type: "ultrasonic",
       location: "1.5324, 110.3566",
       current_status: SensorStatus.NORMAL,
-    },{
+    },
+    {
       id: 5,
       name: "Smoking Detector - Park A Zone 1",
       type: "gas_temp",
-      location: "3.1390,101.6869", 
+      location: "3.1390,101.6869",
       current_status: SensorStatus.NORMAL,
     },
   ];
@@ -622,10 +657,10 @@ export async function runDevelopmentSeeder(): Promise<void> {
 
 export default runSeeders;
 
+// Running the seeder directly in cli
 const isDirectExecution =
   typeof process.argv[1] === "string" &&
   process.argv[1].includes("DevelopmentSeeder.ts");
-
 if (isDirectExecution) {
   runDevelopmentSeeder().catch((error: unknown) => {
     console.error("Development seeder failed:", error);
