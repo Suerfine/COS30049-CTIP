@@ -14,6 +14,8 @@ import AdminDashboard from "../screens/AdminDashboard";
 import AnomalyDetection from "../screens/AnomalyDetection";
 import AdminArModels from "../screens/AdminArModels";
 import Notification from "../screens/Notification";
+import Security from "../screens/Security";
+import TotpSetup from "../screens/TotpSetup";
 
 // Import components
 import SideBar from "../components/SideBar";
@@ -91,6 +93,8 @@ export default function AdminNavigator() {
               name="Notification Management"
               component={Notification}
             />
+            <Stack.Screen name="Security" component={Security} />
+            <Stack.Screen name="TotpSetup" component={TotpSetup} />
           </Stack.Navigator>
         </View>
       </View>

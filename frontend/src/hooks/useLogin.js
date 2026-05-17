@@ -23,11 +23,17 @@ export const useLogin=()=>{
         setLoading(true); 
 
         try {
-            const user = await login(email, password);
+            const result = await login(email, password);
+            if (result?.requires_totp) {
+                navigation.navigate('TotpVerify', {
+                    totp_session_token: result.totp_session_token,
+                    email: result.email,
+                });
+            }
         } catch (err) {
             setLoginError(err.message || '* Login failed. Please try again.');
         } finally {
-            setLoading(false); 
+            setLoading(false);
         }
     };
 

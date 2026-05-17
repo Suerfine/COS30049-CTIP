@@ -19,6 +19,7 @@ export interface UserResponse {
   personal_email: string;
   tel: string;
   pfp_url: string | null;
+  totp_enabled: boolean;
   last_login_at: Date | null;
   created_at: Date;
   updated_at: Date;
@@ -61,6 +62,7 @@ export function toUserResponse(user: User): UserResponse {
     personal_email: user.personal_email,
     tel: user.tel,
     pfp_url: user.pfp_url,
+    totp_enabled: user.totp_enabled ?? false,
     last_login_at: user.last_login_at,
     created_at: user.created_at,
     updated_at: user.updated_at,
