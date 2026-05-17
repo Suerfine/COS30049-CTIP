@@ -755,7 +755,7 @@ export const getAllUserCourses = async (
         ...toCourseResponse(course, req),
         module_count: moduleCountMap.get(course.id) || 0, 
         status: enrollment ? enrollment.status : null,
-        is_enrollable: canEnroll,
+        is_enrollable: canEnroll.allowed,
         enrollment: enrollmentResponse,
       });
     }

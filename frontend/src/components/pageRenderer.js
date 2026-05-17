@@ -169,7 +169,7 @@ const PageRenderer = ({ elements, role, courseId, onEditElement, onDeleteElement
             });
             
             setShowFinalResults(true);
-            if (!isPass && newAttemptTotal >= maxAllowed) {
+            if (!isPass && (currentAttemptCount + 1) >= maxAllowed) {
                 console.log("Forcing course failure status due to exhausted attempts...");
                 try {
                     await enrollmentService.updateStatus(enrollmentId, 'failed');

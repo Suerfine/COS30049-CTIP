@@ -53,7 +53,7 @@ export const useUserDashboard = () => {
     }
 
     const courseTab = useMemo(() => ([
-        { id: "in progress", label: t("status.in progress") },
+        { id: "in progress", label: t("status.in_progress") },
         { id: "completed", label: t("status.completed") },
     ]), [t]);
 

@@ -13,6 +13,7 @@ import {
   useWindowDimensions
 } from "react-native";
 import { CopyPlus, Search, SlidersHorizontal, CircleX, Plus } from "lucide-react-native";
+import { useTranslation } from "react-i18next";
 
 // Import Components
 import CourseCard from "../components/CourseCard.js";
@@ -30,6 +31,7 @@ const AdminCourse = ({ navigation }) => {
   const [selectedCourse, setSelectedCourse] = useState(null);
   const {currentUser}=useAuth();
   const [isTagModalVisible, setTagModalVisible] = useState(false);
+  const { t } = useTranslation();
 
   const { width } = useWindowDimensions();
   const cardStyles = useMemo(() => {
@@ -101,16 +103,16 @@ const AdminCourse = ({ navigation }) => {
         <View style={styles.courseContainer}>
           <View>
             <Text style={styles.description}>
-              Here you can find all courses
+              {t('Here you can find all courses')}
             </Text>
-            <Text style={styles.title}>All Courses</Text>
+            <Text style={styles.title}>{t('All Courses')}</Text>
           </View>
           <Pressable
             onPress={handleAdd}
             style={({ hovered }) => [styles.btn, hovered && styles.btnHover]}
           >
             <CopyPlus />
-            <Text style={styles.btnText}> Add Course</Text>
+            <Text style={styles.btnText}> {t('add_courses')}</Text>
           </Pressable>
         </View>
       </ImageBackground>
@@ -138,7 +140,7 @@ const AdminCourse = ({ navigation }) => {
             style={styles.input}
             value={searchText}
             onChangeText={handleSearch}
-            placeholder="Search..."
+            placeholder={t("search")}
             placeholderTextColor="#8f8f8f"
           />
         </View>
@@ -148,7 +150,7 @@ const AdminCourse = ({ navigation }) => {
               onPress={() => setTagModalVisible(true)}
           >
               <Plus size={16} color="white" />
-              <Text style={{color: 'white', fontWeight: 'bold'}}>New Tag</Text>
+              <Text style={{color: 'white', fontWeight: 'bold'}}>{t('new_tag')}</Text>
           </Pressable>
           <Pressable
             style={({ hovered }) => [

@@ -72,6 +72,7 @@ const UserModule = ({ navigation }) => {
 
     setSelectedPage({ type: "overview" });
   }, [id, initialSection, discussionId]);
+  
 
   const isLocked =
     resolvedEnrollmentStatus === null ||
@@ -169,6 +170,11 @@ const UserModule = ({ navigation }) => {
       loadWorkshops();
     }
   }, [selectedPage, loadWorkshops]);
+
+  const memoizedPageMetadata = React.useMemo(() => ({
+    ...selectedPage,
+    course,
+  }), [selectedPage, course]);
 
   // Auto-Fail Effect
   useEffect(() => {
@@ -479,7 +485,6 @@ const UserModule = ({ navigation }) => {
                     }}
                     userMarks={userMarks}
                     isFinalQuiz={selectedPage.page.final_quiz}
-                    pageMetadata={selectedPage}
                     enrollmentId={enrollmentId}
                     fullHistoryMap={fullHistoryMap}
                     onFetchHistory={() => {
@@ -491,6 +496,9 @@ const UserModule = ({ navigation }) => {
                     onRefreshHistory={refreshHistory}
                     scrollToTop={scrollToTop}
                     isFailed={isFailed}
+                    onSelectPage={setSelectedPage}
+                    pageMetadata={memoizedPageMetadata}
+                    progressMap={progressMap}
                   />
                 )}
 

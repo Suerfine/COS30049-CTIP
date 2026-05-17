@@ -50,6 +50,7 @@ import { useRegisterManagement } from "../hooks/useRegisterManagement";
 import { formatDate } from "../utils/formatDate";
 import RejectModal from "../components/RejectModal";
 import { RegisterService } from "../services/RegisterService";
+import { useTranslation } from "react-i18next";
 
 const RegistrationManagement = () => {
   const {
@@ -83,6 +84,7 @@ const RegistrationManagement = () => {
   const [resumeError, setResumeError] = useState("");
   const { width } = useWindowDimensions();
   const isCompact = width < 640;
+  const { t } = useTranslation();
 
   const handleNextPage = () => {
     if (currentPage < totalPages) {
@@ -115,8 +117,8 @@ const RegistrationManagement = () => {
       const file = await RegisterService.getResumeFile(user.id);
       setResumeUri(file.uri);
     } catch (err) {
-      console.error("Failed to load resume:", err);
-      setResumeError(err?.message || "Failed to load resume");
+      console.error(t("failed_load_resume"), err);
+      setResumeError(err?.message || t("failed_load_resume"));
     } finally {
       setResumeLoading(false);
     }
@@ -132,13 +134,20 @@ const RegistrationManagement = () => {
   // Caluculate the pagination
   const currentUsers = users;
 
+  const statusOptions = [
+    { key: "all", label: t("status.all") },
+    { key: "approved", label: t("status.approved") },
+    { key: "pending", label: t("status.pending") },
+    { key: "rejected", label: t("status.rejected") },
+  ];
+
   const renderHeader = () => (
     <View style={[styles.tableHeader, styles.row]}>
       <Pressable
         onPress={() => requestSort("firstname")}
         style={[styles.headerRow, { flex: 3 }]}
       >
-        <Text style={styles.headerText}>Full Name</Text>
+        <Text style={styles.headerText}>{t("full_name")}</Text>
         {sortConfig.key === "firstname" && sortConfig.direction === "asc" ? (
           <ArrowUpNarrowWide size={14} color="white" />
         ) : (
@@ -146,13 +155,13 @@ const RegistrationManagement = () => {
         )}
       </Pressable>
 
-      <Text style={[styles.headerText, { flex: 2 }]}>IC.</Text>
-      <Text style={[styles.headerText, { flex: 2 }]}>Status</Text>
+      <Text style={[styles.headerText, { flex: 2 }]}>{t("passport_ic")}</Text>
+      <Text style={[styles.headerText, { flex: 2 }]}>{t("status_label")}</Text>
       <Pressable
         onPress={() => requestSort("personal_email")}
         style={[styles.headerRow, { flex: 3 }]}
       >
-        <Text style={styles.headerText}>Email</Text>
+        <Text style={styles.headerText}>{t("email")}</Text>
         {sortConfig.key === "personal_email" &&
         sortConfig.direction === "asc" ? (
           <ArrowUpNarrowWide size={14} color="white" />
@@ -160,12 +169,12 @@ const RegistrationManagement = () => {
           <ArrowDownWideNarrow size={14} color="white" />
         )}
       </Pressable>
-      <Text style={[styles.headerText, { flex: 2 }]}>Telefon</Text>
+      <Text style={[styles.headerText, { flex: 2 }]}>{t("telephone")}</Text>
       <Pressable
         onPress={() => requestSort("created_at")}
         style={[styles.headerRow, { flex: 2 }]}
       >
-        <Text style={styles.headerText}>Register On</Text>
+        <Text style={styles.headerText}>{t("register_on")}</Text>
         {sortConfig.key === "created_at" && sortConfig.direction === "asc" ? (
           <ArrowUpNarrowWide size={14} color="white" />
         ) : (
@@ -214,7 +223,7 @@ const RegistrationManagement = () => {
           <Circle size={10} stroke="red" fill="red" />
         )}
         <Text>
-          {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
+          {t(`status.${item.status}`)}
         </Text>
       </View>
       {/* Email */}
@@ -234,8 +243,8 @@ const RegistrationManagement = () => {
     return (
       <View style={[styles.paginationContainer, styles.row]}>
         <Text style={styles.pageInfo}>
-          Showing {users.length > 0 ? indexOfFirstItem + 1 : 0} to{" "}
-          {indexOfLastItem} of {totalUsers} users
+          {t("showing")} {users.length > 0 ? indexOfFirstItem + 1 : 0}  {t("to")} {" "}
+          {indexOfLastItem} {t("of")} {totalUsers} {t("users")}
         </Text>
         <View style={styles.row}>
           <Pressable
@@ -330,7 +339,7 @@ const RegistrationManagement = () => {
 
   return (
     <ScrollView style={styles.pageScroll} contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Registration Management</Text>
+      <Text style={styles.title}>{t("registration_management")}</Text>
       <View style={[styles.toolbar, isCompact && styles.toolbarCompact]}>
         <View style={[styles.toolbarRow, isCompact && styles.toolbarGroupCompact]}>
           <Pressable
@@ -346,7 +355,7 @@ const RegistrationManagement = () => {
             <Search size={18} />
             <TextInput
               style={styles.input}
-              placeholder="Search..."
+              placeholder={t("search")}
               placeholderTextColor="#8f8f8f"
               value={searchQuery}
               onChangeText={handleSearch}
@@ -359,7 +368,9 @@ const RegistrationManagement = () => {
               onPress={() => setIsOpen(!isOpen)}
             >
               <Text style={styles.pillText}>
-                {currentStatus !== "All" ? currentStatus : "Status"}
+                {currentStatus !== "all"
+                  ? t(`status.${currentStatus}`)
+                  : t("status_label")}
               </Text>
               {isOpen ? (
                 <ChevronUp size={16} color="#4b5563" />
@@ -371,28 +382,28 @@ const RegistrationManagement = () => {
             {/* Dropdown Menu */}
             {isOpen && (
               <View style={styles.dropdownMenu}>
-                {["All", "Approved", "Pending", "Rejected"].map((status) => (
+                {statusOptions.map((status) => (                  
                   <Pressable
-                    key={status}
+                    key={status.key}
                     style={({ hovered }) => [
                       styles.menuItem,
-                      currentStatus === status && styles.menuItemActive,
+                      currentStatus === status.key && styles.menuItemActive,
                       hovered &&
-                        currentStatus != status &&
+                        currentStatus != status.key &&
                         styles.menuItemHover,
                     ]}
                     onPress={() => {
-                      setCurrentStatus(status);
+                      setCurrentStatus(status.key);
                       setIsOpen(false);
                     }}
                   >
                     <Text
                       style={[
                         styles.menuItemText,
-                        currentStatus === status && styles.menuItemTextActive,
+                        currentStatus === status.key && styles.menuItemTextActive,
                       ]}
                     >
-                      {status}
+                      {status.label}
                     </Text>
                   </Pressable>
                 ))}
@@ -419,7 +430,7 @@ const RegistrationManagement = () => {
               ListEmptyComponent={
                 <View style={styles.tableRow}>
                   <Text style={{ flex: 1, paddingVertical: 2 }}>
-                    No Users Found.
+                    {t("no_users_found")}
                   </Text>
                 </View>
               }
@@ -432,7 +443,7 @@ const RegistrationManagement = () => {
       {selectedUser && (
         <View style={[styles.sidePanel, isCompact && styles.sidePanelCompact]}>
           <View style={styles.panelHeader}>
-            <Text style={styles.panelTitle}>User Information</Text>
+            <Text style={styles.panelTitle}>{t("user_information")}</Text>
             <Pressable onPress={() => setSelectedUser(null)}>
               <X size={18} />
             </Pressable>
@@ -463,7 +474,7 @@ const RegistrationManagement = () => {
                 <View style={styles.details}>
                   <View style={styles.row}>
                     <IdCard size={18} color="#4f4f4f" />
-                    <Text style={styles.panelLabel}>Passport/IC:</Text>
+                    <Text style={styles.panelLabel}>{t("passport_ic")}:</Text>
                   </View>
                   <Text style={styles.userDetails}>
                     {selectedUser.identification}
@@ -475,7 +486,7 @@ const RegistrationManagement = () => {
                 <View style={styles.details}>
                   <View style={styles.row}>
                     <Mail size={18} color="#4f4f4f" />
-                    <Text style={styles.panelLabel}>Email:</Text>
+                    <Text style={styles.panelLabel}>{t("email")}:</Text>
                   </View>
                   <Text style={styles.userDetails}>
                     {selectedUser.personal_email}
@@ -485,7 +496,7 @@ const RegistrationManagement = () => {
                 <View style={styles.details}>
                   <View style={styles.row}>
                     <Calendar size={18} color="#4f4f4f" />
-                    <Text style={styles.panelLabel}>Register On:</Text>
+                    <Text style={styles.panelLabel}>{t("register_on")}:</Text>
                   </View>
                   <Text style={styles.userDetails}>
                     {formatDate(selectedUser.created_at)}
@@ -496,7 +507,7 @@ const RegistrationManagement = () => {
               <View style={styles.details}>
                 <View style={styles.row}>
                   <Phone size={18} color="#4f4f4f" />
-                  <Text style={styles.panelLabel}>Telephone:</Text>
+                  <Text style={styles.panelLabel}>{t("telephone")}:</Text>
                 </View>
                 <Text style={styles.userDetails}>{selectedUser.tel}</Text>
               </View>
@@ -505,7 +516,7 @@ const RegistrationManagement = () => {
                 <View style={styles.remark}>
                   <View style={styles.row}>
                     <MessageSquare size={18} color="#4f4f4f" />
-                    <Text style={styles.panelLabel}>Remark:</Text>
+                    <Text style={styles.panelLabel}>{t("remark")}:</Text>
                   </View>
                   <Text style={styles.userDetails}>
                     {selectedUser.admin_remark}
@@ -517,14 +528,14 @@ const RegistrationManagement = () => {
               <View style={styles.details}>
                 <View style={styles.row}>
                   <FileUser size={18} color="#4f4f4f" />
-                  <Text style={styles.panelLabel}>Resume:</Text>
+                  <Text style={styles.panelLabel}>{t("resume")}:</Text>
                 </View>
                 <Pressable
                   style={styles.pdfBadge}
                   onPress={() => handleOpenResume(selectedUser)}
                 >
                   <FileText size={14} color="#0a6340" />
-                  <Text style={styles.pdfText}>View Resume</Text>
+                  <Text style={styles.pdfText}>{t("view_resume")}</Text>
                   <ExternalLink size={14} color="#666" />
                 </Pressable>
               </View>
@@ -544,7 +555,7 @@ const RegistrationManagement = () => {
                   {isRejecting ? (
                     <ActivityIndicator color="#dc2626" size="small" />
                   ) : (
-                    <Text>Reject</Text>
+                    <Text>{t("reject")}</Text>
                   )}
                 </Pressable>
                 <Pressable
@@ -557,7 +568,7 @@ const RegistrationManagement = () => {
                   {isCreating ? (
                     <ActivityIndicator color="white" size="small" />
                   ) : (
-                    <Text style={styles.btnText}>Approve</Text>
+                    <Text style={styles.btnText}>{t("approve")}</Text>
                   )}
                 </Pressable>
               </View>
@@ -588,7 +599,7 @@ const RegistrationManagement = () => {
         <View style={styles.resumeModalOverlay}>
           <View style={styles.resumeModalContent}>
             <View style={styles.resumeModalHeader}>
-              <Text style={styles.resumeModalTitle}>Resume Preview</Text>
+              <Text style={styles.resumeModalTitle}>{t("resume_preview")}</Text>
               <Pressable onPress={() => setResumeModalVisible(false)}>
                 <X size={18} />
               </Pressable>
@@ -597,7 +608,7 @@ const RegistrationManagement = () => {
             {resumeLoading ? (
               <View style={styles.resumeLoadingBox}>
                 <ActivityIndicator size="large" color="#0a6340" />
-                <Text style={styles.resumeLoadingText}>Loading resume...</Text>
+                <Text style={styles.resumeLoadingText}>{t("loading_resume")}</Text>
               </View>
             ) : resumeError ? (
               <View style={styles.resumeErrorBox}>
@@ -619,7 +630,7 @@ const RegistrationManagement = () => {
               )
             ) : (
               <View style={styles.resumeErrorBox}>
-                <Text style={styles.resumeErrorText}>No resume available.</Text>
+                <Text style={styles.resumeErrorText}>{t("no_resume_available")}</Text>
               </View>
             )}
           </View>

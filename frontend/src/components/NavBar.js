@@ -208,7 +208,7 @@ const navLinks = [
                   });
                 }}
               >
-                <Text style={styles.mobileMenuText}>{t('Notification')}</Text>
+                <Text style={styles.mobileMenuText}>{t('notification')}</Text>
               </Pressable>
 
               <Pressable
@@ -224,7 +224,7 @@ const navLinks = [
                   });
                 }}
               >
-                <Text style={styles.mobileMenuText}>{t('Profile')}</Text>
+                <Text style={styles.mobileMenuText}>{t('profile')}</Text>
               </Pressable>
 
               <Pressable

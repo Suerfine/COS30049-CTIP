@@ -136,6 +136,8 @@ const styles = StyleSheet.create({
     },
     pfpWrapper:{
         alignSelf:'center',
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     profilePic:{
         width: 60,

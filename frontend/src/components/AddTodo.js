@@ -11,6 +11,7 @@ import { Alert,
 import { X, Check } from "lucide-react-native";
 import ModalLayout from "./ModalLayout";
 import { eventService } from "../services/eventService";
+import { useTranslation } from "react-i18next";
 
 const formatDateInput = (date) => {
     const year = date.getFullYear();
@@ -32,7 +33,7 @@ const toDateOrNow = (value) => {
 
 const AddTodo = ({ visible, setIsModalVisible, onCreated, initialEvent = null }) => {
     const today = new Date();
-
+    const { t } = useTranslation();
     const [title, setTitle] = useState("");
     const [isPhysical, setIsPhysical] = useState(false);
     const [isAllDay, setIsAllDay] = useState(false);
@@ -65,9 +66,9 @@ const AddTodo = ({ visible, setIsModalVisible, onCreated, initialEvent = null })
     const handleSave = async () => {
         if (!title.trim()) {
             if (Platform.OS === "web") {
-                window.alert("Title is required.");
+                window.alert(t('title_required'));
             } else {
-                Alert.alert("Title is required.");
+                Alert.alert(t('title_required'));
             }
             return;
         }
@@ -87,9 +88,9 @@ const AddTodo = ({ visible, setIsModalVisible, onCreated, initialEvent = null })
 
             if (endDate < startDate) {
                 if (Platform.OS === "web") {
-                    window.alert("End date must be later than start date.");
+                    window.alert(t('end_date_validation'));
                 } else {
-                    Alert.alert("End date must be later than start date.");
+                    window.alert(t('end_date_validation'));
                 }
                 return;
             }
@@ -134,7 +135,7 @@ const AddTodo = ({ visible, setIsModalVisible, onCreated, initialEvent = null })
                         </Pressable>
 
                         <Text style={styles.modalTitle}>
-                            {initialEvent ? "Edit Event" : "New Event"}
+                            {initialEvent ? t('edit_event') : t('new_event')}
                         </Text>
 
                         <Pressable style={styles.saveBtn} onPress={handleSave}>
@@ -144,10 +145,10 @@ const AddTodo = ({ visible, setIsModalVisible, onCreated, initialEvent = null })
 
                     {/* Form Body */}
                     <View style={styles.formBody}>
-                        <Text style={styles.label}>What needs to be done?</Text>
+                        <Text style={styles.label}>{t('what_needs_to_be_done')}</Text>
                         <TextInput
                             style={styles.titleInput}
-                            placeholder="Task title goes here.."
+                            placeholder={t('task_title_placeholder')}
                             placeholderTextColor="grey"
                             value={title}
                             onChangeText={setTitle}
@@ -158,7 +159,7 @@ const AddTodo = ({ visible, setIsModalVisible, onCreated, initialEvent = null })
                         {/* Switches */}
                         <View style={styles.formRow}>
                             <View style={styles.rowLabelGroup}>
-                                <Text style={styles.rowLabel}>Physical Workshop</Text>
+                                <Text style={styles.rowLabel}>{t('physical_workshop')}</Text>
                             </View>
                             <Switch 
                                 value={isPhysical} 
@@ -168,7 +169,7 @@ const AddTodo = ({ visible, setIsModalVisible, onCreated, initialEvent = null })
                         </View>
 
                         <View style={styles.formRow}>
-                            <Text style={styles.rowLabel}>All Day</Text>
+                            <Text style={styles.rowLabel}>{t('all_day')}</Text>
                             <Switch 
                                 value={isAllDay} 
                                 onValueChange={setIsAllDay}
@@ -179,8 +180,8 @@ const AddTodo = ({ visible, setIsModalVisible, onCreated, initialEvent = null })
                         {/* Dates */}
                         <View style={styles.scheduleSection}>
                             <View style={styles.scheduleHeaderRow}>
-                                <Text style={styles.scheduleHeader}>Starts</Text>
-                                <Text style={styles.scheduleHeader}>Ends</Text>
+                                <Text style={styles.scheduleHeader}>{t('starts')}</Text>
+                                <Text style={styles.scheduleHeader}>{t('ends')}</Text>
                             </View>
 
                             <View style={styles.scheduleInputRow}>
@@ -190,7 +191,7 @@ const AddTodo = ({ visible, setIsModalVisible, onCreated, initialEvent = null })
                                             style={[styles.valueInput, styles.dateInput]}
                                             value={startDateText}
                                             onChangeText={setStartDateText}
-                                            placeholder="YYYY-MM-DD"
+                                            placeholder={t('date_placeholder')}
                                             placeholderTextColor="grey"
                                             {...(Platform.OS === "web" ? { type: "date" } : {})}
                                         />
@@ -199,7 +200,7 @@ const AddTodo = ({ visible, setIsModalVisible, onCreated, initialEvent = null })
                                                 style={[styles.valueInput, styles.timeInput]}
                                                 value={startTimeText}
                                                 onChangeText={setStartTimeText}
-                                                placeholder="HH:mm"
+                                                placeholder={t('time_placeholder')}
                                                 placeholderTextColor="grey"
                                                 {...(Platform.OS === "web" ? { type: "time" } : {})}
                                             />
@@ -213,7 +214,7 @@ const AddTodo = ({ visible, setIsModalVisible, onCreated, initialEvent = null })
                                             style={[styles.valueInput, styles.dateInput]}
                                             value={endDateText}
                                             onChangeText={setEndDateText}
-                                            placeholder="YYYY-MM-DD"
+                                            placeholder={t('date_placeholder')}
                                             placeholderTextColor="grey"
                                             editable={!isAllDay}
                                             {...(Platform.OS === "web" ? { type: "date" } : {})}
@@ -223,7 +224,7 @@ const AddTodo = ({ visible, setIsModalVisible, onCreated, initialEvent = null })
                                                 style={[styles.valueInput, styles.timeInput]}
                                                 value={endTimeText}
                                                 onChangeText={setEndTimeText}
-                                                placeholder="HH:mm"
+                                                placeholder={t('time_placeholder')}
                                                 placeholderTextColor="grey"
                                                 {...(Platform.OS === "web" ? { type: "time" } : {})}
                                             />
@@ -234,12 +235,14 @@ const AddTodo = ({ visible, setIsModalVisible, onCreated, initialEvent = null })
                         </View>
 
                         {/* Description */}
-                        <Text style={[styles.label, { marginTop: 20 }]}>Description</Text>
+                        <Text style={[styles.label, { marginTop: 20 }]}>
+                            {t('description')}
+                        </Text>
                         <TextInput
                             multiline
                             numberOfLines={4}
                             style={styles.descriptionInput}
-                            placeholder="Add more details here..."
+                            placeholder={t('description_placeholder')}
                             placeholderTextColor="grey"
                             value={description}
                             onChangeText={setDescription}
