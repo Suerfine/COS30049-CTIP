@@ -174,7 +174,7 @@ const AdminDashboard = () => {
       <View style={[styles.cards, isCompact && styles.cardsCompact]}>
         <View style={[styles.adminCard, isCompact && styles.adminCardCompact]}>
           <View>
-            <Text style={styles.label}>Total Users</Text>
+            <Text style={styles.label}>{t('total')} {t('users')}</Text>
             <Text style={styles.value}>{stats.totalUsers}</Text>
           </View>
           <View style={[styles.iconContainer, styles.usersTheme]}>
@@ -183,7 +183,7 @@ const AdminDashboard = () => {
         </View>
         <View style={[styles.adminCard, isCompact && styles.adminCardCompact]}>
           <View>
-            <Text style={styles.label}>Total Courses</Text>
+            <Text style={styles.label}>{t("total")} {t("courses")}</Text>
             <Text style={styles.value}>{stats.totalCourses}</Text>
           </View>
           <View style={[styles.iconContainer, styles.coursesTheme]}>
@@ -192,7 +192,7 @@ const AdminDashboard = () => {
         </View>
         <View style={[styles.adminCard, isCompact && styles.adminCardCompact]}>
           <View>
-            <Text style={styles.label}>Total Enrollments</Text>
+            <Text style={styles.label}>{t("total")} {t("enrollments")}</Text>
             <Text style={styles.value}>{stats.totalEnrollments}</Text>
           </View>
           <View style={[styles.iconContainer, styles.enrollTheme]}>
@@ -201,7 +201,7 @@ const AdminDashboard = () => {
         </View>
         <View style={[styles.adminCard, isCompact && styles.adminCardCompact]}>
           <View>
-            <Text style={styles.label}>Mapped Anomalies</Text>
+            <Text style={styles.label}>{t("mapped anomalies")}</Text>
             <Text style={styles.value}>{stats.totalAnomalies}</Text>
           </View>
           <View style={[styles.iconContainer, styles.alertTheme]}>
@@ -214,14 +214,14 @@ const AdminDashboard = () => {
         <View style={[styles.mapSection, isCompact && styles.mapSectionCompact]}>
           <View style={[styles.mapHeader, isCompact && styles.mapHeaderCompact]}>
             <View>
-              <Text style={styles.mapTitle}>Anomaly Map</Text>
-            <Text style={styles.mapSubtitle}>All anomaly events with valid coordinates</Text>
+              <Text style={styles.mapTitle}>{t("anomaly map")}</Text>
+            <Text style={styles.mapSubtitle}>{t("all anomaly events with valid coordinates")}</Text>
           </View>
           <View style={[styles.mapActions, isCompact && styles.mapActionsCompact]}>
             <View style={styles.legend}>
               <View style={styles.legendItem}>
                 <View style={[styles.legendDot, { backgroundColor: SEVERITY_CONFIG.high.fillColor }]} />
-                <Text style={styles.legendText}>Anomaly Live Count: {severityCounts.high}</Text>
+                <Text style={styles.legendText}>{t("anomaly live count")}: {severityCounts.high}</Text>
               </View>
             </View>
             <Pressable
@@ -229,7 +229,7 @@ const AdminDashboard = () => {
               style={({ hovered }) => [styles.refreshBtn, hovered && styles.refreshBtnHover]}
             >
               <RefreshCcw size={17} color="#0a6340" />
-              <Text style={styles.refreshText}>Refresh</Text>
+              <Text style={styles.refreshText}>{t("refresh")}</Text>
             </Pressable>
           </View>
         </View>
@@ -238,18 +238,18 @@ const AdminDashboard = () => {
           {mapLoading ? (
             <View style={styles.mapState}>
               <ActivityIndicator size="large" color="#0a6340" />
-              <Text style={styles.stateText}>Loading anomaly map...</Text>
+              <Text style={styles.stateText}>{t("loading")} {t("anomaly map")}...</Text>
             </View>
           ) : mapError ? (
             <View style={styles.mapState}>
               <AlertTriangle size={42} color="#dc2626" />
-              <Text style={styles.errorText}>Failed to load anomaly map</Text>
+              <Text style={styles.errorText}>{t("failed to load anomaly map")}</Text>
               <Text style={styles.errorDetail}>{mapError}</Text>
               <Pressable
                 onPress={refresh}
                 style={({ hovered }) => [styles.retryBtn, hovered && styles.retryBtnHover]}
               >
-                <Text style={styles.retryText}>Try Again</Text>
+                <Text style={styles.retryText}>{t("try again")}</Text>
               </Pressable>
             </View>
           ) : (
@@ -298,7 +298,7 @@ const AdminDashboard = () => {
           {!mapLoading && !mapError && events.length === 0 ? (
             <View style={styles.emptyOverlay}>
               <MapPin size={32} color="#9ca3af" />
-              <Text style={styles.emptyText}>No coordinate-bearing anomalies found</Text>
+              <Text style={styles.emptyText}>{t("no coordinate-bearing anomalies found")}</Text>
             </View>
           ) : null}
         </View>
@@ -307,8 +307,8 @@ const AdminDashboard = () => {
       <View style={[styles.latestUpdatesSection, isCompact && styles.latestUpdatesSectionCompact]}>
           <View style={styles.sectionHeader}>
             <View>
-              <Text style={styles.sectionTitle}>Latest Updates</Text>
-              <Text style={styles.sectionSubtitle}>20 most recent notifications</Text>
+              <Text style={styles.sectionTitle}>{t("latest updates")}</Text>
+              <Text style={styles.sectionSubtitle}>20 {t("most recent notifications")}</Text>
             </View>
             <Pressable onPress={fetchNotifications} disabled={notificationsLoading} style={styles.refreshBtn}>
               <RotateCcw size={20} color="#666" />
@@ -317,7 +317,7 @@ const AdminDashboard = () => {
 
           {notificationsError ? (
             <View style={styles.centerContainer}>
-              <Text style={styles.errorText}>Failed to load updates</Text>
+              <Text style={styles.errorText}>{t("failed to load updates")}</Text>
               <Text style={styles.errorDetail}>{notificationsError}</Text>
             </View>
           ) : notificationsLoading ? (

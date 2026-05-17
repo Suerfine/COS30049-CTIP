@@ -131,5 +131,20 @@
     "accounts": "Accounts",
     "enrollment": "Enrollment",
     "ar models": "AR Models",
-    "account security":"Account Security"
+    "account security":"Account Security",
+
+    "total": "Total",
+    "users": "Users",
+    "enrollments":"Enrollments",
+    "mapped anomalies":"Mapped Anomalies",
+    "anomaly map":"Anomaly Map",
+    "anomaly live count":"Anomaly Live Count",
+    "refresh":"Refresh",
+    "latest updates":"Latest Updates",
+    "most recent notifications":"Most Recent Notifications",
+    "all anomaly events with valid coordinates":"All anomaly events with valid coordinates",
+    "failed to load anomaly map":"Failed to load anomaly map",
+    "try again":"Try Again",
+    "no coordinate-bearing anomalies found":"No coordinate-bearing anomalies found",
+    "failed to load updates":"failed to load updates"
 }

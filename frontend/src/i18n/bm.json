@@ -131,5 +131,20 @@
     "accounts": "Akaun",
     "enrollment": "Pendaftaran",
     "ar models": "Model AR",
-    "account security":"Keselamatan Akaun"
+    "account security":"Keselamatan Akaun",
+    "total": "Jumlah",
+    "users": "Pengguna",
+    "enrollments": "Pendaftaran",
+    "mapped anomalies": "Anomali Dipetakan",
+    "anomaly map": "Peta Anomali",
+    "anomaly live count": "Kiraan Anomali Langsung",
+    "refresh": "Segar Semula",
+    "latest updates": "Kemaskini Terkini",
+    "most recent notifications": "Notifikasi Terbaru",
+    "all anomaly events with valid coordinates": "Semua acara anomali dengan koordinat sah",
+    "failed to load anomaly map": "Gagal memuatkan peta anomali",
+    "try again": "Cuba lagi",
+    "no coordinate-bearing anomalies found": "Tiada anomali berkoordinat ditemui",
+    "failed to load updates": "Gagal memuatkan kemaskini"
+
 }
