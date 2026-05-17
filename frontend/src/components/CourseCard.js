@@ -219,7 +219,7 @@ const CourseCard = ({
         {isPublished && isAdmin && (
           <View style={styles.publishedBadge}>
             <CheckCircle2 size={12} color="#065f46" strokeWidth={3} />
-            <Text style={styles.publishedText}>PUBLISHED</Text>
+            <Text style={styles.publishedText}>{t('status.published')}</Text>
           </View>
         )}
 

@@ -15,16 +15,25 @@ export const useRegisterManagement=()=>{
         key:null,
         direction:'asc'
     });
-    const [currentStatus, setCurrentStatus]=useState('All');
+    const [currentStatus, setCurrentStatus]=useState('all');
     const [isRejecting,setIsRejecting]=useState(false);
 
     // Fetch all users
     const fetchUsers=async()=>{
         setLoading(true);
         try{
-            const response=await RegisterService.getAll(currentPage,10,searchQuery,sortConfig,currentStatus);
-            const rawUsers=Array.isArray(response) ? response : (response.data || response.registrations || []);
-            const initializedData=rawUsers.map(u=>({...u, selected:false}));
+            const statusParam = currentStatus === 'all' ? '' : currentStatus;
+            const response = await RegisterService.getAll(
+                currentPage,
+                10,
+                searchQuery,
+                sortConfig,
+                statusParam
+            );
+            const rawUsers = Array.isArray(response) 
+                ? response 
+                : (response.data || response.registrations || []);
+            const initializedData = rawUsers.map(u => ({...u, selected:false}));
             setUsers(initializedData);
             setTotalUsers(response.totalElements);
             setTotalPages(response.totalPages);
