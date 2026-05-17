@@ -1,42 +1,160 @@
-import React, { useRef, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TextInput, Button, Alert, ActivityIndicator, TouchableOpacity } from 'react-native';
-import { CameraView, useCameraPermissions } from 'expo-camera';
+import React, { useRef, useEffect, useState } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TextInput,
+  Button,
+  Alert,
+  ActivityIndicator,
+  TouchableOpacity,
+  Modal,
+  Image,
+  useWindowDimensions,
+} from "react-native";
+import { CameraView, useCameraPermissions } from "expo-camera";
+import Constants from "expo-constants";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
-import apiClient from '../config/apiConfig';
-import { DetectionService } from '../services/DetectionService';
-import { userDashboardService } from '../services/userDashboardService';
-import { Camera } from 'lucide-react-native';
+import apiClient from "../config/apiConfig";
+import { DetectionService } from "../services/DetectionService";
+import { userDashboardService } from "../services/userDashboardService";
+import { Camera } from "lucide-react-native";
+
+const SERVER_CONFIG_STORAGE_KEY = "aiDetectionServerConfig";
+
+const getAutoHost = () => {
+  const hostUri =
+    Constants.expoConfig?.hostUri ||
+    Constants.manifest2?.extra?.expoClient?.hostUri ||
+    Constants.manifest?.debuggerHost;
+  if (hostUri) return hostUri.split(":")[0];
+  return "localhost";
+};
 
 const SKELETON_EDGES = [
-  [0, 1], [0, 2], [1, 3], [2, 4],
-  [5, 6], [5, 7], [7, 9], [6, 8], [8, 10],
-  [5, 11], [6, 12], [11, 12],
-  [11, 13], [13, 15], [12, 14], [14, 16],
+  [0, 1],
+  [0, 2],
+  [1, 3],
+  [2, 4],
+  [5, 6],
+  [5, 7],
+  [7, 9],
+  [6, 8],
+  [8, 10],
+  [5, 11],
+  [6, 12],
+  [11, 12],
+  [11, 13],
+  [13, 15],
+  [12, 14],
+  [14, 16],
 ];
 
+const EVENT_LABELS = {
+  touch_plant: "Touch Plant",
+  touch_animal: "Touch Animal",
+  plucking_plant: "Plucking Plant",
+  animal_strike: "Animal Strike",
+  extended_touch_animal: "Extended Touch Animal",
+  extended_touch_plant: "Extended Touch Plant",
+};
+
 export default function DetectionScreen() {
+  const { width } = useWindowDimensions();
+  const isCompact = width < 720;
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef(null);
   const isCapturing = useRef(false);
   const lastLogTime = useRef(0);
+  const lastFrameBase64 = useRef(null);
+  const lastPhotoDimensions = useRef({ width: 640, height: 480 });
 
-  // Connection & Config State
-  const [serverConfig, setServerConfig] = useState({ host: '172.17.104.136', port: '8000' });
-  const [tempConfig, setTempConfig] = useState(serverConfig);
+  const [serverConfig, setServerConfig] = useState({
+    host: getAutoHost(),
+    port: "8000",
+  });
+  const [tempConfig, setTempConfig] = useState({
+    host: getAutoHost(),
+    port: "8000",
+  });
   const [configMode, setConfigMode] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
 
-  const [latestResult, setLatestResult] = useState(null); 
+  const [latestResult, setLatestResult] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
   const [userLoading, setUserLoading] = useState(true);
 
   const [anomalyEvents, setAnomalyEvents] = useState([]);
   const [eventsLoading, setEventsLoading] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState(null);
+  const [resolvingEventId, setResolvingEventId] = useState(null);
 
   const [cameraLayout, setCameraLayout] = useState(null);
-  const SCALE_X = cameraLayout ? cameraLayout.width / 640 : 1;
-  const SCALE_Y = cameraLayout ? cameraLayout.height / 480 : 1;
-  const mirrorX = (x) => cameraLayout ? cameraLayout.width - x : x;
+
+  // Cover-mode coordinate mapping: CameraView scales the photo uniformly to fill the
+  // container (like CSS object-fit: cover), so one dimension fills exactly and the
+  // other is cropped. We must use a single uniform scale + a crop offset.
+  const photoW = lastPhotoDimensions.current.width;
+  const photoH = lastPhotoDimensions.current.height;
+  let COVER_SCALE = 1,
+    OFFSET_X = 0,
+    OFFSET_Y = 0;
+  if (cameraLayout) {
+    const scaleW = cameraLayout.width / photoW;
+    const scaleH = cameraLayout.height / photoH;
+    COVER_SCALE = Math.max(scaleW, scaleH);
+    OFFSET_X = (photoW * COVER_SCALE - cameraLayout.width) / 2;
+    OFFSET_Y = (photoH * COVER_SCALE - cameraLayout.height) / 2;
+  }
+  const toRenderX = (px) => px * COVER_SCALE - OFFSET_X;
+  const toRenderY = (py) => py * COVER_SCALE - OFFSET_Y;
+
+  const getEventLabel = (eventType) => {
+    if (!eventType) return "Unknown";
+    if (EVENT_LABELS[eventType]) return EVENT_LABELS[eventType];
+    return eventType
+      .split("_")
+      .filter(Boolean)
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ");
+  };
+
+  const getEventConfidence = (event) => {
+    const raw =
+      event?.metadata?.detection_confidence ?? event?.metadata?.confidence;
+    const confidence = Number(raw);
+    if (!Number.isFinite(confidence)) return "N/A";
+    return `${Math.round(confidence * 100)}%`;
+  };
+
+  // Load persisted config on mount
+  useEffect(() => {
+    AsyncStorage.getItem(SERVER_CONFIG_STORAGE_KEY).then((saved) => {
+      if (!saved) return;
+      try {
+        const parsed = JSON.parse(saved);
+        const loaded = {
+          host: parsed?.host || getAutoHost(),
+          port: parsed?.port || "8000",
+        };
+        setServerConfig(loaded);
+        setTempConfig(loaded);
+      } catch {
+        // Ignore corrupt storage
+      }
+    });
+  }, []);
+
+  // Persist config whenever it changes
+  useEffect(() => {
+    AsyncStorage.setItem(
+      SERVER_CONFIG_STORAGE_KEY,
+      JSON.stringify(serverConfig),
+    ).catch(() => {});
+    setTempConfig(serverConfig);
+  }, [serverConfig]);
 
   // 1. Fetch Current User
   useEffect(() => {
@@ -46,7 +164,7 @@ export default function DetectionScreen() {
         const data = await userDashboardService.getUserProfile();
         setCurrentUser(data);
       } catch (error) {
-        setCurrentUser({ id: 260001, username: 'default_user' });
+        setCurrentUser({ id: 260001, username: "default_user" });
       } finally {
         setUserLoading(false);
       }
@@ -54,20 +172,21 @@ export default function DetectionScreen() {
     fetchCurrentUser();
   }, []);
 
-  // 2. Fetch Anomaly Events
+  // 2. Fetch Anomaly Events (active only)
   const fetchAnomalyEvents = async () => {
     if (!currentUser) return;
     setEventsLoading(true);
     try {
-      // FIX 1: Changed to lowercase /anomaly-events to match standard Express routing
-      const response = await apiClient.get(`/anomaly-events/${currentUser.id}`);
+      const response = await apiClient.get(
+        `/anomaly-events/${currentUser.id}?includeResolved=false`,
+      );
       const data = response.data;
-      
+
       let events = [];
       if (Array.isArray(data)) events = data;
       else if (data.data && Array.isArray(data.data)) events = data.data;
       else if (data.events && Array.isArray(data.events)) events = data.events;
-      
+
       setAnomalyEvents(events);
     } catch (error) {
       setAnomalyEvents([]);
@@ -80,11 +199,13 @@ export default function DetectionScreen() {
     if (currentUser) fetchAnomalyEvents();
   }, [currentUser?.id]);
 
-  // 3. Health Check: Ping the AI server continuously
+  // 3. Health Check
   useEffect(() => {
     const pingServer = async () => {
       try {
-        const res = await fetch(`http://${serverConfig.host}:${serverConfig.port}/health`, { timeout: 2000 });
+        const res = await fetch(
+          `http://${serverConfig.host}:${serverConfig.port}/health`,
+        );
         setIsConnected(res.status === 200);
       } catch {
         setIsConnected(false);
@@ -95,22 +216,30 @@ export default function DetectionScreen() {
     return () => clearInterval(interval);
   }, [serverConfig.host, serverConfig.port]);
 
-  // 4. Camera Capture Interval using DetectionService POST
+  // 4. Camera Capture Interval
   useEffect(() => {
     const captureInterval = setInterval(async () => {
       if (!cameraRef.current || isCapturing.current || !isConnected) return;
 
       isCapturing.current = true;
       try {
-        const photo = await cameraRef.current.takePictureAsync({ quality: 0.3, base64: true });
-        
+        const photo = await cameraRef.current.takePictureAsync({
+          quality: 0.3,
+          base64: true,
+        });
+        lastFrameBase64.current = photo.base64;
+        lastPhotoDimensions.current = {
+          width: photo.width,
+          height: photo.height,
+        };
+
         const result = await DetectionService.analyzeFrame(
-          photo.base64, 
-          currentUser?.id, 
-          serverConfig.host, 
-          serverConfig.port
+          photo.base64,
+          currentUser?.id,
+          serverConfig.host,
+          serverConfig.port,
         );
-        
+
         if (result && !result.error) {
           setLatestResult(result);
         }
@@ -119,7 +248,7 @@ export default function DetectionScreen() {
       } finally {
         isCapturing.current = false;
       }
-    }, 250); 
+    }, 250);
 
     return () => clearInterval(captureInterval);
   }, [currentUser, isConnected, serverConfig]);
@@ -127,90 +256,148 @@ export default function DetectionScreen() {
   // 5. Client-Side Anomaly Logging
   useEffect(() => {
     if (latestResult?.compliance && currentUser) {
-      const { 
-        plucking_plant, 
-        animal_strike, 
-        extended_touch_animal, 
+      const {
+        plucking_plant,
+        animal_strike,
+        extended_touch_animal,
         extended_touch_plant,
         touch_animal,
-        touch_plant
+        touch_plant,
       } = latestResult.compliance;
-      
       let detectedEventType = null;
 
-      // FIX 2: Relational Databases use strict Enums. 
-      // We must send the exact lowercase strings the database expects.
-      // (Your UI component will still automatically render it as uppercase)
-      if (plucking_plant) detectedEventType = 'plucking_plant';
-      else if (animal_strike) detectedEventType = 'animal_strike';
-      else if (extended_touch_animal) detectedEventType = 'extended_touch_animal';
-      else if (extended_touch_plant) detectedEventType = 'extended_touch_plant';
-      else if (touch_animal) detectedEventType = 'touch_animal';
-      else if (touch_plant) detectedEventType = 'touch_plant';
+      if (plucking_plant) detectedEventType = "plucking_plant";
+      else if (animal_strike) detectedEventType = "animal_strike";
+      else if (extended_touch_animal)
+        detectedEventType = "extended_touch_animal";
+      else if (extended_touch_plant) detectedEventType = "extended_touch_plant";
+      else if (touch_animal) detectedEventType = "touch_animal";
+      else if (touch_plant) detectedEventType = "touch_plant";
 
       if (detectedEventType) {
         const now = Date.now();
-        // 3-second cooldown to avoid flooding the database
         if (now - lastLogTime.current > 3000) {
           lastLogTime.current = now;
-          
+
+          const confidenceCandidates = (latestResult?.detections || [])
+            .map((d) => Number(d.confidence))
+            .filter(Number.isFinite);
+          const maxConfidence = confidenceCandidates.length
+            ? Math.max(...confidenceCandidates)
+            : null;
+
           const payload = {
             user_id: currentUser.id,
             event_type: detectedEventType,
-            latitude: 1.5533,      // Default Park Latitude
-            longitude: 110.3592,   // Default Park Longitude
-            // FIX 3: Safely stringified the metadata object so Express parsers don't choke
-            metadata: JSON.stringify({ 
+            latitude: 1.5533,
+            longitude: 110.3592,
+            metadata: JSON.stringify({
               source: "mobile_ai_detection",
-              timestamp: new Date().toISOString()
-            })
+              timestamp: new Date().toISOString(),
+              detection_confidence: maxConfidence,
+              detections: latestResult?.detections?.length || 0,
+              poses: latestResult?.poses?.length || 0,
+              inference_ms: latestResult?.inference_ms || 0,
+            }),
+            annotated_frame_base64: lastFrameBase64.current,
           };
 
-          // POST using the strictly lowercase path
-          apiClient.post('/anomaly-events', payload)
+          apiClient
+            .post("/anomaly-events", payload)
             .then(() => {
-              console.log(`✅ Logged ${detectedEventType} successfully!`);
               fetchAnomalyEvents();
             })
             .catch((err) => {
-              // ERROR CATCHER: This will show an alert box if your Express server rejects the payload!
-              const errorMsg = err.response?.data?.message || err.response?.data?.error || err.message;
-              console.error("❌ DB REJECTED EVENT:", err.response?.data || err.message);
-              Alert.alert("Database Error", `Backend rejected the anomaly log:\n${errorMsg}`);
+              const errorMsg =
+                err.response?.data?.message ||
+                err.response?.data?.error ||
+                err.message;
+              Alert.alert(
+                "Database Error",
+                `Backend rejected the anomaly log:\n${errorMsg}`,
+              );
             });
         }
       }
     }
   }, [latestResult]);
 
+  // Resolve Event
+  const resolveEvent = async (eventId) => {
+    setResolvingEventId(eventId);
+    try {
+      try {
+        await apiClient.post(`/anomaly-events/${eventId}/resolve`);
+      } catch (firstError) {
+        await apiClient.post(`/Anomaly-events/${eventId}/resolve`);
+      }
+      setAnomalyEvents((prev) => prev.filter((event) => event.id !== eventId));
+      setSelectedEvent(null);
+    } catch (error) {
+      const message =
+        error?.response?.data?.message ||
+        error?.message ||
+        "Failed to resolve anomaly event.";
+      Alert.alert("Error", message);
+    } finally {
+      setResolvingEventId(null);
+    }
+  };
+
   // --- RENDER HELPERS ---
   const renderSkeletonLine = (kp1, kp2, index) => {
-    if (!kp1 || !kp2 || kp1.confidence < 0.3 || kp2.confidence < 0.3) return null;
-    const x1 = mirrorX(kp1.x * SCALE_X), y1 = kp1.y * SCALE_Y;
-    const x2 = mirrorX(kp2.x * SCALE_X), y2 = kp2.y * SCALE_Y;
-    const dx = x2 - x1, dy = y2 - y1;
+    if (!kp1 || !kp2 || kp1.confidence < 0.3 || kp2.confidence < 0.3)
+      return null;
+    const x1 = toRenderX(kp1.x),
+      y1 = toRenderY(kp1.y);
+    const x2 = toRenderX(kp2.x),
+      y2 = toRenderY(kp2.y);
+    const dx = x2 - x1,
+      dy = y2 - y1;
     const distance = Math.sqrt(dx * dx + dy * dy);
     const angle = Math.atan2(dy, dx) * (180 / Math.PI);
-    const cx = (x1 + x2) / 2, cy = (y1 + y2) / 2;
+    const cx = (x1 + x2) / 2,
+      cy = (y1 + y2) / 2;
 
     return (
-      <View key={`line-${index}`} style={{
-        position: 'absolute', left: cx - (distance / 2), top: cy - 1, width: distance, height: 2,
-        backgroundColor: '#00FF00', transform: [{ rotate: `${angle}deg` }], opacity: 0.7,
-      }} />
+      <View
+        key={`line-${index}`}
+        style={{
+          position: "absolute",
+          left: cx - distance / 2,
+          top: cy - 1,
+          width: distance,
+          height: 2,
+          backgroundColor: "#00FF00",
+          transform: [{ rotate: `${angle}deg` }],
+          opacity: 0.7,
+        }}
+      />
     );
   };
 
   const renderKeypoint = (kp, index) => {
     if (!kp || kp.confidence < 0.3) return null;
-    const x = mirrorX(kp.x * SCALE_X), y = kp.y * SCALE_Y;
+    const x = toRenderX(kp.x),
+      y = toRenderY(kp.y);
     const KP_RADIUS = 5;
 
     return (
-      <View key={`kp-${index}`} style={{
-        position: 'absolute', left: x - KP_RADIUS, top: y - KP_RADIUS, width: KP_RADIUS * 2, height: KP_RADIUS * 2,
-        borderRadius: KP_RADIUS, backgroundColor: '#00FFFF', borderWidth: 1, borderColor: '#FFFFFF', opacity: 0.8,
-      }} />
+      <View
+        key={`kp-${index}`}
+        style={{
+          position: "absolute",
+          left: x - KP_RADIUS,
+          top: y - KP_RADIUS,
+          width: KP_RADIUS * 2,
+          height: KP_RADIUS * 2,
+          borderRadius: KP_RADIUS,
+          backgroundColor: "#00FFFF",
+          borderWidth: 1,
+          borderColor: "#FFFFFF",
+          opacity: 0.8,
+        }}
+      />
     );
   };
 
@@ -218,14 +405,46 @@ export default function DetectionScreen() {
   if (configMode) {
     return (
       <View style={styles.configContainer}>
-        <ScrollView style={styles.configForm}>
+        <ScrollView style={styles.configFormScroll}>
           <Text style={styles.configTitle}>AI Server Configuration</Text>
-          <Text style={styles.label}>Server Host (IP Address)</Text>
-          <TextInput style={styles.input} placeholder="172.17.104.136" value={tempConfig.host} onChangeText={(t) => setTempConfig({...tempConfig, host: t})} />
-          <Text style={styles.label}>Server Port</Text>
-          <TextInput style={styles.input} placeholder="8000" value={tempConfig.port} onChangeText={(t) => setTempConfig({...tempConfig, port: t})} keyboardType="numeric" />
-          <View style={styles.buttonContainer}><Button title="Save" onPress={() => { setServerConfig(tempConfig); setConfigMode(false); }} color="#4CAF50" /></View>
-          <View style={styles.buttonContainer}><Button title="Cancel" onPress={() => { setTempConfig(serverConfig); setConfigMode(false); }} color="#999" /></View>
+          <Text style={styles.configLabel}>Server Host (IP Address)</Text>
+          <TextInput
+            style={styles.input}
+            placeholder={getAutoHost()}
+            value={tempConfig.host}
+            onChangeText={(t) => setTempConfig({ ...tempConfig, host: t })}
+          />
+          <Text style={styles.configLabel}>Server Port</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="8000"
+            value={tempConfig.port}
+            onChangeText={(t) => setTempConfig({ ...tempConfig, port: t })}
+            keyboardType="numeric"
+          />
+          <View style={styles.buttonContainer}>
+            <Button
+              title="Save"
+              onPress={() => {
+                setServerConfig({
+                  host: (tempConfig.host || "").trim() || getAutoHost(),
+                  port: (tempConfig.port || "").trim() || "8000",
+                });
+                setConfigMode(false);
+              }}
+              color="#4CAF50"
+            />
+          </View>
+          <View style={styles.buttonContainer}>
+            <Button
+              title="Cancel"
+              onPress={() => {
+                setTempConfig(serverConfig);
+                setConfigMode(false);
+              }}
+              color="#999"
+            />
+          </View>
         </ScrollView>
       </View>
     );
@@ -244,18 +463,21 @@ export default function DetectionScreen() {
       <View style={styles.permissionContainer}>
         <View style={styles.permissionCard}>
           <View style={styles.iconCircle}>
-            <Text style={styles.cameraIcon}><Camera color="grey"/></Text>
+            <Text style={styles.cameraIcon}>
+              <Camera color="grey" />
+            </Text>
           </View>
-          
+
           <Text style={styles.permissionTitle}>Camera Access Required</Text>
-          
+
           <Text style={styles.permissionDescription}>
-            To perform real-time AI compliance monitoring and keep our park safe, 
-            the application requires permission to access your device's camera stream.
+            To perform real-time AI compliance monitoring and keep our park
+            safe, the application requires permission to access your device's
+            camera stream.
           </Text>
 
-          <TouchableOpacity 
-            style={styles.actionBtn} 
+          <TouchableOpacity
+            style={styles.actionBtn}
             onPress={requestPermission}
             activeOpacity={0.8}
           >
@@ -263,111 +485,340 @@ export default function DetectionScreen() {
           </TouchableOpacity>
 
           <Text style={styles.permissionNotice}>
-            Your privacy is guarded. The video stream is processed completely locally 
-            for on-site edge model inference.
+            Your privacy is guarded. The video stream is processed completely
+            locally for on-site edge model inference.
           </Text>
         </View>
       </View>
     );
   }
-  if (userLoading) return <View style={styles.loadingView}><Text style={{color: '#888'}}>Loading user...</Text></View>;
+  if (userLoading)
+    return (
+      <View style={styles.loadingView}>
+        <Text style={{ color: "#888" }}>Loading user...</Text>
+      </View>
+    );
 
   return (
-    <View style={styles.appContainer}>
-      
-      {/* LEFT PANEL: Anomaly Event Log */}
-      <View style={styles.mainContent}>
-        <View style={styles.titleBar}>
-          <Text style={styles.title}>Anomaly Event Log</Text>
-          <Text style={styles.refreshButton} onPress={fetchAnomalyEvents}>🔄 Refresh</Text>
+    <View
+      style={[styles.appContainer, isCompact && styles.appContainerCompact]}
+    >
+      {/* Event Detail Modal */}
+      <Modal
+        visible={!!selectedEvent}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setSelectedEvent(null)}
+      >
+        <View style={styles.detailModalOverlay}>
+          <View style={styles.detailModal}>
+            <ScrollView>
+              <View style={styles.detailHeader}>
+                <Text style={styles.detailTitle}>
+                  {selectedEvent ? getEventLabel(selectedEvent.event_type) : ""}
+                </Text>
+                <TouchableOpacity onPress={() => setSelectedEvent(null)}>
+                  <Text style={styles.detailClose}>Close</Text>
+                </TouchableOpacity>
+              </View>
+              {selectedEvent && (
+                <>
+                  <View style={styles.detailMetaGrid}>
+                    <Text style={styles.detailMetaText}>
+                      <Text style={styles.detailMetaLabel}>Detected: </Text>
+                      {new Date(selectedEvent.created_at).toLocaleString()}
+                    </Text>
+                    <Text style={styles.detailMetaText}>
+                      <Text style={styles.detailMetaLabel}>Confidence: </Text>
+                      {getEventConfidence(selectedEvent)}
+                    </Text>
+                    <Text style={styles.detailMetaText}>
+                      <Text style={styles.detailMetaLabel}>Latitude: </Text>
+                      {selectedEvent.latitude ?? "N/A"}
+                    </Text>
+                    <Text style={styles.detailMetaText}>
+                      <Text style={styles.detailMetaLabel}>Longitude: </Text>
+                      {selectedEvent.longitude ?? "N/A"}
+                    </Text>
+                  </View>
+                  {selectedEvent.annotated_frame_base64 ? (
+                    <Image
+                      source={{
+                        uri: `data:image/jpeg;base64,${selectedEvent.annotated_frame_base64}`,
+                      }}
+                      style={styles.detailImage}
+                      resizeMode="contain"
+                    />
+                  ) : (
+                    <View style={styles.emptyEvidence}>
+                      <Text style={styles.emptyEvidenceText}>
+                        No annotated frame recorded for this event.
+                      </Text>
+                    </View>
+                  )}
+                  <ScrollView horizontal style={styles.metadataBlock}>
+                    <Text style={styles.metadataText}>
+                      {JSON.stringify(selectedEvent.metadata || {}, null, 2)}
+                    </Text>
+                  </ScrollView>
+                  {!selectedEvent.is_resolved && (
+                    <TouchableOpacity
+                      style={[
+                        styles.resolveButton,
+                        resolvingEventId === selectedEvent.id &&
+                          styles.resolveButtonDisabled,
+                      ]}
+                      onPress={() => resolveEvent(selectedEvent.id)}
+                      disabled={resolvingEventId === selectedEvent.id}
+                    >
+                      <Text style={styles.resolveButtonText}>
+                        {resolvingEventId === selectedEvent.id
+                          ? "Resolving..."
+                          : "Mark as Resolved"}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </>
+              )}
+            </ScrollView>
+          </View>
         </View>
-        
+      </Modal>
+
+      {/* LEFT PANEL: Anomaly Event Log */}
+      <View
+        style={[styles.mainContent, isCompact && styles.mainContentCompact]}
+      >
+        <View style={styles.titleBar}>
+          <View style={styles.titleCopy}>
+            <Text style={styles.title}>AI Detection</Text>
+            <Text style={styles.pageSubtitle}>
+              Monitor and review active anomaly alerts
+            </Text>
+          </View>
+          <TouchableOpacity
+            style={styles.refreshButtonContainer}
+            onPress={fetchAnomalyEvents}
+          >
+            <Text style={styles.refreshButton}>Refresh</Text>
+          </TouchableOpacity>
+        </View>
+
         {eventsLoading ? (
-          <Text style={{ color: '#888', marginTop: 20 }}>Loading events...</Text>
-        ) : anomalyEvents.length === 0 ? (
-          <Text style={{ color: '#888', marginTop: 20 }}>No anomaly events recorded</Text>
+          <Text style={{ color: "#888", marginTop: 20 }}>
+            Loading events...
+          </Text>
         ) : (
-          <ScrollView style={styles.eventsList}>
-            {anomalyEvents.map((event, index) => (
-              <View key={index} style={styles.eventCard}>
-                <View style={styles.eventHeader}>
-                  <Text style={styles.eventType}>{event.event_type.toUpperCase()}</Text>
-                </View>
-                <Text style={styles.eventTime}>
-                  {new Date(event.created_at).toLocaleString()}
+          <View style={styles.eventsPanel}>
+            <View style={styles.panelHeader}>
+              <Text style={styles.panelTitle}>Active Anomalies</Text>
+              <View style={styles.badgeCount}>
+                <Text style={styles.badgeCountText}>
+                  {anomalyEvents.length}
                 </Text>
               </View>
-            ))}
-          </ScrollView>
+            </View>
+            {anomalyEvents.length === 0 ? (
+              <Text style={styles.emptyText}>No active anomalies</Text>
+            ) : (
+              <ScrollView style={styles.eventsList}>
+                {anomalyEvents.map((event) => (
+                  <TouchableOpacity
+                    key={event.id}
+                    onPress={() => setSelectedEvent(event)}
+                  >
+                    <View style={styles.eventCard}>
+                      <View style={styles.eventHeader}>
+                        <Text style={styles.eventType}>
+                          {getEventLabel(event.event_type)}
+                        </Text>
+                        <Text style={styles.eventConfidence}>
+                          {getEventConfidence(event)}
+                        </Text>
+                      </View>
+                      <View style={styles.eventMetaRow}>
+                        <Text style={styles.eventTime}>
+                          {new Date(event.created_at).toLocaleString()}
+                        </Text>
+                        <View style={styles.activePill}>
+                          <Text style={styles.activePillText}>Active</Text>
+                        </View>
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            )}
+          </View>
         )}
       </View>
 
-      {/* RIGHT PANEL: Fixed Aspect Ratio Camera */}
-      <View style={styles.cameraSidebar}>
-        <View 
-          style={styles.cameraWrapper}
-          onLayout={(event) => setCameraLayout({ width: event.nativeEvent.layout.width, height: event.nativeEvent.layout.height })}
+      {/* RIGHT PANEL: Camera */}
+      <View
+        style={[styles.cameraSidebar, isCompact && styles.cameraSidebarCompact]}
+      >
+        <View
+          style={[
+            styles.cameraWrapper,
+            isCompact && styles.cameraWrapperCompact,
+          ]}
+          onLayout={(event) =>
+            setCameraLayout({
+              width: event.nativeEvent.layout.width,
+              height: event.nativeEvent.layout.height,
+            })
+          }
         >
           <CameraView ref={cameraRef} style={styles.camera} facing="back">
-            
-            <Text style={[styles.status, { backgroundColor: isConnected ? 'rgba(0,128,0,0.7)' : 'rgba(255,0,0,0.7)' }]}>
-              {isConnected ? "🟢 Connected (API)" : "🔴 AI Server Disconnected"}
+            <Text
+              style={[
+                styles.status,
+                {
+                  backgroundColor: isConnected
+                    ? "rgba(16, 185, 129, 0.85)"
+                    : "rgba(220, 38, 38, 0.85)",
+                },
+              ]}
+            >
+              {isConnected ? "Connected (AI API)" : "AI Server Disconnected"}
             </Text>
 
             {/* Detections Overlay */}
-            {isConnected && cameraLayout && latestResult?.detections?.map((det, index) => {
-              const [x1, y1, x2, y2] = det.bbox;
-              return (
-                <View key={`det-${index}`} style={[styles.boundingBox, { left: mirrorX(x2 * SCALE_X), top: y1 * SCALE_Y, width: (x2 - x1) * SCALE_X, height: (y2 - y1) * SCALE_Y }]}>
-                  <Text style={styles.label}>{det.class_name} {Math.round(det.confidence * 100)}%</Text>
-                </View>
-              );
-            })}
+            {isConnected &&
+              cameraLayout &&
+              latestResult?.detections?.map((det, index) => {
+                const [x1, y1, x2, y2] = det.bbox;
+                return (
+                  <View
+                    key={`det-${index}`}
+                    style={[
+                      styles.boundingBox,
+                      {
+                        left: toRenderX(x1),
+                        top: toRenderY(y1),
+                        width: (x2 - x1) * COVER_SCALE,
+                        height: (y2 - y1) * COVER_SCALE,
+                      },
+                    ]}
+                  >
+                    <Text style={styles.detectionLabel}>
+                      {det.class_name} {Math.round(det.confidence * 100)}%
+                    </Text>
+                  </View>
+                );
+              })}
 
             {/* Pose Skeleton Overlay */}
-            {isConnected && cameraLayout && latestResult?.poses?.map((pose, poseIndex) => (
-                <View key={`pose-${poseIndex}`} style={{ position: 'absolute', width: '100%', height: '100%' }}>
-                  {SKELETON_EDGES.map((edge, edgeIndex) => renderSkeletonLine(pose[edge[0]], pose[edge[1]], `${poseIndex}-line-${edgeIndex}`))}
-                  {pose.map((kp, kpIndex) => renderKeypoint(kp, `${poseIndex}-kp-${kpIndex}`))}
+            {isConnected &&
+              cameraLayout &&
+              latestResult?.poses?.map((pose, poseIndex) => (
+                <View
+                  key={`pose-${poseIndex}`}
+                  style={{
+                    position: "absolute",
+                    width: "100%",
+                    height: "100%",
+                  }}
+                >
+                  {SKELETON_EDGES.map((edge, edgeIndex) =>
+                    renderSkeletonLine(
+                      pose[edge[0]],
+                      pose[edge[1]],
+                      `${poseIndex}-line-${edgeIndex}`,
+                    ),
+                  )}
+                  {pose.map((kp, kpIndex) =>
+                    renderKeypoint(kp, `${poseIndex}-kp-${kpIndex}`),
+                  )}
                 </View>
-            ))}
+              ))}
 
             {/* Hand Box Overlay */}
-            {isConnected && cameraLayout && latestResult?.compliance?.hand_boxes?.map((box, index) => {
-              const isTouching = latestResult.compliance.touch_plant || latestResult.compliance.touch_animal;
-              
-              return (
-                <View key={`hand-${index}`} style={[styles.interactionBox, {
-                    left: mirrorX(box[2] * SCALE_X), top: box[1] * SCALE_Y, width: (box[2] - box[0]) * SCALE_X, height: (box[3] - box[1]) * SCALE_Y,
-                    borderColor: isTouching ? '#FF6600' : '#FFD700',
-                    backgroundColor: isTouching ? 'rgba(255, 102, 0, 0.20)' : 'rgba(255, 215, 0, 0.12)',
-                  }]}
-                >
-                  <Text style={[styles.interactionLabel, { color: isTouching ? '#FF6600' : '#FFD700' }]}>
-                    {isTouching ? '\u270b TOUCH' : '\u270b'}
-                  </Text>
-                </View>
-              );
-            })}
+            {isConnected &&
+              cameraLayout &&
+              latestResult?.compliance?.hand_boxes?.map((box, index) => {
+                const isTouching =
+                  latestResult.compliance.touch_plant ||
+                  latestResult.compliance.touch_animal;
+                return (
+                  <View
+                    key={`hand-${index}`}
+                    style={[
+                      styles.interactionBox,
+                      {
+                        left: toRenderX(box[0]),
+                        top: toRenderY(box[1]),
+                        width: (box[2] - box[0]) * COVER_SCALE,
+                        height: (box[3] - box[1]) * COVER_SCALE,
+                        borderColor: isTouching ? "#FF6600" : "#FFD700",
+                        backgroundColor: isTouching
+                          ? "rgba(255, 102, 0, 0.20)"
+                          : "rgba(255, 215, 0, 0.12)",
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.interactionLabel,
+                        { color: isTouching ? "#FF6600" : "#FFD700" },
+                      ]}
+                    >
+                      {isTouching ? "TOUCH" : "HAND"}
+                    </Text>
+                  </View>
+                );
+              })}
 
             {/* Compliance Alerts */}
-            {latestResult?.compliance?.plucking_plant && <Text style={styles.warningText}>WARNING: PLUCKING DETECTED</Text>}
-            {latestResult?.compliance?.animal_strike && <Text style={styles.warningText}>ALERT: ANIMAL STRIKE</Text>}
-            {latestResult?.compliance?.extended_touch_animal && <Text style={[styles.warningText, {backgroundColor: 'rgba(255, 165, 0, 0.8)'}]}>⚠️ EXTENDED ANIMAL TOUCH</Text>}
-            {latestResult?.compliance?.extended_touch_plant && <Text style={[styles.warningText, {backgroundColor: 'rgba(255, 165, 0, 0.8)'}]}>⚠️ EXTENDED PLANT TOUCH</Text>}
+            {latestResult?.compliance?.plucking_plant && (
+              <Text style={styles.warningText}>WARNING: PLUCKING DETECTED</Text>
+            )}
+            {latestResult?.compliance?.animal_strike && (
+              <Text style={styles.warningText}>ALERT: ANIMAL STRIKE</Text>
+            )}
+            {latestResult?.compliance?.extended_touch_animal && (
+              <Text
+                style={[
+                  styles.warningText,
+                  { backgroundColor: "rgba(255, 165, 0, 0.8)" },
+                ]}
+              >
+                EXTENDED ANIMAL TOUCH
+              </Text>
+            )}
+            {latestResult?.compliance?.extended_touch_plant && (
+              <Text
+                style={[
+                  styles.warningText,
+                  { backgroundColor: "rgba(255, 165, 0, 0.8)" },
+                ]}
+              >
+                EXTENDED PLANT TOUCH
+              </Text>
+            )}
 
             {/* Live Stats Panel */}
             {isConnected && latestResult && (
               <View style={styles.statsPanel}>
-                <Text style={styles.statText}>Detections: {latestResult.detections?.length || 0}</Text>
-                <Text style={styles.statText}>Poses: {latestResult.poses?.length || 0}</Text>
-                <Text style={styles.statText}>Inference: {latestResult.inference_ms || 0}ms</Text>
+                <Text style={styles.statText}>
+                  Detections: {latestResult.detections?.length || 0}
+                </Text>
+                <Text style={styles.statText}>
+                  Poses: {latestResult.poses?.length || 0}
+                </Text>
+                <Text style={styles.statText}>
+                  Inference: {latestResult.inference_ms || 0}ms
+                </Text>
               </View>
             )}
 
             {/* Settings Button */}
-            <Text style={styles.settingsButton} onPress={() => setConfigMode(true)}>⚙️</Text>
-
+            <Text
+              style={styles.settingsButton}
+              onPress={() => setConfigMode(true)}
+            >
+              Config
+            </Text>
           </CameraView>
         </View>
       </View>
@@ -376,105 +827,380 @@ export default function DetectionScreen() {
 }
 
 const styles = StyleSheet.create({
-  appContainer: { flex: 1, flexDirection: 'row', backgroundColor: '#121212' },
-  mainContent: { flex: 2, padding: 20, justifyContent: 'flex-start', alignItems: 'stretch' },
-  title: { fontSize: 24, fontWeight: 'bold', color: '#ffffff', marginBottom: 10 },
-  titleBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
-  refreshButton: { fontSize: 14, fontWeight: '600', color: '#4CAF50', backgroundColor: 'rgba(76, 175, 80, 0.15)', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 6, borderWidth: 1, borderColor: '#4CAF50' },
-  loadingView: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#121212' },
-  
-  eventsList: { flex: 1, marginTop: 10 },
-  eventCard: { backgroundColor: '#1e1e1e', borderRadius: 8, padding: 12, marginBottom: 10, borderLeftWidth: 4, borderLeftColor: '#FF6600' },
-  eventHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-  eventType: { color: '#00FF00', fontWeight: 'bold', fontSize: 14 },
-  eventTime: { color: '#888888', fontSize: 10, fontStyle: 'italic' },
-  
-  cameraSidebar: { flex: 1, backgroundColor: '#000000', justifyContent: 'center', padding: 10 },
-  cameraWrapper: { width: '100%', aspectRatio: 4 / 3, borderRadius: 8, overflow: 'hidden', backgroundColor: '#1e1e1e' },
+  appContainer: { flex: 1, flexDirection: "row", backgroundColor: "#f6f8f7" },
+  appContainerCompact: { flexDirection: "column-reverse" },
+  mainContent: {
+    flex: 2,
+    padding: 20,
+    justifyContent: "flex-start",
+    alignItems: "stretch",
+  },
+  mainContentCompact: {
+    flex: 1,
+    paddingHorizontal: 14,
+    paddingTop: 16,
+    paddingBottom: 10,
+  },
+  title: { fontSize: 22, fontWeight: "bold", color: "#111827" },
+  pageSubtitle: { marginTop: 4, color: "#6b7280", fontSize: 12 },
+  titleCopy: { flex: 1, paddingRight: 10 },
+  titleBar: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
+    gap: 10,
+  },
+  refreshButtonContainer: {
+    flexShrink: 0,
+    borderWidth: 1,
+    borderColor: "#bbf7d0",
+    borderRadius: 8,
+    backgroundColor: "#ecfdf5",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  refreshButton: { fontSize: 13, fontWeight: "600", color: "#0a6340" },
+  loadingView: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#f6f8f7",
+  },
+
+  eventsPanel: {
+    flex: 1,
+    backgroundColor: "#ffffff",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+    padding: 12,
+  },
+  panelHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  panelTitle: { fontSize: 15, fontWeight: "700", color: "#111827" },
+  badgeCount: {
+    backgroundColor: "#f3f4f6",
+    borderRadius: 99,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  badgeCountText: { fontSize: 12, fontWeight: "700", color: "#374151" },
+  eventsList: { flex: 1 },
+  eventCard: {
+    backgroundColor: "#f9fafb",
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+  },
+  eventHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  eventMetaRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: 8,
+  },
+  eventType: {
+    color: "#111827",
+    fontWeight: "700",
+    fontSize: 13,
+    flex: 1,
+    paddingRight: 8,
+  },
+  eventConfidence: { color: "#0f766e", fontWeight: "700", fontSize: 12 },
+  eventTime: { color: "#6b7280", fontSize: 11, fontStyle: "italic", flex: 1 },
+  activePill: {
+    backgroundColor: "#dcfce7",
+    borderRadius: 999,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+  },
+  activePillText: { color: "#166534", fontSize: 11, fontWeight: "700" },
+  emptyText: { color: "#9ca3af", fontSize: 13, marginTop: 8 },
+
+  cameraSidebar: {
+    flex: 1,
+    backgroundColor: "#000000",
+    justifyContent: "center",
+    padding: 10,
+  },
+  cameraSidebarCompact: {
+    flex: 0,
+    height: 220,
+    backgroundColor: "#f6f8f7",
+    paddingHorizontal: 14,
+    paddingTop: 0,
+    paddingBottom: 12,
+  },
+  cameraWrapper: {
+    width: "100%",
+    aspectRatio: 4 / 3,
+    borderRadius: 8,
+    overflow: "hidden",
+    backgroundColor: "#1e1e1e",
+  },
+  cameraWrapperCompact: { height: "100%", aspectRatio: undefined },
   camera: { flex: 1 },
 
-  status: { position: 'absolute', top: 10, left: 10, color: 'white', fontWeight: 'bold', fontSize: 12, padding: 6, borderRadius: 4 },
-  warningText: { position: 'absolute', top: 100, alignSelf: 'center', color: 'red', fontSize: 16, fontWeight: 'bold', backgroundColor: 'rgba(0,0,0,0.7)', padding: 8, borderRadius: 5 },
-  statsPanel: { position: 'absolute', bottom: 10, right: 10, backgroundColor: 'rgba(0,0,0,0.7)', padding: 10, borderRadius: 8 },
-  statText: { color: 'white', fontSize: 10, marginVertical: 2 },
-  boundingBox: { position: 'absolute', borderWidth: 2, borderColor: 'lime', backgroundColor: 'rgba(50, 205, 50, 0.15)' },
-  label: { position: 'absolute', top: -20, left: 0, color: 'lime', backgroundColor: 'black', paddingHorizontal: 4, fontSize: 12, fontWeight: 'bold' },
-  interactionBox: { position: 'absolute', borderWidth: 2, borderRadius: 3 },
-  interactionLabel: { position: 'absolute', top: -16, left: 0, backgroundColor: 'black', paddingHorizontal: 3, fontSize: 10, fontWeight: 'bold' },
-  settingsButton: { position: 'absolute', bottom: 10, left: 10, fontSize: 24, backgroundColor: 'rgba(0,0,0,0.6)', padding: 8, borderRadius: 25, overflow: 'hidden' },
+  status: {
+    position: "absolute",
+    top: 10,
+    left: 10,
+    color: "white",
+    fontWeight: "bold",
+    fontSize: 12,
+    padding: 6,
+    borderRadius: 6,
+  },
+  warningText: {
+    position: "absolute",
+    top: 100,
+    alignSelf: "center",
+    color: "#fee2e2",
+    fontSize: 13,
+    fontWeight: "bold",
+    backgroundColor: "rgba(127, 29, 29, 0.85)",
+    padding: 8,
+    borderRadius: 6,
+  },
+  statsPanel: {
+    position: "absolute",
+    bottom: 10,
+    right: 10,
+    backgroundColor: "rgba(17,24,39,0.8)",
+    padding: 10,
+    borderRadius: 8,
+  },
+  statText: { color: "#e5e7eb", fontSize: 10, marginVertical: 2 },
+  boundingBox: {
+    position: "absolute",
+    borderWidth: 2,
+    borderColor: "#22c55e",
+    backgroundColor: "rgba(34, 197, 94, 0.15)",
+  },
+  detectionLabel: {
+    position: "absolute",
+    top: 2,
+    left: 2,
+    color: "#dcfce7",
+    backgroundColor: "rgba(15,23,42,0.85)",
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+    fontSize: 11,
+    fontWeight: "bold",
+    borderRadius: 3,
+  },
+  interactionBox: { position: "absolute", borderWidth: 2, borderRadius: 3 },
+  interactionLabel: {
+    position: "absolute",
+    top: 2,
+    left: 2,
+    backgroundColor: "rgba(0,0,0,0.75)",
+    paddingHorizontal: 3,
+    paddingVertical: 1,
+    fontSize: 10,
+    fontWeight: "bold",
+    borderRadius: 2,
+  },
+  settingsButton: {
+    position: "absolute",
+    bottom: 10,
+    left: 10,
+    color: "white",
+    fontSize: 12,
+    fontWeight: "700",
+    backgroundColor: "rgba(17,24,39,0.75)",
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: 16,
+    overflow: "hidden",
+  },
 
-  configContainer: { flex: 1, backgroundColor: '#121212', padding: 40 },
-  configForm: { padding: 20, backgroundColor: '#1e1e1e', borderRadius: 8 },
-  configTitle: { fontSize: 22, fontWeight: 'bold', marginBottom: 20, color: 'white' },
-  label: { fontSize: 14, fontWeight: '600', marginTop: 15, marginBottom: 5, color: '#ccc' },
-  input: { borderWidth: 1, borderColor: '#444', padding: 10, borderRadius: 5, backgroundColor: '#333', marginBottom: 10, color: 'white' },
+  detailModalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(15, 23, 42, 0.6)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 16,
+  },
+  detailModal: {
+    width: "95%",
+    maxHeight: "85%",
+    backgroundColor: "white",
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+  },
+  detailHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  detailTitle: {
+    fontSize: 17,
+    fontWeight: "700",
+    color: "#111827",
+    flexShrink: 1,
+  },
+  detailClose: {
+    color: "#374151",
+    fontWeight: "600",
+    fontSize: 14,
+    borderWidth: 1,
+    borderColor: "#d1d5db",
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  detailMetaGrid: { gap: 6, marginBottom: 12 },
+  detailMetaText: { color: "#374151", fontSize: 13 },
+  detailMetaLabel: { fontWeight: "700" },
+  detailImage: {
+    width: "100%",
+    height: 200,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+    marginBottom: 12,
+    backgroundColor: "#111827",
+  },
+  emptyEvidence: {
+    padding: 10,
+    borderWidth: 1,
+    borderColor: "#d1d5db",
+    borderStyle: "dashed",
+    borderRadius: 8,
+    marginBottom: 12,
+  },
+  emptyEvidenceText: { color: "#6b7280", fontSize: 13 },
+  metadataBlock: {
+    backgroundColor: "#f9fafb",
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+    borderRadius: 8,
+    padding: 10,
+    maxHeight: 140,
+    marginBottom: 12,
+  },
+  metadataText: { fontSize: 11, color: "#374151", fontFamily: "monospace" },
+  resolveButton: {
+    marginTop: 4,
+    backgroundColor: "#065f46",
+    borderRadius: 8,
+    padding: 12,
+    alignItems: "center",
+  },
+  resolveButtonDisabled: { opacity: 0.6 },
+  resolveButtonText: { color: "white", fontWeight: "700", fontSize: 14 },
+
+  configContainer: { flex: 1, backgroundColor: "#121212", padding: 40 },
+  configFormScroll: {
+    padding: 20,
+    backgroundColor: "#1e1e1e",
+    borderRadius: 8,
+  },
+  configTitle: {
+    fontSize: 22,
+    fontWeight: "bold",
+    marginBottom: 20,
+    color: "white",
+  },
+  configLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+    marginTop: 15,
+    marginBottom: 5,
+    color: "#ccc",
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: "#444",
+    padding: 10,
+    borderRadius: 5,
+    backgroundColor: "#333",
+    marginBottom: 10,
+    color: "white",
+  },
   buttonContainer: { marginVertical: 8 },
 
   permissionContainer: {
     flex: 1,
-    backgroundColor: '#ffffff',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "#ffffff",
+    justifyContent: "center",
+    alignItems: "center",
     padding: 24,
   },
   permissionCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: "#ffffff",
     borderRadius: 16,
     padding: 32,
-    width: '100%',
+    width: "100%",
     maxWidth: 420,
-    alignItems: 'center',
+    alignItems: "center",
     borderWidth: 1,
-    borderColor: '#2d2d2d',
+    borderColor: "#2d2d2d",
   },
   iconCircle: {
     width: 72,
     height: 72,
     borderRadius: 36,
-    backgroundColor: 'rgba(76, 175, 80, 0.12)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(76, 175, 80, 0.12)",
+    justifyContent: "center",
+    alignItems: "center",
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: 'rgba(76, 175, 80, 0.3)',
+    borderColor: "rgba(76, 175, 80, 0.3)",
   },
   cameraIcon: {
     fontSize: 32,
   },
   permissionTitle: {
     fontSize: 22,
-    fontWeight: 'bold',
-    color: '#000000',
-    textAlign: 'center',
+    fontWeight: "bold",
+    color: "#000000",
+    textAlign: "center",
     marginBottom: 12,
   },
   permissionDescription: {
     fontSize: 14,
-    color: '#aaaaaa',
-    textAlign: 'center',
+    color: "#aaaaaa",
+    textAlign: "center",
     lineHeight: 22,
     marginBottom: 28,
   },
   actionBtn: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: "#4CAF50",
     paddingVertical: 14,
     paddingHorizontal: 24,
     borderRadius: 8,
-    width: '100%',
-    alignItems: 'center',
+    width: "100%",
+    alignItems: "center",
     marginBottom: 16,
   },
   actionBtnText: {
-    color: '#ffffff',
+    color: "#ffffff",
     fontSize: 15,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     letterSpacing: 0.3,
   },
   permissionNotice: {
     fontSize: 11,
-    color: '#666666',
-    textAlign: 'center',
+    color: "#666666",
+    textAlign: "center",
     lineHeight: 16,
-    fontStyle: 'italic',
+    fontStyle: "italic",
   },
 });

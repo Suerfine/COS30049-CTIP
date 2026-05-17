@@ -56,6 +56,7 @@ export default function DetectionScreenWeb() {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const streamRef = useRef(null);
+  const cameraWrapperRef = useRef(null);
   const isCapturing = useRef(false);
   const lastLogTime = useRef(0);
 
@@ -151,24 +152,24 @@ export default function DetectionScreenWeb() {
   }, [serverConfig]);
 
   // Track layout changes for accurate overlay mapping
+  const updateLayout = () => {
+    const wrapper = cameraWrapperRef.current;
+    const video = videoRef.current;
+    if (!wrapper || !video || video.videoWidth === 0) return;
+    setCameraLayout({
+      width: wrapper.clientWidth,
+      height: wrapper.clientHeight,
+      videoWidth: video.videoWidth,
+      videoHeight: video.videoHeight,
+    });
+  };
+
   useEffect(() => {
-    const updateLayout = () => {
-      if (videoRef.current && videoRef.current.videoWidth > 0) {
-        setCameraLayout({
-          width: videoRef.current.clientWidth,
-          height: videoRef.current.clientHeight,
-          videoWidth: videoRef.current.videoWidth,
-          videoHeight: videoRef.current.videoHeight
-        });
-      }
-    };
-    window.addEventListener('resize', updateLayout);
-    // Poll briefly to catch when the video metadata loads
-    const layoutInterval = setInterval(updateLayout, 1000); 
-    return () => {
-      window.removeEventListener('resize', updateLayout);
-      clearInterval(layoutInterval);
-    };
+    const wrapper = cameraWrapperRef.current;
+    if (!wrapper) return;
+    const observer = new ResizeObserver(updateLayout);
+    observer.observe(wrapper);
+    return () => observer.disconnect();
   }, []);
 
   // 2. Fetch User & Events
@@ -506,14 +507,15 @@ export default function DetectionScreenWeb() {
 
       {/* RIGHT PANEL: Fixed Aspect Ratio Web Camera */}
       <div style={styles.cameraSidebar}>
-        <div style={styles.cameraWrapper}>
-          
-          <video 
-            ref={setVideoElement} 
-            autoPlay 
-            playsInline 
-            muted 
-            style={{ ...styles.camera, transform: MIRROR_PREVIEW ? 'scaleX(-1)' : 'none' }} 
+        <div ref={cameraWrapperRef} style={styles.cameraWrapper}>
+
+          <video
+            ref={setVideoElement}
+            autoPlay
+            playsInline
+            muted
+            onLoadedMetadata={updateLayout}
+            style={{ ...styles.camera, transform: MIRROR_PREVIEW ? 'scaleX(-1)' : 'none' }}
           />
 
           {!permissionGranted && (

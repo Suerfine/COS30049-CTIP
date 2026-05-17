@@ -87,6 +87,11 @@ export const useAnomalyDetection = () => {
     await fetchAnomalies();
   };
 
+  const resolveAnomaly = async (eventId) => {
+    await AnomalyService.resolve(eventId);
+    await fetchAnomalies();
+  };
+
   return {
     anomalies,
     currentPage,
@@ -101,5 +106,6 @@ export const useAnomalyDetection = () => {
     loading,
     error,
     refresh,
+    resolveAnomaly,
   };
 };
