@@ -35,6 +35,10 @@ Starts the server on live hotreload (the server automatically restarts when it d
 `npm run test {filePath?}`
 Runs the test suite. See [Testing framework](./tests/README.md) section below for more details.
 
+`npm run jobs:run -- {job_name}`
+Runs a specific job. This is used to force run a job without waiting for the scheduled time. This is useful for testing and debugging jobs.
+Use "job_name" `--list` to list all available jobs.
+
 # Project Structure:
 
 ```

@@ -8,7 +8,9 @@
     "dev": "nodemon --watch src --ext ts --exec ts-node src/server.ts",
     "seed:dev": "ts-node database/seeders/DevelopmentSeeder.ts",
     "seed:staging": "ts-node database/seeders/DevelopmentSeeder.ts",
-    "test": "jest --runInBand"
+    "test": "jest --runInBand",
+    "jobs": "ts-node src/jobs/index.ts",
+    "jobs:run": "ts-node src/jobs/run.ts"
   },
   "keywords": [],
   "author": "",
