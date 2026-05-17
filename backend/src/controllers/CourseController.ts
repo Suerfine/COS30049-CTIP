@@ -512,7 +512,7 @@ export const createCourse = async (
     const coverFile = uploadedFiles.cover?.[0];
     const badgeFile = uploadedFiles.badge?.[0];
 
-    // Check if conver file exists if not reject the request as cover image is required for course creation. Badge image is optional so we will not reject the request if badge image is not provided.
+    // Save a cover image when one is provided. Cover images are optional for course creation.
     if (coverFile) {
       logger.debug("Saving course cover image", {
         courseId: course.id,
@@ -531,8 +531,6 @@ export const createCourse = async (
         courseId: course.id,
         path: savedPath,
       });
-    } else {
-      throw new HttpError(400, "Cover image is required for course creation");
     }
 
     if (badgeFile) {

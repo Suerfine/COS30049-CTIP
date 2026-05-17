@@ -57,12 +57,14 @@ async function createCourse(overrides: Partial<Course> = {}): Promise<Course> {
 
 describe("Course Controller Integration Tests", () => {
   it("POST /api/courses - creates a course with uploaded cover and badge images", async () => {
+    // Authenticate first because course creation is a protected route
     await createAdminUser();
     const accessToken = await login({
       username: ADMIN_EMAIL,
       password: ADMIN_PASSWORD,
     });
 
+    // Submit a complete course payload with both required uploaded images
     const response = await request(app)
       .post("/api/courses")
       .set("Authorization", `Bearer ${accessToken}`)
@@ -82,6 +84,7 @@ describe("Course Controller Integration Tests", () => {
     expect(response.body.title).toBe("Conservation Basics");
     expect(response.body.status).toBe(CourseStatus.UNRELEASED);
 
+    // Ensure the course and stored image paths were persisted in the database
     const createdCourse = await Course.findOne({
       where: { title: "Conservation Basics" },
     });
@@ -90,7 +93,74 @@ describe("Course Controller Integration Tests", () => {
     expect(createdCourse?.badge_img_path).toContain("public");
   });
 
+  it("POST /api/courses - requires authentication", async () => {
+    // Attempt to create a course without any bearer token
+    const response = await request(app)
+      .post("/api/courses")
+      .field("title", "Unauthorized Course")
+      .field("cost", "100")
+      .attach("cover", IMAGE_BUFFER, {
+        filename: "cover.png",
+        contentType: "image/png",
+      })
+      .attach("badge", IMAGE_BUFFER, {
+        filename: "badge.png",
+        contentType: "image/png",
+      });
+
+    expect(response.status).toBe(401);
+    expect(await Course.findOne({ where: { title: "Unauthorized Course" } })).toBeNull();
+  });
+
+  it("POST /api/courses - allows course creation without an optional cover image", async () => {
+    // Cover images are optional, so omit only the cover while keeping required fields valid
+    await createAdminUser();
+    const accessToken = await login({
+      username: ADMIN_EMAIL,
+      password: ADMIN_PASSWORD,
+    });
+
+    const response = await request(app)
+      .post("/api/courses")
+      .set("Authorization", `Bearer ${accessToken}`)
+      .field("title", "No Cover Course")
+      .field("cost", "150")
+      .attach("badge", IMAGE_BUFFER, {
+        filename: "badge.png",
+        contentType: "image/png",
+      });
+
+    expect(response.status).toBe(201);
+    expect(response.body.title).toBe("No Cover Course");
+    expect(response.body.cover_img_url).toBeNull();
+  });
+
+  it("POST /api/courses - rejects course creation without a badge image", async () => {
+    // Course creation also fails when the required badge image is omitted
+    await createAdminUser();
+    const accessToken = await login({
+      username: ADMIN_EMAIL,
+      password: ADMIN_PASSWORD,
+    });
+
+    const response = await request(app)
+      .post("/api/courses")
+      .set("Authorization", `Bearer ${accessToken}`)
+      .field("title", "No Badge Course")
+      .field("cost", "150")
+      .attach("cover", IMAGE_BUFFER, {
+        filename: "cover.png",
+        contentType: "image/png",
+      });
+
+    expect(response.status).toBe(400);
+    expect(response.body.message).toBe(
+      "Badge image is required for course creation",
+    );
+  });
+
   it("GET /api/courses - returns the created courses", async () => {
+    // Seed multiple courses so the list response can be checked for pagination totals
     await createAdminUser();
     const accessToken = await login({
       username: ADMIN_EMAIL,
@@ -109,6 +179,7 @@ describe("Course Controller Integration Tests", () => {
   });
 
   it("GET /api/courses/user - returns released courses available to the logged-in user", async () => {
+    // Park guides should only see released courses in the user-facing catalog
     await createParkGuideUser();
     const accessToken = await login({
       username: PARK_GUIDE_EMAIL,
@@ -131,6 +202,7 @@ describe("Course Controller Integration Tests", () => {
   });
 
   it("GET /api/courses/:id - returns one course", async () => {
+    // Retrieve one known course by id to verify the detail endpoint
     await createAdminUser();
     const accessToken = await login({
       username: ADMIN_EMAIL,
@@ -148,6 +220,7 @@ describe("Course Controller Integration Tests", () => {
   });
 
   it("PUT /api/courses/:id - updates course details", async () => {
+    // Update an existing course and release it in the same request
     await createAdminUser();
     const accessToken = await login({
       username: ADMIN_EMAIL,
@@ -175,7 +248,29 @@ describe("Course Controller Integration Tests", () => {
     expect(updatedCourse?.released_at).not.toBeNull();
   });
 
+  it("PUT /api/courses/:id - rejects invalid course status updates", async () => {
+    // Invalid enum values should be rejected without changing the saved course
+    await createAdminUser();
+    const accessToken = await login({
+      username: ADMIN_EMAIL,
+      password: ADMIN_PASSWORD,
+    });
+    const course = await createCourse();
+
+    const response = await request(app)
+      .put(`/api/courses/${course.id}`)
+      .set("Authorization", `Bearer ${accessToken}`)
+      .send({ status: "archived" });
+
+    expect(response.status).toBe(400);
+    expect(response.body.message).toBe("Invalid course status");
+    expect((await Course.findByPk(course.id))?.status).toBe(
+      CourseStatus.UNRELEASED,
+    );
+  });
+
   it("DELETE /api/courses/:id - soft deletes a course", async () => {
+    // Delete a saved course and confirm it is hidden by the model afterward
     await createAdminUser();
     const accessToken = await login({
       username: ADMIN_EMAIL,
