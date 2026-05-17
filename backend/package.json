@@ -10,7 +10,8 @@
     "seed:staging": "ts-node database/seeders/DevelopmentSeeder.ts",
     "test": "jest --runInBand",
     "jobs": "ts-node src/jobs/index.ts",
-    "jobs:run": "ts-node src/jobs/run.ts"
+    "jobs:run": "ts-node src/jobs/run.ts",
+    "zawarudo": "ts-node tests/helper/offsetDatabaseTime.ts"
   },
   "keywords": [],
   "author": "",
