@@ -17,6 +17,7 @@ import Badge from "../screens/Badge";
 import Notification from "../screens/Notification";
 import Payment from "../screens/Payment";
 import AIDetection from "../screens/AIDetection.native";
+import TotpSetup from "../screens/TotpSetup";
 
 // Import components
 import MobileTopBar from "../components/MobileTopBar";
@@ -119,6 +120,14 @@ function MobileTabNavigator() {
         <Tab.Screen
           name="Settings"
           component={Settings}
+          options={{
+            tabBarButton: () => null,
+            tabBarItemStyle: { display: "none" },
+          }}
+        />
+        <Tab.Screen
+          name="TotpSetup"
+          component={TotpSetup}
           options={{
             tabBarButton: () => null,
             tabBarItemStyle: { display: "none" },
