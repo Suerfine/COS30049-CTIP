@@ -106,4 +106,9 @@ export const API_ENDPOINTS = {
   SEARCH: {
     PARK_GUIDE: "/search/park-guide",
   },
+  TOTP: {
+    SETUP: "/totp/setup",
+    VERIFY_SETUP: "/totp/verify-setup",
+    DISABLE: "/totp/disable",
+  },
 };
