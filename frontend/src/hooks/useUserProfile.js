@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { userProfileService } from "../services/userProfileService";
-import { Alert } from "react-native";
+import { Alert, Platform } from "react-native";
 import { useUserDashboard } from "./useUserDashboard";
 import { isValidPassword } from "../utils/Validation";
 import * as ImagePicker from "expo-image-picker";
@@ -52,22 +52,30 @@ export const useUserProfile = () => {
   // PROFILE
   // save updated info
   const handleSave = async () => {
-    setLoading(true);
+      setLoading(true);
 
-    try {
-      const result = await userProfileService.update(user.id, form);
+      try {
+          const result = await userProfileService.update(user.id, form);
 
-      if (result.success) {
-        Alert.alert("Success", "Profile updated successfully.");
-        setIsEditing(false);
-      } else {
-        Alert.alert("Error", result.serverError);
+          if (result.success) {
+              if (Platform.OS === 'web') {
+                  window.alert("Profile updated successfully.");
+              } else {
+                  Alert.alert("Success", "Profile updated successfully.");
+              }
+              setIsEditing(false);
+          } else {
+              if (Platform.OS === 'web') {
+                  window.alert(result.serverError);
+              } else {
+                  Alert.alert("Error", result.serverError);
+              }
+          }
+
+          return result;
+      } finally {
+          setLoading(false);
       }
-
-      return result;
-    } finally {
-      setLoading(false);
-    }
   };
 
   // select image for ChangePfpContent modal
@@ -93,40 +101,49 @@ export const useUserProfile = () => {
 
   // handle save pfp
   const handleSavePfp = async () => {
-    if (!newImagePath) return;
-    // log
-    console.log('[handleSavePfp] newImagePath:', JSON.stringify(newImagePath));
-    setLoading(true);
-    try {
-      const result = await userProfileService.update(user.id, {
-        pfp: newImagePath,
-      });
+      if (!newImagePath) return;
+      console.log('[handleSavePfp] newImagePath:', JSON.stringify(newImagePath));
+      setLoading(true);
+      try {
+          const result = await userProfileService.update(user.id, {
+              pfp: newImagePath,
+          });
 
-      if (result.success) {
-        // add cache busting parameter to force image refresh on mobile
-        const pfpUrl = result.data?.pfp_url;
-        const cacheBustingUrl = pfpUrl
-          ? `${pfpUrl}${pfpUrl.includes("?") ? "&" : "?"}t=${Date.now()}`
-          : null;
-        setProfileImage(cacheBustingUrl);
-        setPfpModalVisible(false);
-        setNewImagePath("");
-        Alert.alert("Success", "Profile picture updated successfully.");
-        return { success: true, pfp_url: cacheBustingUrl };
-      } else {
-        Alert.alert(
-          "Error",
-          result.serverError || "Failed to update profile picture.",
-        );
-        return { success: false };
+          if (result.success) {
+              const pfpUrl = result.data?.pfp_url;
+              const cacheBustingUrl = pfpUrl
+                  ? `${pfpUrl}${pfpUrl.includes("?") ? "&" : "?"}t=${Date.now()}`
+                  : null;
+              setProfileImage(cacheBustingUrl);
+              setPfpModalVisible(false);
+              setNewImagePath("");
+
+              if (Platform.OS === 'web') {
+                  window.alert("Profile picture updated successfully.");
+              } else {
+                  Alert.alert("Success", "Profile picture updated successfully.");
+              }
+
+              return { success: true, pfp_url: cacheBustingUrl };
+          } else {
+              if (Platform.OS === 'web') {
+                  window.alert(result.serverError || "Failed to update profile picture.");
+              } else {
+                  Alert.alert("Error", result.serverError || "Failed to update profile picture.");
+              }
+              return { success: false };
+          }
+      } catch (err) {
+          if (Platform.OS === 'web') {
+              window.alert("Failed to update profile picture.");
+          } else {
+              Alert.alert("Error", "Failed to update profile picture.");
+          }
+          console.log("Profile picture update error:", err);
+          return { success: false };
+      } finally {
+          setLoading(false);
       }
-    } catch (err) {
-      Alert.alert("Error", "Failed to update profile picture.");
-      console.log("Profile picture update error:", err);
-      return { success: false };
-    } finally {
-      setLoading(false);
-    }
   };
 
   // SECURITY
