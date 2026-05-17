@@ -26,6 +26,7 @@ import {
   User,
 } from "lucide-react-native";
 import { searchService } from "../services/SearchService";
+import { useTranslation } from 'react-i18next';
 
 const accent = "#efab21";
 
@@ -262,6 +263,7 @@ const ParkGuideSiteSearch = ({ navigation, variant = "mobile", compact = false }
   const [query, setQuery] = useState("");
   const [remoteResults, setRemoteResults] = useState([]);
   const [loadingRemote, setLoadingRemote] = useState(false);
+  const {i18n, t}=useTranslation();
 
   const hasQuery = normalize(query).length > 0;
   const featureResults = useMemo(() => (hasQuery ? getMatches(query) : []), [hasQuery, query]);
@@ -370,7 +372,7 @@ const ParkGuideSiteSearch = ({ navigation, variant = "mobile", compact = false }
               if (hasQuery) setVisible(true);
             }}
             onChangeText={handleEntryChange}
-            placeholder="Search..."
+            placeholder={t('search')}
             placeholderTextColor="#8f8f8f"
             style={styles.entryInput}
           />
