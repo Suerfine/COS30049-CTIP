@@ -12,12 +12,12 @@ const FilterSidebar = ({ visible, tempFilters, setTempFilters, onApply, onReset,
     const categoryTags = allTagList.filter(tag => tag.type === 'category');
 
     const statusLabels = {
-        inProgress: t('status.in progress'),
+        inProgress: t('status.in_progress'),
         completed: t('status.completed'),
-        notEnrolled: t('status.not enrolled'),
-        inReview: t('status.in review'),
+        notEnrolled: t('status.not_enrolled'),
+        inReview: t('status.in_review'),
         applied: t('status.applied'),
-        pendingPayment: t('status.pending payment'),
+        pendingPayment: t('status.pending_payment'),
         enrollable: t('status.enrollable'),
     };
 
@@ -83,7 +83,7 @@ const FilterSidebar = ({ visible, tempFilters, setTempFilters, onApply, onReset,
                             />
                         ))}
                         <FilterItem
-                            label="All"
+                            label={t('status.all')}
                             isSelected={tempFilters.status === 'all'}
                             onPress={() => setTempFilters(prev => ({ ...prev, status: 'all' }))}
                         />
@@ -94,7 +94,7 @@ const FilterSidebar = ({ visible, tempFilters, setTempFilters, onApply, onReset,
                 <View style={styles.sectionGroup}>
                     <View style={styles.row}>
                         <MapPin size={16} color="#0a6340" />
-                        <Text style={styles.sectionTitle}>Locations</Text>
+                        <Text style={styles.sectionTitle}>{t('locations')}</Text>
                     </View>
                     {locationTags.map(tag => (
                         <FilterItem
@@ -110,7 +110,7 @@ const FilterSidebar = ({ visible, tempFilters, setTempFilters, onApply, onReset,
                     <View style={styles.sectionGroup}>
                         <View style={styles.row}>
                             <Tag size={16} color="#0a6340" />
-                            <Text style={styles.sectionTitle}>Categories</Text>
+                            <Text style={styles.sectionTitle}>{t('categories')}</Text>
                         </View>
                         {categoryTags.map(tag => (
                             <FilterItem
