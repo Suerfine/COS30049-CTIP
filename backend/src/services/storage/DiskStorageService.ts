@@ -4,8 +4,20 @@ import path from "path";
 import { StorageService, SaveFileOptions } from "./StorageService";
 import { logger } from "sequelize/lib/utils/logger";
 
+const getStorageBasePath = () => {
+  if (process.env.STORAGE_BASE_PATH) {
+    return process.env.STORAGE_BASE_PATH;
+  }
+
+  if (process.env.NODE_ENV === "test") {
+    return path.resolve(process.cwd(), "storage", "test");
+  }
+
+  return path.resolve(process.cwd(), "storage");
+};
+
 export class DiskStorageService implements StorageService {
-  private basePath = path.join(process.cwd(), "storage");
+  private basePath = getStorageBasePath();
 
   async save({
     buffer,
