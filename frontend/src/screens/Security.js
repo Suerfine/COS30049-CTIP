@@ -57,7 +57,7 @@ const Security = ({ navigation }) => {
                     styles.section,
                     isMobile && styles.sectionMobile
                 ]}>
-                    <Text style={styles.sectionTitle}>Account Security</Text>
+                    <Text style={styles.sectionTitle}>{t('account security')}</Text>
 
                     {/* Username */}
                     <View style={styles.securityField}>

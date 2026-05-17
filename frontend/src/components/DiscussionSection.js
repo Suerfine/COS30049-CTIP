@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TextInput, Pressable, ActivityIndicator, StyleSheet, ScrollView, Alert, Platform } from 'react-native';
 import { Lock, ShieldCheck, Send, ArrowLeft, Trash2 } from 'lucide-react-native';
 import { useDiscussions } from '../hooks/useDiscussion';
@@ -9,7 +9,7 @@ import { AccountService } from '../services/AccountService';
 import { UserRoles } from "../enum/UserRoles";
 import { useAuth } from '../context/AuthContext';
 
-const DiscussionSection = ({ courseId, navigation, initialDiscussionId }) => {
+const DiscussionSection = ({ courseId, navigation, initialDiscussionId, onInitialDiscussionOpened }) => {
     const [forumType, setForumType] = useState('Public');
     const [selectedDiscussion, setSelectedDiscussion] = useState(null);
     const [newDiscussionTitle, setNewDiscussionTitle] = useState('');
@@ -24,9 +24,13 @@ const DiscussionSection = ({ courseId, navigation, initialDiscussionId }) => {
 
     const { discussions, loading, refreshDiscussions } = useDiscussions(courseId, forumType);
     const { messages, sendMessage, loading: loadingMessages, deleteMessage: deleteMessage } = useMessage(selectedDiscussion?.id);
+    const openedInitialDiscussionRef = useRef(null);
 
     useEffect(() => {
-        if (!initialDiscussionId || selectedDiscussion) return;
+        if (!initialDiscussionId) return;
+        const initialDiscussionKey = `${courseId}:${initialDiscussionId}`;
+        if (String(selectedDiscussion?.id) === String(initialDiscussionId)) return;
+        if (openedInitialDiscussionRef.current === initialDiscussionKey) return;
 
         const matchedDiscussion = discussions.find(
             (discussion) => String(discussion.id) === String(initialDiscussionId)
@@ -35,8 +39,10 @@ const DiscussionSection = ({ courseId, navigation, initialDiscussionId }) => {
         if (matchedDiscussion) {
             setForumType(matchedDiscussion.is_public ? 'Public' : 'Private');
             setSelectedDiscussion(matchedDiscussion);
+            openedInitialDiscussionRef.current = initialDiscussionKey;
+            onInitialDiscussionOpened?.();
         }
-    }, [initialDiscussionId, discussions, selectedDiscussion]);
+    }, [courseId, initialDiscussionId, discussions, selectedDiscussion, onInitialDiscussionOpened]);
 
     // Reset inputs when switching contexts
     useEffect(() => {

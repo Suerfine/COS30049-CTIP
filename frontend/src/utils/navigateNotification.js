@@ -80,7 +80,7 @@ export const navigateNotification = (navigation, url, currentUser) => {
   }
 
   if (path === "/anomaly" || path === "/anomaly-events" || path === "/admin/dashboard") {
-    navigation.navigate(isAdmin ? "Admin Dashboard" : isMobile ? "AI Detection" : "Anomaly");
+    navigation.navigate(isAdmin ? "Anomaly Detection" : isMobile ? "AI Detection" : "Anomaly");
     return true;
   }
 

@@ -80,6 +80,7 @@ const EditCourseDetail = () => {
   const isCompact = width < 900;
 
   const [selectedPage, setSelectedPage] = useState({ type: "overview" });
+  const [pendingDiscussionId, setPendingDiscussionId] = useState(discussionId);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOutlineOpen, setIsMobileOutlineOpen] = useState(false);
   const [activeStyles, setActiveStyles] = useState([]);
@@ -107,6 +108,8 @@ const EditCourseDetail = () => {
   });
 
   useEffect(() => {
+    setPendingDiscussionId(discussionId);
+
     if (initialSection === "forum") {
       setSelectedPage({ type: "forum" });
     }
@@ -607,6 +610,7 @@ const EditCourseDetail = () => {
           editable={true}
           isCollapsed={isCollapsed}
           isPublished={course.status === "released" ? true : false}
+          activePage={selectedPage}
         />
       )}
       <ScrollView style={{ height: "100vh" }}>
@@ -632,6 +636,7 @@ const EditCourseDetail = () => {
                   }}
                   editable={true}
                   isPublished={course.status === "released" ? true : false}
+                  activePage={selectedPage}
                   dropdown
                 />
               )}
@@ -757,7 +762,8 @@ const EditCourseDetail = () => {
             ) : selectedPage?.type === "forum" ? (
               <DiscussionSection
                 courseId={id}
-                initialDiscussionId={discussionId}
+                initialDiscussionId={pendingDiscussionId}
+                onInitialDiscussionOpened={() => setPendingDiscussionId(null)}
                 navigation={navigation}
                 styles={styles}
               />

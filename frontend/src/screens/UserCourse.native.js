@@ -76,32 +76,37 @@ const UserCourse=({navigation})=>{
                     </ImageBackground>
                 </View>
                 <View style={styles.filterContainer}>
-                    <SlidingTabs tabs={tabs} activeTab={allcourseFilter} onTabChange={(id)=>setAllCourseFilter(id)}/>
+                    <SlidingTabs
+                        tabs={tabs}
+                        activeTab={allcourseFilter}
+                        onTabChange={(id)=>setAllCourseFilter(id)}
+                    />
+                </View>
+                {/* Search and Filter */}
+                <View style={styles.toolbar}>
+                    <View style={styles.search}>
+                        <Search size={18} />
+                        <TextInput
+                            style={styles.input}
+                            value={searchText}
+                            onChangeText={setSearchText}
+                            placeholder="Search..."
+                            placeholderTextColor="#8f8f8f"
+                        />
+                    </View>
+
                     <Pressable 
                         onPress={() => {
                             setTempFilters(filters);
                             setFilterVisible(true);
                         }}
                         style={({ hovered }) => [
-                            styles.filter,
-                            hovered && styles.filterHover, 
+                            styles.filterButton,
+                            hovered && styles.filterHover
                         ]}
                     >
-                        <SlidersHorizontal/>
+                        <SlidersHorizontal size={18}/>
                     </Pressable>
-                </View>
-                {/* Search and Filter */}
-                <View style={styles.toolbar}>
-                    <View style={styles.search}>
-                    <Search size={18} />
-                    <TextInput
-                        style={styles.input}
-                        value={searchText}
-                        onChangeText={setSearchText}
-                        placeholder="Search..."
-                        placeholderTextColor="#8f8f8f"
-                    />
-                    </View>
                 </View>
                 <View style={styles.pillContainer}>
                     {filters.status !== 'all' && (
@@ -138,6 +143,7 @@ const UserCourse=({navigation})=>{
                     ) : ( filteredCourses.map(course => {
                         const numModules = course.module_count ? course.module_count : 0;
                         return(
+                        <View key={course.id} style={styles.cardWrapper}>
                         <CourseCard
                             key={course.id}
                             id={course.id}
@@ -190,7 +196,8 @@ const UserCourse=({navigation})=>{
                                     ]
                                 );
                             }}
-                        />)
+                        />
+                        </View>)
                     })
                 )}
                 </View>
@@ -282,23 +289,35 @@ const styles=StyleSheet.create({
     },
     cardContainer: {
         flexDirection: 'row',
-        flexWrap:'wrap',
-        justifyContent:'flex-start',
-        gap:11,
-        paddingTop: 5,
+        flexWrap: 'wrap',
+        justifyContent: 'center',
+        alignItems: 'stretch',
+        gap: 16,
+        paddingTop: 10,
+        paddingBottom: 20,
+    },
+    cardWrapper: {
+        width: 300,
+        maxWidth: '100%',
     },
     filterContainer:{
         flexDirection:'row',
-        marginBottom:10,
-        justifyContent:'space-between',
+        justifyContent:'center',
+        alignItems:'center',
+        marginBottom:15,
         borderBottomColor:'#42424255',
         borderBottomWidth:1,
+        paddingBottom:10,
     },
-    filter:{
-        flexDirection:'row',
-        paddingVertical:5,
-        paddingRight:10,
-        borderRadius:5,
+    filterButton: {
+        width: 42,
+        height: 42,
+        borderRadius: 12,
+        justifyContent: "center",
+        alignItems: "center",
+        borderWidth: 1,
+        borderColor: "#8f8f8f",
+        backgroundColor: 'white',
     },
     filterHover:{
         color:'#efab21'
@@ -335,16 +354,16 @@ const styles=StyleSheet.create({
         fontWeight:'500'
     },
     search: {
+        flex: 1,
         flexDirection: "row",
         gap: 7,
         borderWidth: 1,
         borderColor: "#8f8f8f",
-        minWidth: 300,
-        padding: 5,
+        paddingHorizontal: 10,
+        paddingVertical: 8,
         backgroundColor: "white",
         borderRadius: 15,
         alignItems: "center",
-        minWidth: 180,
     },
     input: {
         flex: 1,
@@ -352,9 +371,12 @@ const styles=StyleSheet.create({
         outlineStyle: "none",
     },
     toolbar: {
-        justifyContent: "space-between",
         flexDirection: "row",
-        marginBottom:10,
+        alignItems: "center",
+        gap: 10,
+        width: 300,
+        maxWidth: '100%',
+        alignSelf: 'center',
     },
     // history modal
     modalOverlay: {

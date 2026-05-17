@@ -37,6 +37,7 @@ import { useCourses } from "../hooks/useCourses.js";
 import { useCourseProgress } from "../components/useCourseProgress.js";
 import AIChatBot from "../components/AIChatbot.js";
 import DiscussionSection from "../components/DiscussionSection.js";
+import { enrollmentService } from "../services/EnrollmentService.js";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -51,14 +52,19 @@ const UserModule = ({ navigation }) => {
     discussionId,
   } = route.params;
 
+  const [resolvedEnrollmentStatus, setResolvedEnrollmentStatus] = useState(enrollmentStatus);
+  const [resolvedEnrollmentId, setResolvedEnrollmentId] = useState(enrollmentId);
   const [localStatus, setLocalStatus] = useState(initialStatus);
   const hasfailedRef = useRef(false);
   const scrollViewRef = useRef(null);
   const [selectedPage, setSelectedPage] = useState({ type: "overview" });
+  const [pendingDiscussionId, setPendingDiscussionId] = useState(discussionId);
   const [outlineOpen, setOutlineOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
 
   useEffect(() => {
+    setPendingDiscussionId(discussionId);
+
     if (initialSection === "forum") {
       setSelectedPage({ type: "forum" });
       return;
@@ -68,12 +74,12 @@ const UserModule = ({ navigation }) => {
   }, [id, initialSection, discussionId]);
 
   const isLocked =
-    enrollmentStatus === null ||
-    enrollmentStatus === undefined ||
-    enrollmentStatus === "expired" ||
-    enrollmentStatus == "pending_payment" ||
-    enrollmentStatus == "applied" ||
-    enrollmentStatus == "failed";
+    resolvedEnrollmentStatus === null ||
+    resolvedEnrollmentStatus === undefined ||
+    resolvedEnrollmentStatus === "expired" ||
+    resolvedEnrollmentStatus == "pending_payment" ||
+    resolvedEnrollmentStatus == "applied" ||
+    resolvedEnrollmentStatus == "failed";
 
   const { currentUser } = useAuth();
   const {
@@ -91,7 +97,39 @@ const UserModule = ({ navigation }) => {
     refreshHistory,
     handleFetchHistory,
     failEnrollment,
-  } = useCourseDetails(id, enrollmentId);
+  } = useCourseDetails(id, resolvedEnrollmentId);
+
+  useEffect(() => {
+    setResolvedEnrollmentStatus(enrollmentStatus);
+    setResolvedEnrollmentId(enrollmentId);
+    setLocalStatus(initialStatus);
+  }, [id, enrollmentStatus, enrollmentId, initialStatus]);
+
+  useEffect(() => {
+    if (resolvedEnrollmentStatus !== undefined && resolvedEnrollmentId !== undefined) return;
+
+    let isMounted = true;
+
+    const loadEnrollmentContext = async () => {
+      const response = await enrollmentService.getMyEnrollments();
+      const enrollments = response?.data ?? response ?? [];
+      const matchingEnrollment = enrollments.find(
+        (enrollment) => String(enrollment.course_id) === String(id),
+      );
+
+      if (!isMounted || !matchingEnrollment) return;
+
+      setResolvedEnrollmentStatus(matchingEnrollment.status ?? null);
+      setResolvedEnrollmentId(matchingEnrollment.id ?? null);
+      setLocalStatus(matchingEnrollment.status ?? null);
+    };
+
+    loadEnrollmentContext();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [id, resolvedEnrollmentStatus, resolvedEnrollmentId]);
 
   const { allCourseList } = useCourses();
 
@@ -293,12 +331,14 @@ const UserModule = ({ navigation }) => {
           )}
         </View>
         {/* Render the dynamic content */}
-        <View style={styles.markdownContainer}>
-          <Markdown style={markdownStyles}>
-            {course?.description ||
-              "_No content provided yet. Click edit to start._"}
-          </Markdown>
-        </View>
+        {course.description !== "undefined" && (
+            <View style={styles.markdownContainer}>
+              <Markdown style={markdownStyles}>
+                {course?.description ||
+                  "_No content provided yet. Click edit to start._"}
+              </Markdown>
+            </View>
+          )}
         {/* Badge Achievement Section */}
         <View>
           <Text style={styles.sectionTitle}>Completion Reward</Text>
@@ -485,7 +525,8 @@ const UserModule = ({ navigation }) => {
             ) : selectedPage?.type === "forum" ? (
               <DiscussionSection
                 courseId={id}
-                initialDiscussionId={discussionId}
+                initialDiscussionId={pendingDiscussionId}
+                onInitialDiscussionOpened={() => setPendingDiscussionId(null)}
                 navigation={navigation}
                 styles={styles}
               />

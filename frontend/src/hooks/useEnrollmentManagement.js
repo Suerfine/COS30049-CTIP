@@ -6,6 +6,7 @@ export const useEnrollmentManagement = () => {
     const [courses, setCourses] = useState([]);
 
     const [loading, setLoading] = useState(false);
+    const [selectedUserHistory, setSelectedUserHistory] = useState([]);
 
     // Pagination
     const [currentPage, setCurrentPage] = useState(1);
@@ -165,6 +166,25 @@ export const useEnrollmentManagement = () => {
         }
     };
 
+    const getUserEnrollments = async (userId) => {
+    try {
+        const enrollments =
+            await enrollmentService.getByUserId(userId);
+
+        const completedEnrollments= enrollments.filter(
+            (enrollment) =>
+                enrollment.status?.toLowerCase() === "completed"
+        );
+        console.log(userId);
+        setSelectedUserHistory(completedEnrollments);
+    } catch (err) {
+        console.error(
+            "Get User Enrollment Error:",
+            err
+        );
+    }
+};
+
     useEffect(() => {
         fetchEnrollments();
     }, [fetchEnrollments]);
@@ -189,6 +209,7 @@ export const useEnrollmentManagement = () => {
         handleUpdateStatus,
         deleteRecord,
         currentCourseId, setCurrentCourseId,
-        handleApproveBadge, handleRejectBadge
+        handleApproveBadge, handleRejectBadge,
+        selectedUserHistory, getUserEnrollments, setSelectedUserHistory
     };
 };

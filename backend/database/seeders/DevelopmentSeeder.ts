@@ -13,6 +13,8 @@ import Page from "../../src/models/Page";
 import Element from "../../src/models/Element";
 import Sensor from "../../src/models/Sensor";
 import Notification from "../../src/models/Notification";
+import Discussion from "../../src/models/Discussion";
+import Message from "../../src/models/Messages";
 import { SensorStatus } from "../../src/enum/SensorStatus";
 import { buildEvents } from "../factories/EventFactory";
 import Event from "../../src/models/Event";
@@ -26,7 +28,6 @@ import {
   UserFactoryAttributes,
 } from "../factories/UserFactory";
 import { buildCourseGraph } from "../factories/CourseFactory";
-import { buildNotifications } from "../factories/NotificationFactory";
 import { buildTags, TagFactoryAttributes } from "../factories/TagFactory";
 import {
   buildEnrollment,
@@ -39,6 +40,13 @@ import AnomalyEvent from "../../src/models/AnomalyEvent";
 import "../../src/models";
 import { PaymentStatus } from "../../src/enum/PaymentStatus";
 import { CourseStatus } from "../../src/enum/CourseStatus";
+import { RegistrationStatus } from "../../src/enum/RegistrationStatus";
+import { EventStatus } from "../../src/enum/EventStatus";
+import { EventType } from "../../src/enum/EventType";
+
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+const addDays = (date: Date, days: number): Date =>
+  new Date(date.getTime() + days * MS_PER_DAY);
 
 export async function runSeeders(
   user_admin_count: number = 5,
@@ -102,24 +110,6 @@ export async function runSeeders(
     });
   }
 
-  // Create dummy notifications for admin and park guide users
-  const notificationTargets = [
-    createdAdminUser.id,
-    ...createdAdminUsers.map((user) => user.id),
-    ...createdParkGuideUsers.map((user) => user.id),
-  ];
-
-  for (const userId of notificationTargets) {
-    const notifications = buildNotifications(
-      faker.number.int({ min: 1, max: 3 }),
-      userId,
-    );
-
-    for (const notification of notifications) {
-      await Notification.create(notification);
-    }
-  }
-
   for (const parkGuideUser of createdParkGuideUsers) {
     const selectedAdmin = faker.helpers.arrayElement(createdAdminUsers);
     const registrationHistory = buildRegistrationHistory({
@@ -147,8 +137,18 @@ export async function runSeeders(
       user_id: user.id,
     });
 
-    for (const event of events) {
-      await Event.create(event as any);
+    for (const [index, event] of events.entries()) {
+      await Event.create({
+        ...event,
+        type:
+          index === 0 || index === 2
+            ? EventType.WORKSHOP
+            : EventType.NORMAL,
+        status:
+          index === 1 || index === 2
+            ? EventStatus.COMPLETED
+            : EventStatus.PENDING,
+      } as any);
     }
   }
   
@@ -172,7 +172,7 @@ export async function runSeeders(
       elementsVariance: 1,
     });
 
-    const isReleased = faker.datatype.boolean();
+    const isReleased = i < 4 ? true : faker.datatype.boolean();
 
     const createdCourse = await Course.create({
       ...courseGraph.course,
@@ -316,6 +316,255 @@ export async function runSeeders(
         });
       }
     }
+  }
+
+  const releasedCourses = await Course.findAll({
+    where: { status: CourseStatus.RELEASED },
+    order: [["id", "ASC"]],
+    limit: 3,
+  });
+
+  if (releasedCourses.length > 0) {
+    const now = new Date();
+    const learningCourse = releasedCourses[0];
+    const paymentCourse = releasedCourses[1] ?? releasedCourses[0];
+    const completedCourse = releasedCourses[2] ?? releasedCourses[0];
+
+    const inProgressEnrollment = await Enrollment.create({
+      user_id: createdParkGuideUser.id,
+      course_id: learningCourse.id,
+      status: EnrollmentStatus.IN_PROGRESS,
+      enrolled_at: addDays(
+        now,
+        -(Number(learningCourse.must_complete_in_weeks) * 7 - 7),
+      ),
+    });
+
+    await Payment.create({
+      ...buildPayment({
+        user_id: createdParkGuideUser.id,
+        course_id: learningCourse.id,
+        enrollment_id: inProgressEnrollment.id,
+        amount: learningCourse.cost,
+      }),
+      status: PaymentStatus.PAID,
+      processed_by_user_id: createdAdminUser.id,
+      processed_at: addDays(now, -2),
+      admin_remark: "Receipt verified for UAT scenario",
+    });
+
+    const pendingPaymentEnrollment = await Enrollment.create({
+      user_id: createdParkGuideUser.id,
+      course_id: paymentCourse.id,
+      status: EnrollmentStatus.PENDING_PAYMENT,
+      enrolled_at: addDays(now, -1),
+    });
+
+    await Payment.create({
+      ...buildPayment({
+        user_id: createdParkGuideUser.id,
+        course_id: paymentCourse.id,
+        enrollment_id: pendingPaymentEnrollment.id,
+        amount: paymentCourse.cost,
+      }),
+      status: PaymentStatus.PENDING,
+    });
+
+    const completedEnrollment = await Enrollment.create({
+      user_id: createdParkGuideUser.id,
+      course_id: completedCourse.id,
+      status: EnrollmentStatus.COMPLETED,
+      enrolled_at: addDays(now, -45),
+      completed_at: addDays(now, -7),
+      badge_expire_at: addDays(now, 365),
+    });
+
+    await Payment.create({
+      ...buildPayment({
+        user_id: createdParkGuideUser.id,
+        course_id: completedCourse.id,
+        enrollment_id: completedEnrollment.id,
+        amount: completedCourse.cost,
+      }),
+      status: PaymentStatus.PAID,
+      processed_by_user_id: createdAdminUser.id,
+      processed_at: addDays(now, -44),
+      admin_remark: "Receipt verified for completed UAT course",
+    });
+
+    const todoStartsTomorrow = await Event.create({
+      user_id: createdParkGuideUser.id,
+      title: "Review visitor safety checklist",
+      description: "Prepare field safety notes before the next guided tour.",
+      event_start_at: addDays(now, 1),
+      event_end_at: addDays(now, 1),
+      type: EventType.NORMAL,
+      status: EventStatus.PENDING,
+      period_frequency: 0,
+      period_unit: "day",
+    });
+
+    await Event.bulkCreate([
+      {
+        user_id: createdParkGuideUser.id,
+        title: "Attend mangrove restoration workshop",
+        description:
+          "Join the practical restoration workshop and review the field checklist.",
+        event_start_at: addDays(now, 3),
+        event_end_at: addDays(now, 3),
+        type: EventType.WORKSHOP,
+        status: EventStatus.PENDING,
+        period_frequency: 0,
+        period_unit: "day",
+      },
+      {
+        user_id: createdParkGuideUser.id,
+        title: "Submit completed patrol report",
+        description: "Upload the final patrol notes from the previous route.",
+        event_start_at: addDays(now, -3),
+        event_end_at: addDays(now, -3),
+        type: EventType.NORMAL,
+        status: EventStatus.COMPLETED,
+        period_frequency: 0,
+        period_unit: "day",
+      },
+      {
+        user_id: createdParkGuideUser.id,
+        title: "Complete workshop reflection",
+        description:
+          "Record key takeaways from the recent conservation workshop.",
+        event_start_at: addDays(now, -5),
+        event_end_at: addDays(now, -5),
+        type: EventType.WORKSHOP,
+        status: EventStatus.COMPLETED,
+        period_frequency: 0,
+        period_unit: "day",
+      },
+    ]);
+
+    const publicDiscussion = await Discussion.create({
+      course_id: learningCourse.id,
+      user_id: createdAdminUser.id,
+      title: "Wildlife handling during guided tours",
+      is_public: true,
+    });
+
+    const privateDiscussion = await Discussion.create({
+      course_id: learningCourse.id,
+      user_id: createdParkGuideUser.id,
+      title: "Question about private trail briefing",
+      is_public: false,
+    });
+
+    await Message.bulkCreate([
+      {
+        discussion_id: publicDiscussion.id,
+        user_id: createdAdminUser.id,
+        content:
+          "Please share examples of safe wildlife observation practices from your field experience.",
+      },
+      {
+        discussion_id: publicDiscussion.id,
+        user_id: createdParkGuideUser.id,
+        content:
+          "I would keep visitors at a safe distance and avoid disturbing nesting areas.",
+      },
+      {
+        discussion_id: privateDiscussion.id,
+        user_id: createdParkGuideUser.id,
+        content:
+          "Could I get feedback on the route briefing before tomorrow's guided walk?",
+      },
+      {
+        discussion_id: privateDiscussion.id,
+        user_id: createdAdminUser.id,
+        content:
+          "Yes. Please emphasize weather changes, hydration, and the restricted nesting zone.",
+      },
+    ]);
+
+    await Registration.create({
+      user_id: null,
+      reviewed_by_user_id: null,
+      status: RegistrationStatus.PENDING,
+      firstname: "Alya",
+      lastname: "Rahman",
+      identification: "UAT-REG-001",
+      personal_email: "alya.rahman.uat@example.com",
+      tel: "0123456789",
+      document_filepath: "public\\dev\\dummy_resume.pdf",
+      admin_remark: null,
+      reviewed_at: null,
+    });
+
+    await Notification.bulkCreate([
+      {
+        user_id: createdParkGuideUser.id,
+        title: "New Public Discussion",
+        message: `A new discussion channel "${publicDiscussion.title}" has been created in ${learningCourse.title} Course. Check it out now!`,
+        url: `/courses/${learningCourse.id}/discussion/${publicDiscussion.id}`,
+        dismissed_at: null,
+      },
+      {
+        user_id: createdParkGuideUser.id,
+        title: "Enrollment Approved",
+        message:
+          "Your course enrollment has been approved. You can now start learning.",
+        url: `/courses/${learningCourse.id}`,
+        dismissed_at: null,
+      },
+      {
+        user_id: createdParkGuideUser.id,
+        title: "New Badge Awarded",
+        message: `You received a new badge for completing "${completedCourse.title}".`,
+        url: "/badges",
+        dismissed_at: null,
+      },
+      {
+        user_id: createdParkGuideUser.id,
+        title: "Todo Starts Tomorrow",
+        message: `"${todoStartsTomorrow.title}" starts on ${todoStartsTomorrow.event_start_at.toLocaleDateString()}.`,
+        url: "/calendar",
+        dismissed_at: null,
+      },
+      {
+        user_id: createdParkGuideUser.id,
+        title: "Course Due in 7 Days",
+        message: `"${learningCourse.title}" must be completed soon.`,
+        url: `/courses/${learningCourse.id}`,
+        dismissed_at: null,
+      },
+      {
+        user_id: createdAdminUser.id,
+        title: "New Park Guide Registration",
+        message:
+          'A new park guide registration from "Alya Rahman" is awaiting review.',
+        url: "/registrations",
+        dismissed_at: null,
+      },
+      {
+        user_id: createdAdminUser.id,
+        title: "Payment Awaiting Approval",
+        message: `A payment receipt was submitted for "${paymentCourse.title}". Please review it for approval.`,
+        url: "/payments",
+        dismissed_at: null,
+      },
+      {
+        user_id: createdAdminUser.id,
+        title: "New Public Discussion",
+        message: `A new discussion channel "${publicDiscussion.title}" has been created in ${learningCourse.title} Course. Please review it as soon as possible.`,
+        url: `/courses/${learningCourse.id}/discussion/${publicDiscussion.id}`,
+        dismissed_at: null,
+      },
+      {
+        user_id: createdAdminUser.id,
+        title: "New Anomaly Detected",
+        message:
+          "A new anomaly event was detected and requires administrative review.",
+        url: "/anomaly-events",
+        dismissed_at: null,
+      },
+    ]);
   }
 
   // Seed sensors for IoT monitoring

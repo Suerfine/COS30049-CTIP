@@ -25,6 +25,7 @@ import { useUserProfile } from "../hooks/useUserProfile";
 import { userProfileService } from "../services/userProfileService";
 import { useSignUp } from "../hooks/useSignUp";
 import { isValidEmail, isOnlyLetters, phoneRegex, isValidPassword } from "../utils/Validation";
+import { useTranslation } from 'react-i18next';
 
 const UserProfile = ({ navigation }) => {
   const {
@@ -52,6 +53,7 @@ const UserProfile = ({ navigation }) => {
   const { handleUpload, file, setFile} = useSignUp();
   const { width } = useWindowDimensions();
   const isSmallScreen = width < 768;
+  const { t, i18n }=useTranslation();
 
   // validate form
   const validateForm = () => {
@@ -163,14 +165,14 @@ const UserProfile = ({ navigation }) => {
               isSmallScreen && styles.sectionMobile
             ]}>
             <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Personal Information</Text>
+                <Text style={styles.sectionTitle}>{t('personal information')}</Text>
                 <View style={styles.actionButtons}>
                 {!isEditing ? (
                     <Pressable style={styles.saveBtn} onPress={() => {
                         setOriginalData(form);
                         setIsEditing(true);
                     }}>
-                    <Text style={styles.saveBtnText}>Edit</Text>
+                    <Text style={styles.saveBtnText}>{t('edit')}</Text>
                     </Pressable>
                     ) : (
                     <>
@@ -180,7 +182,7 @@ const UserProfile = ({ navigation }) => {
                         }
                         setIsEditing(false);
                     }}>
-                        <Text style={styles.cancelBtnText}>Cancel</Text>
+                        <Text style={styles.cancelBtnText}>{t('cancel')}</Text>
                     </Pressable>
 
                     <Pressable style={styles.saveBtn} onPress={() => {
@@ -189,7 +191,7 @@ const UserProfile = ({ navigation }) => {
                         }
                     }}
                     >
-                        <Text style={styles.saveBtnText}>Save Changes</Text>
+                        <Text style={styles.saveBtnText}>{t('save changes')}</Text>
                     </Pressable>
                     </>
                 )}
@@ -202,7 +204,7 @@ const UserProfile = ({ navigation }) => {
               isSmallScreen && styles.fieldRowMobile
             ]}>
                 <View style={styles.fieldGroup}>
-                <Text style={styles.fieldLabel}>First Name</Text>
+                <Text style={styles.fieldLabel}>{t('first name')}</Text>
                 <TextInput
                     style={[styles.input, !isEditing && styles.inputDisabled]}
                     value={form.firstname}
@@ -220,7 +222,7 @@ const UserProfile = ({ navigation }) => {
                 </View>
 
                 <View style={styles.fieldGroup}>
-                <Text style={styles.fieldLabel}>Last Name</Text>
+                <Text style={styles.fieldLabel}>{t('last name')}</Text>
                 <TextInput
                     style={[styles.input, !isEditing && styles.inputDisabled]}
                     value={form.lastname}
@@ -260,7 +262,7 @@ const UserProfile = ({ navigation }) => {
               isSmallScreen && styles.fieldRowMobile
             ]}>
                 <View style={styles.fieldGroup}>
-                <Text style={styles.fieldLabel}>Email</Text>
+                <Text style={styles.fieldLabel}>{t('email')}</Text>
                 <TextInput
                     style={[styles.input, !isEditing && styles.inputDisabled]}
                     value={form.personal_email}
@@ -280,7 +282,7 @@ const UserProfile = ({ navigation }) => {
                 </View>
 
                 <View style={styles.fieldGroup}>
-                <Text style={styles.fieldLabel}>Phone Number</Text>
+                <Text style={styles.fieldLabel}>{t('phone number')}</Text>
                 <TextInput
                     style={[styles.input, !isEditing && styles.inputDisabled]}
                     value={form.tel}

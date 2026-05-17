@@ -63,6 +63,8 @@ const EnrollmentManagement = () => {
     fetchEnrollments,
     handleApproveBadge,
     handleRejectBadge,
+    selectedUserHistory,
+    getUserEnrollments,setSelectedUserHistory
   } = useEnrollmentManagement();
 
   // Progress
@@ -104,7 +106,6 @@ const EnrollmentManagement = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [detailModalVisible, setDetailModalVisible] = useState(false);
   const [selectedUserEnrollment, setSelectedUserEnrollment] = useState(null);
-  const [selectedUserHistory, setSelectedUserHistory] = useState([]);
   const [paymentModalVisible, setPaymentModalVisible] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState(null);
   const [filterVisible, setFilterVisible] = useState(false);
@@ -266,12 +267,9 @@ const EnrollmentManagement = () => {
       .join(" ");
   };
 
-  const handleRowPress = (enrollment) => {
+  const handleRowPress = async (enrollment) => {
     setSelectedUserEnrollment(enrollment);
-    const userHistory = enrollments.filter(
-      (e) => e.user_id === enrollment.user_id,
-    );
-    setSelectedUserHistory(userHistory);
+    await getUserEnrollments(enrollment.user_id);
     setDetailModalVisible(true);
   };
 
@@ -506,7 +504,7 @@ const EnrollmentManagement = () => {
           {formatDate(item.completed_at) || "N/A"}
         </Text>
         <Text style={{ flex: 2 }}>
-          {item.badge_expiry_on ? formatDate(item.badge_expiry_on) : "N/A"}
+          {item.badge_expire_at ? formatDate(item.badge_expire_at) : "N/A"}
         </Text>
       </Pressable>
     );
@@ -547,7 +545,6 @@ const EnrollmentManagement = () => {
         setAuditModalVisible(false);
         await fetchEnrollmentAudit(id);
         await setSubmissionCurrentPage((p) => p);
-        await fetchEnrollments();
         await fetchSubmissions();
       } else {
         alert("Failed to approve: " + result.error);
@@ -660,12 +657,12 @@ const EnrollmentManagement = () => {
       pageNumbers.push(i);
     }
     return (
-      <View style={[styles.paginationContainer, styles.row]}>
+      <View style={styles.paginationContainer}>
         <Text style={styles.pageInfo}>
           Showing {displayData.length > 0 ? indexOfFirstItem + 1 : 0} to{" "}
           {indexOfLastItem} of {activeTotalElements} records
         </Text>
-        <View style={styles.row}>
+        <View style={styles.paginationControls}>
           <Pressable
             disabled={activeCurrentPage === 1}
             onPress={() => setActivePage(1)}
@@ -916,7 +913,7 @@ const EnrollmentManagement = () => {
           }}
           // Rejected
           onUnenroll={async (id) => {
-            const res = await handleUpdateStatus(id, "dropped");
+            const res = await handleUpdateStatus(id, "rejected");
             if (res.success) setDetailModalVisible(false);
           }}
           onDelete={async (id) => {
@@ -1088,14 +1085,14 @@ const EnrollmentManagement = () => {
                           style={[styles.actionBtn, styles.outlineBtn]}
                           onPress={() => setRejectModalVisible(true)}
                         >
-                          <Text style={styles.outlineBtnText}>Received</Text>
+                          <Text style={styles.outlineBtnText}>Not Received</Text>
                         </Pressable>
 
                         <Pressable
                           style={[styles.actionBtn, styles.solidApproveBtn]}
                           onPress={handleApprovePayment}
                         >
-                          <Text style={styles.solidBtnText}>Not Received</Text>
+                          <Text style={styles.solidBtnText}>Received</Text>
                         </Pressable>
                       </View>
                     )}
@@ -1387,11 +1384,17 @@ const styles = StyleSheet.create({
     gap: 5,
   },
   paginationContainer: {
+    flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     paddingVertical: 15,
     paddingHorizontal: 20,
     backgroundColor: "white",
+  },
+  paginationControls: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-end",
   },
   pageInfo: {
     color: "#666",
@@ -1756,7 +1759,7 @@ const styles = StyleSheet.create({
   },
   downloadBtn: {
     backgroundColor: "#f59e0b",
-    paddingVertical: 8,
+    paddingVertical: 4,
     borderRadius: 12,
     alignItems: "center",
   },
