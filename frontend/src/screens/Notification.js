@@ -27,7 +27,7 @@ const Notification = () => {
         <>
         <View style={styles.container}>
             <View style={styles.header}>
-                <Text style={styles.title}>My Notifications</Text>
+                <Text style={styles.title}>{t('my_notifications')}</Text>
                 <Pressable onPress={fetchNotifications} disabled={loading} style={styles.refreshBtn}>
                     <RotateCcw size={20} color="#666" />
                 </Pressable>
@@ -88,7 +88,7 @@ const Notification = () => {
             )}
             
         </View>
-        {currentUser.role !== 'admin' && Platform === 'web' && (<SFCFooter/>)}
+        {currentUser.role !== 'admin' && Platform.OS === 'web' && (<SFCFooter/>)}
         </>
     );
 };

@@ -65,7 +65,7 @@ const NotificationModal = ({ visible, onClose }) => {
     };
 
     const notificationItems = [
-        { key: 'discussion', label: t('discussion notifications') },
+        { key: 'discussion', label: t('discussion_notifications') },
         { key: 'todo_reminder', label: t('todo start reminders') },
         { key: 'anomaly_alert', label: t('anomaly alerts') },
         { key: 'registration_review', label: t('registration review alerts') },

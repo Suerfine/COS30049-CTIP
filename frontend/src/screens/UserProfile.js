@@ -305,14 +305,16 @@ const UserProfile = ({ navigation }) => {
             {/* Security */}
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Security</Text>
+                <Text style={styles.sectionTitle}>{t('Security')}</Text>
               </View>
               <Pressable
                 style={({ hovered }) => [styles.securityBtn, hovered && styles.securityBtnHover]}
                 onPress={() => navigation.navigate('Security')}
               >
                 <ShieldCheck size={18} color="#2f6618fe" />
-                <Text style={styles.securityBtnText}>Password & Two-Factor Authentication</Text>
+                <Text style={styles.securityBtnText}>
+                    {t('password_two_factor_auth')}
+                </Text>              
               </Pressable>
             </View>
         </ScrollView>
