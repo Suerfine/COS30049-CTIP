@@ -360,7 +360,8 @@ const styles = StyleSheet.create({
     alignItems: "flex-end",
   },
   webWidgetContainer: {
-    marginTop: 10,
+    minHeight: 44,
+    justifyContent: 'center',
   },
   // status
   statusBadge: {
