@@ -1,7 +1,7 @@
 import { View, Text, StyleSheet, ScrollView, Pressable, StatusBar, Image, TextInput, Modal } from 'react-native';
 import { useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Bell, ChevronLeft, ChevronRight, Languages,X, Check } from 'lucide-react-native';
+import { Bell, ChevronLeft, ChevronRight, Languages,X, Check, ShieldAlert } from 'lucide-react-native';
 
 // Import from other hook and components
 import { useUserProfile } from '../hooks/useUserProfile';
@@ -42,6 +42,8 @@ const Settings=({navigation})=>{
     const [notifModalVisible, setNotifModalVisible] = useState(false);
     const {profileImage} = useUserProfile();
 
+    const totpEnabled = user?.totp_enabled ?? false;
+
     const clearError = (field) => {
         setErrors(prev => {
             const updated = { ...prev };
@@ -66,6 +68,7 @@ const Settings=({navigation})=>{
     return(
         <SafeAreaView style={styles.container} edges={['left', 'right']}>
             <StatusBar barStyle="dark-content"/>
+            <ScrollView showsVerticalScrollIndicator={false}>
             {/* Top Section */}
             <Pressable onPress={()=>navigation.goBack()} style={({pressed})=>[styles.backButton, pressed && styles.btnPressed]}>
                 <ChevronLeft size={24} color="black"/>
@@ -238,6 +241,53 @@ const Settings=({navigation})=>{
                     </Pressable>
                 </View>
             </View>
+
+            <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>Two-Factor Authentication</Text>
+                    <View style={styles.listGroup}>
+                        <View style={styles.listItem}>
+                            <View style={styles.listItemLoading}>
+                                <View style={[styles.iconBox, { backgroundColor: totpEnabled ? '#e8f5e9' : '#fef2f2' }]}>
+                                    {totpEnabled ? (
+                                        <ShieldCheck size={20} color="#0a6340" />
+                                    ) : (
+                                        <ShieldAlert size={20} color="#dc2626" />
+                                    )}
+                                </View>
+                                <View style={{ gap: 2 }}>
+                                    <Text style={styles.listItemText}>
+                                        {totpEnabled ? "Account Secured" : "Account Unsecured"}
+                                    </Text>
+                                    <Text style={styles.twoFAHint}>
+                                        {totpEnabled ? "Protected via Authenticator app" : "Add an extra verification layer"}
+                                    </Text>
+                                </View>
+                            </View>
+                            
+                            <Pressable
+                                style={({ pressed }) => [
+                                    totpEnabled ? styles.disabledActionBtn : styles.changeBtn,
+                                    pressed && styles.btnPressed
+                                ]}
+                                onPress={() => {
+                                    if (totpEnabled) {
+                                        Alert.alert(
+                                            "Disable 2FA", 
+                                            "To remove two-factor authentication, please complete the disabling sequence via the core desktop web administrative dashboard panel safely."
+                                        );
+                                    } else {
+                                        navigation.navigate('TotpSetup');
+                                    }
+                                }}
+                            >
+                                <Text style={[styles.changeBtnText, totpEnabled && { color: '#666' }]}>
+                                    {totpEnabled ? "Active" : "Enable"}
+                                </Text>
+                            </Pressable>
+                        </View>
+                    </View>
+                </View>
+            </ScrollView>
 
             {/* Language Modal */}
             <Modal animationType="slide" transparent={true} visible={langModalVisible} onRequestClose={closeLanguageModal}>
@@ -517,6 +567,12 @@ const styles=StyleSheet.create({
         fontSize: 13,
         color: '#2f6618fe',
         fontWeight: '500',
+    },
+    twoFAHint: {
+        fontSize: 11,
+        color: '#666',
+        marginTop: 2,
+        maxWidth: 180
     },
 });
 

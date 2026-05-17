@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useMemo, useState } from 'react';
 import { CircleMarker, MapContainer, TileLayer, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
-
+import { useTranslation } from 'react-i18next';
 import apiClient from '../config/apiConfig';
 import { DetectionService } from '../services/DetectionService';
 import { userDashboardService } from '../services/userDashboardService';
@@ -40,19 +40,21 @@ const SKELETON_EDGES = [
   [11, 13], [13, 15], [12, 14], [14, 16],
 ];
 
-const EVENT_LABELS = {
-  touch_plant: 'Touch Plant',
-  touch_animal: 'Touch Animal',
-  plucking_plant: 'Plucking Plant',
-  animal_strike: 'Animal Strike',
-  extended_touch_animal: 'Extended Touch Animal',
-  extended_touch_plant: 'Extended Touch Plant',
-};
-
 const MIRROR_PREVIEW = true;
 const MIRROR_ANNOTATED_FRAME = true;
 
 export default function DetectionScreenWeb() {
+  const { t, i18n} = useTranslation();
+
+  const EVENT_LABELS = {
+    touch_plant: t('touch_plant'),
+    touch_animal: t('touch_animal'),
+    plucking_plant: t('plucking_plant'),
+    animal_strike: t('animal_strike'),
+    extended_touch_animal: t('extended_touch_animal'),
+    extended_touch_plant: t('extended_touch_plant'),
+  };
+
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const streamRef = useRef(null);
@@ -104,7 +106,7 @@ export default function DetectionScreenWeb() {
   const startCamera = async () => {
     if (!navigator.mediaDevices?.getUserMedia) {
       setCameraStatus('blocked');
-      setCameraError('Camera access is not available in this browser.');
+      setCameraError(t('camera_not_available'));
       setPermissionGranted(false);
       return;
     }
@@ -132,7 +134,7 @@ export default function DetectionScreenWeb() {
       console.error("Camera access denied:", err);
       setPermissionGranted(false);
       setCameraStatus('blocked');
-      setCameraError(err?.message || 'Camera permission was blocked.');
+      setCameraError(err?.message || t('camera_permission_blocked'));
     }
   };
 
@@ -245,12 +247,12 @@ export default function DetectionScreenWeb() {
     return dataUrl.split(',')[1]; // Strip prefix
   };
 
-  const getEventLabel = (eventType) => EVENT_LABELS[eventType] || eventType || 'Unknown';
+  const getEventLabel = (eventType) => EVENT_LABELS[eventType] || eventType || t('unknown');
 
   const getEventConfidence = (event) => {
     const raw = event?.metadata?.detection_confidence ?? event?.metadata?.confidence;
     const confidence = Number(raw);
-    if (!Number.isFinite(confidence)) return 'N/A';
+    if (!Number.isFinite(confidence)) return t('not_available');
     return `${Math.round(confidence * 100)}%`;
   };
 
@@ -317,7 +319,7 @@ export default function DetectionScreenWeb() {
       const message =
         error?.response?.data?.message ||
         error?.message ||
-        'Failed to resolve anomaly event.';
+        t('failed_resolve_anomaly');
       window.alert(message);
     } finally {
       setResolvingEventId(null);
@@ -394,7 +396,7 @@ export default function DetectionScreenWeb() {
             })
             .catch((err) => {
               const errorMsg = err.response?.data?.message || err.response?.data?.error || err.message;
-              window.alert(`Database Error:\nBackend rejected the anomaly log:\n${errorMsg}`);
+              window.alert(`${t('database_error')}\n${t('backend_rejected_anomaly')}\n${errorMsg}`);
             });
         }
       }
@@ -465,26 +467,26 @@ export default function DetectionScreenWeb() {
       <div style={styles.mainContent}>
         <div style={styles.titleBar}>
           <div>
-            <h1 style={styles.title}>AI Detection Dashboard</h1>
-            <span style={styles.pageSubtitle}>Monitor and review active anomaly alerts</span>
+            <h1 style={styles.title}>{t('ai_detection_dashboard')}</h1>
+            <span style={styles.pageSubtitle}>{t('monitor_anomaly_alerts')}</span>
           </div>
-          <button style={styles.refreshButton} onClick={fetchAnomalyEvents}>Refresh</button>
+          <button style={styles.refreshButton} onClick={fetchAnomalyEvents}>{t('refresh')}</button>
         </div>
         
         {userLoading ? (
-          <span style={{ color: '#888', marginTop: 20 }}>Loading user...</span>
+          <span style={{ color: '#888', marginTop: 20 }}>{t('loading_user')}</span>
         ) : eventsLoading ? (
-          <span style={{ color: '#888', marginTop: 20 }}>Loading events...</span>
+          <span style={{ color: '#888', marginTop: 20 }}>{t('loading_events')}</span>
         ) : (
           <div style={styles.eventsSingleColumn}>
             <div style={styles.eventsPanel}>
               <div style={styles.panelHeader}>
-                <h2 style={styles.panelTitle}>Active Anomalies</h2>
+                <h2 style={styles.panelTitle}>{t('active_anomalies')}</h2>
                 <span style={styles.badgeCount}>{anomalyEvents.length}</span>
               </div>
               <div style={styles.eventsList}>
                 {anomalyEvents.length === 0 ? (
-                  <span style={styles.emptyText}>No active anomalies</span>
+                  <span style={styles.emptyText}>{t('no_active_anomalies')}</span>
                 ) : anomalyEvents.map((event) => (
                   <button key={event.id} style={styles.eventCardButton} onClick={() => setSelectedEvent(event)}>
                     <div style={styles.eventCard}>
@@ -494,7 +496,7 @@ export default function DetectionScreenWeb() {
                       </div>
                       <div style={styles.eventMetaRow}>
                         <span style={styles.eventTime}>{new Date(event.created_at).toLocaleString()}</span>
-                        <span style={styles.activePill}>Active</span>
+                        <span style={styles.activePill}>{t('active')}</span>
                       </div>
                     </div>
                   </button>
@@ -521,23 +523,23 @@ export default function DetectionScreenWeb() {
           {!permissionGranted && (
             <div style={styles.cameraPlaceholder}>
               <div style={styles.cameraPlaceholderTitle}>
-                {cameraStatus === 'starting' ? 'Starting camera...' : 'Camera unavailable'}
+                {cameraStatus === 'starting' ? t('starting_camera') : t('camera_unavailable')}
               </div>
               <div style={styles.cameraPlaceholderText}>
                 {cameraStatus === 'starting'
-                  ? 'Allow camera access in your browser to start live anomaly detection.'
-                  : cameraError || 'Allow camera access in your browser, then try again.'}
+                  ? t('allow_camera_detection')
+                  : cameraError || t('allow_camera_retry')}
               </div>
               {cameraStatus === 'blocked' && (
                 <button style={styles.retryButton} onClick={startCamera}>
-                  Retry Camera
+                  {t('retry_camera')}
                 </button>
               )}
             </div>
           )}
             
           <span style={{...styles.status, backgroundColor: isConnected ? 'rgba(16, 185, 129, 0.85)' : 'rgba(220, 38, 38, 0.85)'}}>
-            {isConnected ? "Connected (AI API)" : "AI Server Disconnected"}
+            {isConnected ? t('connected_ai_api') : t('ai_server_disconnected')}
           </span>
 
           {/* Detections Overlay */}
@@ -578,17 +580,17 @@ export default function DetectionScreenWeb() {
           })}
 
           {/* Compliance Alerts */}
-          {latestResult?.compliance?.plucking_plant && <div style={styles.warningText}>WARNING: PLUCKING DETECTED</div>}
-          {latestResult?.compliance?.animal_strike && <div style={styles.warningText}>ALERT: ANIMAL STRIKE</div>}
-          {latestResult?.compliance?.extended_touch_animal && <div style={{...styles.warningText, backgroundColor: 'rgba(255, 165, 0, 0.8)'}}>EXTENDED ANIMAL TOUCH</div>}
-          {latestResult?.compliance?.extended_touch_plant && <div style={{...styles.warningText, backgroundColor: 'rgba(255, 165, 0, 0.8)'}}>EXTENDED PLANT TOUCH</div>}
+          {latestResult?.compliance?.plucking_plant && <div style={styles.warningText}>{t('warning_plucking_detected')}</div>}
+          {latestResult?.compliance?.animal_strike && <div style={styles.warningText}>{t('alert_animal_strike')}</div>}
+          {latestResult?.compliance?.extended_touch_animal && <div style={{...styles.warningText, backgroundColor: 'rgba(255, 165, 0, 0.8)'}}>{t('extended_animal_touch')}</div>}
+          {latestResult?.compliance?.extended_touch_plant && <div style={{...styles.warningText, backgroundColor: 'rgba(255, 165, 0, 0.8)'}}>{t('extended_plant_touch')}</div>}
 
           {/* Live Stats Panel */}
           {isConnected && latestResult && (
             <div style={styles.statsPanel}>
-              <div style={styles.statText}>Detections: {latestResult.detections?.length || 0}</div>
-              <div style={styles.statText}>Poses: {latestResult.poses?.length || 0}</div>
-              <div style={styles.statText}>Inference: {latestResult.inference_ms || 0}ms</div>
+              <div style={styles.statText}>{t('detections')}: {latestResult.detections?.length || 0}</div>
+              <div style={styles.statText}>{t('poses')}: {latestResult.poses?.length || 0}</div>
+              <div style={styles.statText}>{t('inference')}: {latestResult.inference_ms || 0}ms</div>
             </div>
           )}
 
@@ -602,13 +604,13 @@ export default function DetectionScreenWeb() {
           <div style={styles.detailModal} onClick={(event) => event.stopPropagation()}>
             <div style={styles.detailHeader}>
               <h3 style={styles.detailTitle}>{getEventLabel(selectedEvent.event_type)}</h3>
-              <button style={styles.detailClose} onClick={() => setSelectedEvent(null)}>Close</button>
+              <button style={styles.detailClose} onClick={() => setSelectedEvent(null)}>{t('close')}</button>
             </div>
             <div style={styles.detailMetaGrid}>
-              <div><strong>Detected:</strong> {new Date(selectedEvent.created_at).toLocaleString()}</div>
-              <div><strong>Confidence:</strong> {getEventConfidence(selectedEvent)}</div>
-              <div><strong>Latitude:</strong> {selectedEvent.latitude ?? 'N/A'}</div>
-              <div><strong>Longitude:</strong> {selectedEvent.longitude ?? 'N/A'}</div>
+              <div><strong>{t('detected')}:</strong> {new Date(selectedEvent.created_at).toLocaleString()}</div>
+              <div><strong>{t('confidence')}:</strong> {getEventConfidence(selectedEvent)}</div>
+              <div><strong>{t('latitude')}:</strong> {selectedEvent.latitude ?? 'N/A'}</div>
+              <div><strong>{t('longitude')}:</strong> {selectedEvent.longitude ?? 'N/A'}</div>
             </div>
             {selectedEvent.annotated_frame_base64 ? (
               <img
@@ -617,7 +619,7 @@ export default function DetectionScreenWeb() {
                 style={styles.detailImage}
               />
             ) : (
-              <div style={styles.emptyEvidence}>No annotated frame recorded for this event.</div>
+              <div style={styles.emptyEvidence}>{t('no_annotated_frame')}</div>
             )}
             <div style={styles.detailMapShell}>
               <MapContainer key={`event-map-${selectedEvent.id}`} center={selectedEventCenter} zoom={15} scrollWheelZoom style={styles.mapCanvas}>
@@ -642,7 +644,7 @@ export default function DetectionScreenWeb() {
                 onClick={() => resolveEvent(selectedEvent.id)}
                 disabled={resolvingEventId === selectedEvent.id}
               >
-                {resolvingEventId === selectedEvent.id ? 'Resolving...' : 'Mark as Resolved'}
+                {resolvingEventId === selectedEvent.id ? t('resolving') : t('mark_resolved')}
               </button>
             )}
           </div>
@@ -652,15 +654,15 @@ export default function DetectionScreenWeb() {
       {configMode && (
         <div style={styles.configModalOverlay}>
           <div style={styles.configForm}>
-            <h2 style={styles.configTitle}>AI Server Configuration</h2>
-            <span style={styles.configLabel}>Server Host (IP Address)</span>
+            <h2 style={styles.configTitle}>{t('ai_server_configuration')}</h2>
+            <span style={styles.configLabel}>{t('server_host')}</span>
             <input
               style={styles.input}
               placeholder={getAutoHost()}
               value={tempConfig.host}
               onChange={(e) => setTempConfig({ ...tempConfig, host: e.target.value })}
             />
-            <span style={styles.configLabel}>Server Port</span>
+            <span style={styles.configLabel}>{t('server_port')}</span>
             <input
               style={styles.input}
               placeholder="8000"
@@ -680,7 +682,7 @@ export default function DetectionScreenWeb() {
                   setConfigMode(false);
                 }}
               >
-                Save
+                {t('save')}
               </button>
             </div>
             <div style={styles.buttonContainer}>
@@ -691,7 +693,7 @@ export default function DetectionScreenWeb() {
                   setConfigMode(false);
                 }}
               >
-                Cancel
+                {t('cancel')}
               </button>
             </div>
           </div>

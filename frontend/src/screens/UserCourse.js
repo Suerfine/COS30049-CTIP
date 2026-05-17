@@ -111,7 +111,7 @@ const UserCourse = ({ navigation }) => {
                                     style={styles.input}
                                     value={searchText}
                                     onChangeText={setSearchText}
-                                    placeholder="Search..."
+                                    placeholder={t('search')}
                                     placeholderTextColor="#8f8f8f"
                                 />
                                 </View>

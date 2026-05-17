@@ -1,13 +1,14 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { Clock, CheckCircle2, ShieldAlert, FileText, CreditCard} from 'lucide-react-native';
-
+import { useTranslation } from 'react-i18next';
 const PaymentReview = ({ navigation, route }) => {
+    const { t } = useTranslation();
     const { courseTitle, amount } = route.params || {};
     const steps = [
-        { title: "Payment Submitted", desc: "Receipt uploaded successfully", status: "complete" },
-        { title: "Financial Verification", desc: "Admin checking bank code SFCMYKL", status: "current" },
-        { title: "Enrollment Review", desc: "Final administrative approval", status: "pending" }
+        { title: t('payment_submitted'), desc: t('receipt_uploaded_successfully'), status: "complete" },
+        { title:  t('financial_verification'), desc: t('admin_checking_bank_code'), status: "current" },
+        { title: t('enrollment_review'), desc: t('final_administrative_approval'), status: "pending" }
     ];
 
     return (
@@ -17,24 +18,24 @@ const PaymentReview = ({ navigation, route }) => {
                     <View style={styles.stepCircle}>
                         <CreditCard size={16} color="white" />
                     </View>
-                    <Text style={styles.stepLabel}>Payment</Text>
+                    <Text style={styles.stepLabel}>{t('payment')}</Text>
                 </View>
                 <View style={styles.stepLine} />
                 <View style={styles.step}>
                     <View style={[styles.stepCircle, styles.activeStep]}>
                         <Clock size={16} color="#999" />
                     </View>
-                    <Text style={styles.stepLabel}>Review</Text>
+                    <Text style={styles.stepLabel}>{t('review')}</Text>
                 </View>
             </View>
             <View style={styles.iconContainer}>
                 <Clock size={80} color="#0a6340" />
             </View>
 
-            <Text style={styles.title}>Payment Under Review</Text>
+            <Text style={styles.title}>{t('payment_under_review')}</Text>
             <Text style={styles.subtitle}>
-                We've received your receipt for {courseTitle}. Your enrollment status is currently: 
-                <Text style={{ fontWeight: 'bold', color: '#0a6340' }}> PENDING</Text>
+                {t('receipt_received_for')} {courseTitle}. {t('enrollment_status_currently')} 
+                <Text style={{ fontWeight: 'bold', color: '#0a6340' }}> {t('status.pending')}</Text>
             </Text>
 
             {/* Stepper Logic */}
@@ -64,7 +65,7 @@ const PaymentReview = ({ navigation, route }) => {
             <View style={styles.infoBox}>
                 <ShieldAlert size={20} color="#856404" />
                 <Text style={styles.infoText}>
-                    Please do not transfer funds again. If your receipt is rejected, you will be notified.
+                    {t('payment_warning')}
                 </Text>
             </View>
 
@@ -74,12 +75,12 @@ const PaymentReview = ({ navigation, route }) => {
                     screen:'Courses'
                 })}
             >
-                <Text style={styles.homeBtnText}>Back to Courses</Text>
+                <Text style={styles.homeBtnText}>{t('back_to_courses')}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.supportBtn}>
                 <FileText size={16} color="#666" />
-                <Text style={styles.supportText}>View Submitted Receipt</Text>
+                <Text style={styles.supportText}>{t('view_submitted_receipt')}</Text>
             </TouchableOpacity>
         </ScrollView>
     );

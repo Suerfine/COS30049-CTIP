@@ -184,11 +184,11 @@ const CourseCard = ({
             </View>
             <View style={styles.courseDetails}>
               <Timer size={isWeb ? 20 : 15} />
-              <Text style={styles.DetailsText}>{duration} Weeks</Text>
+              <Text style={styles.DetailsText}>{duration} {t('weeks')}</Text>
             </View>
             <View style={styles.courseDetails}>
               <ClockAlert size={isWeb ? 20 : 15} />
-              <Text style={styles.DetailsText}>Valid for {expiry} Weeks</Text>
+              <Text style={styles.DetailsText}>{t('valid_for')} {expiry} {t('weeks')}</Text>
             </View>
           </View>
 
