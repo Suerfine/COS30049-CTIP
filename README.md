@@ -13,7 +13,10 @@ cd ./backend/
 npm install
 
 # Copy the example .env file
-cp .env.exmaple .env
+cp .env.example .env
+
+# Run database migrations
+npx sequelize db:migrate
 
 # Run the app
 npm run dev
