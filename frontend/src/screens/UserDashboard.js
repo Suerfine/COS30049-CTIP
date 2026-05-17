@@ -182,7 +182,7 @@ const UserDashboard = ({ navigation }) => {
 
                     <View style={styles.todoList}>
                         <View style={styles.todoHeader}>
-                            <Text style={styles.todoListTitle}>Todo List</Text>
+                            <Text style={styles.todoListTitle}>{t('todo list')}</Text>
 
                             <Pressable
                                 onPress={() => {
@@ -196,7 +196,7 @@ const UserDashboard = ({ navigation }) => {
 
                         <ScrollView showsVerticalScrollIndicator={true} indicatorStyle="white">
                             {filteredEvents.length === 0 ? (
-                                <Text>No todos</Text>
+                                <Text>{t('no todos')}</Text>
                             ) : (
                                 filteredEvents.map(event => (
                                     <View key={event.id} style={styles.todoItem}>
@@ -247,13 +247,13 @@ const UserDashboard = ({ navigation }) => {
                             >
                                 <View style={styles.infoLeft}>
                                     <Text style={styles.welcomeText}>
-                                        Welcome, {user?.firstname}
+                                        {t('welcome')}, {user?.firstname}
                                     </Text>
 
                                     <View style={styles.row}>
                                         <ClockFading size={16} style={styles.icon} />
                                         <Text style={styles.subText}>
-                                            Joined since {formatDate(user?.created_at, false)}
+                                            {t('Joined since')} {formatDate(user?.created_at, false)}
                                         </Text>
                                     </View>
 
@@ -286,7 +286,7 @@ const UserDashboard = ({ navigation }) => {
                             </ImageBackground>
                         </View>
 
-                        <Text style={styles.sectionTitle}>My Courses</Text>
+                        <Text style={styles.sectionTitle}>{t('my courses')}</Text>
 
                         <SlidingTabs
                             tabs={courseTab}

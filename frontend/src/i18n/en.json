@@ -131,5 +131,6 @@
     "accounts": "Accounts",
     "enrollment": "Enrollment",
     "ar models": "AR Models",
-    "account security":"Account Security"
+    "account security":"Account Security",
+    "Joined since":"Joined since"
 }
