@@ -146,5 +146,6 @@
     "failed to load anomaly map":"Failed to load anomaly map",
     "try again":"Try Again",
     "no coordinate-bearing anomalies found":"No coordinate-bearing anomalies found",
-    "failed to load updates":"failed to load updates"
+    "failed to load updates":"failed to load updates",
+    "Joined since":"Joined since"
 }

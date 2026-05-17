@@ -145,6 +145,6 @@
     "failed to load anomaly map": "Gagal memuatkan peta anomali",
     "try again": "Cuba lagi",
     "no coordinate-bearing anomalies found": "Tiada anomali berkoordinat ditemui",
-    "failed to load updates": "Gagal memuatkan kemaskini"
-
+    "failed to load updates": "Gagal memuatkan kemaskini",
+    "Joined since":"Menyertai sejak"
 }

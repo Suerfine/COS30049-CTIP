@@ -410,7 +410,7 @@ const ParkGuideSiteSearch = ({ navigation, variant = "mobile", compact = false }
     <>
       <Pressable onPress={open} style={[styles.entry, compact && styles.entryCompact]}>
         <Search size={18} color="#666" />
-        <Text style={styles.entryText}>Search...</Text>
+        <Text style={styles.entryText}>{t('search')}...</Text>
       </Pressable>
 
       <Modal
