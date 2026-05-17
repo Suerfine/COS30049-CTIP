@@ -23,9 +23,7 @@ const Preferences = () => {
 
     const handleLanguageSelect=(langVal)=>{
         selectLanguage(langVal);
-        const langCode=langVal==='Bahasa Melayu' ? 'bm':'en';
-        i18n.changeLanguage(langCode);
-      };
+    };
 
     const [notifModalVisible, setNotifModalVisible] = useState(false);
     return (
