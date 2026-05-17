@@ -56,7 +56,7 @@
     "todo list":"Todo List",
     "list":"List",
     "here you can find all courses":"Here you can find all courses",
-    "search":"Search...",
+    "search":"Search",
     "apply":"Apply",
     "reset":"Reset",
     "notification":"Notification",
@@ -132,7 +132,6 @@
     "enrollment": "Enrollment",
     "ar models": "AR Models",
     "account security":"Account Security",
-
     "total": "Total",
     "users": "Users",
     "enrollments":"Enrollments",
