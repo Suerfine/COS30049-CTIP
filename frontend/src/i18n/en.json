@@ -361,5 +361,6 @@
     "ai_api_connected": "Connected (AI API)",
     "ai_server_disconnected_short": "AI Server Disconnected",
     "forest_fire": "Forest Fire",
-    "other": "Other"
+    "other": "Other",
+    "badge_received": "Badge Received"
 }
