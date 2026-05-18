@@ -344,5 +344,22 @@
     "role.admin": "Admin",
     "role.park_guide": "Park Guide",
     "add_courses": "Add Courses",
-    "new_tag": "New Tag"
+    "new_tag": "New Tag",
+    "camera_access_required": "Camera Access Required",
+    "camera_permission_description": "To perform real-time AI compliance monitoring and keep our park safe, the application requires permission to access your device's camera stream.",
+    "grant_camera_permission": "Grant Camera Permission",
+    "privacy_notice_camera": "Your privacy is guarded. The video stream is processed completely locally for on-site edge model inference.",
+    "database_error_title": "Database Error",
+    "backend_rejected_anomaly_log": "Backend rejected the anomaly log:",
+    "failed_resolve_anomaly_event": "Failed to resolve anomaly event.",
+    "unknown_event": "Unknown",
+    "config": "Config",
+    "touch": "TOUCH",
+    "hand": "HAND",
+    "loading_user_short": "Loading user...",
+    "loading_events_short": "Loading events...",
+    "ai_api_connected": "Connected (AI API)",
+    "ai_server_disconnected_short": "AI Server Disconnected",
+    "forest_fire": "Forest Fire",
+    "other": "Other"
 }

@@ -350,5 +350,22 @@
     "role.admin": "Admin",
     "role.park_guide": "Renjer Taman",
     "add_courses": "Tambah Kursus",
-    "new_tag": "Tag Baharu"
+    "new_tag": "Tag Baharu",
+    "camera_access_required": "Akses Kamera Diperlukan",
+    "camera_permission_description": "Untuk melakukan pemantauan pematuhan AI masa nyata dan memastikan taman kami selamat, aplikasi memerlukan kebenaran untuk mengakses aliran kamera peranti anda.",
+    "grant_camera_permission": "Benarkan Akses Kamera",
+    "privacy_notice_camera": "Privasi anda dilindungi. Aliran video diproses sepenuhnya secara tempatan untuk inferens model edge di lokasi.",
+    "database_error_title": "Ralat Pangkalan Data",
+    "backend_rejected_anomaly_log": "Backend menolak log anomali:",
+    "failed_resolve_anomaly_event": "Gagal menyelesaikan acara anomali.",
+    "unknown_event": "Tidak Diketahui",
+    "config": "Konfigurasi",
+    "touch": "SENTUH",
+    "hand": "TANGAN",
+    "loading_user_short": "Memuatkan pengguna...",
+    "loading_events_short": "Memuatkan acara...",
+    "ai_api_connected": "Disambungkan (AI API)",
+    "ai_server_disconnected_short": "Pelayan AI Terputus",
+    "forest_fire": "Kebakaran Hutan",
+    "other": "Lain-lain"
     }
