@@ -1,7 +1,7 @@
 # How to Run the AI Server
 
 1. Install Dependencies
-pip install -r requirement.txt
+pip install -r requirements.txt
 
 2. Start the server
 cd ai
