@@ -288,12 +288,8 @@ void loop() {
   reconnectMQTT();
   client.loop();
 
-  if (DEVICE_CONNECTED) {
-    processSensors();
-    processQueue();
-  } else {
-    Serial.println("Device not connected. Sensor logging disabled.");
-  }
+  processSensors();
+  processQueue();
 
   delay(1000);
 }
