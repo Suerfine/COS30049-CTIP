@@ -1,19 +1,29 @@
 import asyncio
-import json
 import logging
 import os
 import time
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
 
 import cv2
 import httpx
 import numpy as np
+import torch
 from fastapi import FastAPI, File, UploadFile, Form, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from ultralytics import YOLO
 from scripts.compliance import ComplianceEvaluator
 from zeroconf import ServiceInfo, Zeroconf
 import socket
+
+try:
+    import orjson as json_lib
+    def _json_loads(data): return json_lib.loads(data)
+    def _json_dumps(obj): return json_lib.dumps(obj).decode()
+except ImportError:
+    import json as json_lib
+    def _json_loads(data): return json_lib.loads(data)
+    def _json_dumps(obj): return json_lib.dumps(obj)
 
 evaluator = ComplianceEvaluator()
 logging.basicConfig(level=logging.INFO)
@@ -63,19 +73,46 @@ async def check_and_download_models():
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await check_and_download_models()
-    models["detector"] = YOLO("nature_detection_model.pt")  # plant + animal only
-    models["pose"]     = YOLO("yolo26n-pose.pt")             # human detection + keypoints
-    
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    use_half = device == "cuda"
+    logger.info(f"🚀 Inference device: {device} | FP16: {use_half}")
+
+    if use_half:
+        torch.backends.cudnn.benchmark = True
+
+    models["device"] = device
+    models["use_half"] = use_half
+    models["pool"] = ThreadPoolExecutor(max_workers=2)
+
+    models["detector"] = YOLO("nature_detection_model.pt")
+    models["pose"]     = YOLO("yolo26n-pose.pt")
+    try:
+        models["detector"].to(device)
+        models["pose"].to(device)
+    except Exception as exc:
+        logger.warning(f"Could not move models to {device}: {exc}")
+
+    # Warmup: compiles CUDA kernels so the first real frame isn't slow
+    logger.info("🔥 Warming up models...")
+    dummy = np.zeros((640, 640, 3), dtype=np.uint8)
+    try:
+        models["detector"].predict(dummy, imgsz=640, verbose=False, half=use_half)
+        models["pose"].predict(dummy, imgsz=640, verbose=False, half=use_half)
+        logger.info("✅ Warmup complete")
+    except Exception as exc:
+        logger.warning(f"Warmup failed (non-fatal): {exc}")
+
     info = ServiceInfo("_parkguard._tcp.local.", "ParkGuard Server._parkguard._tcp.local.", addresses=[socket.inet_aton("0.0.0.0")], port=8000)
     zeroconf = Zeroconf()
     try:
         zeroconf.register_service(info)
     except Exception:
         pass
-    
+
     yield
     zeroconf.unregister_service(info)
     zeroconf.close()
+    models["pool"].shutdown(wait=False)
     models.clear()
 
 app = FastAPI(title="ParkGuard AI Server", lifespan=lifespan)
@@ -140,19 +177,20 @@ def parse_human_boxes(results) -> list[dict]:
             })
     return boxes
 
-def run_inference(img: np.ndarray, ev: ComplianceEvaluator = None) -> dict:
+def run_inference(img: np.ndarray, ev: ComplianceEvaluator = None, imgsz: int = 640) -> dict:
     if ev is None:
         ev = evaluator
     t0 = time.perf_counter()
     h, w = img.shape[:2]
+    device = models.get("device", "cpu")
+    use_half = models.get("use_half", False)
+    pool = models["pool"]
 
-    # Run both models concurrently — pose always runs, no human-detection gate
-    from concurrent.futures import ThreadPoolExecutor
-    with ThreadPoolExecutor(max_workers=2) as pool:
-        det_future = pool.submit(models["detector"].predict, img, conf=DETECTION_CONF, verbose=False)
-        pose_future = pool.submit(models["pose"].predict, img, conf=POSE_CONF, verbose=False)
-        det_results = det_future.result()
-        pose_results = pose_future.result()
+    # Run both models concurrently on the persistent thread pool
+    det_future = pool.submit(models["detector"].predict, img, conf=DETECTION_CONF, verbose=False, device=device, imgsz=imgsz, half=use_half)
+    pose_future = pool.submit(models["pose"].predict, img, conf=POSE_CONF, verbose=False, device=device, imgsz=imgsz, half=use_half)
+    det_results = det_future.result()
+    pose_results = pose_future.result()
 
     detections = parse_detections(det_results)
     poses = parse_poses(pose_results)
@@ -180,6 +218,7 @@ import base64
 class FrameRequest(BaseModel):
     image_base64: str
     user_id: int = 1
+    imgsz: int = 640
 
 @app.post("/detect")
 async def detect_frame(payload: FrameRequest):
@@ -189,14 +228,14 @@ async def detect_frame(payload: FrameRequest):
         frame_bytes = base64.b64decode(payload.image_base64)
         arr = np.frombuffer(frame_bytes, dtype=np.uint8)
         img = cv2.imdecode(arr, cv2.IMREAD_COLOR)
-        
+
         if img is None:
             return {"error": "Failed to decode image from base64 data"}
 
         # Run inference in a threadpool so it doesn't block FastAPI
-        loop = asyncio.get_event_loop()
-        result = await loop.run_in_executor(None, run_inference, img)
-        
+        loop = asyncio.get_running_loop()
+        result = await loop.run_in_executor(None, run_inference, img, None, int(payload.imgsz))
+
         return result
     except Exception as exc:
         logger.exception("Inference error: %s", exc)
@@ -218,9 +257,10 @@ async def ws_detect(websocket: WebSocket):
     try:
         while True:
             data = await websocket.receive_text()
-            payload = json.loads(data)
+            payload = _json_loads(data)
 
             image_b64 = payload.get("image_base64", "")
+            imgsz = int(payload.get("imgsz", 640))
             rem = len(image_b64) % 4
             if rem:
                 image_b64 += "=" * (4 - rem)
@@ -230,12 +270,12 @@ async def ws_detect(websocket: WebSocket):
             img = cv2.imdecode(arr, cv2.IMREAD_COLOR)
 
             if img is None:
-                await websocket.send_text(json.dumps({"error": "Failed to decode image"}))
+                await websocket.send_text(_json_dumps({"error": "Failed to decode image"}))
                 continue
 
-            loop = asyncio.get_event_loop()
-            result = await loop.run_in_executor(None, run_inference, img, local_evaluator)
-            await websocket.send_text(json.dumps(result))
+            loop = asyncio.get_running_loop()
+            result = await loop.run_in_executor(None, run_inference, img, local_evaluator, imgsz)
+            await websocket.send_text(_json_dumps(result))
 
     except WebSocketDisconnect:
         logger.info("WebSocket client disconnected")

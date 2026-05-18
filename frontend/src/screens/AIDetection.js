@@ -15,7 +15,7 @@ const getAutoHost = () => {
 };
 
 const getInitialServerConfig = () => {
-  const fallbackConfig = { host: getAutoHost(), port: '8000' };
+  const fallbackConfig = { host: getAutoHost(), port: '8000', inferenceResolution: 640, clientDownscaleWidth: 640 };
   if (typeof window === 'undefined') return fallbackConfig;
 
   try {
@@ -25,11 +25,24 @@ const getInitialServerConfig = () => {
     const parsed = JSON.parse(savedConfig);
     return {
       host: parsed?.host || fallbackConfig.host,
-      port: parsed?.port || fallbackConfig.port
+      port: parsed?.port || fallbackConfig.port,
+      inferenceResolution: Number(parsed?.inferenceResolution) || fallbackConfig.inferenceResolution,
+      clientDownscaleWidth: Number(parsed?.clientDownscaleWidth) || fallbackConfig.clientDownscaleWidth,
     };
   } catch {
     return fallbackConfig;
   }
+};
+
+const boxOverlapRatio = (boxA, boxB) => {
+  const [ax1, ay1, ax2, ay2] = boxA;
+  const [bx1, by1, bx2, by2] = boxB;
+  const ix1 = Math.max(ax1, bx1), iy1 = Math.max(ay1, by1);
+  const ix2 = Math.min(ax2, bx2), iy2 = Math.min(ay2, by2);
+  if (ix2 <= ix1 || iy2 <= iy1) return 0;
+  const intersection = (ix2 - ix1) * (iy2 - iy1);
+  const areaA = (ax2 - ax1) * (ay2 - ay1);
+  return areaA > 0 ? intersection / areaA : 0;
 };
 
 const SKELETON_EDGES = [
@@ -68,6 +81,7 @@ export default function DetectionScreenWeb() {
   const lastLogTime = useRef(0);
   const wsRef = useRef(null);
   const reconnectTimerRef = useRef(null);
+  const sentScaleRef = useRef(1);
 
   const [permissionGranted, setPermissionGranted] = useState(false);
   const [cameraStatus, setCameraStatus] = useState('starting');
@@ -87,7 +101,10 @@ export default function DetectionScreenWeb() {
   const [resolvingEventId, setResolvingEventId] = useState(null);
 
   const [cameraLayout, setCameraLayout] = useState(null);
-  
+  const [testFootageUrl, setTestFootageUrl] = useState(null);
+  const isTestMode = !!testFootageUrl;
+  const [cameraEnabled, setCameraEnabled] = useState(true);
+
   // Safe scaling based on intrinsic video resolution vs rendered UI size
   const SCALE_X = cameraLayout ? cameraLayout.width / cameraLayout.videoWidth : 1;
   const SCALE_Y = cameraLayout ? cameraLayout.height / cameraLayout.videoHeight : 1;
@@ -116,11 +133,59 @@ export default function DetectionScreenWeb() {
 
   const setVideoElement = (node) => {
     videoRef.current = node;
+    if (!node) return;
 
-    // Reattach active stream after UI remounts (e.g. opening/closing config mode).
-    if (node && streamRef.current && node.srcObject !== streamRef.current) {
+    if (testFootageUrl) {
+      if (node.src !== testFootageUrl) {
+        node.srcObject = null;
+        node.src = testFootageUrl;
+        node.loop = true;
+        node.play().catch(() => {});
+      }
+    } else if (streamRef.current && node.srcObject !== streamRef.current) {
+      // Reattach active stream after UI remounts (e.g. opening/closing config mode).
       node.srcObject = streamRef.current;
     }
+  };
+
+  const handleTestFootageUpload = (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+
+    if (testFootageUrl) URL.revokeObjectURL(testFootageUrl);
+
+    const url = URL.createObjectURL(file);
+    setTestFootageUrl(url);
+
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+      videoRef.current.src = url;
+      videoRef.current.loop = true;
+      videoRef.current.play().catch(() => {});
+    }
+
+    setPermissionGranted(true);
+    setCameraStatus('ready');
+    setCameraError('');
+    setConfigMode(false);
+  };
+
+  const stopTestFootage = () => {
+    if (testFootageUrl) URL.revokeObjectURL(testFootageUrl);
+    setTestFootageUrl(null);
+
+    if (videoRef.current) {
+      videoRef.current.removeAttribute('src');
+      videoRef.current.load();
+    }
+
+    startCamera();
   };
 
   const startCamera = async () => {
@@ -155,6 +220,29 @@ export default function DetectionScreenWeb() {
       setPermissionGranted(false);
       setCameraStatus('blocked');
       setCameraError(err?.message || t('camera_permission_blocked'));
+    }
+  };
+
+  const stopCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+    setPermissionGranted(false);
+    setCameraStatus('off');
+    setCameraEnabled(false);
+  };
+
+  const toggleCamera = () => {
+    if (isTestMode) return;
+    if (cameraEnabled) {
+      stopCamera();
+    } else {
+      setCameraEnabled(true);
+      startCamera();
     }
   };
 
@@ -277,7 +365,25 @@ export default function DetectionScreenWeb() {
       ws.onmessage = (event) => {
         try {
           const result = JSON.parse(event.data);
-          if (result && !result.error) setLatestResult(result);
+          if (result && !result.error) {
+            const inverse = sentScaleRef.current > 0 ? 1 / sentScaleRef.current : 1;
+            if (inverse !== 1) {
+              const scaleBbox = (b) => b.map(v => v * inverse);
+              if (Array.isArray(result.detections)) {
+                result.detections = result.detections.map(d => ({ ...d, bbox: scaleBbox(d.bbox) }));
+              }
+              if (Array.isArray(result.human_boxes)) {
+                result.human_boxes = result.human_boxes.map(h => ({ ...h, bbox: scaleBbox(h.bbox) }));
+              }
+              if (Array.isArray(result.poses)) {
+                result.poses = result.poses.map(pose => pose.map(kp => ({ ...kp, x: kp.x * inverse, y: kp.y * inverse })));
+              }
+              if (Array.isArray(result?.compliance?.hand_boxes)) {
+                result.compliance.hand_boxes = result.compliance.hand_boxes.map(scaleBbox);
+              }
+            }
+            setLatestResult(result);
+          }
         } catch {}
         isCapturing.current = false;
       };
@@ -315,10 +421,14 @@ export default function DetectionScreenWeb() {
     const canvas = canvasRef.current;
     if (video.videoWidth === 0) return null;
 
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
+    const maxWidth = Number(serverConfig.clientDownscaleWidth) || video.videoWidth;
+    const scale = Math.min(1, maxWidth / video.videoWidth);
+    sentScaleRef.current = scale;
+
+    canvas.width = Math.round(video.videoWidth * scale);
+    canvas.height = Math.round(video.videoHeight * scale);
     const ctx = canvas.getContext('2d');
-    if (MIRROR_INPUT) {
+    if (MIRROR_INPUT && !isTestMode) {
       ctx.save();
       ctx.translate(canvas.width, 0);
       ctx.scale(-1, 1);
@@ -327,7 +437,7 @@ export default function DetectionScreenWeb() {
     } else {
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
     }
-    
+
     const dataUrl = canvas.toDataURL('image/jpeg', 0.3);
     return dataUrl.split(',')[1]; // Strip prefix
   };
@@ -347,11 +457,13 @@ export default function DetectionScreenWeb() {
     const canvas = canvasRef.current;
     if (video.videoWidth === 0) return null;
 
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
+    const MAX_DIM = 640;
+    const scale = Math.min(1, MAX_DIM / Math.max(video.videoWidth, video.videoHeight));
+    canvas.width = Math.round(video.videoWidth * scale);
+    canvas.height = Math.round(video.videoHeight * scale);
     const ctx = canvas.getContext('2d');
 
-    if (MIRROR_ANNOTATED_FRAME) {
+    if (MIRROR_ANNOTATED_FRAME && !isTestMode) {
       ctx.save();
       ctx.translate(canvas.width, 0);
       ctx.scale(-1, 1);
@@ -364,30 +476,32 @@ export default function DetectionScreenWeb() {
     ctx.lineWidth = 2;
     ctx.font = '14px sans-serif';
 
-    const flipX = MIRROR_INPUT && !MIRROR_ANNOTATED_FRAME;
+    const flipX = MIRROR_INPUT && !MIRROR_ANNOTATED_FRAME && !isTestMode;
 
     (result.detections || []).forEach((det) => {
       const [x1, y1, x2, y2] = det.bbox;
-      const drawX = flipX ? canvas.width - x2 : x1;
-      const boxWidth = x2 - x1;
+      const sx1 = x1 * scale, sy1 = y1 * scale, sx2 = x2 * scale, sy2 = y2 * scale;
+      const drawX = flipX ? canvas.width - sx2 : sx1;
+      const boxWidth = sx2 - sx1;
       ctx.strokeStyle = '#22c55e';
       ctx.fillStyle = 'rgba(34, 197, 94, 0.2)';
-      ctx.strokeRect(drawX, y1, boxWidth, y2 - y1);
-      ctx.fillRect(drawX, y1, boxWidth, y2 - y1);
+      ctx.strokeRect(drawX, sy1, boxWidth, sy2 - sy1);
+      ctx.fillRect(drawX, sy1, boxWidth, sy2 - sy1);
       ctx.fillStyle = '#ffffff';
-      ctx.fillText(`${det.class_name} ${Math.round(det.confidence * 100)}%`, drawX + 4, Math.max(16, y1 - 8));
+      ctx.fillText(`${det.class_name} ${Math.round(det.confidence * 100)}%`, drawX + 4, Math.max(16, sy1 - 8));
     });
 
     const handBoxes = result?.compliance?.hand_boxes || [];
     handBoxes.forEach((box) => {
       const isTouching = result?.compliance?.touch_plant || result?.compliance?.touch_animal;
       const [x1, y1, x2, y2] = box;
-      const drawX = flipX ? canvas.width - x2 : x1;
+      const sx1 = x1 * scale, sy1 = y1 * scale, sx2 = x2 * scale, sy2 = y2 * scale;
+      const drawX = flipX ? canvas.width - sx2 : sx1;
       ctx.strokeStyle = isTouching ? '#f97316' : '#facc15';
-      ctx.strokeRect(drawX, y1, x2 - x1, y2 - y1);
+      ctx.strokeRect(drawX, sy1, sx2 - sx1, sy2 - sy1);
     });
 
-    const dataUrl = canvas.toDataURL('image/jpeg', 0.5);
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.4);
     return dataUrl.split(',')[1];
   };
 
@@ -426,16 +540,35 @@ export default function DetectionScreenWeb() {
       wsRef.current.send(JSON.stringify({
         image_base64: base64Photo,
         user_id: currentUser?.id || 1,
+        imgsz: Number(serverConfig.inferenceResolution) || 640,
       }));
     }, 50);
 
     return () => clearInterval(captureInterval);
-  }, [permissionGranted, currentUser]);
+  }, [permissionGranted, currentUser, isTestMode, serverConfig.clientDownscaleWidth, serverConfig.inferenceResolution]);
+
+  useEffect(() => {
+    return () => {
+      if (testFootageUrl) URL.revokeObjectURL(testFootageUrl);
+    };
+  }, [testFootageUrl]);
+
+  const filteredCompliance = useMemo(() => {
+    const compliance = latestResult?.compliance;
+    if (!compliance) return compliance;
+    const humanBoxes = latestResult?.human_boxes || [];
+    const detections = latestResult?.detections || [];
+    const hasVisibleAnimal = detections.some(
+      det => det.class === 1 && !humanBoxes.some(human => boxOverlapRatio(det.bbox, human.bbox) >= 0.8)
+    );
+    if (hasVisibleAnimal) return compliance;
+    return { ...compliance, touch_animal: false, animal_strike: false, extended_touch_animal: false };
+  }, [latestResult]);
 
   // 5. Client-Side Anomaly Logging
   useEffect(() => {
-    if (latestResult?.compliance && currentUser) {
-      const { plucking_plant, animal_strike, extended_touch_animal, extended_touch_plant, touch_animal, touch_plant } = latestResult.compliance;
+    if (filteredCompliance && currentUser) {
+      const { plucking_plant, animal_strike, extended_touch_animal, extended_touch_plant, touch_animal, touch_plant } = filteredCompliance;
       let detectedEventType = null;
 
       if (plucking_plant) detectedEventType = 'plucking_plant';
@@ -480,7 +613,7 @@ export default function DetectionScreenWeb() {
         }
       }
     }
-  }, [latestResult]);
+  }, [filteredCompliance]);
 
   // --- RENDER HELPERS ---
   const renderSkeletonLine = (kp1, kp2, index) => {
@@ -515,6 +648,11 @@ export default function DetectionScreenWeb() {
       }} />
     );
   };
+
+  const wrapperAspectRatio = useMemo(() => {
+    if (!cameraLayout?.videoWidth || !cameraLayout?.videoHeight) return '4 / 3';
+    return `${cameraLayout.videoWidth} / ${cameraLayout.videoHeight}`;
+  }, [cameraLayout?.videoWidth, cameraLayout?.videoHeight]);
 
   const selectedEventCenter = useMemo(() => {
     if (!selectedEvent?.latitude || !selectedEvent?.longitude) return [1.5533, 110.3592];
@@ -615,7 +753,7 @@ export default function DetectionScreenWeb() {
 
       {/* RIGHT PANEL: Fixed Aspect Ratio Web Camera */}
       <div style={styles.cameraSidebar}>
-        <div ref={cameraWrapperRef} style={styles.cameraWrapper}>
+        <div ref={cameraWrapperRef} style={{ ...styles.cameraWrapper, aspectRatio: wrapperAspectRatio, maxHeight: 'calc(100vh - 160px)', margin: '0 auto' }}>
 
           <video
             ref={setVideoElement}
@@ -623,10 +761,17 @@ export default function DetectionScreenWeb() {
             playsInline
             muted
             onLoadedMetadata={updateLayout}
-            style={{ ...styles.camera, transform: MIRROR_PREVIEW ? 'scaleX(-1)' : 'none' }}
+            style={{ ...styles.camera, transform: MIRROR_PREVIEW && !isTestMode ? 'scaleX(-1)' : 'none' }}
           />
 
-          {!permissionGranted && (
+          {!cameraEnabled && !isTestMode && (
+            <div style={styles.cameraPlaceholder}>
+              <div style={styles.cameraPlaceholderTitle}>Camera off</div>
+              <div style={styles.cameraPlaceholderText}>Press the button below to turn the camera back on.</div>
+            </div>
+          )}
+
+          {!permissionGranted && cameraEnabled && (
             <div style={styles.cameraPlaceholder}>
               <div style={styles.cameraPlaceholderTitle}>
                 {cameraStatus === 'starting' ? t('starting_camera') : t('camera_unavailable')}
@@ -647,8 +792,32 @@ export default function DetectionScreenWeb() {
           {/* AI Overlays — wrapped in a CSS-mirrored container to match the scaleX(-1) video */}
           {isConnected && cameraLayout && (
             <div style={styles.overlayMirror}>
+              {/* Human Bounding Box Overlay (from pose model) */}
+              {latestResult?.human_boxes?.map((human, index) => {
+                const [x1, y1, x2, y2] = human.bbox;
+                const left = x1 * SCALE_X;
+                return (
+                  <div key={`human-${index}`} style={{
+                    ...styles.boundingBox,
+                    left, top: y1 * SCALE_Y,
+                    width: (x2 - x1) * SCALE_X,
+                    height: (y2 - y1) * SCALE_Y,
+                    borderColor: '#3b82f6',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                  }}>
+                    <span style={{ ...styles.label, color: '#bfdbfe' }}>
+                      human {Math.round(human.confidence * 100)}%
+                    </span>
+                  </div>
+                );
+              })}
+
               {/* Detections Overlay */}
-              {latestResult?.detections?.map((det, index) => {
+              {latestResult?.detections?.filter((det) => {
+                if (det.class !== 1) return true;
+                const humanBoxes = latestResult?.human_boxes || [];
+                return !humanBoxes.some(human => boxOverlapRatio(det.bbox, human.bbox) >= 0.8);
+              }).map((det, index) => {
                 const [x1, y1, x2, y2] = det.bbox;
                 const left = x1 * SCALE_X;
                 return (
@@ -668,7 +837,7 @@ export default function DetectionScreenWeb() {
 
               {/* Hand Box Overlay */}
               {latestResult?.compliance?.hand_boxes?.map((box, index) => {
-                const isTouching = latestResult.compliance.touch_plant || latestResult.compliance.touch_animal;
+                const isTouching = filteredCompliance?.touch_plant || filteredCompliance?.touch_animal;
                 const [x1, y1, x2, y2] = box;
                 const left = x1 * SCALE_X;
                 return (
@@ -689,12 +858,27 @@ export default function DetectionScreenWeb() {
 
           {/* Compliance Alerts */}
           {latestResult?.compliance?.plucking_plant && <div style={styles.warningText}>{t('warning_plucking_detected')}</div>}
-          {latestResult?.compliance?.animal_strike && <div style={styles.warningText}>{t('alert_animal_strike')}</div>}
-          {latestResult?.compliance?.extended_touch_animal && <div style={{...styles.warningText, backgroundColor: 'rgba(255, 165, 0, 0.8)'}}>{t('extended_animal_touch')}</div>}
+          {filteredCompliance?.animal_strike && <div style={styles.warningText}>{t('alert_animal_strike')}</div>}
+          {filteredCompliance?.extended_touch_animal && <div style={{...styles.warningText, backgroundColor: 'rgba(255, 165, 0, 0.8)'}}>{t('extended_animal_touch')}</div>}
           {latestResult?.compliance?.extended_touch_plant && <div style={{...styles.warningText, backgroundColor: 'rgba(255, 165, 0, 0.8)'}}>{t('extended_plant_touch')}</div>}
+
+          {isTestMode && (
+            <div style={styles.testModeBadge}>TEST FOOTAGE</div>
+          )}
 
           {/* Settings Button */}
           <button style={styles.settingsButton} onClick={() => setConfigMode(true)}>⚙</button>
+
+          {/* Camera Toggle Button (hidden in test footage mode) */}
+          {!isTestMode && (
+            <button
+              style={{ ...styles.toggleCameraButton, backgroundColor: cameraEnabled ? 'rgba(255,255,255,0.2)' : 'rgba(220,38,38,0.6)' }}
+              onClick={toggleCamera}
+              title={cameraEnabled ? 'Turn camera off' : 'Turn camera on'}
+            >
+              {cameraEnabled ? '⏸' : '⏵'}
+            </button>
+          )}
         </div>
 
         <div style={styles.cameraMetaPanel}>
@@ -798,13 +982,42 @@ export default function DetectionScreenWeb() {
               value={tempConfig.port}
               onChange={(e) => setTempConfig({ ...tempConfig, port: e.target.value })}
             />
+
+            <span style={styles.configLabel}>Inference resolution (model input size)</span>
+            <select
+              style={styles.input}
+              value={tempConfig.inferenceResolution}
+              onChange={(e) => setTempConfig({ ...tempConfig, inferenceResolution: Number(e.target.value) })}
+            >
+              <option value={320}>320 px — fastest, lower accuracy</option>
+              <option value={416}>416 px — fast</option>
+              <option value={480}>480 px</option>
+              <option value={640}>640 px — default</option>
+              <option value={800}>800 px — slowest, highest accuracy</option>
+            </select>
+
+            <span style={styles.configLabel}>Client downscale (max sent frame width)</span>
+            <select
+              style={styles.input}
+              value={tempConfig.clientDownscaleWidth}
+              onChange={(e) => setTempConfig({ ...tempConfig, clientDownscaleWidth: Number(e.target.value) })}
+            >
+              <option value={480}>480 px — minimum bandwidth</option>
+              <option value={640}>640 px — default</option>
+              <option value={800}>800 px</option>
+              <option value={1280}>1280 px</option>
+              <option value={9999}>No downscale (full video resolution)</option>
+            </select>
+
             <div style={styles.buttonContainer}>
               <button
                 style={styles.buttonSave}
                 onClick={() => {
                   const nextConfig = {
                     host: (tempConfig.host || '').trim() || getAutoHost(),
-                    port: (tempConfig.port || '').trim() || '8000'
+                    port: (tempConfig.port || '').trim() || '8000',
+                    inferenceResolution: Number(tempConfig.inferenceResolution) || 640,
+                    clientDownscaleWidth: Number(tempConfig.clientDownscaleWidth) || 640,
                   };
                   setServerConfig(nextConfig);
                   setConfigMode(false);
@@ -824,6 +1037,34 @@ export default function DetectionScreenWeb() {
                 {t('cancel')}
               </button>
             </div>
+
+            <div style={styles.testFootageDivider} />
+            <span style={styles.configLabel}>Test with pre-recorded footage</span>
+            <p style={styles.testFootageHint}>
+              Upload a video to play it in the viewfinder. Detections and anomalies are logged exactly as in live mode.
+            </p>
+            {isTestMode ? (
+              <div style={styles.buttonContainer}>
+                <button
+                  style={styles.buttonCancel}
+                  onClick={() => { stopTestFootage(); setConfigMode(false); }}
+                >
+                  Stop test footage and resume camera
+                </button>
+              </div>
+            ) : (
+              <div style={styles.buttonContainer}>
+                <label style={styles.uploadButton}>
+                  Upload test video
+                  <input
+                    type="file"
+                    accept="video/*"
+                    onChange={handleTestFootageUpload}
+                    style={{ display: 'none' }}
+                  />
+                </label>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -833,13 +1074,13 @@ export default function DetectionScreenWeb() {
 
 const styles = {
   appContainer: { display: 'flex', flexDirection: 'row', height: '100vh', backgroundColor: '#f6f8f7', fontFamily: 'Inter, sans-serif', color: '#111827' },
-  mainContent: { flex: 2, padding: '24px', display: 'flex', flexDirection: 'column', boxSizing: 'border-box' },
+  mainContent: { flex: 2, padding: '24px', display: 'flex', flexDirection: 'column', boxSizing: 'border-box', overflow: 'hidden', minHeight: 0 },
   title: { fontSize: '28px', fontWeight: '700', color: '#111827', margin: 0 },
   pageSubtitle: { marginTop: 6, color: '#6b7280', fontSize: 13 },
   titleBar: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', gap: 16 },
   refreshButton: { fontSize: '14px', fontWeight: '600', color: '#0a6340', backgroundColor: '#ecfdf5', padding: '10px 14px', borderRadius: '8px', border: '1px solid #bbf7d0', cursor: 'pointer' },
   eventsSingleColumn: { display: 'flex', flexDirection: 'column', gap: 16, flex: 1, minHeight: 0 },
-  eventsPanel: { backgroundColor: '#ffffff', borderRadius: 12, border: '1px solid #e5e7eb', padding: 12, display: 'flex', flexDirection: 'column', minHeight: 0 },
+  eventsPanel: { backgroundColor: '#ffffff', borderRadius: 12, border: '1px solid #e5e7eb', padding: 12, display: 'flex', flexDirection: 'column', minHeight: 0, flex: 1 },
   panelHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
   panelTitle: { margin: 0, fontSize: 16, color: '#111827' },
   badgeCount: { fontSize: 12, fontWeight: '700', color: '#374151', backgroundColor: '#f3f4f6', borderRadius: 99, padding: '4px 8px' },
@@ -858,7 +1099,7 @@ const styles = {
   emptyText: { color: '#9ca3af', fontSize: 13, marginTop: 8, display: 'block' },
   cameraSidebar: { flex: 1, padding: '24px 24px 24px 0', boxSizing: 'border-box' },
   cameraWrapper: { width: '100%', aspectRatio: '4 / 3', borderRadius: '12px', overflow: 'hidden', backgroundColor: '#111827', position: 'relative', border: '1px solid #d1d5db' },
-  camera: { width: '100%', height: '100%', objectFit: 'fill', display: 'block' },
+  camera: { width: '100%', height: '100%', objectFit: 'contain', display: 'block' },
   cameraMetaPanel: { marginTop: 14, backgroundColor: '#ffffff', borderRadius: 12, border: '1px solid #e5e7eb', padding: 12, display: 'flex', flexDirection: 'column', gap: 8 },
   metaRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 },
   metaLabel: { color: '#6b7280', fontSize: 12, fontWeight: '600' },
@@ -879,6 +1120,7 @@ const styles = {
   interactionBox: { position: 'absolute', border: '2px solid', borderRadius: '3px', pointerEvents: 'none' },
   interactionLabel: { position: 'absolute', top: '-16px', left: '-2px', backgroundColor: '#111827', padding: '0 3px', fontSize: '10px', fontWeight: '700', whiteSpace: 'nowrap' },
   settingsButton: { position: 'absolute', bottom: '10px', left: '10px', fontSize: '22px', backgroundColor: 'rgba(255,255,255,0.2)', padding: '8px', borderRadius: '20px', cursor: 'pointer', zIndex: 10, border: 'none', color: 'white' },
+  toggleCameraButton: { position: 'absolute', bottom: '10px', left: '60px', fontSize: '22px', backgroundColor: 'rgba(255,255,255,0.2)', padding: '8px', borderRadius: '20px', cursor: 'pointer', zIndex: 10, border: 'none', color: 'white' },
   detailModalOverlay: { position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.6)', zIndex: 5000, display: 'flex', justifyContent: 'center', alignItems: 'center', padding: 16 },
   detailModal: { width: 'min(900px, 96vw)', maxHeight: '90vh', overflowY: 'auto', backgroundColor: 'white', borderRadius: 12, padding: 16, border: '1px solid #e5e7eb' },
   detailHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
@@ -900,4 +1142,8 @@ const styles = {
   buttonContainer: { margin: '8px 0' },
   buttonSave: { width: '100%', padding: '10px', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', backgroundColor: '#0a6340', color: 'white' },
   buttonCancel: { width: '100%', padding: '10px', border: '1px solid #d1d5db', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', backgroundColor: '#f3f4f6', color: '#111827' },
+  testFootageDivider: { borderTop: '1px solid #e5e7eb', margin: '18px 0 6px 0' },
+  testFootageHint: { fontSize: '12px', color: '#6b7280', margin: '4px 0 10px 0', lineHeight: 1.4 },
+  uploadButton: { display: 'inline-block', width: '100%', boxSizing: 'border-box', padding: '10px', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', backgroundColor: '#1d4ed8', color: 'white', textAlign: 'center' },
+  testModeBadge: { position: 'absolute', top: '10px', right: '10px', backgroundColor: '#1d4ed8', color: 'white', padding: '4px 8px', borderRadius: '999px', fontSize: '11px', fontWeight: '700', letterSpacing: '0.04em', zIndex: 10 },
 };

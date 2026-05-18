@@ -34,8 +34,8 @@ const publicStoragePath = path.resolve(__dirname, "../storage/public");
 // Enable URL-encoded form data parsing with a 200mb limit
 app.use(express.urlencoded({ extended: true, limit: "200mb" }));
 
-// Middleware to parse JSON bodies
-app.use(express.json());
+// Middleware to parse JSON bodies (annotated anomaly frames are base64-encoded and can be large)
+app.use(express.json({ limit: "50mb" }));
 
 // Enable CORS for all routes
 app.use(
