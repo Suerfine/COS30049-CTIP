@@ -167,7 +167,7 @@ const CourseCard = ({
         {enrollmentStatus === EnrollmentStatus.COMPLETED && (
           <View style={styles.completedBadgeFloating}>
             <Award size={12} color="#fff" />
-            <Text style={styles.completedBadgeText}>Badge Received</Text>
+            <Text style={styles.completedBadgeText}>{t('badge_received')}</Text>
           </View>
         )}
       </View>

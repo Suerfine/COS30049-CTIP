@@ -28,8 +28,10 @@ import {
 
 import { useAnomalyDetection } from "../hooks/useAnomalyDetection";
 import { formatDate } from "../utils/formatDate";
+import { useTranslation } from "react-i18next";
 
 const AnomalyDetection = () => {
+  const { t } = useTranslation();
   const { width, height } = useWindowDimensions();
   const isCompact = width < 700;
   const {
@@ -62,14 +64,14 @@ const AnomalyDetection = () => {
   // Get event type label
   const getEventTypeLabel = (eventType) => {
     const typeMap = {
-      touching_plant: "Touching Plant",
-      touching_animal: "Touching Animal",
-      plucking_plants: "Plucking Plants",
-      hitting_animal: "Hitting Animal",
-      extended_plant_touch: "Extended Plant Touch",
-      extended_animal_touch: "Extended Animal Touch",
-      forest_fire: "Forest Fire",
-      other: "Other",
+      touching_plant: t('touch_plant'),
+      touching_animal: t('touch_animal'),
+      plucking_plants: t('plucking_plant'),
+      hitting_animal: t('animal_strike'),
+      extended_plant_touch: t('extended_touch_plant'),
+      extended_animal_touch: t('extended_touch_animal'),
+      forest_fire: t('forest_fire'),
+      other: t('other'),
     };
     return typeMap[eventType?.toLowerCase()] || eventType;
   };

@@ -208,20 +208,22 @@ export const EVENT_LABELS = {
   other: "Other",
 };
 
-export const SEVERITY_CONFIG = {
+import i18n from "../i18n";
+
+export const getSeverityConfig = () => ({
   high: {
     color: "#dc2626",
     fillColor: "#ef4444",
-    label: "High",
+    label: i18n.t('high'),
   },
   medium: {
     color: "#d97706",
     fillColor: "#f59e0b",
-    label: "Medium",
+    label: i18n.t('medium'),
   },
   low: {
     color: "#059669",
     fillColor: "#10b981",
-    label: "Low",
+    label: i18n.t('low'),
   },
-};
+});

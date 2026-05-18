@@ -28,6 +28,7 @@ import {
   X,
   Filter,
 } from "lucide-react-native";
+import { useTranslation } from "react-i18next";
 
 // Import hooks and assets
 import SlidingTabs from "../components/SlidingTabs";
@@ -40,6 +41,7 @@ import { Status_Config } from "../utils/status_config";
 import { paymentService } from "../services/PaymentService";
 
 const EnrollmentManagement = () => {
+  const { t } = useTranslation();
   // Enrollment management
   const {
     enrollments,
@@ -110,10 +112,10 @@ const EnrollmentManagement = () => {
   const [selectedPayment, setSelectedPayment] = useState(null);
   const [filterVisible, setFilterVisible] = useState(false);
   const [translateX, setTranslateX] = useState(300);
-  const [tempCourseFilter, setTempCourseFilter] = useState("All");
+  const [tempCourseFilter, setTempCourseFilter] = useState("all");
   const [rejectModalVisible, setRejectModalVisible] = useState(false);
   const [adminRemark, setAdminRemark] = useState("");
-  const [selectedCourseFilter, setSelectedCourseFilter] = useState("All");
+  const [selectedCourseFilter, setSelectedCourseFilter] = useState("all");
   const [receiptUri, setReceiptUri] = useState(null);
   const [receiptLoading, setReceiptLoading] = useState(false);
   const [receiptError, setReceiptError] = useState("");
@@ -122,19 +124,19 @@ const EnrollmentManagement = () => {
   const isCompact = width < 480;
 
   const enrollmentStatusOptions = [
-    "All",
+    "all",
     "in_progress",
     "in_review",
     "completed",
     "failed",
     "expired",
-    "Rejected",
+    "rejected",
     "pending_payment",
     "applied",
   ];
 
   const ProgressStatusOptions = [
-    "All",
+    "all",
     "in_progress",
     "completed",
     "failed",
@@ -143,7 +145,13 @@ const EnrollmentManagement = () => {
     "in_review",
   ];
 
-  const paymentStatusOptions = ["All", "pending", "paid", "failed", "refunded"];
+  const paymentStatusOptions = [ 
+    "all", 
+    "pending", 
+    "paid", 
+    "failed", 
+    "refunded",
+  ];
 
   const isEnrollment = activeTab === "enrollment";
   const isSubmission = activeTab === "progress";
@@ -254,17 +262,22 @@ const EnrollmentManagement = () => {
   };
 
   const tabs = [
-    { id: "enrollment", label: "Enrollment" },
-    { id: "progress", label: "Progress" },
-    { id: "payment", label: "Payment" },
+    { id: "enrollment", label: t("enrollment") },
+    { id: "progress", label: t("progress") },
+    { id: "payment", label: t("payment") },
   ];
 
   const formatted = (status) => {
-    if (!status) return "N/A";
-    return status
-      .split("_")
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(" ");
+    if (!status) return t("not_available");
+
+    const key = status.toLowerCase();
+
+    return t(`status.${key}`, {
+      defaultValue: status
+        .split("_")
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(" "),
+    });
   };
 
   const handleRowPress = async (enrollment) => {
@@ -302,7 +315,7 @@ const EnrollmentManagement = () => {
           setReceiptError(
             err?.response?.data?.message ||
               err?.message ||
-              "Failed to load receipt",
+              t("failed_to_load_receipt"),
           );
         }
       } finally {
@@ -321,43 +334,43 @@ const EnrollmentManagement = () => {
 
   const renderEnrollmentHeader = () => (
     <View style={[styles.tableHeader, styles.row]}>
-      <Text style={[styles.headerText, { flex: 3 }]}>Full Name</Text>
+      <Text style={[styles.headerText, { flex: 3 }]}>{t("full_name")}</Text>
       <Pressable
         onPress={() => requestSort("course_id")}
         style={[styles.headerRow, { flex: 2 }]}
       >
-        <Text style={styles.headerText}>Course Code</Text>
+        <Text style={styles.headerText}>{t("course_code")}</Text>
         {sortConfig.key === "course_id" && sortConfig.direction === "asc" ? (
           <ArrowUpNarrowWide size={14} color="white" />
         ) : (
           <ArrowDownWideNarrow size={14} color="white" />
         )}
       </Pressable>
-      <Text style={[styles.headerText, { flex: 4 }]}>Course Name</Text>
+      <Text style={[styles.headerText, { flex: 4 }]}>{t("course_name")}</Text>
       <Pressable
         onPress={() => requestSort("enrolled_at")}
         style={[styles.headerRow, { flex: 2 }]}
       >
-        <Text style={styles.headerText}>Enrolled On</Text>
+        <Text style={styles.headerText}>{t("enrolled_on")}</Text>
         {sortConfig.key === "enrolled_at" && sortConfig.direction === "asc" ? (
           <ArrowUpNarrowWide size={14} color="white" />
         ) : (
           <ArrowDownWideNarrow size={14} color="white" />
         )}
       </Pressable>
-      <Text style={[styles.headerText, { flex: 2 }]}>Status</Text>
-      <Text style={[styles.headerText, { flex: 2 }]}>Expiry On</Text>
+      <Text style={[styles.headerText, { flex: 2 }]}>{t("status_label")}</Text>
+      <Text style={[styles.headerText, { flex: 2 }]}>{t("expiry_on")}</Text>
     </View>
   );
 
   const renderSubmissionsHeader = () => (
     <View style={[styles.tableHeader, styles.row]}>
-      <Text style={[styles.headerText, { flex: 3 }]}>Full Name</Text>
+      <Text style={[styles.headerText, { flex: 3 }]}>{t("full_name")}</Text>
       <Pressable
         onPress={() => requestSubmissionSort("course_id")}
         style={[styles.headerRow, { flex: 2 }]}
       >
-        <Text style={styles.headerText}>Course Code</Text>
+        <Text style={styles.headerText}>{t("course_code")}</Text>
         {sortSubmissionConfig.key === "course_id" &&
         sortSubmissionConfig.direction === "asc" ? (
           <ArrowUpNarrowWide size={14} color="white" />
@@ -365,22 +378,22 @@ const EnrollmentManagement = () => {
           <ArrowDownWideNarrow size={14} color="white" />
         )}
       </Pressable>
-      <Text style={[styles.headerText, { flex: 4 }]}>Course Name</Text>
-      <Text style={[styles.headerText, { flex: 2 }]}>Status</Text>
-      <Text style={[styles.headerText, { flex: 1 }]}>Badge</Text>
-      <Text style={[styles.headerText, { flex: 2 }]}>Issued On</Text>
-      <Text style={[styles.headerText, { flex: 2 }]}>Expiry On</Text>
+      <Text style={[styles.headerText, { flex: 4 }]}>{t("course_name")}</Text>
+      <Text style={[styles.headerText, { flex: 2 }]}>{t("status_label")}</Text>
+      <Text style={[styles.headerText, { flex: 1 }]}>{t("badge")}</Text>
+      <Text style={[styles.headerText, { flex: 2 }]}>{t("issued_on")}</Text>
+      <Text style={[styles.headerText, { flex: 2 }]}>{t("expiry_on")}</Text>
     </View>
   );
 
   const renderPaymentHeader = () => (
     <View style={[styles.tableHeader, styles.row]}>
-      <Text style={[styles.headerText, { flex: 4 }]}>Full Name</Text>
-      <Text style={[styles.headerText, { flex: 3 }]}>Amount</Text>
-      <Text style={[styles.headerText, { flex: 3 }]}>Status</Text>
-      <Text style={[styles.headerText, { flex: 3 }]}>Paid On</Text>
-      <Text style={[styles.headerText, { flex: 3 }]}>Processed On</Text>
-      <Text style={[styles.headerText, { flex: 2 }]}>Receipt</Text>
+      <Text style={[styles.headerText, { flex: 4 }]}>{t("full_name")}</Text>
+      <Text style={[styles.headerText, { flex: 3 }]}>{t("amount")}</Text>
+      <Text style={[styles.headerText, { flex: 3 }]}>{t("status_label")}</Text>
+      <Text style={[styles.headerText, { flex: 3 }]}>{t("paid_on")}</Text>
+      <Text style={[styles.headerText, { flex: 3 }]}>{t("processed_on")}</Text>
+      <Text style={[styles.headerText, { flex: 2 }]}>{t("receipt")}</Text>
     </View>
   );
 
@@ -434,10 +447,10 @@ const EnrollmentManagement = () => {
             fill={statusConfig.color}
           />
           <Text style={[styles.badgeText, { color: statusConfig.color }]}>
-            {statusConfig.label || formatted(item.status)}
+              {formatted(item.status)}
           </Text>
         </View>
-        <Text style={{ flex: 2 }}>{item.expiry_date || "N/A"}</Text>
+        <Text style={{ flex: 2 }}>{item.expiry_date || t("not_available")}</Text>
       </Pressable>
     );
   };
@@ -487,7 +500,7 @@ const EnrollmentManagement = () => {
             fill={statusConfig.color}
           />
           <Text style={[styles.badgeText, { color: statusConfig.color }]}>
-            {statusConfig.label || item.status}
+            {formatted(item.status)}
           </Text>
         </View>
         <View style={{ flex: 1, alignItems: "center" }}>
@@ -501,10 +514,10 @@ const EnrollmentManagement = () => {
           />
         </View>
         <Text style={{ flex: 2 }}>
-          {formatDate(item.completed_at) || "N/A"}
+          {formatDate(item.completed_at) || t("not_available")}
         </Text>
         <Text style={{ flex: 2 }}>
-          {item.badge_expire_at ? formatDate(item.badge_expire_at) : "N/A"}
+          {item.badge_expire_at ? formatDate(item.badge_expire_at) : t("not_available")}
         </Text>
       </Pressable>
     );
@@ -547,7 +560,7 @@ const EnrollmentManagement = () => {
         await setSubmissionCurrentPage((p) => p);
         await fetchSubmissions();
       } else {
-        alert("Failed to approve: " + result.error);
+        alert(`${t("failed_to_approve")}: ` + result.error);
       }
     } catch (err) {
       console.error(err);
@@ -555,19 +568,19 @@ const EnrollmentManagement = () => {
   };
   // Handle reject badge
   const RejectBadgeAction = async (id) => {
-    if (!window.confirm("Reject this badge and mark enrollment as failed?"))
+    if (!window.confirm(t("confirm_reject_badge")))
       return;
 
     const result = await handleRejectBadge(id);
     if (result.success) {
-      alert("Badge rejected.");
+      alert(t("badge_rejected"));
       setAuditModalVisible(false);
       await fetchEnrollmentAudit(id);
       await setSubmissionCurrentPage((p) => p);
       await fetchEnrollments();
       await fetchSubmissions();
     } else {
-      alert("Error rejecting badge: " + result.error);
+      alert(`${t("error_rejecting_badge")}: ${result.error}`);
     }
   };
 
@@ -579,7 +592,7 @@ const EnrollmentManagement = () => {
           window.open(receipt.uri, "_blank");
         })
         .catch((err) => {
-          console.error("Failed to open receipt", err);
+          console.error(t("failed_open_receipt"), err);
         });
     }
   };
@@ -587,7 +600,7 @@ const EnrollmentManagement = () => {
   const renderPaymentItem = ({ item }) => {
     const statusConfig = Status_Config[item.status?.toLowerCase()] || {
       color: "#8f8f8f",
-      label: item.status || "Unknown",
+      label: item.status || t("unknown"),
     };
 
     return (
@@ -626,14 +639,14 @@ const EnrollmentManagement = () => {
             fill={statusConfig.color}
           />
           <Text style={[styles.badgeText, { color: statusConfig.color }]}>
-            {statusConfig.label}
+            {formatted(item.status)}
           </Text>
         </View>
         <Text style={{ flex: 3 }}>
-          {item.created_at ? formatDate(item.created_at) : "N/A"}
+          {item.created_at ? formatDate(item.created_at) : t("not_available")}
         </Text>
         <Text style={{ flex: 3 }}>
-          {item.processed_at ? formatDate(item.processed_at) : "N/A"}
+          {item.processed_at ? formatDate(item.processed_at) : t("not_available")}
         </Text>
         <View style={{ flex: 2 }}>
           <Pressable
@@ -644,7 +657,8 @@ const EnrollmentManagement = () => {
             }}
             style={styles.downloadBtn}
           >
-            <Text style={styles.downloadBtnText}>Download</Text>
+            <Text style={styles.downloadBtnText}>{
+          t("download")}</Text>
           </Pressable>
         </View>
       </Pressable>
@@ -659,8 +673,8 @@ const EnrollmentManagement = () => {
     return (
       <View style={styles.paginationContainer}>
         <Text style={styles.pageInfo}>
-          Showing {displayData.length > 0 ? indexOfFirstItem + 1 : 0} to{" "}
-          {indexOfLastItem} of {activeTotalElements} records
+          {t("showing")} {displayData.length > 0 ? indexOfFirstItem + 1 : 0} {t("to")}{" "}
+          {indexOfLastItem} {t("of")} {activeTotalElements} {t("records")}
         </Text>
         <View style={styles.paginationControls}>
           <Pressable
@@ -754,7 +768,7 @@ const EnrollmentManagement = () => {
   return (
     <>
       <ScrollView style={styles.container}>
-        <Text style={styles.title}>Enrollment Management</Text>
+        <Text style={styles.title}>{t("enrollment_management")}</Text>
         <SlidingTabs
           tabs={tabs}
           activeTab={activeTab}
@@ -782,7 +796,7 @@ const EnrollmentManagement = () => {
               <Search size={18} color="#8f8f8f" />
               <TextInput
                 style={styles.input}
-                placeholder="Search..."
+                placeholder={t("search")}
                 value={activeSearchQuery}
                 onChangeText={(text) => {
                   setActiveSearchQuery(text);
@@ -801,8 +815,8 @@ const EnrollmentManagement = () => {
                   ellipsizeMode="tail"
                   style={styles.pillText}
                 >
-                  {getActiveStatus() === "All"
-                    ? "Status"
+                  {getActiveStatus() === "all"
+                    ? t("status_label")
                     : formatted(getActiveStatus())}
                 </Text>
                 {isOpen ? (
@@ -837,8 +851,7 @@ const EnrollmentManagement = () => {
                         ellipsizeMode="tail"
                         style={[
                           styles.menuItemText,
-                          getActiveStatus() === status &&
-                            styles.menuItemTextActive,
+                          getActiveStatus() === status && styles.menuItemTextActive,
                         ]}
                       >
                         {formatted(status)}
@@ -888,7 +901,7 @@ const EnrollmentManagement = () => {
                 keyExtractor={(item) => item.id.toString()}
                 ListEmptyComponent={
                   <View style={styles.tableRow}>
-                    <Text>{loading ? "Loading..." : "No Record Found."}</Text>
+                    <Text>{loading ? t("loading") : t("no_record_found")}</Text>
                   </View>
                 }
               />
@@ -917,7 +930,7 @@ const EnrollmentManagement = () => {
             if (res.success) setDetailModalVisible(false);
           }}
           onDelete={async (id) => {
-            if (window.confirm("Delete this record permanently?")) {
+            if (window.confirm(t("delete_record_permanently"))) {
               const res = await deleteRecord(id);
               if (res.success) setDetailModalVisible(false);
             }
@@ -935,8 +948,8 @@ const EnrollmentManagement = () => {
               <View style={styles.modalHeader}>
                 <Text style={styles.modalTitle}>
                   {auditLoading
-                    ? "Syncing..."
-                    : `Progress: ${auditData?.course?.title}`}
+                    ? t("syncing")
+                    : `${t("progress")}: ${auditData?.course?.title}`}
                 </Text>
                 <Pressable onPress={() => setAuditModalVisible(false)}>
                   <Text style={styles.closeBtn}>✕</Text>
@@ -946,13 +959,13 @@ const EnrollmentManagement = () => {
               <ScrollView>
                 {auditLoading ? (
                   <Text style={styles.loadingText}>
-                    Fetching database logs...
+                    {t("fetching_database_logs")}
                   </Text>
                 ) : (
                   auditData?.course?.modules?.map((module, mIdx) => (
                     <View key={mIdx} style={styles.moduleCard}>
                       <Text style={styles.moduleTitle}>
-                        Module: {module.title}
+                        {t("module")}: {module.title}
                       </Text>
                       {module.pages?.map((page) => {
                         const earned =
@@ -969,8 +982,8 @@ const EnrollmentManagement = () => {
                               </Text>
                               <Text style={styles.pageSubText}>
                                 {page.final_quiz
-                                  ? "Final Assessment"
-                                  : "Content Module"}
+                                  ? t("final_assessment")
+                                  : t("content_module")}
                               </Text>
                             </View>
                             <ProgressRing
@@ -990,14 +1003,14 @@ const EnrollmentManagement = () => {
                     style={[styles.actionBtn, styles.outlineBtn]}
                     onPress={() => RejectBadgeAction(selectedAuditId)}
                   >
-                    <Text style={styles.outlineBtnText}>Reject</Text>
+                    <Text style={styles.outlineBtnText}>{t("reject")}</Text>
                   </Pressable>
 
                   <Pressable
                     style={[styles.actionBtn, styles.solidApproveBtn]}
                     onPress={() => ApproveBadgeAction(selectedAuditId)}
                   >
-                    <Text style={styles.solidBtnText}>Approve</Text>
+                    <Text style={styles.solidBtnText}>{t("approve")}</Text>
                   </Pressable>
                 </View>
               )}
@@ -1014,7 +1027,7 @@ const EnrollmentManagement = () => {
           <View style={styles.modalOverlay}>
             <View style={[styles.paymentModalContent, isCompact && styles.paymentModalContentCompact]}>
               <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Payment Details</Text>
+                <Text style={styles.modalTitle}>{t("payment_details")}</Text>
 
                 <Pressable onPress={() => setPaymentModalVisible(false)}>
                   <Text style={styles.closeBtn}>✕</Text>
@@ -1045,7 +1058,7 @@ const EnrollmentManagement = () => {
                           {selectedPayment.user_fullname}
                         </Text>
                         <Text style={styles.paymentCourse}>
-                          {selectedPayment.course_title || "Course"}
+                          {selectedPayment.course_title || t("course")}
                         </Text>
                       </View>
                     </View>
@@ -1053,7 +1066,7 @@ const EnrollmentManagement = () => {
                       {receiptLoading ? (
                         <View style={styles.noReceiptBox}>
                           <Text style={styles.noReceiptText}>
-                            Loading receipt...
+                            {t("loading_receipt")}
                           </Text>
                         </View>
                       ) : receiptUri ? (
@@ -1072,7 +1085,7 @@ const EnrollmentManagement = () => {
                       ) : (
                         <View style={styles.noReceiptBox}>
                           <Text style={styles.noReceiptText}>
-                            No Receipt Uploaded
+                            {t("no_receipt_uploaded")}
                           </Text>
                         </View>
                       )}
@@ -1085,14 +1098,14 @@ const EnrollmentManagement = () => {
                           style={[styles.actionBtn, styles.outlineBtn]}
                           onPress={() => setRejectModalVisible(true)}
                         >
-                          <Text style={styles.outlineBtnText}>Not Received</Text>
+                          <Text style={styles.outlineBtnText}>{t("not_received")}</Text>
                         </Pressable>
 
                         <Pressable
                           style={[styles.actionBtn, styles.solidApproveBtn]}
                           onPress={handleApprovePayment}
                         >
-                          <Text style={styles.solidBtnText}>Received</Text>
+                          <Text style={styles.solidBtnText}>{t("received")}</Text>
                         </Pressable>
                       </View>
                     )}
@@ -1111,20 +1124,20 @@ const EnrollmentManagement = () => {
           <View style={styles.modalOverlay}>
             <View style={[styles.rejectModalContent, isCompact && styles.rejectModalContentCompact]}>
               <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Reject Payment</Text>
+                <Text style={styles.modalTitle}>{t("reject_payment")}</Text>
 
                 <Pressable onPress={() => setRejectModalVisible(false)}>
                   <Text style={styles.closeBtn}>✕</Text>
                 </Pressable>
               </View>
 
-              <Text style={styles.rejectLabel}>Admin Remarks</Text>
+              <Text style={styles.rejectLabel}>{t("admin_remarks")}</Text>
 
               <TextInput
                 multiline
                 value={adminRemark}
                 onChangeText={setAdminRemark}
-                placeholder="Enter rejection remarks..."
+                placeholder={t("enter_rejection_remarks")}
                 style={styles.rejectInput}
               />
 
@@ -1133,14 +1146,14 @@ const EnrollmentManagement = () => {
                   style={styles.cancelBtn}
                   onPress={() => setRejectModalVisible(false)}
                 >
-                  <Text style={styles.cancelBtnText}>Cancel</Text>
+                  <Text style={styles.cancelBtnText}>{t("cancel")}</Text>
                 </Pressable>
 
                 <Pressable
                   style={styles.rejectConfirmBtn}
                   onPress={handleRejectPayment}
                 >
-                  <Text style={styles.actionBtnText}>Confirm Reject</Text>
+                  <Text style={styles.actionBtnText}>{t("confirm_reject")}</Text>
                 </Pressable>
               </View>
             </View>
@@ -1149,7 +1162,7 @@ const EnrollmentManagement = () => {
       </ScrollView>
       <View style={[styles.filterSidebar, { transform: [{ translateX }] }]}>
         <View style={styles.sidebarHeader}>
-          <Text style={styles.sidebarTitle}>Courses Filters</Text>
+          <Text style={styles.sidebarTitle}>{t("course_filters")}</Text>
           <Pressable onPress={() => setFilterVisible(false)}>
             <X size={24} color="#666" />
           </Pressable>
@@ -1163,17 +1176,17 @@ const EnrollmentManagement = () => {
             <Pressable
               style={[
                 styles.sidebarItem,
-                tempCourseFilter === "All" && styles.sidebarItemActive,
+                tempCourseFilter ===  "all" && styles.sidebarItemActive,
               ]}
-              onPress={() => setTempCourseFilter("All")}
+              onPress={() => setTempCourseFilter("all")}
             >
               <Text
                 style={[
                   styles.sidebarItemText,
-                  tempCourseFilter === "All" && styles.sidebarItemTextActive,
+                  tempCourseFilter ===  "all" && styles.sidebarItemTextActive,
                 ]}
               >
-                All Courses
+                {t("all_courses")}
               </Text>
             </Pressable>
 
@@ -1205,12 +1218,12 @@ const EnrollmentManagement = () => {
           <Pressable
             style={styles.sidebarResetBtn}
             onPress={() => {
-              setTempCourseFilter("All");
-              setSelectedCourseFilter("All");
+              setTempCourseFilter("all");
+              setSelectedCourseFilter("all");
               setFilterVisible(false);
             }}
           >
-            <Text style={styles.sidebarResetText}>Reset</Text>
+            <Text style={styles.sidebarResetText}>{t("reset")}</Text>
           </Pressable>
           <Pressable
             style={styles.sidebarApplyBtn}
@@ -1218,12 +1231,12 @@ const EnrollmentManagement = () => {
               const selected = courses.find(
                 (c) => c.title === tempCourseFilter,
               );
-              setCurrentCourseId(selected ? selected.id : "All");
+              setCurrentCourseId(selected ? selected.id :  "all");
               setFilterVisible(false);
               setActivePage(1);
             }}
           >
-            <Text style={styles.sidebarApplyText}>Apply Filters</Text>
+            <Text style={styles.sidebarApplyText}>{t("apply_filters")}</Text>
           </Pressable>
         </View>
       </View>
