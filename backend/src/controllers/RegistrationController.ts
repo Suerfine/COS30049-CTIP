@@ -27,12 +27,7 @@ import { sendNotification } from "../utils/sendNotification";
 import { logger } from "../utils/logger";
 import sequelize from "../config/Database";
 import { NotificationCategory } from "../enum/NotificationCategory";
-import {
-  generateRandomPassword,
-  generateSfcEmail,
-  sendRegistrationApprovedEmail,
-  sendRegistrationRejectedEmail,
-} from "../utils/mailer";
+import { getMailer } from "../services/mailer";
 import { randomInt } from "crypto";
 
 class HttpError extends Error {
@@ -412,7 +407,8 @@ export const approveRegistration = async (
     }
 
     // Create new ParkGuide with an SFC login email and random password.
-    const temporary_password = generateRandomPassword();
+    const mailer = getMailer();
+    const temporary_password = mailer.generateRandomPassword();
 
     const user = await User.create({
       username:
@@ -438,9 +434,9 @@ export const approveRegistration = async (
     // Send approval email to user with credentials
     let emailSent = true;
     let emailErrorMessage: string | undefined;
-    let sfcEmail = generateSfcEmail(user);
+    let sfcEmail = mailer.generateSfcEmail(user.id);
     try {
-      await sendRegistrationApprovedEmail({
+      await mailer.sendRegistrationApprovedEmail({
         to: registration.personal_email,
         firstname: registration.firstname,
         lastname: registration.lastname,
@@ -508,7 +504,8 @@ export const rejectRegistration = async (
     });
 
     try {
-      await sendRegistrationRejectedEmail({
+      const mailer = getMailer();
+      await mailer.sendRegistrationRejectedEmail({
         to: registration.personal_email,
         firstname: registration.firstname,
         lastname: registration.lastname,

@@ -8,12 +8,18 @@ import { login } from "../helper/auth";
 import { describe, expect, it } from "@jest/globals";
 import { faker, Faker } from "@faker-js/faker";
 import { beforeEach } from "node:test";
-import { generateSfcEmail } from "../../src/utils/mailer";
+import { getMailer } from "../../src/services/mailer";
 
 const ADMIN_PASSWORD = "Admin123!";
 const ADMIN_LOGIN_USERNAME = "admin@sfc.com.my"; // For legacy purpose login is using email as username
 const CREATED_ADMIN_PASSWORD = "Admin456!";
 faker.seed(); // Seed faker for consistent test data
+
+const mailer = getMailer();
+
+function generateSfcEmail(user: User): string {
+  return mailer.generateSfcEmail(user.id);
+}
 
 function dumpHttpResponse(label: string, response: SupertestResponse): void {
   console.error(`${label} response:`, {

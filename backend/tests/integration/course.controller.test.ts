@@ -4,7 +4,7 @@ import { Course, User } from "../../src/models";
 import { UserRoles } from "../../src/enum/UserRoles";
 import { CourseStatus } from "../../src/enum/CourseStatus";
 import { hashPassword } from "../../src/utils/password";
-import { generateSfcEmail } from "../../src/utils/mailer";
+import { getMailer } from "../../src/services/mailer";
 import { login } from "../helper/auth";
 import { describe, expect, it } from "@jest/globals";
 
@@ -13,6 +13,12 @@ const ADMIN_PASSWORD = "Admin123!";
 const PARK_GUIDE_EMAIL = "parkguide.course@sfc.com.my";
 const PARK_GUIDE_PASSWORD = "Guide123!";
 const IMAGE_BUFFER = Buffer.from("fake-image-content");
+
+const mailer = getMailer();
+
+function generateSfcEmail(user: User): string {
+  return mailer.generateSfcEmail(user.id);
+}
 
 async function createAdminUser(): Promise<User> {
   return User.create({

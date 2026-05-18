@@ -6,13 +6,19 @@ import { RegistrationStatus } from "../../src/enum/RegistrationStatus";
 import { hashPassword } from "../../src/utils/password";
 import { login } from "../helper/auth";
 import { describe, expect, it } from "@jest/globals";
-import { generateSfcEmail } from "../../src/utils/mailer";
+import { getMailer } from "../../src/services/mailer";
 
 const ADMIN_EMAIL = "admin.registration@sfc.com.my";
 const ADMIN_PASSWORD = "Admin123!";
 const PARK_GUIDE_EMAIL = "parkguide.registration@sfc.com.my";
 const PARK_GUIDE_PASSWORD = "Guide123!";
 const PDF_BUFFER = Buffer.from("%PDF-1.4 test registration document");
+
+const mailer = getMailer();
+
+function generateSfcEmail(user: User): string {
+  return mailer.generateSfcEmail(user.id);
+}
 
 async function createAdminUser(): Promise<User> {
   return User.create({

@@ -6,10 +6,7 @@ import PasswordResetToken from "../models/PasswordResetToken";
 import { Op } from "sequelize";
 import { hashPassword, isBcryptHash, verifyPassword } from "../utils/password";
 import { DatabaseError } from "sequelize/lib/errors/index";
-import {
-  sendPasswordResetEmail,
-  sendPasswordChangedEmail,
-} from "../utils/mailer";
+import { getMailer } from "../services/mailer";
 
 type TokenRequestBody = {
   username?: string;
@@ -181,7 +178,8 @@ export const forgotPassword = async (
       const resetUrl = buildPasswordResetUrl(token);
 
       try {
-        await sendPasswordResetEmail({
+        const mailer = getMailer();
+        await mailer.sendPasswordResetEmail({
           to: user.personal_email,
           firstname: user.firstname,
           lastname: user.lastname,
@@ -273,7 +271,8 @@ export const resetPassword = async (
 
     // send confirmation email to user (best effort, don't fail if email fails)
     try {
-      await sendPasswordChangedEmail({
+      const mailer = getMailer();
+      await mailer.sendPasswordChangedEmail({
         to: user.personal_email,
         firstname: user.firstname,
         lastname: user.lastname,

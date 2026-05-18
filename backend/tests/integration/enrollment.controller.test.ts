@@ -19,11 +19,17 @@ import { buildCourse } from "../../database/factories/courseFactory";
 import { EnrollmentStatus } from "../../src/enum/EnrollmentStatus";
 import { Op } from "sequelize";
 import { ElementTypes } from "../../src/enum/ElementTypes";
-import { generateSfcEmail } from "../../src/utils/mailer";
+import { getMailer } from "../../src/services/mailer";
 
 const PASSWORD = "password";
 const ADMIN_PASSWORD = "admin-password";
 const IMAGE_BUFFER = Buffer.from("fake-image-content");
+
+const mailer = getMailer();
+
+function generateSfcEmail(user: User): string {
+  return mailer.generateSfcEmail(user.id);
+}
 
 async function createParkGuideUser(): Promise<User> {
   return User.create(
