@@ -289,6 +289,7 @@
     "inference": "Inference",
     "close": "Close",
     "detected": "Detected",
+    "coordinates": "Coordinates",
     "confidence": "Confidence",
     "latitude": "Latitude",
     "longitude": "Longitude",
@@ -362,5 +363,8 @@
     "ai_server_disconnected_short": "AI Server Disconnected",
     "forest_fire": "Forest Fire",
     "other": "Other",
-    "badge_received": "Badge Received"
+    "badge_received": "Badge Received",
+    "high": "High",
+    "medium": "Medium",
+    "low": "Low"
 }

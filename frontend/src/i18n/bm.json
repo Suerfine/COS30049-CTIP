@@ -295,6 +295,7 @@
     "inference": "Inferens",
     "close": "Tutup",
     "detected": "Dikesan",
+    "coordinates": "Koordinat",
     "confidence": "Keyakinan",
     "latitude": "Latitud",
     "longitude": "Longitud",
@@ -368,5 +369,8 @@
     "ai_server_disconnected_short": "Pelayan AI Terputus",
     "forest_fire": "Kebakaran Hutan",
     "other": "Lain-lain",
-    "badge_received": "Lencana Diterima"
+    "badge_received": "Lencana Diterima",
+    "high": "Tinggi",
+    "medium": "Sederhana",
+    "low": "Rendah"
     }

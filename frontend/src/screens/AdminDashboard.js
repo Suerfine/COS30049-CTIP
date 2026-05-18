@@ -7,7 +7,7 @@ import { useNavigation } from "@react-navigation/native";
 
 import { useAnomalyMapEvents } from "../hooks/useAnomalyMapEvents";
 import { formatDate } from "../utils/formatDate";
-import { DEFAULT_MAP_CENTER, LEAFLET_CSS, EVENT_LABELS, SEVERITY_CONFIG } from "../utils/AnomalyConstant";
+import { DEFAULT_MAP_CENTER, LEAFLET_CSS, EVENT_LABELS, getSeverityConfig } from "../utils/AnomalyConstant";
 import { useAdminDashboard } from "../hooks/useAdminDashboard";
 import { useNotification } from '../hooks/useNotification';
 import { useAuth } from "../context/AuthContext";
@@ -105,6 +105,8 @@ const MapViewport = ({ events, center }) => {
 };
 
 const HoverDetailCard = ({ event, isPinned }) => {
+  const { t } = useTranslation();
+  const severityConfig = getSeverityConfig();
   const severity = getEventSeverity(event.event_type);
   const confidence = getConfidenceLabel(event.metadata);
 
@@ -113,17 +115,17 @@ const HoverDetailCard = ({ event, isPinned }) => {
       <View style={styles.hoverHeader}>
         <Text style={styles.hoverTitle}>{getEventTypeLabel(event.event_type)}</Text>
         
-        <View style={[styles.hoverBadge, { backgroundColor: SEVERITY_CONFIG[severity].fillColor }]}>
-          <Text style={styles.hoverBadgeText}>{SEVERITY_CONFIG[severity].label}</Text>
+        <View style={[styles.hoverBadge, { backgroundColor: severityConfig[severity].fillColor }]}>
+          <Text style={styles.hoverBadgeText}>{severityConfig[severity].label}</Text>
         </View>
       </View>
-      <Text style={styles.hoverRow}>Detected: {formatDate(event.created_at)}</Text>
+      <Text style={styles.hoverRow}>{t('detected')}: {formatDate(event.created_at)}</Text>
       <Text style={styles.hoverRow}>
-        Coordinates: {Number(event.latitude).toFixed(6)}, {Number(event.longitude).toFixed(6)}
+        {t('coordinates')}: {Number(event.latitude).toFixed(6)}, {Number(event.longitude).toFixed(6)}
       </Text>
-      <Text style={styles.hoverRow}>User: {getUserLabel(event)}</Text>
+      <Text style={styles.hoverRow}>{t('users')}: {getUserLabel(event)}</Text>
       <View style={{ flexDirection: "row", justifyContent: "space-between", }}>
-        {confidence ? <Text style={styles.hoverRow}>Confidence: {confidence}</Text> : null}
+        {confidence ? <Text style={styles.hoverRow}>{t('confidence')}: {confidence}</Text> : null}
         {isPinned && <Pin size={14} color="#b96363" fill="#b96363" />}
       </View>
     </View>
@@ -132,6 +134,7 @@ const HoverDetailCard = ({ event, isPinned }) => {
 
 const AdminDashboard = () => {
   const { t } = useTranslation();
+  const severityConfig = getSeverityConfig();
   const navigation = useNavigation();
   const { currentUser } = useAuth();
   const { events, loading: mapLoading, error: mapError, refresh } = useAnomalyMapEvents();
@@ -220,7 +223,7 @@ const AdminDashboard = () => {
           <View style={[styles.mapActions, isCompact && styles.mapActionsCompact]}>
             <View style={styles.legend}>
               <View style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: SEVERITY_CONFIG.high.fillColor }]} />
+                <View style={[styles.legendDot, { backgroundColor: severityConfig.high.fillColor }]} />
                 <Text style={styles.legendText}>{t("anomaly live count")}: {severityCounts.high}</Text>
               </View>
             </View>
@@ -261,7 +264,7 @@ const AdminDashboard = () => {
               />
               {events.map((event) => {
                 const severity = getEventSeverity(event.event_type);
-                const severityConfig = SEVERITY_CONFIG[severity];
+                const config = severityConfig[severity];
 
                 return (
                   <CircleMarker
@@ -276,8 +279,8 @@ const AdminDashboard = () => {
                       },
                     }}
                     pathOptions={{
-                      color: selectedAnomaly?.id === event.id ? "#161515" : severityConfig.color,
-                      fillColor: severityConfig.fillColor,
+                      color: selectedAnomaly?.id === event.id ? "#161515" : config.color,
+                      fillColor: config.fillColor,
                       fillOpacity: 0.82,
                       weight: selectedAnomaly?.id === event.id ? 3 : 2,
                     }}
