@@ -25,12 +25,14 @@ class ComplianceEvaluator:
     HIDE_DOWNWARD_MAX_ABS_X = 0.45
     HIDE_DOWNWARD_MIN_DY = 6.0
 
-    PLUCK_TOUCH_HOLD_SEC = 3.0
+    PLUCK_TOUCH_HOLD_SEC = 2.0
     ANIMAL_TOUCH_HOLD_SEC = 2.0
-    EXTENDED_TOUCH_SEC = 5.0
+    EXTENDED_TOUCH_SEC = 3.5
     PLUCK_TOUCH_HISTORY_FRAMES = 24
     PLUCK_BASELINE_FRAMES = 8
-    PLUCK_UPWARD_MIN_PX = 14.0
+    PLUCK_UPWARD_MIN_PX = 16.0
+    PLUCK_UPWARD_TREND_FRAMES = 4
+    PLUCK_UPWARD_TREND_MIN_PX = 4.0
     EVENT_COOLDOWN_SEC = 1.0
 
     STRIKE_VELOCITY_MIN_PX = 30.0
@@ -161,11 +163,16 @@ class ComplianceEvaluator:
         if touch_duration < self.PLUCK_TOUCH_HOLD_SEC: return now < self.pluck_active_until
 
         baseline_window = self.touch_y_history[-self.PLUCK_BASELINE_FRAMES:]
-        baseline_y = max(baseline_window) 
+        baseline_y = max(baseline_window)
         upward_movement = baseline_y - primary_hand_y
 
+        recent_delta = 0.0
+        if len(self.touch_y_history) >= self.PLUCK_UPWARD_TREND_FRAMES:
+            recent_window = self.touch_y_history[-self.PLUCK_UPWARD_TREND_FRAMES:]
+            recent_delta = recent_window[0] - recent_window[-1]
+
         can_trigger = (now - self.last_pluck_time) >= self.EVENT_COOLDOWN_SEC
-        if upward_movement >= self.PLUCK_UPWARD_MIN_PX and can_trigger:
+        if upward_movement >= self.PLUCK_UPWARD_MIN_PX and recent_delta >= self.PLUCK_UPWARD_TREND_MIN_PX and can_trigger:
             self.pluck_event_count += 1
             self.last_pluck_time = now
             self.pluck_active_until = now + self.EVENT_COOLDOWN_SEC

@@ -11,16 +11,21 @@ import {
   TouchableOpacity,
   Modal,
   Image,
+  Platform,
   useWindowDimensions,
 } from "react-native";
-import { CameraView, useCameraPermissions } from "expo-camera";
+import {
+  Camera as VisionCamera,
+  useCameraDevice,
+  useCameraPermission,
+} from "react-native-vision-camera";
+import * as FileSystem from "expo-file-system";
 import Constants from "expo-constants";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import apiClient from "../config/apiConfig";
-import { DetectionService } from "../services/DetectionService";
 import { userDashboardService } from "../services/userDashboardService";
-import { Camera } from "lucide-react-native";
+import { Camera as CameraIcon } from "lucide-react-native";
 
 const SERVER_CONFIG_STORAGE_KEY = "aiDetectionServerConfig";
 
@@ -64,12 +69,15 @@ const EVENT_LABELS = {
 export default function DetectionScreen() {
   const { width } = useWindowDimensions();
   const isCompact = width < 720;
-  const [permission, requestPermission] = useCameraPermissions();
+  const { hasPermission, requestPermission } = useCameraPermission();
+  const device = useCameraDevice("back");
   const cameraRef = useRef(null);
   const isCapturing = useRef(false);
   const lastLogTime = useRef(0);
   const lastFrameBase64 = useRef(null);
   const lastPhotoDimensions = useRef({ width: 640, height: 480 });
+  const wsRef = useRef(null);
+  const reconnectTimerRef = useRef(null);
 
   const [serverConfig, setServerConfig] = useState({
     host: getAutoHost(),
@@ -199,59 +207,117 @@ export default function DetectionScreen() {
     if (currentUser) fetchAnomalyEvents();
   }, [currentUser?.id]);
 
-  // 3. Health Check
+  // 3. WebSocket Connection
   useEffect(() => {
-    const pingServer = async () => {
-      try {
-        const res = await fetch(
-          `http://${serverConfig.host}:${serverConfig.port}/health`,
-        );
-        setIsConnected(res.status === 200);
-      } catch {
+    const connect = () => {
+      if (reconnectTimerRef.current) {
+        clearTimeout(reconnectTimerRef.current);
+        reconnectTimerRef.current = null;
+      }
+
+      if (wsRef.current) {
+        wsRef.current.onopen = null;
+        wsRef.current.onmessage = null;
+        wsRef.current.onerror = null;
+        wsRef.current.onclose = null;
+        wsRef.current.close();
+      }
+
+      const ws = new WebSocket(`ws://${serverConfig.host}:${serverConfig.port}/ws/detect`);
+      wsRef.current = ws;
+
+      ws.onopen = () => setIsConnected(true);
+
+      ws.onmessage = (event) => {
+        try {
+          const result = JSON.parse(event.data);
+          if (result && !result.error) setLatestResult(result);
+        } catch {}
+        isCapturing.current = false;
+      };
+
+      ws.onerror = () => {
         setIsConnected(false);
+        isCapturing.current = false;
+      };
+
+      ws.onclose = () => {
+        setIsConnected(false);
+        isCapturing.current = false;
+        reconnectTimerRef.current = setTimeout(connect, 3000);
+      };
+    };
+
+    connect();
+
+    return () => {
+      if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
+      if (wsRef.current) {
+        wsRef.current.onopen = null;
+        wsRef.current.onmessage = null;
+        wsRef.current.onerror = null;
+        wsRef.current.onclose = null;
+        wsRef.current.close();
       }
     };
-    pingServer();
-    const interval = setInterval(pingServer, 3000);
-    return () => clearInterval(interval);
   }, [serverConfig.host, serverConfig.port]);
 
-  // 4. Camera Capture Interval
+  // 4. Camera Capture Interval — sends frames over the open WebSocket.
+  // Android: takeSnapshot() grabs the preview surface (silent, no flash).
+  // iOS: takeSnapshot is unavailable, fall back to takePhoto with shutter sound disabled.
   useEffect(() => {
     const captureInterval = setInterval(async () => {
-      if (!cameraRef.current || isCapturing.current || !isConnected) return;
+      if (!cameraRef.current || isCapturing.current) return;
+      if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
 
       isCapturing.current = true;
+      let snapshotPath = null;
       try {
-        const photo = await cameraRef.current.takePictureAsync({
-          quality: 0.3,
-          base64: true,
-        });
-        lastFrameBase64.current = photo.base64;
+        const photo =
+          Platform.OS === "android"
+            ? await cameraRef.current.takeSnapshot({ quality: 30 })
+            : await cameraRef.current.takePhoto({
+                qualityPrioritization: "speed",
+                enableShutterSound: false,
+                flash: "off",
+              });
+
+        snapshotPath = photo.path;
         lastPhotoDimensions.current = {
           width: photo.width,
           height: photo.height,
         };
 
-        const result = await DetectionService.analyzeFrame(
-          photo.base64,
-          currentUser?.id,
-          serverConfig.host,
-          serverConfig.port,
-        );
+        const fileUri = snapshotPath.startsWith("file://")
+          ? snapshotPath
+          : `file://${snapshotPath}`;
 
-        if (result && !result.error) {
-          setLatestResult(result);
-        }
-      } catch (error) {
-        // Silently ignore capture errors
-      } finally {
+        const base64 = await FileSystem.readAsStringAsync(fileUri, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+        lastFrameBase64.current = base64;
+
+        wsRef.current.send(
+          JSON.stringify({
+            image_base64: base64,
+            user_id: currentUser?.id || 1,
+          }),
+        );
+      } catch {
         isCapturing.current = false;
+      } finally {
+        // Free the temp snapshot file immediately so we don't fill device storage.
+        if (snapshotPath) {
+          const fileUri = snapshotPath.startsWith("file://")
+            ? snapshotPath
+            : `file://${snapshotPath}`;
+          FileSystem.deleteAsync(fileUri, { idempotent: true }).catch(() => {});
+        }
       }
     }, 250);
 
     return () => clearInterval(captureInterval);
-  }, [currentUser, isConnected, serverConfig]);
+  }, [currentUser]);
 
   // 5. Client-Side Anomaly Logging
   useEffect(() => {
@@ -451,20 +517,13 @@ export default function DetectionScreen() {
   }
 
   // --- MAIN UI ---
-  if (!permission) {
-    return (
-      <View style={styles.loadingView}>
-        <ActivityIndicator size="large" color="#4CAF50" />
-      </View>
-    );
-  }
-  if (!permission.granted) {
+  if (!hasPermission) {
     return (
       <View style={styles.permissionContainer}>
         <View style={styles.permissionCard}>
           <View style={styles.iconCircle}>
             <Text style={styles.cameraIcon}>
-              <Camera color="grey" />
+              <CameraIcon color="grey" />
             </Text>
           </View>
 
@@ -591,7 +650,7 @@ export default function DetectionScreen() {
       >
         <View style={styles.titleBar}>
           <View style={styles.titleCopy}>
-            <Text style={styles.title}>AI Detection</Text>
+            <Text style={styles.title}>Anomaly Detection</Text>
             <Text style={styles.pageSubtitle}>
               Monitor and review active anomaly alerts
             </Text>
@@ -669,7 +728,22 @@ export default function DetectionScreen() {
             })
           }
         >
-          <CameraView ref={cameraRef} style={styles.camera} facing="back">
+          {device == null ? (
+            <View style={[styles.camera, styles.cameraLoading]}>
+              <ActivityIndicator size="large" color="#4CAF50" />
+            </View>
+          ) : (
+            <VisionCamera
+              ref={cameraRef}
+              style={styles.camera}
+              device={device}
+              isActive={true}
+              photo={true}
+              audio={false}
+              enableZoomGesture={false}
+            />
+          )}
+          <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
             <Text
               style={[
                 styles.status,
@@ -819,7 +893,7 @@ export default function DetectionScreen() {
             >
               Config
             </Text>
-          </CameraView>
+          </View>
         </View>
       </View>
     </View>
@@ -951,7 +1025,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#1e1e1e",
   },
   cameraWrapperCompact: { height: "100%", aspectRatio: undefined },
-  camera: { flex: 1 },
+  camera: { ...StyleSheet.absoluteFillObject },
+  cameraLoading: { justifyContent: "center", alignItems: "center", backgroundColor: "#1e1e1e" },
 
   status: {
     position: "absolute",

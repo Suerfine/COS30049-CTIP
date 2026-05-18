@@ -8,7 +8,7 @@ from contextlib import asynccontextmanager
 import cv2
 import httpx
 import numpy as np
-from fastapi import FastAPI, File, UploadFile, Form
+from fastapi import FastAPI, File, UploadFile, Form, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from ultralytics import YOLO
 from scripts.compliance import ComplianceEvaluator
@@ -41,7 +41,7 @@ async def download_model(url: str, save_path: str):
 async def check_and_download_models():
     models_to_check = [
         {
-            "name": "object_detection_model.pt",
+            "name": "nature_detection_model.pt",
             "url": "https://drive.google.com/file/d/1f1mXVV37U7nor5tY9asqtgHrEssak3Ot/view?usp=drive_link",
             "description": "Object Detection Model (YOLO)"
         },
@@ -63,14 +63,14 @@ async def check_and_download_models():
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await check_and_download_models()
-    models["detector"] = YOLO("object_detection_model.pt")
-    models["pose"]     = YOLO("yolo26n-pose.pt")
+    models["detector"] = YOLO("nature_detection_model.pt")  # plant + animal only
+    models["pose"]     = YOLO("yolo26n-pose.pt")             # human detection + keypoints
     
     info = ServiceInfo("_parkguard._tcp.local.", "ParkGuard Server._parkguard._tcp.local.", addresses=[socket.inet_aton("0.0.0.0")], port=8000)
     zeroconf = Zeroconf()
     try:
         zeroconf.register_service(info)
-    except Exception as e:
+    except Exception:
         pass
     
     yield
@@ -87,9 +87,17 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-HUMAN_CLASS_ID = 2
-DETECTION_CONF = 0.5
-POSE_CONF = 0.5
+PLANT_CLASS_ID = 0
+ANIMAL_CLASS_ID = 1
+POSE_CONF = 0.25
+
+# detector model (best.pt) only has plant(0) and animal(1)
+CLASS_CONF_THRESH = {
+    PLANT_CLASS_ID: 0.45,
+    ANIMAL_CLASS_ID: 0.55,
+}
+DEFAULT_CONF = 0.5
+DETECTION_CONF = min(CLASS_CONF_THRESH.values(), default=DEFAULT_CONF)
 
 def parse_detections(results) -> list[dict]:
     out = []
@@ -97,6 +105,9 @@ def parse_detections(results) -> list[dict]:
         for box in r.boxes:
             x1, y1, x2, y2 = box.xyxy[0].tolist()
             conf, cls_id = box.conf[0].item(), int(box.cls[0].item())
+            threshold = CLASS_CONF_THRESH.get(cls_id, DEFAULT_CONF)
+            if conf < threshold:
+                continue
             out.append({
                 "bbox": [round(v, 2) for v in (x1, y1, x2, y2)],
                 "confidence": round(conf, 4),
@@ -116,25 +127,44 @@ def parse_poses(results) -> list[list[dict]]:
             poses.append(kp_list)
     return poses
 
-def run_inference(img: np.ndarray) -> dict:
+def parse_human_boxes(results) -> list[dict]:
+    boxes = []
+    for r in results:
+        if r.boxes is None: continue
+        for box in r.boxes:
+            x1, y1, x2, y2 = box.xyxy[0].tolist()
+            boxes.append({
+                "bbox": [round(v, 2) for v in (x1, y1, x2, y2)],
+                "confidence": round(box.conf[0].item(), 4),
+                "class_name": "human",
+            })
+    return boxes
+
+def run_inference(img: np.ndarray, ev: ComplianceEvaluator = None) -> dict:
+    if ev is None:
+        ev = evaluator
     t0 = time.perf_counter()
     h, w = img.shape[:2]
 
-    det_results = models["detector"].predict(img, conf=DETECTION_CONF, verbose=False)
+    # Run both models concurrently — pose always runs, no human-detection gate
+    from concurrent.futures import ThreadPoolExecutor
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        det_future = pool.submit(models["detector"].predict, img, conf=DETECTION_CONF, verbose=False)
+        pose_future = pool.submit(models["pose"].predict, img, conf=POSE_CONF, verbose=False)
+        det_results = det_future.result()
+        pose_results = pose_future.result()
+
     detections = parse_detections(det_results)
-    human_detected = any(d["class"] == HUMAN_CLASS_ID for d in detections)
+    poses = parse_poses(pose_results)
+    human_boxes = parse_human_boxes(pose_results)
 
-    poses = []
-    if human_detected:
-        pose_results = models["pose"].predict(img, conf=POSE_CONF, verbose=False)
-        poses = parse_poses(pose_results)
-
-    compliance_data = evaluator.evaluate_frame(poses, detections, w, h)
+    compliance_data = ev.evaluate_frame(poses, detections, w, h)
     elapsed_ms = round((time.perf_counter() - t0) * 1000, 1)
 
     return {
-        "human_detected": human_detected,
+        "human_detected": len(poses) > 0,
         "detections": detections,
+        "human_boxes": human_boxes,
         "poses": poses,
         "compliance": compliance_data,
         "inference_ms": elapsed_ms,
@@ -175,3 +205,39 @@ async def detect_frame(payload: FrameRequest):
 @app.get("/health")
 async def health():
     return {"status": "ok", "models_loaded": list(models.keys())}
+
+
+@app.websocket("/ws/detect")
+async def ws_detect(websocket: WebSocket):
+    await websocket.accept()
+    # Each connection gets its own evaluator to preserve per-session compliance state
+    # (touch durations, pluck history, etc. must not bleed across clients)
+    local_evaluator = ComplianceEvaluator()
+    logger.info("WebSocket client connected")
+
+    try:
+        while True:
+            data = await websocket.receive_text()
+            payload = json.loads(data)
+
+            image_b64 = payload.get("image_base64", "")
+            rem = len(image_b64) % 4
+            if rem:
+                image_b64 += "=" * (4 - rem)
+
+            frame_bytes = base64.b64decode(image_b64)
+            arr = np.frombuffer(frame_bytes, dtype=np.uint8)
+            img = cv2.imdecode(arr, cv2.IMREAD_COLOR)
+
+            if img is None:
+                await websocket.send_text(json.dumps({"error": "Failed to decode image"}))
+                continue
+
+            loop = asyncio.get_event_loop()
+            result = await loop.run_in_executor(None, run_inference, img, local_evaluator)
+            await websocket.send_text(json.dumps(result))
+
+    except WebSocketDisconnect:
+        logger.info("WebSocket client disconnected")
+    except Exception as exc:
+        logger.exception("WebSocket error: %s", exc)

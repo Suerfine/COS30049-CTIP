@@ -5,6 +5,7 @@ import { CircleMarker, MapContainer, Popup, TileLayer, Tooltip, useMap } from "r
 import { useTranslation } from "react-i18next";
 import { useNavigation } from "@react-navigation/native";
 
+import apiClient from "../config/apiConfig";
 import { useAnomalyMapEvents } from "../hooks/useAnomalyMapEvents";
 import { formatDate } from "../utils/formatDate";
 import { DEFAULT_MAP_CENTER, LEAFLET_CSS, EVENT_LABELS, SEVERITY_CONFIG } from "../utils/AnomalyConstant";
@@ -104,7 +105,7 @@ const MapViewport = ({ events, center }) => {
   return null;
 };
 
-const HoverDetailCard = ({ event, isPinned }) => {
+const HoverDetailCard = ({ event, isPinned, resolvingId, onResolve }) => {
   const severity = getEventSeverity(event.event_type);
   const confidence = getConfidenceLabel(event.metadata);
 
@@ -126,6 +127,21 @@ const HoverDetailCard = ({ event, isPinned }) => {
         {confidence ? <Text style={styles.hoverRow}>Confidence: {confidence}</Text> : null}
         {isPinned && <Pin size={14} color="#b96363" fill="#b96363" />}
       </View>
+      {isPinned && !event.is_resolved ? (
+        <Pressable
+          onPress={() => onResolve?.(event.id)}
+          disabled={resolvingId === event.id}
+          style={({ pressed }) => [
+            styles.resolveBtn,
+            resolvingId === event.id && styles.resolveBtnDisabled,
+            pressed && !resolvingId && styles.resolveBtnPressed,
+          ]}
+        >
+          <Text style={styles.resolveText}>
+            {resolvingId === event.id ? "Resolving..." : "Mark as Resolved"}
+          </Text>
+        </Pressable>
+      ) : null}
     </View>
   );
 };
@@ -142,6 +158,7 @@ const AdminDashboard = () => {
     error: notificationsError, 
     fetchNotifications
   } = useNotification();
+  const [resolvingAnomalyId, setResolvingAnomalyId] = useState(null);
 
   const [hoveredAnomaly, setHoveredAnomaly] = useState(null);
   const [selectedAnomaly, setSelectedAnomaly] = useState(null);
@@ -167,6 +184,29 @@ const AdminDashboard = () => {
       .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
       .slice(0, 20);
   }, [notifications]);
+
+  const resolveAnomaly = async (eventId) => {
+    if (!eventId) return;
+    setResolvingAnomalyId(eventId);
+    try {
+      try {
+        await apiClient.post(`/anomaly-events/${eventId}/resolve`);
+      } catch (firstError) {
+        await apiClient.post(`/Anomaly-events/${eventId}/resolve`);
+      }
+      setSelectedAnomaly(null);
+      setHoveredAnomaly(null);
+      refresh();
+    } catch (error) {
+      const message =
+        error?.response?.data?.message ||
+        error?.message ||
+        "Failed to resolve anomaly event.";
+      alert(message);
+    } finally {
+      setResolvingAnomalyId(null);
+    }
+  };
 
   return (
     <ScrollView style={styles.screenContainer}>
@@ -292,6 +332,8 @@ const AdminDashboard = () => {
             <HoverDetailCard 
               event={selectedAnomaly || hoveredAnomaly} 
               isPinned={!!selectedAnomaly}
+              resolvingId={resolvingAnomalyId}
+              onResolve={resolveAnomaly}
             />
           ) : null}
 
@@ -669,6 +711,25 @@ const styles = StyleSheet.create({
     color: "#4b5563",
     fontSize: 12,
     lineHeight: 18,
+  },
+  resolveBtn: {
+    marginTop: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: "#065f46",
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  resolveBtnPressed: {
+    opacity: 0.9,
+  },
+  resolveBtnDisabled: {
+    opacity: 0.6,
+  },
+  resolveText: {
+    color: "white",
+    fontWeight: "700",
+    fontSize: 12,
   },
   centerContainer: {
     flex: 1,

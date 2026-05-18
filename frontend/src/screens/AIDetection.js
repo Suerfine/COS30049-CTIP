@@ -3,7 +3,6 @@ import { CircleMarker, MapContainer, TileLayer, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useTranslation } from 'react-i18next';
 import apiClient from '../config/apiConfig';
-import { DetectionService } from '../services/DetectionService';
 import { userDashboardService } from '../services/userDashboardService';
 
 const SERVER_CONFIG_STORAGE_KEY = 'aiDetectionServerConfig';
@@ -41,7 +40,10 @@ const SKELETON_EDGES = [
 ];
 
 const MIRROR_PREVIEW = true;
-const MIRROR_ANNOTATED_FRAME = true;
+const MIRROR_INPUT = true;
+const SERVER_SEES_MIRRORED_FRAME = MIRROR_INPUT;
+const MIRROR_OVERLAY = false;
+const MIRROR_ANNOTATED_FRAME = false;
 
 export default function DetectionScreenWeb() {
   const { t, i18n} = useTranslation();
@@ -55,12 +57,17 @@ export default function DetectionScreenWeb() {
     extended_touch_plant: t('extended_touch_plant'),
   };
 
+  const NON_ANOMALY_EVENT_TYPES = new Set(['touch_plant', 'touch_animal']);
+  const isNonAnomalyEvent = (eventType) => NON_ANOMALY_EVENT_TYPES.has(eventType);
+
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const streamRef = useRef(null);
   const cameraWrapperRef = useRef(null);
   const isCapturing = useRef(false);
   const lastLogTime = useRef(0);
+  const wsRef = useRef(null);
+  const reconnectTimerRef = useRef(null);
 
   const [permissionGranted, setPermissionGranted] = useState(false);
   const [cameraStatus, setCameraStatus] = useState('starting');
@@ -84,6 +91,19 @@ export default function DetectionScreenWeb() {
   // Safe scaling based on intrinsic video resolution vs rendered UI size
   const SCALE_X = cameraLayout ? cameraLayout.width / cameraLayout.videoWidth : 1;
   const SCALE_Y = cameraLayout ? cameraLayout.height / cameraLayout.videoHeight : 1;
+
+  const toOverlayX = (x) => (
+    MIRROR_OVERLAY && cameraLayout
+      ? cameraLayout.videoWidth - x
+      : x
+  );
+
+  const mapBox = (box) => {
+    if (!MIRROR_OVERLAY || !cameraLayout) return box;
+    const [x1, y1, x2, y2] = box;
+    return [cameraLayout.videoWidth - x2, y1, cameraLayout.videoWidth - x1, y2];
+  };
+
 
   const saveServerConfig = (config) => {
     if (typeof window === 'undefined') return;
@@ -190,6 +210,12 @@ export default function DetectionScreenWeb() {
     fetchCurrentUser();
   }, []);
 
+  const isResolvedEvent = (event) => {
+    if (!event) return false;
+    const raw = event.is_resolved ?? event.isResolved;
+    return raw === true || raw === 1 || raw === '1' || raw === 'true';
+  };
+
   const extractEvents = (data) => {
     if (Array.isArray(data)) return data;
     if (data?.data && Array.isArray(data.data)) return data.data;
@@ -201,8 +227,20 @@ export default function DetectionScreenWeb() {
     if (!currentUser) return;
     setEventsLoading(true);
     try {
-      const activeResponse = await apiClient.get(`/anomaly-events/${currentUser.id}?includeResolved=false`);
-      setAnomalyEvents(extractEvents(activeResponse.data));
+      const activeResponse = await apiClient.get(`/anomaly-events/${currentUser.id}`, {
+        params: {
+          includeResolved: false,
+          page: 1,
+          size: 100,
+          orderBy: 'created_at desc',
+        },
+      });
+      const events = extractEvents(activeResponse.data).filter((event) => {
+        if (isResolvedEvent(event)) return false;
+        if (isNonAnomalyEvent(event?.event_type)) return false;
+        return true;
+      });
+      setAnomalyEvents(events);
     } catch (error) {
       setAnomalyEvents([]);
     } finally {
@@ -214,21 +252,60 @@ export default function DetectionScreenWeb() {
     if (currentUser) fetchAnomalyEvents();
   }, [currentUser?.id]);
 
-  // 3. Health Check
+  // 3. WebSocket Connection — one persistent socket replaces health-check polling + HTTP POST
   useEffect(() => {
-    const pingServer = async () => {
-      try {
-        const res = await fetch(`http://${serverConfig.host}:${serverConfig.port}/health`, { 
-          method: 'GET',
-        });
-        setIsConnected(res.status === 200);
-      } catch {
+    const connect = () => {
+      if (reconnectTimerRef.current) {
+        clearTimeout(reconnectTimerRef.current);
+        reconnectTimerRef.current = null;
+      }
+
+      // Tear down any existing socket cleanly before opening a new one
+      if (wsRef.current) {
+        wsRef.current.onopen = null;
+        wsRef.current.onmessage = null;
+        wsRef.current.onerror = null;
+        wsRef.current.onclose = null;
+        wsRef.current.close();
+      }
+
+      const ws = new WebSocket(`ws://${serverConfig.host}:${serverConfig.port}/ws/detect`);
+      wsRef.current = ws;
+
+      ws.onopen = () => setIsConnected(true);
+
+      ws.onmessage = (event) => {
+        try {
+          const result = JSON.parse(event.data);
+          if (result && !result.error) setLatestResult(result);
+        } catch {}
+        isCapturing.current = false;
+      };
+
+      ws.onerror = () => {
         setIsConnected(false);
+        isCapturing.current = false;
+      };
+
+      ws.onclose = () => {
+        setIsConnected(false);
+        isCapturing.current = false;
+        reconnectTimerRef.current = setTimeout(connect, 3000);
+      };
+    };
+
+    connect();
+
+    return () => {
+      if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
+      if (wsRef.current) {
+        wsRef.current.onopen = null;
+        wsRef.current.onmessage = null;
+        wsRef.current.onerror = null;
+        wsRef.current.onclose = null;
+        wsRef.current.close();
       }
     };
-    pingServer();
-    const interval = setInterval(pingServer, 3000);
-    return () => clearInterval(interval);
   }, [serverConfig.host, serverConfig.port]);
 
   // Helper: Extract Frame to Base64 via Canvas
@@ -241,7 +318,15 @@ export default function DetectionScreenWeb() {
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     const ctx = canvas.getContext('2d');
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    if (MIRROR_INPUT) {
+      ctx.save();
+      ctx.translate(canvas.width, 0);
+      ctx.scale(-1, 1);
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      ctx.restore();
+    } else {
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    }
     
     const dataUrl = canvas.toDataURL('image/jpeg', 0.3);
     return dataUrl.split(',')[1]; // Strip prefix
@@ -279,9 +364,11 @@ export default function DetectionScreenWeb() {
     ctx.lineWidth = 2;
     ctx.font = '14px sans-serif';
 
+    const flipX = MIRROR_INPUT && !MIRROR_ANNOTATED_FRAME;
+
     (result.detections || []).forEach((det) => {
       const [x1, y1, x2, y2] = det.bbox;
-      const drawX = MIRROR_ANNOTATED_FRAME ? canvas.width - x2 : x1;
+      const drawX = flipX ? canvas.width - x2 : x1;
       const boxWidth = x2 - x1;
       ctx.strokeStyle = '#22c55e';
       ctx.fillStyle = 'rgba(34, 197, 94, 0.2)';
@@ -295,7 +382,7 @@ export default function DetectionScreenWeb() {
     handBoxes.forEach((box) => {
       const isTouching = result?.compliance?.touch_plant || result?.compliance?.touch_animal;
       const [x1, y1, x2, y2] = box;
-      const drawX = MIRROR_ANNOTATED_FRAME ? canvas.width - x2 : x1;
+      const drawX = flipX ? canvas.width - x2 : x1;
       ctx.strokeStyle = isTouching ? '#f97316' : '#facc15';
       ctx.strokeRect(drawX, y1, x2 - x1, y2 - y1);
     });
@@ -326,32 +413,24 @@ export default function DetectionScreenWeb() {
     }
   };
 
-  // 4. Capture Loop
+  // 4. Capture Loop — sends frames over the open WebSocket; rate limited by inference speed
   useEffect(() => {
-    const captureInterval = setInterval(async () => {
-      if (!permissionGranted || !videoRef.current || isCapturing.current || !isConnected) return;
+    const captureInterval = setInterval(() => {
+      if (!permissionGranted || !videoRef.current || isCapturing.current) return;
+      if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
+
+      const base64Photo = captureFrame();
+      if (!base64Photo) return;
 
       isCapturing.current = true;
-      try {
-        const base64Photo = captureFrame();
-        if (base64Photo) {
-          const result = await DetectionService.analyzeFrame(
-            base64Photo, 
-            currentUser?.id, 
-            serverConfig.host, 
-            serverConfig.port
-          );
-          if (result && !result.error) setLatestResult(result);
-        }
-      } catch (error) {
-        // Silently ignore
-      } finally {
-        isCapturing.current = false;
-      }
-    }, 250); 
+      wsRef.current.send(JSON.stringify({
+        image_base64: base64Photo,
+        user_id: currentUser?.id || 1,
+      }));
+    }, 50);
 
     return () => clearInterval(captureInterval);
-  }, [currentUser, isConnected, serverConfig]);
+  }, [permissionGranted, currentUser]);
 
   // 5. Client-Side Anomaly Logging
   useEffect(() => {
@@ -366,7 +445,7 @@ export default function DetectionScreenWeb() {
       else if (touch_animal) detectedEventType = 'touch_animal';
       else if (touch_plant) detectedEventType = 'touch_plant';
 
-      if (detectedEventType) {
+      if (detectedEventType && !isNonAnomalyEvent(detectedEventType)) {
         const now = Date.now();
         if (now - lastLogTime.current > 3000) {
           lastLogTime.current = now;
@@ -406,10 +485,8 @@ export default function DetectionScreenWeb() {
   // --- RENDER HELPERS ---
   const renderSkeletonLine = (kp1, kp2, index) => {
     if (!kp1 || !kp2 || kp1.confidence < 0.3 || kp2.confidence < 0.3) return null;
-    const baseX1 = kp1.x * SCALE_X;
-    const baseX2 = kp2.x * SCALE_X;
-    const x1 = MIRROR_PREVIEW && cameraLayout ? cameraLayout.width - baseX1 : baseX1;
-    const x2 = MIRROR_PREVIEW && cameraLayout ? cameraLayout.width - baseX2 : baseX2;
+    const x1 = toOverlayX(kp1.x) * SCALE_X;
+    const x2 = toOverlayX(kp2.x) * SCALE_X;
     const y1 = kp1.y * SCALE_Y;
     const y2 = kp2.y * SCALE_Y;
     const dx = x2 - x1, dy = y2 - y1;
@@ -427,8 +504,7 @@ export default function DetectionScreenWeb() {
 
   const renderKeypoint = (kp, index) => {
     if (!kp || kp.confidence < 0.3) return null;
-    const baseX = kp.x * SCALE_X;
-    const x = MIRROR_PREVIEW && cameraLayout ? cameraLayout.width - baseX : baseX;
+    const x = toOverlayX(kp.x) * SCALE_X;
     const y = kp.y * SCALE_Y;
     const KP_RADIUS = 5;
 
@@ -488,7 +564,19 @@ export default function DetectionScreenWeb() {
                 {anomalyEvents.length === 0 ? (
                   <span style={styles.emptyText}>{t('no_active_anomalies')}</span>
                 ) : anomalyEvents.map((event) => (
-                  <button key={event.id} style={styles.eventCardButton} onClick={() => setSelectedEvent(event)}>
+                  <div
+                    key={event.id}
+                    style={styles.eventCardButton}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => setSelectedEvent(event)}
+                    onKeyDown={(evt) => {
+                      if (evt.key === 'Enter' || evt.key === ' ') {
+                        evt.preventDefault();
+                        setSelectedEvent(event);
+                      }
+                    }}
+                  >
                     <div style={styles.eventCard}>
                       <div style={styles.eventHeader}>
                         <span style={styles.eventType}>{getEventLabel(event.event_type)}</span>
@@ -496,10 +584,28 @@ export default function DetectionScreenWeb() {
                       </div>
                       <div style={styles.eventMetaRow}>
                         <span style={styles.eventTime}>{new Date(event.created_at).toLocaleString()}</span>
-                        <span style={styles.activePill}>{t('active')}</span>
+                        <div style={styles.eventActions}>
+                          <span style={styles.activePill}>{t('active')}</span>
+                          {!event.is_resolved && (
+                            <button
+                              type="button"
+                              style={{
+                                ...styles.resolveInlineButton,
+                                ...(resolvingEventId === event.id ? styles.resolveInlineButtonDisabled : null)
+                              }}
+                              onClick={(evt) => {
+                                evt.stopPropagation();
+                                resolveEvent(event.id);
+                              }}
+                              disabled={resolvingEventId === event.id}
+                            >
+                              {resolvingEventId === event.id ? t('resolving') : t('mark_resolved')}
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </button>
+                  </div>
                 ))}
               </div>
             </div>
@@ -538,46 +644,48 @@ export default function DetectionScreenWeb() {
             </div>
           )}
             
-          <span style={{...styles.status, backgroundColor: isConnected ? 'rgba(16, 185, 129, 0.85)' : 'rgba(220, 38, 38, 0.85)'}}>
-            {isConnected ? t('connected_ai_api') : t('ai_server_disconnected')}
-          </span>
+          {/* AI Overlays — wrapped in a CSS-mirrored container to match the scaleX(-1) video */}
+          {isConnected && cameraLayout && (
+            <div style={styles.overlayMirror}>
+              {/* Detections Overlay */}
+              {latestResult?.detections?.map((det, index) => {
+                const [x1, y1, x2, y2] = det.bbox;
+                const left = x1 * SCALE_X;
+                return (
+                  <div key={`det-${index}`} style={{...styles.boundingBox, left, top: y1 * SCALE_Y, width: (x2 - x1) * SCALE_X, height: (y2 - y1) * SCALE_Y }}>
+                    <span style={styles.label}>{det.class_name} {Math.round(det.confidence * 100)}%</span>
+                  </div>
+                );
+              })}
 
-          {/* Detections Overlay */}
-          {isConnected && cameraLayout && latestResult?.detections?.map((det, index) => {
-            const [x1, y1, x2, y2] = det.bbox;
-            const left = MIRROR_PREVIEW ? cameraLayout.width - (x2 * SCALE_X) : x1 * SCALE_X;
-            return (
-              <div key={`det-${index}`} style={{...styles.boundingBox, left, top: y1 * SCALE_Y, width: (x2 - x1) * SCALE_X, height: (y2 - y1) * SCALE_Y }}>
-                <span style={styles.label}>{det.class_name} {Math.round(det.confidence * 100)}%</span>
-              </div>
-            );
-          })}
+              {/* Pose Skeleton Overlay */}
+              {latestResult?.poses?.map((pose, poseIndex) => (
+                <div key={`pose-${poseIndex}`} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none' }}>
+                  {SKELETON_EDGES.map((edge, edgeIndex) => renderSkeletonLine(pose[edge[0]], pose[edge[1]], `${poseIndex}-line-${edgeIndex}`))}
+                  {pose.map((kp, kpIndex) => renderKeypoint(kp, `${poseIndex}-kp-${kpIndex}`))}
+                </div>
+              ))}
 
-          {/* Pose Skeleton Overlay */}
-          {isConnected && cameraLayout && latestResult?.poses?.map((pose, poseIndex) => (
-              <div key={`pose-${poseIndex}`} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none' }}>
-                {SKELETON_EDGES.map((edge, edgeIndex) => renderSkeletonLine(pose[edge[0]], pose[edge[1]], `${poseIndex}-line-${edgeIndex}`))}
-                {pose.map((kp, kpIndex) => renderKeypoint(kp, `${poseIndex}-kp-${kpIndex}`))}
-              </div>
-          ))}
-
-          {/* Hand Box Overlay */}
-          {isConnected && cameraLayout && latestResult?.compliance?.hand_boxes?.map((box, index) => {
-            const isTouching = latestResult.compliance.touch_plant || latestResult.compliance.touch_animal;
-            const left = MIRROR_PREVIEW ? cameraLayout.width - (box[2] * SCALE_X) : box[0] * SCALE_X;
-            return (
-              <div key={`hand-${index}`} style={{...styles.interactionBox,
-                  left, top: box[1] * SCALE_Y, width: (box[2] - box[0]) * SCALE_X, height: (box[3] - box[1]) * SCALE_Y,
-                  borderColor: isTouching ? '#FF6600' : '#FFD700',
-                  backgroundColor: isTouching ? 'rgba(255, 102, 0, 0.20)' : 'rgba(255, 215, 0, 0.12)',
-                }}
-              >
-                <span style={{...styles.interactionLabel, color: isTouching ? '#FF6600' : '#FFD700' }}>
-                  {isTouching ? '\u270b TOUCH' : '\u270b'}
-                </span>
-              </div>
-            );
-          })}
+              {/* Hand Box Overlay */}
+              {latestResult?.compliance?.hand_boxes?.map((box, index) => {
+                const isTouching = latestResult.compliance.touch_plant || latestResult.compliance.touch_animal;
+                const [x1, y1, x2, y2] = box;
+                const left = x1 * SCALE_X;
+                return (
+                  <div key={`hand-${index}`} style={{...styles.interactionBox,
+                      left, top: y1 * SCALE_Y, width: (x2 - x1) * SCALE_X, height: (y2 - y1) * SCALE_Y,
+                      borderColor: isTouching ? '#FF6600' : '#FFD700',
+                      backgroundColor: isTouching ? 'rgba(255, 102, 0, 0.20)' : 'rgba(255, 215, 0, 0.12)',
+                    }}
+                  >
+                    <span style={{...styles.interactionLabel, color: isTouching ? '#FF6600' : '#FFD700' }}>
+                      {isTouching ? '\u270b TOUCH' : '\u270b'}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
 
           {/* Compliance Alerts */}
           {latestResult?.compliance?.plucking_plant && <div style={styles.warningText}>{t('warning_plucking_detected')}</div>}
@@ -585,17 +693,34 @@ export default function DetectionScreenWeb() {
           {latestResult?.compliance?.extended_touch_animal && <div style={{...styles.warningText, backgroundColor: 'rgba(255, 165, 0, 0.8)'}}>{t('extended_animal_touch')}</div>}
           {latestResult?.compliance?.extended_touch_plant && <div style={{...styles.warningText, backgroundColor: 'rgba(255, 165, 0, 0.8)'}}>{t('extended_plant_touch')}</div>}
 
-          {/* Live Stats Panel */}
-          {isConnected && latestResult && (
-            <div style={styles.statsPanel}>
-              <div style={styles.statText}>{t('detections')}: {latestResult.detections?.length || 0}</div>
-              <div style={styles.statText}>{t('poses')}: {latestResult.poses?.length || 0}</div>
-              <div style={styles.statText}>{t('inference')}: {latestResult.inference_ms || 0}ms</div>
-            </div>
-          )}
-
           {/* Settings Button */}
           <button style={styles.settingsButton} onClick={() => setConfigMode(true)}>⚙</button>
+        </div>
+
+        <div style={styles.cameraMetaPanel}>
+          <div style={styles.metaRow}>
+            <span style={styles.metaLabel}>{t('api_connection')}</span>
+            <span
+              style={{
+                ...styles.connectionBadge,
+                ...(isConnected ? styles.connectionBadgeConnected : styles.connectionBadgeDisconnected)
+              }}
+            >
+              {isConnected ? t('connected_ai_api') : t('ai_server_disconnected')}
+            </span>
+          </div>
+          <div style={styles.metaRow}>
+            <span style={styles.metaLabel}>{t('detections')}</span>
+            <span style={styles.metaValue}>{latestResult?.detections?.length || 0}</span>
+          </div>
+          <div style={styles.metaRow}>
+            <span style={styles.metaLabel}>{t('poses')}</span>
+            <span style={styles.metaValue}>{latestResult?.poses?.length || 0}</span>
+          </div>
+          <div style={styles.metaRow}>
+            <span style={styles.metaLabel}>{t('inference')}</span>
+            <span style={styles.metaValue}>{latestResult?.inference_ms || 0}ms</span>
+          </div>
         </div>
       </div>
 
@@ -640,7 +765,10 @@ export default function DetectionScreenWeb() {
             <pre style={styles.metadataBlock}>{JSON.stringify(selectedEvent.metadata || {}, null, 2)}</pre>
             {!selectedEvent.is_resolved && (
               <button
-                style={styles.resolveButton}
+                style={{
+                  ...styles.resolveButton,
+                  ...(resolvingEventId === selectedEvent.id ? styles.resolveButtonDisabled : null)
+                }}
                 onClick={() => resolveEvent(selectedEvent.id)}
                 disabled={resolvingEventId === selectedEvent.id}
               >
@@ -720,14 +848,24 @@ const styles = {
   eventCard: { backgroundColor: '#f9fafb', borderRadius: '10px', padding: '12px', border: '1px solid #e5e7eb' },
   eventHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', gap: 8 },
   eventMetaRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 },
+  eventActions: { display: 'flex', alignItems: 'center', gap: 8 },
   eventType: { color: '#111827', fontWeight: '700', fontSize: '13px', margin: 0 },
   eventTime: { color: '#6b7280', fontSize: '11px', fontStyle: 'italic', margin: 0 },
   eventConfidence: { color: '#0f766e', fontWeight: '700', fontSize: 12 },
   activePill: { backgroundColor: '#dcfce7', color: '#166534', borderRadius: 999, fontSize: 11, padding: '2px 7px', fontWeight: '700' },
+  resolveInlineButton: { backgroundColor: '#065f46', color: 'white', border: 'none', borderRadius: 999, fontSize: 11, fontWeight: '700', padding: '2px 8px', cursor: 'pointer' },
+  resolveInlineButtonDisabled: { opacity: 0.6, cursor: 'not-allowed' },
   emptyText: { color: '#9ca3af', fontSize: 13, marginTop: 8, display: 'block' },
   cameraSidebar: { flex: 1, padding: '24px 24px 24px 0', boxSizing: 'border-box' },
   cameraWrapper: { width: '100%', aspectRatio: '4 / 3', borderRadius: '12px', overflow: 'hidden', backgroundColor: '#111827', position: 'relative', border: '1px solid #d1d5db' },
   camera: { width: '100%', height: '100%', objectFit: 'fill', display: 'block' },
+  cameraMetaPanel: { marginTop: 14, backgroundColor: '#ffffff', borderRadius: 12, border: '1px solid #e5e7eb', padding: 12, display: 'flex', flexDirection: 'column', gap: 8 },
+  metaRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 },
+  metaLabel: { color: '#6b7280', fontSize: 12, fontWeight: '600' },
+  metaValue: { color: '#111827', fontSize: 13, fontWeight: '700' },
+  connectionBadge: { fontSize: 11, fontWeight: '700', padding: '4px 8px', borderRadius: 999, color: '#ffffff' },
+  connectionBadgeConnected: { backgroundColor: '#10b981' },
+  connectionBadgeDisconnected: { backgroundColor: '#dc2626' },
   cameraPlaceholder: { position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '12px', padding: '24px', textAlign: 'center', backgroundColor: '#1f2937', color: 'white', zIndex: 5 },
   cameraPlaceholderTitle: { fontSize: '18px', fontWeight: '700' },
   cameraPlaceholderText: { maxWidth: '320px', color: '#d1d5db', fontSize: '13px', lineHeight: 1.4 },
@@ -741,7 +879,7 @@ const styles = {
   interactionBox: { position: 'absolute', border: '2px solid', borderRadius: '3px', pointerEvents: 'none' },
   interactionLabel: { position: 'absolute', top: '-16px', left: '-2px', backgroundColor: '#111827', padding: '0 3px', fontSize: '10px', fontWeight: '700', whiteSpace: 'nowrap' },
   settingsButton: { position: 'absolute', bottom: '10px', left: '10px', fontSize: '22px', backgroundColor: 'rgba(255,255,255,0.2)', padding: '8px', borderRadius: '20px', cursor: 'pointer', zIndex: 10, border: 'none', color: 'white' },
-  detailModalOverlay: { position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.6)', zIndex: 1200, display: 'flex', justifyContent: 'center', alignItems: 'center', padding: 16 },
+  detailModalOverlay: { position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.6)', zIndex: 5000, display: 'flex', justifyContent: 'center', alignItems: 'center', padding: 16 },
   detailModal: { width: 'min(900px, 96vw)', maxHeight: '90vh', overflowY: 'auto', backgroundColor: 'white', borderRadius: 12, padding: 16, border: '1px solid #e5e7eb' },
   detailHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
   detailTitle: { margin: 0, fontSize: 18, color: '#111827' },
@@ -753,6 +891,7 @@ const styles = {
   mapCanvas: { width: '100%', height: '100%' },
   metadataBlock: { backgroundColor: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 8, padding: 10, maxHeight: 180, overflow: 'auto', fontSize: 12, color: '#374151' },
   resolveButton: { marginTop: 12, backgroundColor: '#065f46', color: 'white', border: 'none', borderRadius: 8, padding: '10px 12px', fontWeight: '700', cursor: 'pointer' },
+  resolveButtonDisabled: { opacity: 0.6, cursor: 'not-allowed' },
   configModalOverlay: { position: 'fixed', inset: 0, backgroundColor: 'rgba(15,23,42,0.65)', zIndex: 1000, display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '16px', boxSizing: 'border-box' },
   configForm: { padding: '20px', backgroundColor: '#ffffff', borderRadius: '12px', maxWidth: '420px', width: '100%', margin: '0 auto', border: '1px solid #e5e7eb' },
   configTitle: { fontSize: '22px', fontWeight: '700', color: '#111827', margin: '0 0 20px 0' },

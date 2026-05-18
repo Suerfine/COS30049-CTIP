@@ -13,3 +13,26 @@ runs/
 #ignore pycache files
 __pycache__/**
 __pycache__/
+*.pyc
+*.pyo
+
+# Python virtual environment
+.venv/
+venv/
+env/
+
+# AI model weights (large binary files, not needed for mobile build)
+*.pt
+*.pth
+*.onnx
+*.h5
+*.pkl
+*.safetensors
+*.bin
+
+# AI training datasets (large image collections)
+ai/dataset/
+ai/models/
+
+# Dataset archives
+*.zip
