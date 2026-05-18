@@ -18,6 +18,9 @@ ultralytics==8.0.224
 torch>=2.0.0
 torchvision>=0.15.0
 
+# mDNS / Zeroconf service discovery
+zeroconf>=0.131.0
+
 # Compliance Evaluation (local module)
 # compliance.py is included in the repo
 
