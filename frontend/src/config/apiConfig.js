@@ -10,7 +10,8 @@ export const BASE_URL = () => {
     Constants?.expoConfig?.hostUri?.split(":")?.[0] ||
     "localhost";
   const API_PORT = process.env.API_PORT || 5000;
-  return `http://${API_HOST}:${API_PORT}/api`;
+  const API_PROTOCOL = process.env.EXPO_PUBLIC_API_PROTOCOL || "http";
+  return `${API_PROTOCOL}://${API_HOST}:${API_PORT}/api`;
 };
 
 const apiClient = axios.create({

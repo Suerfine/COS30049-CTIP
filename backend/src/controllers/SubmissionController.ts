@@ -101,7 +101,7 @@ export const getAllSubmissions = async (
     }
 
     const enrollment = await Enrollment.findOne({
-      where: { id: enrollmentId, user_id: req.user!.id }
+      where: { id: enrollmentId, user_id: req.user!.id },
     });
 
     if (!enrollment) {
@@ -109,9 +109,9 @@ export const getAllSubmissions = async (
     }
 
     const submissions = await Submission.findAll({
-      where: { 
+      where: {
         element_id: elementId,
-        enrollment_id: enrollmentId
+        enrollment_id: enrollmentId,
       },
       order: [
         ["created_at", "DESC"],
@@ -478,7 +478,6 @@ export const getAllByEnrollment = async (
     });
 
     return res.status(200).json(submissions.map(toSubmissionResponse));
-    
   } catch (err) {
     if (err instanceof HttpError) {
       return res.status(err.status).json({ message: err.message });

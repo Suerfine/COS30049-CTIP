@@ -1,3 +1,4 @@
+import "dotenv/config";
 import sequelize from "../../src/config/Database";
 import { faker } from "@faker-js/faker";
 import { UserRoles } from "../../src/enum/UserRoles";
@@ -63,6 +64,7 @@ export async function runSeeders(
     id: 260000, //Fixed ID for admin user to be used in test cases
     firstname: "Admin",
     lastname: "Admin",
+    identification: "admin",
     personal_email: "admin@sfc.gov.my",
     username: "admin",
     password: "admin",
@@ -74,6 +76,7 @@ export async function runSeeders(
   const parkGuideUser = buildUser({
     firstname: "Park",
     lastname: "Guide",
+    identification: "park.guide",
     personal_email: "park.guide@sfc.gov.my",
     username: "park.guide",
     password: "park.guide",

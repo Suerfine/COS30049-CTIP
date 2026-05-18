@@ -35,7 +35,7 @@ router.use("/users", userRouter);
  *     tags:
  *       - Auth
  *     summary: Issue JWT access token
- *     description: Authenticate with username and password to receive a JWT access token for OAuth2 authentication. The username is matched against the personal_email column.
+ *     description: Authenticate with username and password to receive a JWT access token for OAuth2 authentication. The username must be the SFC account email format {identification}@sfc.gov.my.
  *     security: []
  *     requestBody:
  *       required: true
@@ -50,7 +50,7 @@ router.use("/users", userRouter);
  *               username:
  *                 type: string
  *                 format: email
- *                 description: Your personal email address.
+ *                 description: "Your SFC account email address (example: 050812130827@sfc.gov.my)."
  *               password:
  *                 type: string
  *     responses:
@@ -82,6 +82,70 @@ router.post("/token/totp", TotpController.verifyLogin);
 router.post("/totp/setup", auth, TotpController.setup);
 router.post("/totp/verify-setup", auth, TotpController.verifySetup);
 router.post("/totp/disable", auth, TotpController.disable);
+
+/**
+ * @openapi
+ * /api/forgot-password:
+ *   post:
+ *     tags:
+ *       - Auth
+ *     summary: Request a password reset link
+ *     description: Sends a password reset link to the user's registered email address if the account exists.
+ *     security: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: admin@sfc.gov.my
+ *     responses:
+ *       200:
+ *         description: Reset link request accepted
+ *       400:
+ *         description: Email is required
+ */
+router.post("/forgot-password", AuthController.forgotPassword);
+
+/**
+ * @openapi
+ * /api/reset-password:
+ *   post:
+ *     tags:
+ *       - Auth
+ *     summary: Reset the account password
+ *     description: Accepts a valid password reset token and updates the user's password.
+ *     security: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - token
+ *               - password
+ *             properties:
+ *               token:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Password reset successfully
+ *       400:
+ *         description: Invalid request or reset token
+ *       404:
+ *         description: User not found
+ */
+router.post("/reset-password", AuthController.resetPassword);
+router.post("/change-password", auth, AuthController.changePassword);
 
 /*===============================
 =     REGISTRATION ROUTES      =

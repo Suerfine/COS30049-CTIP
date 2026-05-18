@@ -8,7 +8,6 @@ const config: Config.InitialOptions = {
     "**/__tests__/**/*.test.ts",
     "**/src/tests/**/*.test.ts",
     "**/tests/**/*.test.ts",
-    "**/test/**/*.test.js",
   ],
 };
 

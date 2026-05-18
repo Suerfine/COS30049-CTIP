@@ -440,6 +440,6 @@ submissionRouter.post(
 submissionRouter.get(
   "/submission/enrollment/:enrollment_id",
   auth,
-  SubmissionController.getAllByEnrollment 
+  SubmissionController.getAllByEnrollment,
 );
 export default submissionRouter;

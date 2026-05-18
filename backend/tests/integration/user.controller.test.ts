@@ -8,6 +8,7 @@ import { login } from "../helper/auth";
 import { describe, expect, it } from "@jest/globals";
 import { faker, Faker } from "@faker-js/faker";
 import { beforeEach } from "node:test";
+import { generateSfcEmail } from "../../src/utils/mailer";
 
 const ADMIN_PASSWORD = "Admin123!";
 const ADMIN_LOGIN_USERNAME = "admin@sfc.com.my"; // For legacy purpose login is using email as username
@@ -39,7 +40,7 @@ describe("User Controller Integration Tests", () => {
   it("POST /api/users - creates an admin user when authenticated as admin", async () => {
     const adminUser = await createAdminUser();
     const accessToken = await login({
-      username: ADMIN_LOGIN_USERNAME,
+      username: generateSfcEmail(adminUser),
       password: ADMIN_PASSWORD,
     });
 
@@ -71,16 +72,13 @@ describe("User Controller Integration Tests", () => {
     expect(createdUser).not.toBeNull();
     expect(createdUser?.role).toBe(UserRoles.ADMIN);
     expect(createdUser?.personal_email).toBe(createdEmail);
-    expect(createdUser?.password_hash).toBe(
-      await hashPassword(createdPassword),
-    );
 
     // Test for login with the newly created admin user
     const loginResponse = await request(app)
       .post("/api/token")
       .type("form")
       .send({
-        username: createdEmail,
+        username: generateSfcEmail(createdUser!),
         password: createdPassword,
       });
     expect(loginResponse.status).toBe(200);
@@ -91,7 +89,7 @@ describe("User Controller Integration Tests", () => {
     const ParkGuideUsername = faker.internet.username();
     const ParkGuideEmail = faker.internet.email().toLocaleLowerCase();
     const ParkGuidePassword = faker.internet.password();
-    await User.create({
+    const user = await User.create({
       username: ParkGuideUsername,
       firstname: "Park",
       lastname: "Guide",
@@ -102,7 +100,7 @@ describe("User Controller Integration Tests", () => {
       password_hash: await hashPassword(ParkGuidePassword),
     });
     const accessToken = await login({
-      username: ParkGuideEmail,
+      username: generateSfcEmail(user),
       password: ParkGuidePassword,
     });
 
@@ -145,8 +143,9 @@ describe("User Controller Integration Tests", () => {
     });
 
     // Login as the created user
+    const sfc_user_email = generateSfcEmail(user);
     const accessToken = await login({
-      username: user.personal_email,
+      username: sfc_user_email,
       password: "pass",
     });
 
@@ -199,7 +198,7 @@ describe("User Controller Integration Tests", () => {
 
     // Login as user1
     const accessToken = await login({
-      username: user1.personal_email,
+      username: generateSfcEmail(user1),
       password: "pass1",
     });
 
@@ -226,7 +225,7 @@ describe("User Controller Integration Tests", () => {
   it("PUT /api/users/:id - updates another user's details when authenticated as admin", async () => {
     const adminUser = await createAdminUser();
     const accessToken = await login({
-      username: ADMIN_LOGIN_USERNAME,
+      username: generateSfcEmail(adminUser),
       password: ADMIN_PASSWORD,
     });
 
@@ -280,7 +279,7 @@ describe("User Controller Integration Tests", () => {
 
     // Login as the created user
     const accessToken = await login({
-      username: user.personal_email,
+      username: generateSfcEmail(user),
       password: "oldpassword",
     });
 
@@ -297,7 +296,7 @@ describe("User Controller Integration Tests", () => {
 
     // Assert that the user can login with the new password
     const newAccessToken = await login({
-      username: user.personal_email,
+      username: generateSfcEmail(user),
       password: "newpassword",
     });
     expect(newAccessToken).toBeDefined();

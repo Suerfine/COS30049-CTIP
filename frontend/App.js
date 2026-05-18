@@ -9,13 +9,18 @@ import RootNavigator from "./src/navigation/RootNavigator";
 import { AuthProvider } from "./src/context/AuthContext";
 
 const linking = {
-  prefixes: ["http://localhost:8081", "parkguide://"],
+  prefixes: ["https://localhost:8081", "http://localhost:8081", "parkguide://"],
   config: {
     screens: {
-      Landing: "landing",
-      Login: "login",
-      SignUp: "signup",
-      ForgotPassword: "forgot-password",
+      SFC: {
+        screens: {
+          Landing: "landing",
+          Login: "login",
+          SignUp: "signup",
+          ForgotPassword: "forgot-password",
+        }
+      },
+      ResetPassword: "reset-password",
       "Course Management": "courseManagement",
       "Course Details": "course/",
       Dashboard: "dashboard",

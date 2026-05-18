@@ -102,7 +102,7 @@ const AccountManagement = () => {
     const result = await handleUpdateAccount(
       selectedAcc.id,
       editForm,
-      pendingImage ?? null
+      pendingImage ?? null,
     );
     if (result?.success) {
       setIsEditing(false);
@@ -253,9 +253,7 @@ const AccountManagement = () => {
       <Text style={{ flex: 3 }}>{item.username + "@sfc.gov.my"}</Text>
       {/* Role */}
       <Text style={{ flex: 1 }}>
-        {item.role === "admin"
-          ? t("role.admin")
-          : t("role.park_guide")}
+        {item.role === "admin" ? t("role.admin") : t("role.park_guide")}
       </Text>
       <Text style={{ flex: 2 }}>{formatDate(item.created_at)}</Text>
       <Text style={{ flex: 2 }}>{formatDate(item.last_login_at)}</Text>
@@ -270,8 +268,8 @@ const AccountManagement = () => {
     return (
       <View style={[styles.paginationContainer, styles.row]}>
         <Text style={styles.pageInfo}>
-          {t("showing")} {accounts?.length > 0 ? indexOfFirstItem + 1 : 0}  {t("to")} {" "}
-          {indexOfLastItem} {t("of")} {totalUsers} {t("users")}
+          {t("showing")} {accounts?.length > 0 ? indexOfFirstItem + 1 : 0}{" "}
+          {t("to")} {indexOfLastItem} {t("of")} {totalUsers} {t("users")}
         </Text>
         <View style={styles.row}>
           <Pressable
@@ -279,7 +277,12 @@ const AccountManagement = () => {
             onPress={() => setCurrentPage(1)}
             style={[styles.pageBtn, currentPage == 1 && styles.btnDisabled]}
           >
-            <Text style={[currentPage == 1 ? styles.disabledText : styles.pageBtnText, styles.arrowBtn]}>
+            <Text
+              style={[
+                currentPage == 1 ? styles.disabledText : styles.pageBtnText,
+                styles.arrowBtn,
+              ]}
+            >
               <ChevronsLeft size={20} />
             </Text>
           </Pressable>
@@ -288,7 +291,12 @@ const AccountManagement = () => {
             onPress={() => setCurrentPage((prev) => prev - 1)}
             style={[styles.pageBtn, currentPage == 1 && styles.btnDisabled]}
           >
-            <Text style={[currentPage == 1 ? styles.disabledText : styles.pageBtnText, styles.arrowBtn]}>
+            <Text
+              style={[
+                currentPage == 1 ? styles.disabledText : styles.pageBtnText,
+                styles.arrowBtn,
+              ]}
+            >
               <ChevronLeft size={20} />
             </Text>
           </Pressable>
@@ -319,7 +327,14 @@ const AccountManagement = () => {
               currentPage == totalPages && styles.btnDisabled,
             ]}
           >
-            <Text style={[currentPage == totalPages ? styles.disabledText : styles.pageBtnText, styles.arrowBtn]}>
+            <Text
+              style={[
+                currentPage == totalPages
+                  ? styles.disabledText
+                  : styles.pageBtnText,
+                styles.arrowBtn,
+              ]}
+            >
               <ChevronRight size={20} />
             </Text>
           </Pressable>
@@ -331,7 +346,14 @@ const AccountManagement = () => {
               currentPage == totalPages && styles.btnDisabled,
             ]}
           >
-            <Text style={[currentPage == totalPages ? styles.disabledText : styles.pageBtnText, styles.arrowBtn]}>
+            <Text
+              style={[
+                currentPage == totalPages
+                  ? styles.disabledText
+                  : styles.pageBtnText,
+                styles.arrowBtn,
+              ]}
+            >
               <ChevronsRight size={20} />
             </Text>
           </Pressable>
@@ -375,9 +397,7 @@ const AccountManagement = () => {
               onPress={() => setIsOpen(!isOpen)}
             >
               <Text style={styles.pillText}>
-                {currentRole !== "all"
-                  ? t(`role.${currentRole}`)
-                  : t("role")}
+                {currentRole !== "all" ? t(`role.${currentRole}`) : t("role")}
               </Text>
               {isOpen ? (
                 <ChevronUp size={16} color="#4b5563" />
@@ -410,8 +430,7 @@ const AccountManagement = () => {
                     <Text
                       style={[
                         styles.menuItemText,
-                        currentRole === role.key &&
-                          styles.menuItemTextActive,
+                        currentRole === role.key && styles.menuItemTextActive,
                       ]}
                     >
                       {role.label}
@@ -532,17 +551,23 @@ const AccountManagement = () => {
                   </View>
                 )}
               </View>
-              {(isEditing && pendingImage?.uri) || getProfileImageUri(selectedAcc) ? (
+              {(isEditing && pendingImage?.uri) ||
+              getProfileImageUri(selectedAcc) ? (
                 <Image
-                  source={{ uri: isEditing && pendingImage?.uri 
-                    ? pendingImage.uri 
-                    : getProfileImageUri(selectedAcc) }}
+                  source={{
+                    uri:
+                      isEditing && pendingImage?.uri
+                        ? pendingImage.uri
+                        : getProfileImageUri(selectedAcc),
+                  }}
                   style={styles.largeAvatar}
                 />
               ) : (
                 <View style={styles.SideBarPlaceholder}>
                   <Text style={styles.sideBarInitials}>
-                    {selectedAcc?.firstname ? selectedAcc.firstname[0].toUpperCase() : "?"}
+                    {selectedAcc?.firstname
+                      ? selectedAcc.firstname[0].toUpperCase()
+                      : "?"}
                   </Text>
                 </View>
               )}
@@ -557,7 +582,7 @@ const AccountManagement = () => {
                   }}
                 >
                   <View style={styles.editBtnWrapper}>
-                  <SquarePen size={16} color="black" />
+                    <SquarePen size={16} color="black" />
                   </View>
                 </Pressable>
               )}
@@ -703,7 +728,10 @@ const AccountManagement = () => {
               {isEditing && (
                 <View style={[styles.row, styles.actionBtn]}>
                   <Pressable
-                    onPress={() => {setIsEditing(false); setPendingImage(null)}}
+                    onPress={() => {
+                      setIsEditing(false);
+                      setPendingImage(null);
+                    }}
                     style={styles.Btn}
                   >
                     <Text>Cancel</Text>
@@ -774,7 +802,7 @@ const styles = StyleSheet.create({
     ...Platform.select({
       web: { outlineStyle: "none" },
     }),
-    marginLeft:10
+    marginLeft: 10,
   },
   toolbar: {
     marginVertical: 20,
@@ -955,7 +983,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffc95c",
     padding: 6,
     borderRadius: 60,
-    borderColor: 'white',
+    borderColor: "white",
     borderWidth: 3,
   },
   panelContent: {

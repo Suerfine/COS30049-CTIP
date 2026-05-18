@@ -41,7 +41,10 @@ const createPrivateStorage = (subfolder?: string) => {
       cb(null, uploadPath);
     },
     filename: (_req, file, cb) => {
-      cb(null, `${randomUUID()}${path.extname(file.originalname)}`);
+      const safeOriginalName = file.originalname
+        .replace(/[^a-zA-Z0-9._-]/g, "_")
+        .replace(/_+/g, "_");
+      cb(null, `${randomUUID()}-${safeOriginalName}`);
     },
   });
 };

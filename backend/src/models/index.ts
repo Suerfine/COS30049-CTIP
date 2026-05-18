@@ -20,6 +20,8 @@ import Prerequisite from "./Prerequisite";
 import AnomalyEvent from "./AnomalyEvent";
 import ArModel from "./ArModel";
 import Payment from "./Payment";
+import PasswordResetToken from "./PasswordResetToken";
+import AuditLog from "./AuditLog";
 import { RegistrationStatus } from "../enum/RegistrationStatus";
 
 // Associations
@@ -183,6 +185,17 @@ Payment.belongsTo(User, {
   as: "processed_by",
 });
 
+// Password reset tokens
+User.hasMany(PasswordResetToken, {
+  foreignKey: "user_id",
+  as: "password_reset_tokens",
+});
+PasswordResetToken.belongsTo(User, { foreignKey: "user_id", as: "user" });
+
+// Audit logs
+User.hasMany(AuditLog, { foreignKey: "user_id", as: "audit_logs" });
+AuditLog.belongsTo(User, { foreignKey: "user_id", as: "user" });
+
 export {
   User,
   Course,
@@ -203,7 +216,9 @@ export {
   NotificationPreference,
   Sensor,
   SensorLog,
-  AnomalyEvent as AnomalyEvent,
+  AnomalyEvent,
   ArModel,
   Payment,
+  PasswordResetToken,
+  AuditLog,
 };

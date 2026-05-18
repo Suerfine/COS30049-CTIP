@@ -1,12 +1,13 @@
 import { Router } from "express";
 import * as CourseController from "../controllers/CourseController";
 import { auth } from "../middelware/Auth";
+import { isAdmin } from "../middelware/Role";
 import { uploadPrivateDocument } from "../middelware/PrivateDocumentUpload";
 import moduleRouter from "./ModuleRoute";
 import discussionRouter from "./DiscussionRoute";
 import { uploadBadgeImg } from "../config/multer";
 import { validate } from "../middelware/Validate";
-import { body } from "express-validator/lib/middlewares/validation-chain-builders";
+import { body, param } from "express-validator";
 import { CourseStatus } from "../enum/CourseStatus";
 
 const privateCourseBadgeUpload = uploadPrivateDocument({
@@ -540,6 +541,7 @@ courseRouter.get("/:id", auth, CourseController.getCourseById);
 courseRouter.put(
   "/:id",
   auth,
+  isAdmin,
   privateCourseBadgeUpload,
   CourseController.upsertCourse,
 );
@@ -583,6 +585,6 @@ courseRouter.put(
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-courseRouter.delete("/:id", auth, CourseController.deleteCourse);
+courseRouter.delete("/:id", auth, isAdmin, CourseController.deleteCourse);
 
 export default courseRouter;

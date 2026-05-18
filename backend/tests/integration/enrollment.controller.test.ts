@@ -19,6 +19,7 @@ import { buildCourse } from "../../database/factories/courseFactory";
 import { EnrollmentStatus } from "../../src/enum/EnrollmentStatus";
 import { Op } from "sequelize";
 import { ElementTypes } from "../../src/enum/ElementTypes";
+import { generateSfcEmail } from "../../src/utils/mailer";
 
 const PASSWORD = "password";
 const ADMIN_PASSWORD = "admin-password";
@@ -150,7 +151,7 @@ describe("Enrollment Controller Integration Tests", () => {
 
     // Log in as the user to get an auth token
     const token = await login({
-      username: user.personal_email,
+      username: generateSfcEmail(user),
       password: "password",
     });
 
@@ -195,7 +196,7 @@ describe("Enrollment Controller Integration Tests", () => {
 
     // Log in as the user to get an auth token
     const token = await login({
-      username: user.personal_email,
+      username: generateSfcEmail(user),
       password: "password",
     });
 
@@ -250,7 +251,7 @@ describe("Enrollment Controller Integration Tests", () => {
 
     // Log in as the user to get an auth token
     const token = await login({
-      username: user.personal_email,
+      username: generateSfcEmail(user),
       password: "password",
     });
 
@@ -319,7 +320,7 @@ describe("Enrollment Controller Integration Tests", () => {
   it("GET /api/enrollments - returns active enrollments and can include deleted enrollments", async () => {
     const admin = await createAdminUser();
     const token = await login({
-      username: admin.personal_email,
+      username: generateSfcEmail(admin),
       password: ADMIN_PASSWORD,
     });
 
@@ -372,7 +373,7 @@ describe("Enrollment Controller Integration Tests", () => {
   it("GET /api/enrollments/my-enrollments - filters to the current user and status", async () => {
     const user = await createParkGuideUser();
     const token = await login({
-      username: user.personal_email,
+      username: generateSfcEmail(user),
       password: PASSWORD,
     });
 
@@ -426,7 +427,7 @@ describe("Enrollment Controller Integration Tests", () => {
   it("PATCH /api/enrollments/:id/status/:status - updates an enrollment status", async () => {
     const admin = await createAdminUser();
     const token = await login({
-      username: admin.personal_email,
+      username: generateSfcEmail(admin),
       password: ADMIN_PASSWORD,
     });
 
@@ -456,7 +457,7 @@ describe("Enrollment Controller Integration Tests", () => {
   it("DELETE /api/enrollments/:id - soft deletes an enrollment", async () => {
     const admin = await createAdminUser();
     const token = await login({
-      username: admin.personal_email,
+      username: generateSfcEmail(admin),
       password: ADMIN_PASSWORD,
     });
 
@@ -487,7 +488,7 @@ describe("Enrollment Controller Integration Tests", () => {
   it("GET /api/enrollments/submissions/summaries - returns hydrated submission summaries", async () => {
     const admin = await createAdminUser();
     const token = await login({
-      username: admin.personal_email,
+      username: generateSfcEmail(admin),
       password: ADMIN_PASSWORD,
     });
 
@@ -543,7 +544,7 @@ describe("Enrollment Controller Integration Tests", () => {
   it("GET /api/enrollments/:id/audit - returns nested course, module, page, element, and submission data", async () => {
     const admin = await createAdminUser();
     const token = await login({
-      username: admin.personal_email,
+      username: generateSfcEmail(admin),
       password: ADMIN_PASSWORD,
     });
 
@@ -574,7 +575,7 @@ describe("Enrollment Controller Integration Tests", () => {
   it("PATCH /api/enrollments/:id/approve - completes an in-review enrollment and issues a badge", async () => {
     const admin = await createAdminUser();
     const token = await login({
-      username: admin.personal_email,
+      username: generateSfcEmail(admin),
       password: ADMIN_PASSWORD,
     });
 

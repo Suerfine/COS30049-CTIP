@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { View, Text, StyleSheet, Pressable, ScrollView, TextInput, Alert, Image, useWindowDimensions } from 'react-native';
 import { Mail, ArrowLeft } from 'lucide-react-native';
+import { authService } from '../services/authService';
 
 const ForgotPassword = ({ navigation }) => {
     const { width } = useWindowDimensions();
@@ -10,7 +11,7 @@ const ForgotPassword = ({ navigation }) => {
 
     const isValidEmail = (value) => /^\S+@\S+\.\S+$/.test(value);
 
-    const handleReset = () => {
+    const handleReset = async () => {
         if (!email.trim()) {
             Alert.alert('Missing email', 'Please enter your email address.');
             return;
@@ -21,10 +22,13 @@ const ForgotPassword = ({ navigation }) => {
             return;
         }
 
-        setLoading(true);
         try {
+            setLoading(true);
+            await authService.requestPasswordReset(email.trim());
             Alert.alert('Reset link sent', 'If this email exists, a password reset link will be sent.');
             navigation.navigate('Login');
+        } catch (error) {
+            Alert.alert('Unable to send reset link', error.message || 'Please try again later.');
         } finally {
             setLoading(false);
         }

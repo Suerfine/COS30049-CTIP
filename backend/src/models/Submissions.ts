@@ -5,7 +5,7 @@ import {
   InferAttributes,
   InferCreationAttributes,
   Model,
-  NonAttribute
+  NonAttribute,
 } from "sequelize";
 import sequelize from "../config/Database";
 import Enrollment from "./Enrollment";

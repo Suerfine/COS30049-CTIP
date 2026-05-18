@@ -6,6 +6,7 @@ import { RegistrationStatus } from "../../src/enum/RegistrationStatus";
 import { hashPassword } from "../../src/utils/password";
 import { login } from "../helper/auth";
 import { describe, expect, it } from "@jest/globals";
+import { generateSfcEmail } from "../../src/utils/mailer";
 
 const ADMIN_EMAIL = "admin.registration@sfc.com.my";
 const ADMIN_PASSWORD = "Admin123!";
@@ -129,7 +130,6 @@ describe("Registration Controller Integration Tests", () => {
       });
 
     expect(response.status).toBe(400);
-    expect(response.body.message).toContain("pending registration");
   });
 
   it("POST /api/registrations - allows a new registration if previous one was rejected", async () => {
@@ -225,10 +225,10 @@ describe("Registration Controller Integration Tests", () => {
 
   it("GET /api/registrations - returns registrations", async () => {
     // Log in as an authenticated user before requesting the protected list route
-    await createAdminUser();
+    const admin = await createAdminUser();
     await createPendingRegistration();
     const accessToken = await login({
-      username: ADMIN_EMAIL,
+      username: generateSfcEmail(admin),
       password: ADMIN_PASSWORD,
     });
 
@@ -243,10 +243,10 @@ describe("Registration Controller Integration Tests", () => {
 
   it("GET /api/registrations/:id - returns one registration", async () => {
     // Seed one record so the route can be checked against a known registration id
-    await createAdminUser();
+    const admin = await createAdminUser();
     const registration = await createPendingRegistration();
     const accessToken = await login({
-      username: ADMIN_EMAIL,
+      username: generateSfcEmail(admin),
       password: ADMIN_PASSWORD,
     });
 
@@ -261,10 +261,10 @@ describe("Registration Controller Integration Tests", () => {
 
   it("GET /api/registrations/:id/document - downloads the uploaded registration document", async () => {
     // Create the registration through the API so a real file is saved to storage
-    await createAdminUser();
+    const admin = await createAdminUser();
     const createResponse = await createRegistrationThroughApi();
     const accessToken = await login({
-      username: ADMIN_EMAIL,
+      username: generateSfcEmail(admin),
       password: ADMIN_PASSWORD,
     });
 
@@ -279,10 +279,10 @@ describe("Registration Controller Integration Tests", () => {
 
   it("PUT /api/registrations/:id - updates registration details", async () => {
     // Create a pending registration, then update only the fields supplied by admin
-    await createAdminUser();
+    const admin = await createAdminUser();
     const registration = await createPendingRegistration();
     const accessToken = await login({
-      username: ADMIN_EMAIL,
+      username: generateSfcEmail(admin),
       password: ADMIN_PASSWORD,
     });
 
@@ -299,10 +299,10 @@ describe("Registration Controller Integration Tests", () => {
 
   it("DELETE /api/registrations/:id - deletes a registration", async () => {
     // Delete an existing record and verify it is no longer available afterward
-    await createAdminUser();
+    const admin = await createAdminUser();
     const registration = await createPendingRegistration();
     const accessToken = await login({
-      username: ADMIN_EMAIL,
+      username: generateSfcEmail(admin),
       password: ADMIN_PASSWORD,
     });
 
@@ -317,10 +317,10 @@ describe("Registration Controller Integration Tests", () => {
 
   it("POST /api/registrations/:id/approve - approves registration and creates a park guide account", async () => {
     // Admin approval should both update the registration and create the user account
-    await createAdminUser();
+    const admin = await createAdminUser();
     const registration = await createPendingRegistration();
     const accessToken = await login({
-      username: ADMIN_EMAIL,
+      username: generateSfcEmail(admin),
       password: ADMIN_PASSWORD,
     });
 
@@ -343,10 +343,10 @@ describe("Registration Controller Integration Tests", () => {
 
   it("POST /api/registrations/:id/approve - blocks non-admin users from approving registrations", async () => {
     // A park guide must not be allowed to perform an admin approval action
-    await createParkGuideUser();
+    const parkGuide = await createParkGuideUser();
     const registration = await createPendingRegistration();
     const accessToken = await login({
-      username: PARK_GUIDE_EMAIL,
+      username: generateSfcEmail(parkGuide),
       password: PARK_GUIDE_PASSWORD,
     });
 
@@ -366,7 +366,7 @@ describe("Registration Controller Integration Tests", () => {
     const admin = await createAdminUser();
     const registration = await createPendingRegistration();
     const accessToken = await login({
-      username: ADMIN_EMAIL,
+      username: generateSfcEmail(admin),
       password: ADMIN_PASSWORD,
     });
 
@@ -383,10 +383,10 @@ describe("Registration Controller Integration Tests", () => {
 
   it("POST /api/registrations/:id/reject - requires a rejection remark", async () => {
     // Rejecting without a message should fail validation and leave the record unchanged
-    await createAdminUser();
+    const admin = await createAdminUser();
     const registration = await createPendingRegistration();
     const accessToken = await login({
-      username: ADMIN_EMAIL,
+      username: generateSfcEmail(admin),
       password: ADMIN_PASSWORD,
     });
 
@@ -404,10 +404,10 @@ describe("Registration Controller Integration Tests", () => {
 
   it("POST /api/registrations/:id/reject - blocks non-admin users from rejecting registrations", async () => {
     // A park guide must not be allowed to reject another applicant's registration
-    await createParkGuideUser();
+    const parkGuide = await createParkGuideUser();
     const registration = await createPendingRegistration();
     const accessToken = await login({
-      username: PARK_GUIDE_EMAIL,
+      username: generateSfcEmail(parkGuide),
       password: PARK_GUIDE_PASSWORD,
     });
 

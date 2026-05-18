@@ -154,5 +154,9 @@ storage/*
 !storage/public/
 storage/public/*
 !storage/public/dev/
-
 __pycache__/
+
+# TLS certificates (generated locally via mkcert — never commit private keys)
+certs/*.pem
+certs/*.crt
+certs/*.key

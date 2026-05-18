@@ -4,6 +4,7 @@ import { Course, User } from "../../src/models";
 import { UserRoles } from "../../src/enum/UserRoles";
 import { CourseStatus } from "../../src/enum/CourseStatus";
 import { hashPassword } from "../../src/utils/password";
+import { generateSfcEmail } from "../../src/utils/mailer";
 import { login } from "../helper/auth";
 import { describe, expect, it } from "@jest/globals";
 
@@ -58,9 +59,9 @@ async function createCourse(overrides: Partial<Course> = {}): Promise<Course> {
 describe("Course Controller Integration Tests", () => {
   it("POST /api/courses - creates a course with uploaded cover and badge images", async () => {
     // Authenticate first because course creation is a protected route
-    await createAdminUser();
+    const admin = await createAdminUser();
     const accessToken = await login({
-      username: ADMIN_EMAIL,
+      username: generateSfcEmail(admin),
       password: ADMIN_PASSWORD,
     });
 
@@ -109,14 +110,16 @@ describe("Course Controller Integration Tests", () => {
       });
 
     expect(response.status).toBe(401);
-    expect(await Course.findOne({ where: { title: "Unauthorized Course" } })).toBeNull();
+    expect(
+      await Course.findOne({ where: { title: "Unauthorized Course" } }),
+    ).toBeNull();
   });
 
   it("POST /api/courses - allows course creation without an optional cover image", async () => {
     // Cover images are optional, so omit only the cover while keeping required fields valid
-    await createAdminUser();
+    const admin = await createAdminUser();
     const accessToken = await login({
-      username: ADMIN_EMAIL,
+      username: generateSfcEmail(admin),
       password: ADMIN_PASSWORD,
     });
 
@@ -137,9 +140,9 @@ describe("Course Controller Integration Tests", () => {
 
   it("POST /api/courses - rejects course creation without a badge image", async () => {
     // Course creation also fails when the required badge image is omitted
-    await createAdminUser();
+    const admin = await createAdminUser();
     const accessToken = await login({
-      username: ADMIN_EMAIL,
+      username: generateSfcEmail(admin),
       password: ADMIN_PASSWORD,
     });
 
@@ -161,9 +164,9 @@ describe("Course Controller Integration Tests", () => {
 
   it("GET /api/courses - returns the created courses", async () => {
     // Seed multiple courses so the list response can be checked for pagination totals
-    await createAdminUser();
+    const admin = await createAdminUser();
     const accessToken = await login({
-      username: ADMIN_EMAIL,
+      username: generateSfcEmail(admin),
       password: ADMIN_PASSWORD,
     });
     await createCourse({ title: "Course A" });
@@ -180,9 +183,9 @@ describe("Course Controller Integration Tests", () => {
 
   it("GET /api/courses/user - returns released courses available to the logged-in user", async () => {
     // Park guides should only see released courses in the user-facing catalog
-    await createParkGuideUser();
+    const parkGuide = await createParkGuideUser();
     const accessToken = await login({
-      username: PARK_GUIDE_EMAIL,
+      username: generateSfcEmail(parkGuide),
       password: PARK_GUIDE_PASSWORD,
     });
     await createCourse({
@@ -203,9 +206,9 @@ describe("Course Controller Integration Tests", () => {
 
   it("GET /api/courses/:id - returns one course", async () => {
     // Retrieve one known course by id to verify the detail endpoint
-    await createAdminUser();
+    const admin = await createAdminUser();
     const accessToken = await login({
-      username: ADMIN_EMAIL,
+      username: generateSfcEmail(admin),
       password: ADMIN_PASSWORD,
     });
     const course = await createCourse();
@@ -221,9 +224,9 @@ describe("Course Controller Integration Tests", () => {
 
   it("PUT /api/courses/:id - updates course details", async () => {
     // Update an existing course and release it in the same request
-    await createAdminUser();
+    const admin = await createAdminUser();
     const accessToken = await login({
-      username: ADMIN_EMAIL,
+      username: generateSfcEmail(admin),
       password: ADMIN_PASSWORD,
     });
     const course = await createCourse();
@@ -250,9 +253,9 @@ describe("Course Controller Integration Tests", () => {
 
   it("PUT /api/courses/:id - rejects invalid course status updates", async () => {
     // Invalid enum values should be rejected without changing the saved course
-    await createAdminUser();
+    const admin = await createAdminUser();
     const accessToken = await login({
-      username: ADMIN_EMAIL,
+      username: generateSfcEmail(admin),
       password: ADMIN_PASSWORD,
     });
     const course = await createCourse();
@@ -271,9 +274,9 @@ describe("Course Controller Integration Tests", () => {
 
   it("DELETE /api/courses/:id - soft deletes a course", async () => {
     // Delete a saved course and confirm it is hidden by the model afterward
-    await createAdminUser();
+    const admin = await createAdminUser();
     const accessToken = await login({
-      username: ADMIN_EMAIL,
+      username: generateSfcEmail(admin),
       password: ADMIN_PASSWORD,
     });
     const course = await createCourse();
