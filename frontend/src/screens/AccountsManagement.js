@@ -565,7 +565,7 @@ const AccountManagement = () => {
               {isEditing ? (
                 <View style={styles.nameEditRow}>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.panelLabel}>First Name</Text>
+                    <Text style={styles.panelLabel}>{t('first name')}</Text>
                     <TextInput
                       style={[styles.userDetails, styles.inputEditing]}
                       value={editForm?.firstname || ""}
