@@ -681,7 +681,7 @@ const AccountManagement = () => {
                     <Text style={styles.panelLabel}>Work Email:</Text>
                   </View>
                   <Text style={styles.userDetails}>
-                    {(selectedAcc.username || "") + "@example.com"}
+                    {(selectedAcc.username || "") + "@sfc.gov.my"}
                   </Text>
                   <View style={styles.row}>
                     <Text
