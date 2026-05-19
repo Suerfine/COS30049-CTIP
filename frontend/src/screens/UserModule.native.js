@@ -149,6 +149,17 @@ const UserModule = ({ navigation }) => {
     ? course.cover_img_url.replace(/\\/g, "/")
     : null;
 
+  const handleEnrollPress = () => {
+    const screenName = Platform.OS === "web" ? "Payment" : "PaymentScreen";
+    navigation.navigate(screenName, { course });
+  };
+
+  const isEnrollButtonVisible =
+    !resolvedEnrollmentStatus ||
+    resolvedEnrollmentStatus === "failed" ||
+    resolvedEnrollmentStatus === "rejected" ||
+    resolvedEnrollmentStatus === "expired";
+
   const {
     elements,
     loading: elementsLoading,
@@ -596,7 +607,14 @@ const UserModule = ({ navigation }) => {
                       </View>
                     </View>
                   </View>
+
+                  {isEnrollButtonVisible && (
+                    <Pressable style={styles.enrollBtn} onPress={handleEnrollPress}>
+                      <Text style={styles.enrollText}>{t("enroll", "Enroll")}</Text>
+                    </Pressable>
+                  )}
                 </View>
+
                 <Image
                   source={
                     normalizedCoverUrl
@@ -682,6 +700,19 @@ const styles = StyleSheet.create({
   },
   content: {
     marginTop: 20,
+  },
+  enrollBtn: {
+    backgroundColor: "#efab21",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  enrollText: {
+    color: "#fff",
+    fontWeight: "700",
+    fontSize: 14,
   },
   headerRow: {
     flexDirection: "row",
