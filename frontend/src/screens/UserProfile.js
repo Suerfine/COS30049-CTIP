@@ -24,7 +24,7 @@ import { ModalStyle } from "../components/ModalStyle";
 import { useUserProfile } from "../hooks/useUserProfile";
 import { userProfileService } from "../services/userProfileService";
 import { useSignUp } from "../hooks/useSignUp";
-import { isValidEmail, isOnlyLetters, phoneRegex, isValidPassword } from "../utils/Validation";
+import { isValidEmail, isOnlyLetters, phoneRegex, isValidPassword, isValidIdentification } from "../utils/Validation";
 import { useTranslation } from 'react-i18next';
 
 const UserProfile = ({ navigation }) => {
@@ -78,6 +78,8 @@ const UserProfile = ({ navigation }) => {
 
     if (!form.identification?.trim()) {
       tempErrors.identification = "* IC / Passport is required.";
+    } else if (!isValidIdentification(form.identification)) {
+      tempErrors.identification = "* Invalid IC/Passport format. Use format XXXXXX-XX-XXXX (IC) or 5-20 alphanumeric characters (Passport).";
     }
 
     if (!form.personal_email?.trim()) {
@@ -89,7 +91,7 @@ const UserProfile = ({ navigation }) => {
     if (!form.tel?.trim()) {
       tempErrors.tel = "* Phone number is required.";
     } else if (!phoneRegex.test(form.tel)) {
-      tempErrors.tel = "* Invalid phone number.";
+      tempErrors.tel = "* Invalid phone number. Expected formats: 01X-XXXXXXX, 0X-XXXXXX, or +61XXXXXXXXX";
     }
 
     setErrors(tempErrors);
