@@ -73,9 +73,8 @@ const ForceChangePassword = () => {
         }
     };
 
-    return (
-        <View style={styles.container}>
-            <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+    return (<>
+            <ScrollView contentContainerStyle={styles.scrollContent}>
                 <View style={[styles.shell, isDesktop ? styles.shellDesktop : styles.shellMobile]}>
                     {isDesktop && (
                         <View style={styles.heroPanel}>
@@ -227,34 +226,23 @@ const ForceChangePassword = () => {
                     </Pressable>
                 </View>
             </ModalLayout>
-        </View>
+        </>
     );
 };
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        height: '100vh',
-        backgroundColor: '#e8efe7',
-    },
-    scrollView: {
-        flex: 1,
-    },
     scrollContent: {
-        flexGrow: 1,
         justifyContent: 'center',
-        padding: 24,
+        height:'100vh',
     },
     shell: {
         width: '100%',
         maxWidth: 1000,
         alignSelf: 'center',
         borderRadius: 20,
-        overflow: 'hidden',
         backgroundColor: '#ffffff',
         borderWidth: 1,
         borderColor: '#d8e2d6',
-        minHeight: 600,
     },
     shellDesktop: {
         flexDirection: 'row',
