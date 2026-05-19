@@ -1074,7 +1074,7 @@ export default function DetectionScreenWeb() {
 
 const styles = {
   appContainer: { display: 'flex', flexDirection: 'row', height: '100vh', backgroundColor: '#f6f8f7', fontFamily: 'Inter, sans-serif', color: '#111827' },
-  mainContent: { flex: 2, padding: '24px', display: 'flex', flexDirection: 'column', boxSizing: 'border-box', overflow: 'hidden', minHeight: 0 },
+  mainContent: { flex: 2, padding: '24px', display: 'flex', flexDirection: 'column', boxSizing: 'border-box', overflow: 'hidden', minHeight: 0, maxHeight: '95%' },
   title: { fontSize: '28px', fontWeight: '700', color: '#111827', margin: 0 },
   pageSubtitle: { marginTop: 6, color: '#6b7280', fontSize: 13 },
   titleBar: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', gap: 16 },
@@ -1134,7 +1134,7 @@ const styles = {
   metadataBlock: { backgroundColor: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 8, padding: 10, maxHeight: 180, overflow: 'auto', fontSize: 12, color: '#374151' },
   resolveButton: { marginTop: 12, backgroundColor: '#065f46', color: 'white', border: 'none', borderRadius: 8, padding: '10px 12px', fontWeight: '700', cursor: 'pointer' },
   resolveButtonDisabled: { opacity: 0.6, cursor: 'not-allowed' },
-  configModalOverlay: { position: 'fixed', inset: 0, backgroundColor: 'rgba(15,23,42,0.65)', zIndex: 1000, display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '16px', boxSizing: 'border-box' },
+  configModalOverlay: { position: 'fixed', inset: 0, backgroundColor: 'rgba(15,23,42,0.65)', zIndex: 1000, display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '16px', boxSizing: 'border-box', paddingTop: '10vh' },
   configForm: { padding: '20px', backgroundColor: '#ffffff', borderRadius: '12px', maxWidth: '420px', width: '100%', margin: '0 auto', border: '1px solid #e5e7eb' },
   configTitle: { fontSize: '22px', fontWeight: '700', color: '#111827', margin: '0 0 20px 0' },
   configLabel: { fontSize: '14px', fontWeight: '600', marginTop: '15px', marginBottom: '5px', color: '#374151', display: 'block' },
