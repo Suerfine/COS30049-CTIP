@@ -2,7 +2,13 @@ import React, { useState } from "react";
 import { createStackNavigator } from "@react-navigation/stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { View, Platform } from "react-native";
-import { LayoutDashboard, Book, Award, ListTodo, Group} from "lucide-react-native";
+import {
+  LayoutDashboard,
+  Book,
+  Award,
+  ListTodo,
+  Group,
+} from "lucide-react-native";
 import { useNavigationState, useNavigation } from "@react-navigation/native";
 
 // Import screens
@@ -74,7 +80,7 @@ function MobileTabNavigator() {
         <Tab.Screen
           name="To Do"
           component={Calendar}
-          initialParams={{ layout: 'list' }}
+          initialParams={{ layout: "list" }}
           options={{
             tabBarIcon: ({ color }) => <ListTodo color={color} size={20} />,
           }}

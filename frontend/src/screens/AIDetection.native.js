@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, useState } from "react";
 import {
+  SafeAreaView,
   View,
   Text,
   StyleSheet,
@@ -563,7 +564,7 @@ export default function DetectionScreen() {
     );
 
   return (
-    <View
+    <SafeAreaView
       style={[styles.appContainer, isCompact && styles.appContainerCompact]}
     >
       {/* Event Detail Modal */}
@@ -912,7 +913,7 @@ export default function DetectionScreen() {
           </View>
         </View>
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 
