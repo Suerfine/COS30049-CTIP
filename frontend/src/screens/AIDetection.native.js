@@ -16,10 +16,9 @@ import {
   useWindowDimensions,
 } from "react-native";
 import {
-  Camera as VisionCamera,
-  useCameraDevice,
-  useCameraPermission,
-} from "react-native-vision-camera";
+  Camera,
+  CameraView,
+} from "expo-camera";
 import * as FileSystem from "expo-file-system";
 import Constants from "expo-constants";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -71,8 +70,7 @@ export default function DetectionScreen() {
   };
   const { width } = useWindowDimensions();
   const isCompact = width < 720;
-  const { hasPermission, requestPermission } = useCameraPermission();
-  const device = useCameraDevice("back");
+  const [hasPermission, setHasPermission] = useState(null);
   const cameraRef = useRef(null);
   const isCapturing = useRef(false);
   const lastLogTime = useRef(0);
@@ -102,6 +100,8 @@ export default function DetectionScreen() {
   const [resolvingEventId, setResolvingEventId] = useState(null);
 
   const [cameraLayout, setCameraLayout] = useState(null);
+  const [cameraReady, setCameraReady] = useState(false);
+  const [cameraError, setCameraError] = useState("");
 
   // Cover-mode coordinate mapping: CameraView scales the photo uniformly to fill the
   // container (like CSS object-fit: cover), so one dimension fills exactly and the
@@ -139,6 +139,100 @@ export default function DetectionScreen() {
     return `${Math.round(confidence * 100)}%`;
   };
 
+  const isIotAnomaly = (event) => event?.metadata?.source === "iot_sensor";
+
+  const formatEvidenceValue = (value) => {
+    if (value === null || value === undefined || value === "") {
+      return t("not_available");
+    }
+    return String(value);
+  };
+
+  const renderEvidenceValue = (value) => {
+    if (Array.isArray(value)) {
+      if (value.length === 0) {
+        return <Text style={styles.evidenceValue}>{t("not_available")}</Text>;
+      }
+
+      return (
+        <View style={styles.evidenceChipWrap}>
+          {value.map((item, index) => (
+            <Text key={`${item}-${index}`} style={styles.evidenceChip}>
+              {formatEvidenceValue(item)}
+            </Text>
+          ))}
+        </View>
+      );
+    }
+
+    if (value && typeof value === "object") {
+      const entries = Object.entries(value);
+
+      if (entries.length === 0) {
+        return <Text style={styles.evidenceValue}>{t("not_available")}</Text>;
+      }
+
+      return (
+        <View style={styles.evidenceObjectList}>
+          {entries.map(([key, nestedValue]) => (
+            <View key={key} style={styles.evidenceObjectRow}>
+              <Text style={styles.evidenceObjectKey}>{key}</Text>
+              <Text style={styles.evidenceObjectValue}>
+                {formatEvidenceValue(nestedValue)}
+              </Text>
+            </View>
+          ))}
+        </View>
+      );
+    }
+
+    return <Text style={styles.evidenceValue}>{formatEvidenceValue(value)}</Text>;
+  };
+
+  const renderEventEvidence = (event) => {
+    if (isIotAnomaly(event)) {
+      const metadata = event.metadata || {};
+      const sensorData = metadata.sensor_data || {};
+      const rows = [
+        ["Source", "IoT sensor"],
+        ["Sensor ID", metadata.sensor_id],
+        ["Sensor Name", metadata.sensor_name],
+        ["Sensor Type", metadata.sensor_type],
+        ["Sensor Status", metadata.sensor_status],
+        ["Sensor Log ID", metadata.sensor_log_id],
+        ...Object.entries(sensorData).map(([key, value]) => [key, value]),
+      ];
+
+      return (
+        <View style={styles.evidencePanel}>
+          <Text style={styles.evidenceTitle}>Sensor data</Text>
+          {rows.map(([label, value]) => (
+            <View key={label} style={styles.evidenceRow}>
+              <Text style={styles.evidenceLabel}>{label}</Text>
+              <View style={styles.evidenceValueContainer}>
+                {renderEvidenceValue(value)}
+              </View>
+            </View>
+          ))}
+        </View>
+      );
+    }
+
+    return event.annotated_frame_base64 ? (
+      <Image
+        source={{
+          uri: `data:image/jpeg;base64,${event.annotated_frame_base64}`,
+        }}
+        style={styles.detailImage}
+        resizeMode="contain"
+      />
+    ) : (
+      <View style={styles.emptyEvidence}>
+        <Text style={styles.emptyEvidenceText}>{t("no_annotated_frame")}</Text>
+      </View>
+    );
+  };
+
   // Load persisted config on mount
   useEffect(() => {
     AsyncStorage.getItem(SERVER_CONFIG_STORAGE_KEY).then((saved) => {
@@ -157,12 +251,27 @@ export default function DetectionScreen() {
     });
   }, []);
 
+  useEffect(() => {
+    Camera.getCameraPermissionsAsync()
+      .then((permission) => setHasPermission(permission.granted))
+      .catch(() => setHasPermission(false));
+  }, []);
+
+  const requestPermission = async () => {
+    try {
+      const permission = await Camera.requestCameraPermissionsAsync();
+      setHasPermission(permission.granted);
+    } catch {
+      setHasPermission(false);
+    }
+  };
+
   // Persist config whenever it changes
   useEffect(() => {
     AsyncStorage.setItem(
       SERVER_CONFIG_STORAGE_KEY,
       JSON.stringify(serverConfig),
-    ).catch(() => {});
+    ).catch(() => { });
     setTempConfig(serverConfig);
   }, [serverConfig]);
 
@@ -187,9 +296,14 @@ export default function DetectionScreen() {
     if (!currentUser) return;
     setEventsLoading(true);
     try {
-      const response = await apiClient.get(
-        `/anomaly-events/${currentUser.id}?includeResolved=false`,
-      );
+      const response = await apiClient.get("/Anomaly-events", {
+        params: {
+          includeResolved: false,
+          page: 1,
+          size: 100,
+          orderBy: "created_at desc",
+        },
+      });
       const data = response.data;
 
       let events = [];
@@ -236,7 +350,7 @@ export default function DetectionScreen() {
         try {
           const result = JSON.parse(event.data);
           if (result && !result.error) setLatestResult(result);
-        } catch {}
+        } catch { }
         isCapturing.current = false;
       };
 
@@ -267,61 +381,77 @@ export default function DetectionScreen() {
   }, [serverConfig.host, serverConfig.port]);
 
   // 4. Camera Capture Interval — sends frames over the open WebSocket.
-  // Android: takeSnapshot() grabs the preview surface (silent, no flash).
-  // iOS: takeSnapshot is unavailable, fall back to takePhoto with shutter sound disabled.
+  // Capture a lightweight frame from Expo Camera and send it over the open WebSocket.
   useEffect(() => {
-    const captureInterval = setInterval(async () => {
-      if (!cameraRef.current || isCapturing.current) return;
-      if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
+    let isMounted = true;
+    let frameTimeoutId = null;
 
-      isCapturing.current = true;
-      let snapshotPath = null;
-      try {
-        const photo =
-          Platform.OS === "android"
-            ? await cameraRef.current.takeSnapshot({ quality: 30 })
-            : await cameraRef.current.takePhoto({
-                qualityPrioritization: "speed",
-                enableShutterSound: false,
-                flash: "off",
-              });
+    const processFrame = async () => {
+      if (!isMounted) return;
 
-        snapshotPath = photo.path;
-        lastPhotoDimensions.current = {
-          width: photo.width,
-          height: photo.height,
-        };
+      // CRITICAL FIX: Ensure camera layout exists and has actual physical size > 0
+      const isLayoutReady = cameraLayout && cameraLayout.width > 0 && cameraLayout.height > 0;
 
-        const fileUri = snapshotPath.startsWith("file://")
-          ? snapshotPath
-          : `file://${snapshotPath}`;
+      if (
+        cameraRef.current &&
+        cameraReady &&
+        isLayoutReady && // Guard against the 0-width native crash!
+        !isCapturing.current &&
+        wsRef.current &&
+        wsRef.current.readyState === WebSocket.OPEN
+      ) {
+        isCapturing.current = true;
+        try {
+          const photo = await cameraRef.current.takePictureAsync({
+            quality: 0.1,            // Keeps data small for speedy YOLO transmission
+            base64: true,
+            skipProcessing: true,    // Fast pass
+          });
 
-        const base64 = await FileSystem.readAsStringAsync(fileUri, {
-          encoding: FileSystem.EncodingType.Base64,
-        });
-        lastFrameBase64.current = base64;
+          if (photo && isMounted) {
+            lastPhotoDimensions.current = {
+              width: photo.width || 640,
+              height: photo.height || 480,
+            };
 
-        wsRef.current.send(
-          JSON.stringify({
-            image_base64: base64,
-            user_id: currentUser?.id || 1,
-          }),
-        );
-      } catch {
-        isCapturing.current = false;
-      } finally {
-        // Free the temp snapshot file immediately so we don't fill device storage.
-        if (snapshotPath) {
-          const fileUri = snapshotPath.startsWith("file://")
-            ? snapshotPath
-            : `file://${snapshotPath}`;
-          FileSystem.deleteAsync(fileUri, { idempotent: true }).catch(() => {});
+            const base64Data = photo.base64;
+            if (base64Data) {
+              lastFrameBase64.current = base64Data;
+
+              // Send to YOLO backend
+              wsRef.current.send(
+                JSON.stringify({
+                  image_base64: base64Data,
+                  user_id: currentUser?.id || 1,
+                })
+              );
+            }
+          }
+        } catch (err) {
+          console.log("Frame capture drop: ", err);
+        } finally {
+          isCapturing.current = false;
         }
       }
-    }, 250);
 
-    return () => clearInterval(captureInterval);
-  }, [currentUser]);
+      // Loop execution schedule
+      if (isMounted) {
+        // Give the emulator a steady 1-second cadence to remain stable on local machines
+        const stabilizationDelay = Platform.OS === 'android' && __DEV__ ? 1000 : 330;
+        frameTimeoutId = setTimeout(processFrame, stabilizationDelay);
+      }
+    };
+
+    // Only kick off the loop once user profile, native status, and layout width/height are real
+    if (currentUser && cameraReady && cameraLayout?.width > 0) {
+      processFrame();
+    }
+
+    return () => {
+      isMounted = false;
+      if (frameTimeoutId) clearTimeout(frameTimeoutId);
+    };
+  }, [currentUser, isConnected, cameraReady, cameraLayout]);
 
   // 5. Client-Side Anomaly Logging
   useEffect(() => {
@@ -521,6 +651,14 @@ export default function DetectionScreen() {
   }
 
   // --- MAIN UI ---
+  if (hasPermission === null) {
+    return (
+      <View style={styles.loadingView}>
+        <Text style={{ color: "#888" }}>{t("loading_user_short")}</Text>
+      </View>
+    );
+  }
+
   if (!hasPermission) {
     return (
       <View style={styles.permissionContainer}>
@@ -613,21 +751,7 @@ export default function DetectionScreen() {
                       {selectedEvent.longitude ?? t("not_available")}
                     </Text>
                   </View>
-                  {selectedEvent.annotated_frame_base64 ? (
-                    <Image
-                      source={{
-                        uri: `data:image/jpeg;base64,${selectedEvent.annotated_frame_base64}`,
-                      }}
-                      style={styles.detailImage}
-                      resizeMode="contain"
-                    />
-                  ) : (
-                    <View style={styles.emptyEvidence}>
-                      <Text style={styles.emptyEvidenceText}>
-                        {t("no_annotated_frame")}
-                      </Text>
-                    </View>
-                  )}
+                  {renderEventEvidence(selectedEvent)}
                   <ScrollView horizontal style={styles.metadataBlock}>
                     <Text style={styles.metadataText}>
                       {JSON.stringify(selectedEvent.metadata || {}, null, 2)}
@@ -638,7 +762,7 @@ export default function DetectionScreen() {
                       style={[
                         styles.resolveButton,
                         resolvingEventId === selectedEvent.id &&
-                          styles.resolveButtonDisabled,
+                        styles.resolveButtonDisabled,
                       ]}
                       onPress={() => resolveEvent(selectedEvent.id)}
                       disabled={resolvingEventId === selectedEvent.id}
@@ -743,20 +867,32 @@ export default function DetectionScreen() {
             })
           }
         >
-          {device == null ? (
+          <CameraView
+            ref={cameraRef}
+            style={styles.camera}
+            facing="back"
+            autofocus="on"
+            mode="picture"
+            active={true}
+            animateShutter={false}
+            onCameraReady={() => {
+              setCameraReady(true);
+              setCameraError("");
+            }}
+            onMountError={(event) => {
+              setCameraReady(false);
+              setCameraError(
+                event?.nativeEvent?.message || "Camera preview failed to start",
+              );
+            }}
+          />
+          {!cameraReady && (
             <View style={[styles.camera, styles.cameraLoading]}>
               <ActivityIndicator size="large" color="#4CAF50" />
+              <Text style={styles.cameraLoadingText}>
+                {cameraError || "Starting camera..."}
+              </Text>
             </View>
-          ) : (
-            <VisionCamera
-              ref={cameraRef}
-              style={styles.camera}
-              device={device}
-              isActive={true}
-              photo={true}
-              audio={false}
-              enableZoomGesture={false}
-            />
           )}
           <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
             <Text
@@ -1048,6 +1184,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#1e1e1e",
   },
+  cameraLoadingText: {
+    marginTop: 10,
+    paddingHorizontal: 16,
+    color: "#e5e7eb",
+    fontSize: 12,
+    textAlign: "center",
+  },
 
   status: {
     position: "absolute",
@@ -1192,6 +1335,81 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   metadataText: { fontSize: 11, color: "#374151", fontFamily: "monospace" },
+  evidencePanel: {
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 12,
+    backgroundColor: "#ffffff",
+  },
+  evidenceTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#111827",
+    marginBottom: 8,
+  },
+  evidenceRow: {
+    flexDirection: "row",
+    gap: 10,
+    paddingVertical: 7,
+    borderTopWidth: 1,
+    borderTopColor: "#f3f4f6",
+    alignItems: "flex-start",
+  },
+  evidenceLabel: {
+    width: 110,
+    color: "#6b7280",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  evidenceValue: {
+    flex: 1,
+    color: "#111827",
+    fontSize: 13,
+  },
+  evidenceValueContainer: {
+    flex: 1,
+    minWidth: 0,
+  },
+  evidenceChipWrap: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
+  },
+  evidenceChip: {
+    backgroundColor: "#f0fdf4",
+    borderColor: "#bbf7d0",
+    borderWidth: 1,
+    borderRadius: 999,
+    color: "#047857",
+    fontSize: 12,
+    fontWeight: "700",
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+  },
+  evidenceObjectList: {
+    gap: 6,
+  },
+  evidenceObjectRow: {
+    flexDirection: "row",
+    gap: 8,
+    paddingVertical: 5,
+    paddingHorizontal: 8,
+    backgroundColor: "#f9fafb",
+    borderRadius: 6,
+  },
+  evidenceObjectKey: {
+    width: 110,
+    color: "#6b7280",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  evidenceObjectValue: {
+    flex: 1,
+    color: "#111827",
+    fontSize: 12,
+  },
   resolveButton: {
     marginTop: 4,
     backgroundColor: "#065f46",

@@ -71,6 +71,7 @@ const AccountManagement = () => {
     pickProfilePicture,
     currentRole,
     setCurrentRole,
+    setEditErrors, editErrors, validateEditForm,editForm, setEditForm
   } = useAccountManagement();
   const [pendingImage, setPendingImage] = useState(null);
   const [selectedAcc, setSelectedAcc] = useState(null);
@@ -78,7 +79,7 @@ const AccountManagement = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
-  const [editForm, setEditForm] = useState(null);
+  
   const { width } = useWindowDimensions();
   const isCompact = width < 420;
   const { t } = useTranslation();
@@ -86,6 +87,7 @@ const AccountManagement = () => {
   const handleStartEdit = () => {
     setEditForm({ ...selectedAcc });
     setIsEditing(true);
+    setEditErrors({});
     setActiveMenuId(null);
   };
 
@@ -99,6 +101,7 @@ const AccountManagement = () => {
   };
 
   const onSaveEdit = async () => {
+    if (!validateEditForm()) return;
     const result = await handleUpdateAccount(
       selectedAcc.id,
       editForm,
@@ -424,6 +427,7 @@ const AccountManagement = () => {
                     ]}
                     onPress={() => {
                       setCurrentRole(role.key);
+                      setCurrentPage(1);
                       setIsOpen(false);
                     }}
                   >
@@ -598,6 +602,7 @@ const AccountManagement = () => {
                         setEditForm({ ...editForm, firstname: text })
                       }
                     />
+                    {editErrors.firstname && <Text style={styles.errorLabelMicro}>{editErrors.firstname}</Text>}
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.panelLabel}>Last Name</Text>
@@ -608,6 +613,7 @@ const AccountManagement = () => {
                         setEditForm({ ...editForm, lastname: text })
                       }
                     />
+                    {editErrors.lastname && <Text style={styles.errorLabelMicro}>{editErrors.lastname}</Text>}
                   </View>
                 </View>
               ) : (
@@ -623,17 +629,16 @@ const AccountManagement = () => {
                     <Text style={styles.panelLabel}>Username:</Text>
                   </View>
                   {isEditing ? (
-                    <TextInput
-                      style={[styles.userDetails, styles.inputEditing]}
-                      value={editForm?.username || ""}
-                      onChangeText={(text) =>
-                        setEditForm({ ...editForm, username: text })
-                      }
-                    />
+                    <View>
+                      <TextInput
+                        style={[styles.userDetails, styles.inputEditing, editErrors.username && styles.inputErrorStyle]}
+                        value={editForm?.username || ""}
+                        onChangeText={(text) => setEditForm({ ...editForm, username: text })}
+                      />
+                      {editErrors.username && <Text style={styles.errorLabelMicro}>{editErrors.username}</Text>}
+                    </View>
                   ) : (
-                    <Text style={styles.userDetails}>
-                      {selectedAcc.username}
-                    </Text>
+                    <Text style={styles.userDetails}>{selectedAcc.username}</Text>
                   )}
                 </View>
                 <View style={styles.details}>
@@ -642,17 +647,16 @@ const AccountManagement = () => {
                     <Text style={styles.panelLabel}>Passport/IC:</Text>
                   </View>
                   {isEditing ? (
-                    <TextInput
-                      style={[styles.userDetails, styles.inputEditing]}
-                      value={editForm?.identification || ""}
-                      onChangeText={(text) =>
-                        setEditForm({ ...editForm, identification: text })
-                      }
-                    />
+                    <View>
+                      <TextInput
+                        style={[styles.userDetails, styles.inputEditing, editErrors.identification && styles.inputErrorStyle]}
+                        value={editForm?.identification || ""}
+                        onChangeText={(text) => setEditForm({ ...editForm, identification: text })}
+                      />
+                      {editErrors.identification && <Text style={styles.errorLabelMicro}>{editErrors.identification}</Text>}
+                    </View>
                   ) : (
-                    <Text style={styles.userDetails}>
-                      {selectedAcc.identification}
-                    </Text>
+                    <Text style={styles.userDetails}>{selectedAcc.identification}</Text>
                   )}
                 </View>
 
@@ -662,13 +666,14 @@ const AccountManagement = () => {
                     <Text style={styles.panelLabel}>Telephone:</Text>
                   </View>
                   {isEditing ? (
-                    <TextInput
-                      style={[styles.userDetails, styles.inputEditing]}
-                      value={editForm?.tel || ""}
-                      onChangeText={(text) =>
-                        setEditForm({ ...editForm, tel: text })
-                      }
-                    />
+                    <View>
+                      <TextInput
+                        style={[styles.userDetails, styles.inputEditing, editErrors.tel && styles.inputErrorStyle]}
+                        value={editForm?.tel || ""}
+                        onChangeText={(text) => setEditForm({ ...editForm, tel: text })}
+                      />
+                      {editErrors.tel && <Text style={styles.errorLabelMicro}>{editErrors.tel}</Text>}
+                    </View>
                   ) : (
                     <Text style={styles.userDetails}>{selectedAcc.tel}</Text>
                   )}
@@ -680,30 +685,24 @@ const AccountManagement = () => {
                     <Text style={styles.panelLabel}>Work Email:</Text>
                   </View>
                   <Text style={styles.userDetails}>
-                    {(selectedAcc.username || "") + "@example.com"}
+                    {(selectedAcc.username || "") + "@sfc.gov.my"}
                   </Text>
                   <View style={styles.row}>
-                    <Text
-                      style={[
-                        styles.panelLabel,
-                        { marginLeft: 35, marginTop: 15 },
-                      ]}
-                    >
+                    <Text style={[styles.panelLabel, { marginLeft: 35, marginTop: 15 }]}>
                       Personal Email:
                     </Text>
                   </View>
                   {isEditing ? (
-                    <TextInput
-                      style={[styles.userDetails, styles.inputEditing]}
-                      value={editForm?.personal_email || ""}
-                      onChangeText={(text) =>
-                        setEditForm({ ...editForm, personal_email: text })
-                      }
-                    />
+                    <View>
+                      <TextInput
+                        style={[styles.userDetails, styles.inputEditing, editErrors.personal_email && styles.inputErrorStyle]}
+                        value={editForm?.personal_email || ""}
+                        onChangeText={(text) => setEditForm({ ...editForm, personal_email: text })}
+                      />
+                      {editErrors.personal_email && <Text style={styles.errorLabelMicro}>{editErrors.personal_email}</Text>}
+                    </View>
                   ) : (
-                    <Text style={styles.userDetails}>
-                      {selectedAcc.personal_email}
-                    </Text>
+                    <Text style={styles.userDetails}>{selectedAcc.personal_email}</Text>
                   )}
                 </View>
                 <View style={styles.details}>
@@ -1154,6 +1153,17 @@ const styles = StyleSheet.create({
     ...Platform.select({
       web: { userSelect: "none" },
     }),
+  },
+  inputErrorStyle: {
+    borderColor: "#dc2626",
+    borderWidth: 1.5,
+  },
+  errorLabelMicro: {
+    color: "#dc2626",
+    fontSize: 11,
+    fontWeight: "600",
+    marginTop: 3,
+    marginLeft: 35,
   },
 });
 

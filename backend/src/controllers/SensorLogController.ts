@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { SensorLog, Sensor } from "../models";
+import { AnomalyEvent, SensorLog, Sensor, User } from "../models";
 import { formatPaginateResponse, paginateModel } from "../utils/paginate";
 import { PaginateRequestParams, PaginateResponse } from "../types/common";
 import {
@@ -13,6 +13,15 @@ import { SensorStatus } from "../enum/SensorStatus";
 import { sendNotification } from "../utils/sendNotification";
 import { NotificationCategory } from "../enum/NotificationCategory";
 import sequelize from "../config/Database";
+
+const IOT_ANOMALY_TYPES = [
+  "forest_fire",
+  "flooding",
+  "loud_noise",
+  "trespassing",
+] as const;
+
+type IotAnomalyType = (typeof IOT_ANOMALY_TYPES)[number];
 
 class HttpError extends Error {
   status: number;
@@ -31,6 +40,48 @@ function toSensorLogResponse(log: SensorLog): SensorLogResponse {
     data: log.data as unknown as Record<string, unknown>,
     created_at: log.created_at,
   };
+}
+
+function resolveSensorAnomalyType(
+  sensor: Sensor,
+  data: Record<string, unknown>,
+): IotAnomalyType {
+  const explicitType = String(data.event_type || data.anomaly_type || "");
+  if (IOT_ANOMALY_TYPES.includes(explicitType as IotAnomalyType)) {
+    return explicitType as IotAnomalyType;
+  }
+
+  const searchable = `${sensor.type} ${sensor.name}`.toLowerCase();
+  if (searchable.includes("fire") || searchable.includes("smoke") || searchable.includes("temperature")) {
+    return "forest_fire";
+  }
+  if (searchable.includes("flood") || searchable.includes("water") || searchable.includes("level")) {
+    return "flooding";
+  }
+  if (searchable.includes("noise") || searchable.includes("sound")) {
+    return "loud_noise";
+  }
+
+  return "trespassing";
+}
+
+async function resolveSystemUserId(transaction: any): Promise<number | null> {
+  const admin = await User.findOne({
+    where: { role: UserRoles.ADMIN },
+    transaction,
+    order: [["id", "ASC"]],
+  });
+
+  if (admin) {
+    return admin.id;
+  }
+
+  const firstUser = await User.findOne({
+    transaction,
+    order: [["id", "ASC"]],
+  });
+
+  return firstUser?.id ?? null;
 }
 
 export const createLog = async (
@@ -79,9 +130,36 @@ export const createLog = async (
     );
 
     if (body.status === SensorStatus.ALERTING) {
+      const eventType = resolveSensorAnomalyType(
+        sensor,
+        parsedData as Record<string, unknown>,
+      );
+      const systemUserId = req.user?.id ?? (await resolveSystemUserId(transaction));
+
+      if (systemUserId !== null) {
+        await AnomalyEvent.create(
+          {
+            user_id: systemUserId,
+            event_type: eventType,
+            latitude: Number(sensor.latitude),
+            longitude: Number(sensor.longitude),
+            metadata: {
+              source: "iot_sensor",
+              sensor_id: sensor.id,
+              sensor_name: sensor.name,
+              sensor_type: sensor.type,
+              sensor_status: body.status,
+              sensor_log_id: log.id,
+              sensor_data: parsedData,
+            },
+          },
+          { transaction },
+        );
+      }
+
       const title = `Sensor Alert: ${sensor.name}`;
       const message = `Sensor "${sensor.name}" (${sensor.type}) is in alerting state.`;
-      const url = `/sensors/${sensor.id}`;
+      const url = `/anomaly-events`;
 
       await sendNotification(
         "admin",

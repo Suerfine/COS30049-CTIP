@@ -11,7 +11,7 @@ import {
   Dimensions,
   Modal,
   Platform,
-  useWindowDimensions
+  useWindowDimensions,
 } from "react-native";
 import { SquarePen, ShieldCheck } from "lucide-react-native";
 import { Eye, EyeOff, FileUp } from "lucide-react-native";
@@ -24,36 +24,56 @@ import { ModalStyle } from "../components/ModalStyle";
 import { useUserProfile } from "../hooks/useUserProfile";
 import { userProfileService } from "../services/userProfileService";
 import { useSignUp } from "../hooks/useSignUp";
-import { isValidEmail, isOnlyLetters, phoneRegex, isValidPassword } from "../utils/Validation";
-import { useTranslation } from 'react-i18next';
+import {
+  isValidEmail,
+  isOnlyLetters,
+  phoneRegex,
+  isValidPassword,
+  isValidIdentification,
+} from "../utils/Validation";
+import { useTranslation } from "react-i18next";
 
 const UserProfile = ({ navigation }) => {
   const {
-      user,
-      form, setForm,
-      updateField,
-      username, setUsername,
-      password, setPassword,
-      profileImage, 
-      setProfileImage,
-      editingUsername, setEditingUsername,
-      editingPassword, setEditingPassword,
-      pfpModalVisible, setPfpModalVisible,
-      passwordModalVisible, setPasswordModalVisible,
-      newImagePath, setNewImagePath,
-      showCurrentPassword, setShowCurrentPassword,
-      showNewPassword, setShowNewPassword,
-      currentPassword, setCurrentPassword,
-      pickImage, handleSavePfp,
-      isEditing, setIsEditing,
-      handleSave, loading
+    user,
+    form,
+    setForm,
+    updateField,
+    username,
+    setUsername,
+    password,
+    setPassword,
+    profileImage,
+    setProfileImage,
+    editingUsername,
+    setEditingUsername,
+    editingPassword,
+    setEditingPassword,
+    pfpModalVisible,
+    setPfpModalVisible,
+    passwordModalVisible,
+    setPasswordModalVisible,
+    newImagePath,
+    setNewImagePath,
+    showCurrentPassword,
+    setShowCurrentPassword,
+    showNewPassword,
+    setShowNewPassword,
+    currentPassword,
+    setCurrentPassword,
+    pickImage,
+    handleSavePfp,
+    isEditing,
+    setIsEditing,
+    handleSave,
+    loading,
   } = useUserProfile();
   const [originalData, setOriginalData] = useState(null);
-  const [errors, setErrors] = useState({}); 
-  const { handleUpload, file, setFile} = useSignUp();
+  const [errors, setErrors] = useState({});
+  const { handleUpload, file, setFile } = useSignUp();
   const { width } = useWindowDimensions();
   const isSmallScreen = width < 768;
-  const { t, i18n }=useTranslation();
+  const { t, i18n } = useTranslation();
 
   // validate form
   const validateForm = () => {
@@ -61,8 +81,8 @@ const UserProfile = ({ navigation }) => {
 
     if (!form.firstname?.trim()) {
       tempErrors.firstname = "* First name is required.";
-    }else if (form.firstname.trim().length < 3) {
-      tempErrors.firstname = "* First name must be at least 3 characters."; 
+    } else if (form.firstname.trim().length < 3) {
+      tempErrors.firstname = "* First name must be at least 3 characters.";
     } else if (!isOnlyLetters(form.firstname)) {
       tempErrors.firstname = "* First name must only contain letters.";
     }
@@ -71,13 +91,15 @@ const UserProfile = ({ navigation }) => {
       tempErrors.lastname = "* Last name is required.";
     } else if (form.lastname.trim().length < 2) {
       tempErrors.lastname = "* Last name must be at least 2 characters.";
-    } 
-    else if (!isOnlyLetters(form.lastname)) {
+    } else if (!isOnlyLetters(form.lastname)) {
       tempErrors.lastname = "* Last name must only contain letters.";
     }
 
     if (!form.identification?.trim()) {
       tempErrors.identification = "* IC / Passport is required.";
+    } else if (!isValidIdentification(form.identification)) {
+      tempErrors.identification =
+        "* Invalid IC/Passport format. Use format XXXXXX-XX-XXXX (IC) or 5-20 alphanumeric characters (Passport).";
     }
 
     if (!form.personal_email?.trim()) {
@@ -89,237 +111,253 @@ const UserProfile = ({ navigation }) => {
     if (!form.tel?.trim()) {
       tempErrors.tel = "* Phone number is required.";
     } else if (!phoneRegex.test(form.tel)) {
-      tempErrors.tel = "* Invalid phone number.";
+      tempErrors.tel =
+        "* Invalid phone number. Expected formats: 01X-XXXXXXX, 0X-XXXXXX, or +61XXXXXXXXX";
     }
 
     setErrors(tempErrors);
     return Object.keys(tempErrors).length === 0;
   };
 
-    return (
-        <View style={styles.container}>
-        <ScrollView>
-            {/* Profile Header */}
-            <View style={styles.profileHeader}>
-            {/* Background Image */}
-            <ImageBackground
-                source={require("../../assets/forest.png")}
-                style={styles.backgroundImage}
-            ></ImageBackground>
+  return (
+    <View style={styles.container}>
+      <ScrollView>
+        {/* Profile Header */}
+        <View style={styles.profileHeader}>
+          {/* Background Image */}
+          <ImageBackground
+            source={require("../../assets/forest.png")}
+            style={styles.backgroundImage}
+          ></ImageBackground>
 
-            {/* Pfp and name */}
-            <View style={styles.pfpRow}>
-                <View style={styles.pfpWrapper}>
-                    {profileImage ? (
-                        <Image source={{ uri: profileImage }} style={styles.pfp} />
-                    ) : (
-                        <View style={styles.pfpPlaceholder}>
-                        <Text style={styles.pfpInitials}>
-                            {form.firstname ? form.firstname[0].toUpperCase() : "?"}
-                        </Text>
-                        </View>
-                    )}
-
-                    {/* edit profile button */}
-                    <Pressable
-                        style={({ hovered }) => [
-                        styles.pfpEditBtn,
-                        hovered && styles.hoverBtn,
-                        ]}
-                        onPress={() => setPfpModalVisible(true)}
-                    >
-                        <SquarePen size={18} color="white" />
-                    </Pressable>
+          {/* Pfp and name */}
+          <View style={styles.pfpRow}>
+            <View style={styles.pfpWrapper}>
+              {profileImage ? (
+                <Image source={{ uri: profileImage }} style={styles.pfp} />
+              ) : (
+                <View style={styles.pfpPlaceholder}>
+                  <Text style={styles.pfpInitials}>
+                    {form.firstname ? form.firstname[0].toUpperCase() : "?"}
+                  </Text>
                 </View>
+              )}
 
-                <Text style={styles.name}>
-                {form.firstname || form.lastname
-                    ? `${form.firstname} ${form.lastname}`.trim()
-                    : "Name"}
-                </Text>
-            </View>
-
-            {/* Change pfp modal */}
-            <ModalLayout
-                visible={pfpModalVisible}
-                onClose={() => {setPfpModalVisible(false); setNewImagePath('');}}
-            >
-                <ChangePfpContent
-                  image={newImagePath}
-                  onPickImage={pickImage}
-                  onSave={async () => {
-                    const result = await handleSavePfp();
-                      if (result?.success && result.pfp_url) {
-                          setProfileImage(result.pfp_url);
-                      }
-                  }}
-                  onClose={() => { setPfpModalVisible(false); setNewImagePath(''); }}
-                  loading={loading}
-              />
-            </ModalLayout>
-            </View>
-
-            {/* Personal Information */}
-            <View style={[
-              styles.section,
-              isSmallScreen && styles.sectionMobile
-            ]}>
-            <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>{t('personal information')}</Text>
-                <View style={styles.actionButtons}>
-                {!isEditing ? (
-                    <Pressable style={styles.saveBtn} onPress={() => {
-                        setOriginalData(form);
-                        setIsEditing(true);
-                    }}>
-                    <Text style={styles.saveBtnText}>{t('edit')}</Text>
-                    </Pressable>
-                    ) : (
-                    <>
-                    <Pressable style={styles.cancelBtn} onPress={() => {
-                        if (originalData) {
-                            setForm(originalData);
-                        }
-                        setIsEditing(false);
-                    }}>
-                        <Text style={styles.cancelBtnText}>{t('cancel')}</Text>
-                    </Pressable>
-
-                    <Pressable style={styles.saveBtn} onPress={() => {
-                      if (validateForm()) {
-                          handleSave();
-                        }
-                    }}
-                    >
-                        <Text style={styles.saveBtnText}>{t('save changes')}</Text>
-                    </Pressable>
-                    </>
-                )}
-                </View>
-            </View>
-
-            {/* first name, last name and IC row*/}
-            <View style={[
-              styles.fieldRow,
-              isSmallScreen && styles.fieldRowMobile
-            ]}>
-                <View style={styles.fieldGroup}>
-                <Text style={styles.fieldLabel}>{t('first name')}</Text>
-                <TextInput
-                    style={[styles.input, !isEditing && styles.inputDisabled]}
-                    value={form.firstname}
-                    onChangeText={(text) => {
-                      updateField("firstname", text);
-                      setErrors(prev => ({ ...prev, firstname: null }));
-                    }}
-                    editable={isEditing}
-                    placeholder="First name"
-                    placeholderTextColor="grey"
-                />
-                {errors.firstname && (
-                  <Text style={styles.errorText}>{errors.firstname}</Text>
-                )}
-                </View>
-
-                <View style={styles.fieldGroup}>
-                <Text style={styles.fieldLabel}>{t('last name')}</Text>
-                <TextInput
-                    style={[styles.input, !isEditing && styles.inputDisabled]}
-                    value={form.lastname}
-                    onChangeText={(text) => {
-                      updateField("lastname", text);
-                      setErrors(prev => ({ ...prev, lastname: null }));
-                    }}
-                    editable={isEditing}
-                    placeholder="Last name"
-                    placeholderTextColor="grey"
-                />                
-                {errors.lastname && (
-                  <Text style={styles.errorText}>{errors.lastname}</Text>
-                )}               
-                </View>
-            </View>
-
-            <View style={[
-              styles.fieldRow,
-              isSmallScreen && styles.fieldRowMobile
-            ]}>
-                <View style={styles.fieldGroup}>
-                <Text style={styles.fieldLabel}>IC / Passport No.</Text>
-                <TextInput
-                    style={[styles.input, !isEditing && styles.inputDisabled]}
-                    value={form.identification}
-                    onChangeText={(text) => updateField("identification", text)}
-                    editable={isEditing}
-                    placeholder="IC or passport number"
-                    placeholderTextColor="grey"
-                />
-                </View>
-            </View>
-
-            <View style={[
-              styles.fieldRow,
-              isSmallScreen && styles.fieldRowMobile
-            ]}>
-                <View style={styles.fieldGroup}>
-                <Text style={styles.fieldLabel}>{t('email')}</Text>
-                <TextInput
-                    style={[styles.input, !isEditing && styles.inputDisabled]}
-                    value={form.personal_email}
-                    onChangeText={(text) => {
-                      updateField("personal_email", text);
-                      setErrors(prev => ({ ...prev, personal_email: null }));
-                    }}
-                    editable={isEditing}
-                    placeholder="Email address"
-                    placeholderTextColor="grey"
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                />
-                {errors.personal_email && (
-                  <Text style={styles.errorText}>{errors.personal_email}</Text>
-                )}
-                </View>
-
-                <View style={styles.fieldGroup}>
-                <Text style={styles.fieldLabel}>{t('phone number')}</Text>
-                <TextInput
-                    style={[styles.input, !isEditing && styles.inputDisabled]}
-                    value={form.tel}
-                    onChangeText={(text) => {
-                      updateField("tel", text);
-                      setErrors(prev => ({ ...prev, tel: null }));
-                    }}
-                    editable={isEditing}
-                    placeholder="Phone number"
-                    placeholderTextColor="grey"
-                    keyboardType="phone-pad"
-                />
-                {errors.tel && (
-                  <Text style={styles.errorText}>{errors.tel}</Text>
-                )}
-                </View>
-            </View>
-            </View>
-
-            {/* Security */}
-            <View style={styles.section}>
-              <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>{t('Security')}</Text>
-              </View>
+              {/* edit profile button */}
               <Pressable
-                style={({ hovered }) => [styles.securityBtn, hovered && styles.securityBtnHover]}
-                onPress={() => navigation.navigate('Security')}
+                style={({ hovered }) => [
+                  styles.pfpEditBtn,
+                  hovered && styles.hoverBtn,
+                ]}
+                onPress={() => setPfpModalVisible(true)}
               >
-                <ShieldCheck size={18} color="#2f6618fe" />
-                <Text style={styles.securityBtnText}>
-                    {t('password_two_factor_auth')}
-                </Text>              
+                <SquarePen size={18} color="white" />
               </Pressable>
             </View>
-        </ScrollView>
+
+            <Text style={styles.name}>
+              {form.firstname || form.lastname
+                ? `${form.firstname} ${form.lastname}`.trim()
+                : "Name"}
+            </Text>
+          </View>
+
+          {/* Change pfp modal */}
+          <ModalLayout
+            visible={pfpModalVisible}
+            onClose={() => {
+              setPfpModalVisible(false);
+              setNewImagePath("");
+            }}
+          >
+            <ChangePfpContent
+              image={newImagePath}
+              onPickImage={pickImage}
+              onSave={async () => {
+                const result = await handleSavePfp();
+                if (result?.success && result.pfp_url) {
+                  setProfileImage(result.pfp_url);
+                }
+              }}
+              onClose={() => {
+                setPfpModalVisible(false);
+                setNewImagePath("");
+              }}
+              loading={loading}
+            />
+          </ModalLayout>
         </View>
-    );
+
+        {/* Personal Information */}
+        <View style={[styles.section, isSmallScreen && styles.sectionMobile]}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>{t("personal information")}</Text>
+            <View style={styles.actionButtons}>
+              {!isEditing ? (
+                <Pressable
+                  style={styles.saveBtn}
+                  onPress={() => {
+                    setOriginalData(form);
+                    setIsEditing(true);
+                  }}
+                >
+                  <Text style={styles.saveBtnText}>{t("edit")}</Text>
+                </Pressable>
+              ) : (
+                <>
+                  <Pressable
+                    style={styles.cancelBtn}
+                    onPress={() => {
+                      if (originalData) {
+                        setForm(originalData);
+                      }
+                      setIsEditing(false);
+                    }}
+                  >
+                    <Text style={styles.cancelBtnText}>{t("cancel")}</Text>
+                  </Pressable>
+
+                  <Pressable
+                    style={styles.saveBtn}
+                    onPress={() => {
+                      if (validateForm()) {
+                        handleSave();
+                      }
+                    }}
+                  >
+                    <Text style={styles.saveBtnText}>{t("save changes")}</Text>
+                  </Pressable>
+                </>
+              )}
+            </View>
+          </View>
+
+          {/* first name, last name and IC row*/}
+          <View
+            style={[styles.fieldRow, isSmallScreen && styles.fieldRowMobile]}
+          >
+            <View style={styles.fieldGroup}>
+              <Text style={styles.fieldLabel}>{t("first name")}</Text>
+              <TextInput
+                style={[styles.input, !isEditing && styles.inputDisabled]}
+                value={form.firstname}
+                onChangeText={(text) => {
+                  updateField("firstname", text);
+                  setErrors((prev) => ({ ...prev, firstname: null }));
+                }}
+                editable={isEditing}
+                placeholder="First name"
+                placeholderTextColor="grey"
+              />
+              {errors.firstname && (
+                <Text style={styles.errorText}>{errors.firstname}</Text>
+              )}
+            </View>
+
+            <View style={styles.fieldGroup}>
+              <Text style={styles.fieldLabel}>{t("last name")}</Text>
+              <TextInput
+                style={[styles.input, !isEditing && styles.inputDisabled]}
+                value={form.lastname}
+                onChangeText={(text) => {
+                  updateField("lastname", text);
+                  setErrors((prev) => ({ ...prev, lastname: null }));
+                }}
+                editable={isEditing}
+                placeholder="Last name"
+                placeholderTextColor="grey"
+              />
+              {errors.lastname && (
+                <Text style={styles.errorText}>{errors.lastname}</Text>
+              )}
+            </View>
+          </View>
+
+          <View
+            style={[styles.fieldRow, isSmallScreen && styles.fieldRowMobile]}
+          >
+            <View style={styles.fieldGroup}>
+              <Text style={styles.fieldLabel}>IC / Passport No.</Text>
+              <TextInput
+                style={[styles.input, !isEditing && styles.inputDisabled]}
+                value={form.identification}
+                onChangeText={(text) => {
+                  updateField("identification", text);
+                  setErrors((prev) => ({ ...prev, identification: null }));
+                }}
+                editable={isEditing}
+                placeholder="IC or passport number"
+                placeholderTextColor="grey"
+              />
+              {errors.identification && (
+                <Text style={styles.errorText}>{errors.identification}</Text>
+              )}
+            </View>
+          </View>
+
+          <View
+            style={[styles.fieldRow, isSmallScreen && styles.fieldRowMobile]}
+          >
+            <View style={styles.fieldGroup}>
+              <Text style={styles.fieldLabel}>{t("email")}</Text>
+              <TextInput
+                style={[styles.input, !isEditing && styles.inputDisabled]}
+                value={form.personal_email}
+                onChangeText={(text) => {
+                  updateField("personal_email", text);
+                  setErrors((prev) => ({ ...prev, personal_email: null }));
+                }}
+                editable={isEditing}
+                placeholder="Email address"
+                placeholderTextColor="grey"
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+              {errors.personal_email && (
+                <Text style={styles.errorText}>{errors.personal_email}</Text>
+              )}
+            </View>
+
+            <View style={styles.fieldGroup}>
+              <Text style={styles.fieldLabel}>{t("phone number")}</Text>
+              <TextInput
+                style={[styles.input, !isEditing && styles.inputDisabled]}
+                value={form.tel}
+                onChangeText={(text) => {
+                  updateField("tel", text);
+                  setErrors((prev) => ({ ...prev, tel: null }));
+                }}
+                editable={isEditing}
+                placeholder="Phone number"
+                placeholderTextColor="grey"
+                keyboardType="phone-pad"
+              />
+              {errors.tel && <Text style={styles.errorText}>{errors.tel}</Text>}
+            </View>
+          </View>
+        </View>
+
+        {/* Security */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>{t("Security")}</Text>
+          </View>
+          <Pressable
+            style={({ hovered }) => [
+              styles.securityBtn,
+              hovered && styles.securityBtnHover,
+            ]}
+            onPress={() => navigation.navigate("Security")}
+          >
+            <ShieldCheck size={18} color="#2f6618fe" />
+            <Text style={styles.securityBtnText}>
+              {t("password_two_factor_auth")}
+            </Text>
+          </Pressable>
+        </View>
+      </ScrollView>
+    </View>
+  );
 };
 
 const styles = StyleSheet.create({

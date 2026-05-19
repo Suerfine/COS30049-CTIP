@@ -124,7 +124,7 @@ const EnrollmentManagement = () => {
   const isCompact = width < 480;
 
   const enrollmentStatusOptions = [
-    "all",
+    "All",
     "in_progress",
     "in_review",
     "completed",
@@ -136,7 +136,7 @@ const EnrollmentManagement = () => {
   ];
 
   const ProgressStatusOptions = [
-    "all",
+    "All",
     "in_progress",
     "completed",
     "failed",
@@ -146,7 +146,7 @@ const EnrollmentManagement = () => {
   ];
 
   const paymentStatusOptions = [ 
-    "all", 
+    "All", 
     "pending", 
     "paid", 
     "failed", 
@@ -506,8 +506,8 @@ const EnrollmentManagement = () => {
         <View style={{ flex: 1, alignItems: "center" }}>
           <Image
             source={
-              item.course_details?.badge_img_url
-                ? { uri: item.course_details.badge_img_url }
+              item.course_details?.badge_img_path
+                ? { uri: `http://localhost:5000/${item.course_details.badge_img_path}`}
                 : require("../../assets/course_badge.png")
             }
             style={styles.avatar}
@@ -797,6 +797,7 @@ const EnrollmentManagement = () => {
               <TextInput
                 style={styles.input}
                 placeholder={t("search")}
+                placeholderTextColor="#8f8f8f"
                 value={activeSearchQuery}
                 onChangeText={(text) => {
                   setActiveSearchQuery(text);

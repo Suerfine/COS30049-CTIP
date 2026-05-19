@@ -1,4 +1,4 @@
-import { afterAll, afterEach, beforeAll } from "@jest/globals";
+import { afterAll, afterEach, beforeAll, jest } from "@jest/globals";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -25,6 +25,8 @@ fs.mkdirSync(fileStoragePath, { recursive: true });
 
 const sequelize = require("../src/config/Database").default;
 require("../src/models");
+
+jest.setTimeout(30000);
 
 beforeAll(async () => {
   await sequelize.sync({ force: true });

@@ -6,12 +6,16 @@ import { triggerLogout } from "../context/AuthContext";
 
 export const BASE_URL = () => {
   const API_HOST =
+    process.env.EXPO_PUBLIC_API_HOST ||
     process.env.API_HOST ||
     Constants?.expoConfig?.hostUri?.split(":")?.[0] ||
     "localhost";
-  const API_PORT = process.env.API_PORT || 5000;
+  const API_PORT =
+    process.env.EXPO_PUBLIC_API_PORT ||
+    process.env.API_PORT ||
+    5000;
   const API_PROTOCOL = process.env.EXPO_PUBLIC_API_PROTOCOL || "http";
-  return `https://172.26.16.1:5000/api`;
+  return `${API_PROTOCOL}://localhost:5000/api`;
 };
 
 const apiClient = axios.create({

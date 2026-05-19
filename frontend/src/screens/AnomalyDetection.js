@@ -9,8 +9,6 @@ import {
   ChevronsRight,
   Circle,
   MapPin,
-  RotateCcw,
-  Search,
 } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import {
@@ -90,6 +88,72 @@ const formatLogData = (value) => {
   }
 
   return output.length > 110 ? `${output.slice(0, 107)}...` : output;
+};
+
+const isIotAnomaly = (event) => event?.metadata?.source === "iot_sensor";
+
+const formatEvidenceValue = (value) => {
+  if (value === null || value === undefined || value === "") return "-";
+  return String(value);
+};
+
+const renderEvidenceValue = (value) => {
+  if (Array.isArray(value)) {
+    if (value.length === 0) {
+      return <Text style={styles.evidenceValue}>-</Text>;
+    }
+
+    return (
+      <View style={styles.evidenceChipWrap}>
+        {value.map((item, index) => (
+          <Text key={`${item}-${index}`} style={styles.evidenceChip}>
+            {formatEvidenceValue(item)}
+          </Text>
+        ))}
+      </View>
+    );
+  }
+
+  if (value && typeof value === "object") {
+    const entries = Object.entries(value);
+
+    if (entries.length === 0) {
+      return <Text style={styles.evidenceValue}>-</Text>;
+    }
+
+    return (
+      <View style={styles.evidenceObjectList}>
+        {entries.map(([key, nestedValue]) => (
+          <View key={key} style={styles.evidenceObjectRow}>
+            <Text style={styles.evidenceObjectKey}>{formatStatusLabel(key)}</Text>
+            <Text style={styles.evidenceObjectValue}>
+              {formatEvidenceValue(nestedValue)}
+            </Text>
+          </View>
+        ))}
+      </View>
+    );
+  }
+
+  return <Text style={styles.evidenceValue}>{formatEvidenceValue(value)}</Text>;
+};
+
+const getIotEvidenceRows = (event) => {
+  const metadata = event?.metadata || {};
+  const sensorData = metadata.sensor_data || {};
+
+  return [
+    ["Source", "IoT sensor"],
+    ["Sensor ID", metadata.sensor_id],
+    ["Sensor Name", metadata.sensor_name],
+    ["Sensor Type", metadata.sensor_type],
+    ["Sensor Status", metadata.sensor_status],
+    ["Sensor Log ID", metadata.sensor_log_id],
+    ...Object.entries(sensorData).map(([key, value]) => [
+      formatStatusLabel(key),
+      value,
+    ]),
+  ];
 };
 
 const getStatusStyle = (status) => {
@@ -424,35 +488,49 @@ const AnomalyDetection = () => {
 
   const renderAnomalyHeader = () => (
     <View style={[styles.tableHeader, styles.row]}>
-      <Text style={[styles.headerCell, styles.anomalyIdCell]}>{t("id")}</Text>
+      <Text style={[styles.headerText, { flex: 1, textAlign: "center" }]}>
+        {t("id")}
+      </Text>
+
       <Pressable
         onPress={() => requestSort("event_type")}
-        style={[styles.headerPressableCell, styles.anomalyTypeCell]}
+        style={[styles.headerPressRow, { flex: 3 }]}
       >
-        <Text style={styles.headerCell}>{t("event_type")}</Text>
+        <Text style={styles.headerText}>{t("event_type")}</Text>
         {sortConfig.key === "event_type" && sortConfig.direction === "asc" ? (
           <ArrowUpNarrowWide size={14} color="white" />
         ) : (
           <ArrowDownWideNarrow size={14} color="white" />
         )}
       </Pressable>
-      <View style={[styles.headerPressableCell, styles.anomalyCoordinateCell]}>
-        <Text style={styles.headerCell}>{t("coordinates")}</Text>
-      </View>
+
+      <Text style={[styles.headerText, { flex: 3 }]}>
+        {t("coordinates")}
+      </Text>
+
       <Pressable
         onPress={() => requestSort("created_at")}
-        style={[styles.headerPressableCell, styles.anomalyDetectedCell]}
+        style={[styles.headerPressRow, { flex: 2 }]}
       >
-        <Text style={styles.headerCell}>{t("detected_at")}</Text>
+        <Text style={styles.headerText}>{t("detected_at")}</Text>
         {sortConfig.key === "created_at" && sortConfig.direction === "asc" ? (
           <ArrowUpNarrowWide size={14} color="white" />
         ) : (
           <ArrowDownWideNarrow size={14} color="white" />
         )}
       </Pressable>
-      <Text style={[styles.headerCell, styles.anomalyUserCell]}>{t("user")}</Text>
-      <Text style={[styles.headerCell, styles.anomalyStatusCell]}>{t("status_label")}</Text>
-      <Text style={[styles.headerCell, styles.anomalyActionCell]}>{t("action")}</Text>
+
+      <Text style={[styles.headerText, { flex: 1, textAlign: "center" }]}>
+        {t("user")}
+      </Text>
+
+      <Text style={[styles.headerText, { flex: 2, textAlign: "center" }]}>
+        {t("status_label")}
+      </Text>
+
+      <Text style={[styles.headerText, { flex: 2, textAlign: "center" }]}>
+        {t("action")}
+      </Text>
     </View>
   );
 
@@ -466,18 +544,16 @@ const AnomalyDetection = () => {
         selectedAnomaly?.id === item.id && { backgroundColor: "#fff8e1" },
       ]}
     >
-      <Text
-        style={[styles.cellText, styles.anomalyIdCell, styles.centeredText]}
-      >
+      <Text style={[styles.cellText, { flex: 1, textAlign: "center" }]}>
         {item.id}
       </Text>
 
-      <Text style={[styles.cellText, styles.anomalyTypeCell]}>
+      <Text style={[styles.cellText, { flex: 3 }]}>
         {getEventTypeLabel(item.event_type, t)}
       </Text>
 
       <Pressable
-        style={[styles.anomalyCoordinateCell, styles.coordinatePressable]}
+        style={[{ flex: 3 }, styles.coordinatePressable]}
         onPress={() => {
           if (item.latitude && item.longitude) {
             setSelectedAnomaly(item);
@@ -497,19 +573,15 @@ const AnomalyDetection = () => {
         )}
       </Pressable>
 
-      <Text
-        style={[styles.cellText, styles.anomalyDetectedCell, styles.mutedText]}
-      >
+      <Text style={[styles.cellText, styles.mutedText, { flex: 2 }]}>
         {formatDate(item.created_at)}
       </Text>
 
-      <Text
-        style={[styles.cellText, styles.anomalyUserCell, styles.centeredText]}
-      >
+      <Text style={[styles.cellText, { flex: 1, textAlign: "center" }]}>
         {item.user_id || "-"}
       </Text>
 
-      <View style={[styles.anomalyStatusCell, styles.centeredCell]}>
+      <View style={[{ flex: 2 }, styles.centeredCell]}>
         {item.is_resolved ? (
           <View style={styles.resolvedBadge}>
             <CheckCircle size={12} color="#059669" />
@@ -523,7 +595,7 @@ const AnomalyDetection = () => {
         )}
       </View>
 
-      <View style={[styles.anomalyActionCell, styles.centeredCell]}>
+      <View style={[{ flex: 2 }, styles.centeredCell]}>
         {!item.is_resolved && (
           <Pressable
             onPress={async (e) => {
@@ -545,13 +617,148 @@ const AnomalyDetection = () => {
             {resolvingId === item.id ? (
               <ActivityIndicator size="small" color="white" />
             ) : (
-              <Text style={styles.resolveBtnText}>{t("resolved")}</Text>
+              <Text style={styles.resolveBtnText}>{t("resolve")}</Text>
             )}
           </Pressable>
         )}
       </View>
     </Pressable>
   );
+
+  const renderAnomalyEvidence = (event) => {
+    if (!event) return null;
+
+    if (isIotAnomaly(event)) {
+      return (
+        <View style={styles.evidenceSection}>
+          <Text style={styles.evidenceTitle}>Sensor Evidence</Text>
+          <View style={styles.evidenceGrid}>
+            {getIotEvidenceRows(event).map(([label, value]) => (
+              <View key={label} style={styles.evidenceRow}>
+                <Text style={styles.evidenceLabel}>{label}</Text>
+                <View style={styles.evidenceValueContainer}>
+                  {renderEvidenceValue(value)}
+                </View>
+              </View>
+            ))}
+          </View>
+        </View>
+      );
+    }
+
+    return (
+      <View style={styles.evidenceSection}>
+        <Text style={styles.evidenceTitle}>AI Evidence</Text>
+        {event.annotated_frame_base64 ? (
+          <img
+            alt="Annotated anomaly evidence"
+            src={`data:image/jpeg;base64,${event.annotated_frame_base64}`}
+            style={styles.evidenceImage}
+          />
+        ) : (
+          <View style={styles.emptyEvidence}>
+            <Text style={styles.emptyEvidenceText}>No anomaly photo available</Text>
+          </View>
+        )}
+      </View>
+    );
+  };
+
+  const renderAnomalyDetailModal = () => {
+    if (!selectedAnomaly || showMapModal) return null;
+
+    return (
+      <Modal
+        visible={!!selectedAnomaly && !showMapModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setSelectedAnomaly(null)}
+      >
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => setSelectedAnomaly(null)}
+        >
+          <View
+            style={styles.anomalyDetailModalContent}
+            onStartShouldSetResponder={() => true}
+          >
+            <View style={styles.sensorLogsModalHeader}>
+              <View>
+                <Text style={styles.sensorLogsModalTitle}>
+                  {getEventTypeLabel(selectedAnomaly.event_type, t)}
+                </Text>
+                <Text style={styles.detailSubtitle}>
+                  {isIotAnomaly(selectedAnomaly) ? "IoT anomaly" : "AI anomaly"} ·{" "}
+                  {formatDate(selectedAnomaly.created_at)}
+                </Text>
+              </View>
+              <Pressable onPress={() => setSelectedAnomaly(null)}>
+                <Text style={styles.mapCloseBtn}>x</Text>
+              </Pressable>
+            </View>
+
+            <ScrollView
+              style={styles.detailScroll}
+              contentContainerStyle={styles.detailScrollContent}
+            >
+              <View style={styles.detailMetaGrid}>
+                <View style={styles.detailMetaItem}>
+                  <Text style={styles.evidenceLabel}>Status</Text>
+                  <Text style={styles.evidenceValue}>
+                    {selectedAnomaly.is_resolved ? t("resolved") : t("open")}
+                  </Text>
+                </View>
+                <View style={styles.detailMetaItem}>
+                  <Text style={styles.evidenceLabel}>Coordinates</Text>
+                  <Text style={styles.evidenceValue}>
+                    {selectedAnomaly.latitude && selectedAnomaly.longitude
+                      ? `${Number(selectedAnomaly.latitude).toFixed(6)}, ${Number(
+                          selectedAnomaly.longitude,
+                        ).toFixed(6)}`
+                      : "-"}
+                  </Text>
+                </View>
+                <View style={styles.detailMetaItem}>
+                  <Text style={styles.evidenceLabel}>User ID</Text>
+                  <Text style={styles.evidenceValue}>
+                    {selectedAnomaly.user_id || "-"}
+                  </Text>
+                </View>
+              </View>
+
+              {renderAnomalyEvidence(selectedAnomaly)}
+
+              {!selectedAnomaly.is_resolved && (
+                <Pressable
+                  onPress={async () => {
+                    setResolvingId(selectedAnomaly.id);
+                    try {
+                      await resolveAnomaly(selectedAnomaly.id);
+                      setSelectedAnomaly(null);
+                    } finally {
+                      setResolvingId(null);
+                    }
+                  }}
+                  disabled={resolvingId === selectedAnomaly.id}
+                  style={[
+                    styles.resolveDetailBtn,
+                    resolvingId === selectedAnomaly.id &&
+                      styles.resolveBtnDisabled,
+                  ]}
+                >
+                  {resolvingId === selectedAnomaly.id ? (
+                    <ActivityIndicator size="small" color="white" />
+                  ) : (
+                    <Text style={styles.resolveBtnText}>{t("resolved")}</Text>
+                  )}
+                </Pressable>
+              )}
+            </ScrollView>
+          </View>
+        </Pressable>
+      </Modal>
+    );
+  };
 
   const renderAnomalyTableState = () => {
     if (loading) {
@@ -584,30 +791,6 @@ const AnomalyDetection = () => {
 
     return (
       <>
-        <View style={[styles.toolbar, styles.row]}>
-          <View style={styles.row}>
-            <Pressable
-              onPress={resetSort}
-              style={({ hovered }) => [
-                styles.iconBtn,
-                hovered && styles.iconBtnHover,
-              ]}
-            >
-              <RotateCcw size={18} />
-            </Pressable>
-            <View style={[styles.search, styles.row]}>
-              <Search size={18} color="#5b6b63" />
-              <TextInput
-                style={styles.input}
-                placeholder={t("search")}
-                placeholderTextColor="#8f8f8f"
-                value={searchQuery}
-                onChangeText={handleSearch}
-              />
-            </View>
-          </View>
-        </View>
-
         <View style={styles.tableContainer}>
           <ScrollView
             horizontal
@@ -883,23 +1066,12 @@ const AnomalyDetection = () => {
       style={styles.pageScroll}
       contentContainerStyle={styles.container}
     >
-      <View style={styles.headerRow}>
         <View>
           <Text style={styles.title}>{t('anomaly_detection')}</Text>
           <Text style={styles.subtitle}>
             {t("sensor_inventory_tracking")}
           </Text>
         </View>
-        <Pressable
-          onPress={refreshActiveTab}
-          style={({ hovered }) => [
-            styles.iconBtn,
-            hovered && styles.iconBtnHover,
-          ]}
-        >
-          <RotateCcw size={18} />
-        </Pressable>
-      </View>
 
       <View style={[styles.tabStrip, isCompact && styles.tabStripCompact]}>
         {renderTabButton(
@@ -921,6 +1093,7 @@ const AnomalyDetection = () => {
       </View>
 
       {activeTab === TABS.ANOMALIES ? renderMapModal() : null}
+      {activeTab === TABS.ANOMALIES ? renderAnomalyDetailModal() : null}
       {renderSensorLogsModal()}
     </ScrollView>
   );
@@ -937,10 +1110,13 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   headerRow: {
-    flexDirection: "row",
-    alignItems: "flex-start",
     justifyContent: "space-between",
-    gap: 16,
+    alignItems: "center",
+  },
+  headerText: {
+    color: "white",
+    alignSelf: "center",
+    fontWeight: "500",
   },
   title: {
     fontSize: 28,
@@ -951,42 +1127,6 @@ const styles = StyleSheet.create({
     marginTop: 6,
     fontSize: 14,
     color: "#5b6b63",
-  },
-  toolbar: {
-    justifyContent: "space-between",
-    marginTop: 10,
-    marginBottom: 14,
-    alignItems: "center",
-  },
-  iconBtn: {
-    alignSelf: "flex-start",
-    padding: 10,
-    borderRadius: 999,
-    backgroundColor: "white",
-    borderWidth: 1,
-    borderColor: "#d7e0da",
-  },
-  iconBtnHover: {
-    backgroundColor: "#edf7f0",
-    borderColor: "#b7cfbf",
-  },
-  search: {
-    gap: 7,
-    borderWidth: 1,
-    borderColor: "#d7e0da",
-    minWidth: 280,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
-    backgroundColor: "white",
-    borderRadius: 14,
-    alignItems: "center",
-    marginLeft: 8,
-  },
-  input: {
-    flex: 1,
-    paddingVertical: 0,
-    color: "#1f2933",
-    outlineStyle: "none",
   },
   tabStrip: {
     flexDirection: "row",
@@ -1033,18 +1173,13 @@ const styles = StyleSheet.create({
     color: "rgba(255,255,255,0.78)",
   },
   panel: {
-    borderRadius: 20,
-    backgroundColor: "white",
-    borderWidth: 1,
-    borderColor: "#dce6df",
-    overflow: "hidden",
+    backgroundColor: "transparent",
   },
   row: {
     flexDirection: "row",
   },
   tableContainer: {
     width: "100%",
-    backgroundColor: "white",
   },
   tableScrollContent: {
     minWidth: "100%",
@@ -1067,28 +1202,33 @@ const styles = StyleSheet.create({
   },
   tableHeader: {
     backgroundColor: "#0a6340",
-    paddingVertical: 10,
+    paddingVertical: 8,
     userSelect: "none",
+  },
+  headerPressRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 10,
   },
   headerCell: {
     color: "white",
-    fontWeight: "600",
+    fontWeight: "500",
     fontSize: 13,
     paddingHorizontal: 10,
     alignSelf: "center",
   },
   headerPressableCell: {
     flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
+    alignSelf: "center",
+    gap: 10,
     paddingHorizontal: 10,
   },
   tableRow: {
-    paddingVertical: 10,
+    paddingVertical: 5,
     borderBottomWidth: 1,
-    borderBottomColor: "#e7ece8",
+    borderBottomColor:  "#8f8f8f84",
     alignItems: "center",
-    paddingHorizontal: 10,
   },
   cellText: {
     fontSize: 13,
@@ -1275,11 +1415,9 @@ const styles = StyleSheet.create({
   paginationContainer: {
     justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: 14,
-    paddingHorizontal: 18,
-    backgroundColor: "#fbfcfb",
-    borderTopWidth: 1,
-    borderTopColor: "#e7ece8",
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+    backgroundColor: "white",
   },
   pageInfo: {
     color: "#5b6b63",
@@ -1288,17 +1426,17 @@ const styles = StyleSheet.create({
   pageBtn: {
     width: 32,
     height: 32,
-    borderRadius: 999,
+    borderRadius: 16,
     backgroundColor: "white",
     borderWidth: 1,
-    borderColor: "#d0d8d2",
+    borderColor: "#ccc",
     alignItems: "center",
     justifyContent: "center",
     marginLeft: 10,
   },
   pageBtnText: {
-    color: "#0a6340",
-    fontWeight: "700",
+    color: "#ecaa25",
+    fontWeight: "600",
   },
   btnDisabled: {
     backgroundColor: "#f3f4f6",
@@ -1311,8 +1449,8 @@ const styles = StyleSheet.create({
     paddingTop: 2,
   },
   activePageBtn: {
-    backgroundColor: "#0a6340",
-    borderColor: "#0a6340",
+    backgroundColor: "#ffc758",
+    borderColor: "#ffc758",
   },
   loadingContainer: {
     paddingVertical: 64,
@@ -1362,7 +1500,11 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0, 0, 0, 0.5)",
     justifyContent: "center",
     alignItems: "center",
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingTop: 84,
+    paddingBottom: 24,
+    zIndex: 9999,
+    elevation: 9999,
   },
   modalContent: {
     backgroundColor: "white",
@@ -1457,6 +1599,152 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "700",
     color: "#111827",
+  },
+  anomalyDetailModalContent: {
+    backgroundColor: "white",
+    borderRadius: 12,
+    overflow: "hidden",
+    width: "92%",
+    maxWidth: 820,
+    maxHeight: "calc(100vh - 120px)",
+    zIndex: 10000,
+    elevation: 10000,
+  },
+  detailSubtitle: {
+    marginTop: 4,
+    color: "#6b7280",
+    fontSize: 12,
+  },
+  detailScroll: {
+    flexGrow: 0,
+  },
+  detailScrollContent: {
+    padding: 16,
+    paddingBottom: 20,
+  },
+  detailMetaGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+    marginBottom: 14,
+  },
+  detailMetaItem: {
+    flexGrow: 1,
+    minWidth: 180,
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+    borderRadius: 8,
+    padding: 10,
+    backgroundColor: "#f9fafb",
+  },
+  evidenceSection: {
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 14,
+    backgroundColor: "#ffffff",
+  },
+  evidenceTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#111827",
+    marginBottom: 10,
+  },
+  evidenceGrid: {
+    gap: 8,
+  },
+  evidenceRow: {
+    flexDirection: "row",
+    gap: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f3f4f6",
+    paddingBottom: 10,
+    alignItems: "flex-start",
+  },
+  evidenceLabel: {
+    width: 140,
+    color: "#6b7280",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  evidenceValue: {
+    flex: 1,
+    color: "#111827",
+    fontSize: 13,
+  },
+  evidenceValueContainer: {
+    flex: 1,
+    minWidth: 0,
+  },
+  evidenceChipWrap: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
+  },
+  evidenceChip: {
+    backgroundColor: "#f0fdf4",
+    borderColor: "#bbf7d0",
+    borderWidth: 1,
+    borderRadius: 999,
+    color: "#047857",
+    fontSize: 12,
+    fontWeight: "700",
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+  },
+  evidenceObjectList: {
+    gap: 6,
+  },
+  evidenceObjectRow: {
+    flexDirection: "row",
+    gap: 8,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    backgroundColor: "#f9fafb",
+    borderRadius: 6,
+  },
+  evidenceObjectKey: {
+    width: 130,
+    color: "#6b7280",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  evidenceObjectValue: {
+    flex: 1,
+    color: "#111827",
+    fontSize: 12,
+  },
+  evidenceImage: {
+    width: "100%",
+    maxHeight: 320,
+    objectFit: "contain",
+    borderRadius: 8,
+    backgroundColor: "#111827",
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+  },
+  emptyEvidence: {
+    padding: 14,
+    borderWidth: 1,
+    borderStyle: "dashed",
+    borderColor: "#d1d5db",
+    borderRadius: 8,
+    backgroundColor: "#f9fafb",
+  },
+  emptyEvidenceText: {
+    color: "#6b7280",
+    fontSize: 13,
+  },
+  resolveDetailBtn: {
+    alignSelf: "flex-start",
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    backgroundColor: "#0a6340",
+    borderRadius: 8,
+    minWidth: 100,
+    alignItems: "center",
+    marginBottom: 16,
   },
 });
 

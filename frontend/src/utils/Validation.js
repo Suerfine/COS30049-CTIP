@@ -29,3 +29,20 @@ export const isValidBadgeExpiry = (months) => {
     const num = parseInt(months, 10);
     return !isNaN(num) && num > 0 && num <= 60; // Max 60 months (5 years)
 };
+
+// IC & Passport
+export const isValidIC = (ic) =>
+    ic.length == 12 && /^\d{6}-\d{2}-\d{4}$/.test(ic);
+
+export const isValidPassport = (passport) => /^[A-Za-z0-9]{5,20}$/.test(passport);
+
+// combined IC/Passport validator - accepts either format
+export const isValidIdentification = (identification) => {
+    if (!identification || typeof identification !== 'string') return false;
+    const trimmed = identification.trim();
+    // IC format (XXXXXX-XX-XXXX with 12 digits)
+    if (/^\d{6}-\d{2}-\d{4}$/.test(trimmed)) return true;
+    // passport/seeded format (5-20 alphanumeric characters)
+    if (/^[A-Za-z0-9]{5,20}$/.test(trimmed)) return true;
+    return false;
+};

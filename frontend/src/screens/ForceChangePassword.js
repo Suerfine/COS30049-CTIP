@@ -231,6 +231,13 @@ const ForceChangePassword = () => {
 };
 
 const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: '#e8efe7',
+    },
+    scrollView: {
+        height:'100vh'
+    },
     scrollContent: {
         justifyContent: 'center',
         height:'100vh',
@@ -283,7 +290,7 @@ const styles = StyleSheet.create({
         maxWidth: 380,
     },
     formPanel: {
-        width: '53%',
+        flex:1,
         padding: 28,
         justifyContent: 'flex-start',
     },
