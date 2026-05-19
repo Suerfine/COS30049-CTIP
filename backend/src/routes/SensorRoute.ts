@@ -10,7 +10,7 @@ const sensorRouter = Router();
  * /api/sensors:
  *   post:
  *     summary: Create a new sensor
- *     description: Creates a new sensor with the provided name, type, and location.
+ *     description: Creates a new sensor with the provided name, type, longitude, and latitude.
  *     tags: [Sensors]
  *     security:
  *       - OAuth2: ["all"]
@@ -39,7 +39,8 @@ sensorRouter.post(
   [
     body("name").isString().notEmpty(),
     body("type").isString().notEmpty(),
-    body("location").isString().notEmpty(),
+    body("longitude").isNumeric().notEmpty(),
+    body("latitude").isNumeric().notEmpty(),
   ],
   validate,
   SensorController.createSensor,

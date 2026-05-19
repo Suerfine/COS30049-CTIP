@@ -1195,7 +1195,8 @@ const options: swaggerJSDoc.Options = {
             id: { type: "integer", example: 1 },
             name: { type: "string", example: "Temperature Sensor A" },
             type: { type: "string", example: "temperature" },
-            location: { type: "string", example: "Building A - Room 101" },
+            longitude: { type: "number", format: "double", example: 101.6869 },
+            latitude: { type: "number", format: "double", example: 3.139 },
             current_status: {
               type: "string",
               enum: ["normal", "alerting", "maintenance", "deactivated"],
@@ -1220,11 +1221,12 @@ const options: swaggerJSDoc.Options = {
         },
         CreateSensorRequest: {
           type: "object",
-          required: ["name", "type", "location"],
+          required: ["name", "type", "longitude", "latitude"],
           properties: {
             name: { type: "string", example: "Temperature Sensor A" },
             type: { type: "string", example: "temperature" },
-            location: { type: "string", example: "Building A - Room 101" },
+            longitude: { type: "number", format: "double", example: 101.6869 },
+            latitude: { type: "number", format: "double", example: 3.139 },
           },
         },
         UpdateSensorRequest: {
@@ -1232,7 +1234,8 @@ const options: swaggerJSDoc.Options = {
           properties: {
             name: { type: "string", example: "Temperature Sensor A Updated" },
             type: { type: "string", example: "temperature" },
-            location: { type: "string", example: "Building B - Room 201" },
+            longitude: { type: "number", format: "double", example: 101.6869 },
+            latitude: { type: "number", format: "double", example: 3.139 },
           },
         },
         SensorLog: {

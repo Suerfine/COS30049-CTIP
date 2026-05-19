@@ -93,6 +93,48 @@ const getConfidenceLabel = (metadata) => {
   return `${Math.round(confidence * 100)}%`;
 };
 
+const getSensorState = (sensor) =>
+  String(sensor?.current_status || sensor?.status || "deactivated")
+    .trim()
+    .toLowerCase();
+
+const getSensorStateConfig = (sensor) => {
+  const state = getSensorState(sensor);
+
+  switch (state) {
+    case "normal":
+      return { label: "Normal", color: "#16a34a", fillColor: "#22c55e" };
+    case "alerting":
+      return { label: "Alerting", color: "#dc2626", fillColor: "#ef4444" };
+    case "maintenance":
+      return { label: "Maintenance", color: "#d97706", fillColor: "#f59e0b" };
+    case "deactivated":
+    default:
+      return { label: "Deactivated", color: "#6b7280", fillColor: "#9ca3af" };
+  }
+};
+
+const createSensorIcon = (sensor) => {
+  const stateConfig = getSensorStateConfig(sensor);
+
+  return divIcon({
+    className: "sensor-diamond-marker",
+    html: `
+      <div style="
+        width: 16px;
+        height: 16px;
+        background: linear-gradient(135deg, ${stateConfig.fillColor}, ${stateConfig.color});
+        transform: rotate(45deg);
+        border: 2px solid #161515;
+        border-radius: 3px;
+        box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.8);
+      "></div>
+    `,
+    iconSize: [20, 20],
+    iconAnchor: [10, 10],
+  });
+};
+
 const getMapCenter = (events) => {
   if (!events.length) {
     return DEFAULT_MAP_CENTER;
@@ -221,6 +263,7 @@ const AdminDashboard = () => {
 
   const [hoveredAnomaly, setHoveredAnomaly] = useState(null);
   const [selectedAnomaly, setSelectedAnomaly] = useState(null);
+  const [hoveredSensor, setHoveredSensor] = useState(null);
   const { width } = useWindowDimensions();
   const isCompact = width < 1200;
   const mapCenter = useMemo(() => getMapCenter(events), [events]);
@@ -266,6 +309,21 @@ const AdminDashboard = () => {
       setResolvingAnomalyId(null);
     }
   };
+
+  const hoveredSensorCard = useMemo(() => {
+    if (!hoveredSensor) {
+      return null;
+    }
+
+    return JSON.stringify(
+      {
+        ...hoveredSensor,
+        state: getSensorStateConfig(hoveredSensor).label,
+      },
+      null,
+      2,
+    );
+  }, [hoveredSensor]);
 
   return (
     <ScrollView style={styles.screenContainer}>
@@ -431,8 +489,6 @@ const AdminDashboard = () => {
               <HoverDetailCard
                 event={selectedAnomaly || hoveredAnomaly}
                 isPinned={!!selectedAnomaly}
-                resolvingId={resolvingAnomalyId}
-                onResolve={resolveAnomaly}
               />
             ) : null}
 
@@ -812,6 +868,21 @@ const styles = StyleSheet.create({
     boxShadow: "0 14px 30px rgba(15, 23, 42, 0.18)",
     zIndex: 1200,
   },
+  sensorHoverCard: {
+    position: "absolute",
+    bottom: 18,
+    left: 18,
+    width: 320,
+    maxHeight: 360,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    backgroundColor: "white",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#d1d5db",
+    boxShadow: "0 14px 30px rgba(15, 23, 42, 0.18)",
+    zIndex: 1200,
+  },
   hoverHeader: {
     flexDirection: "row",
     alignItems: "center",
@@ -858,6 +929,17 @@ const styles = StyleSheet.create({
     color: "white",
     fontWeight: "700",
     fontSize: 12,
+  },
+  sensorJsonScroll: {
+    marginTop: 8,
+    maxHeight: 280,
+  },
+  sensorJson: {
+    color: "#111827",
+    fontSize: 11,
+    lineHeight: 16,
+    fontFamily: "monospace",
+    whiteSpace: "pre-wrap",
   },
   centerContainer: {
     flex: 1,

@@ -48,7 +48,7 @@ export const API_ENDPOINTS = {
     PATCH: (id) => `/enrollments/${id}/approve`,
     HISTORY_BY_ENROLLMENT: (enrollmentId) =>
       `/submission/enrollment/${enrollmentId}`,
-    APPROVE: (id)=> `/enrollments/${id}/approve`,
+    APPROVE: (id) => `/enrollments/${id}/approve`,
   },
   WORKSHOP: {
     JOIN_WORKSHOP: (courseId, elementId) =>
@@ -78,6 +78,13 @@ export const API_ENDPOINTS = {
   EVENTS: {
     BASE: "/events",
     STATUS: (id) => `/events/${id}/status`,
+  },
+  SENSOR: {
+    LIST: "/sensors",
+    DETAIL: (id) => `/sensors/${id}`,
+    LOGS: "/sensors/logs",
+    SENSOR_LOGS: (sensorId) => `/sensors/${sensorId}/logs`,
+    LOG_DETAIL: (id) => `/logs/${id}`,
   },
   AR: {
     LIST: "/ar-models",

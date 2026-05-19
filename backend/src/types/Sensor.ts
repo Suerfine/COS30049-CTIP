@@ -2,7 +2,9 @@ export interface SensorResponse {
   id: number;
   name: string;
   type: string;
-  location: string;
+  longitude: number;
+  latitude: number;
+  current_status: string;
   data: Record<string, unknown>;
   created_at: Date;
   updated_at: Date;
@@ -11,13 +13,15 @@ export interface SensorResponse {
 export interface CreateSensorRequest {
   name: string;
   type: string;
-  location: string;
+  longitude: number;
+  latitude: number;
 }
 
 export interface UpdateSensorRequest {
-  name: string;
-  type: string;
-  location: string;
+  name?: string;
+  type?: string;
+  longitude?: number;
+  latitude?: number;
 }
 
 export interface SensorStatusUpdateRequest {

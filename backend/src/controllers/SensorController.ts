@@ -3,8 +3,7 @@ import { Sensor } from "../models";
 import { formatPaginateResponse, paginateModel } from "../utils/paginate";
 import { PaginateRequestParams, PaginateResponse } from "../types/common";
 import { UserRoles } from "../enum/UserRoles";
-import { hashPassword, verifyPassword } from "../utils/password";
-import { getStorage } from "../services/storage";
+import { Op } from "sequelize";
 import {
   CreateSensorRequest,
   UpdateSensorRequest,
@@ -26,7 +25,9 @@ function toSensorResponse(sensor: Sensor): SensorResponse {
     id: sensor.id,
     name: sensor.name,
     type: sensor.type,
-    location: sensor.location,
+    longitude: sensor.longitude,
+    latitude: sensor.latitude,
+    current_status: sensor.current_status,
     data: {},
     created_at: sensor.created_at,
     updated_at: sensor.updated_at,
@@ -39,12 +40,13 @@ export const createSensor = async (
   next: NextFunction,
 ) => {
   try {
-    const { name, type, location } = req.body;
+    const { name, type, longitude, latitude } = req.body;
 
     await Sensor.create({
       name,
       type,
-      location,
+      longitude,
+      latitude,
       current_status: SensorStatus.DEACTIVATED,
     });
     return res.status(201).json({ message: "Sensor created successfully" });
@@ -138,8 +140,10 @@ export const upsertSensor = async (
     // Validate and prepare updates
     const updates: Partial<Sensor> = {};
     if (typeof req.body.name === "string" && req.body.name.trim() !== "") {
-      const existing = await Sensor.findOne({ where: { name: req.body.name } });
-      if (existing && existing.id !== sensor.id) {
+      const existing = await Sensor.findOne({
+        where: { name: req.body.name, id: { [Op.not]: sensor.id } },
+      });
+      if (existing) {
         throw new HttpError(400, "A sensor with the same name already exists");
       }
       updates.name = req.body.name;
@@ -147,11 +151,11 @@ export const upsertSensor = async (
     if (typeof req.body.type === "string" && req.body.type.trim() !== "") {
       updates.type = req.body.type;
     }
-    if (
-      typeof req.body.location === "string" &&
-      req.body.location.trim() !== ""
-    ) {
-      updates.location = req.body.location;
+    if (typeof req.body.longitude === "number") {
+      updates.longitude = req.body.longitude;
+    }
+    if (typeof req.body.latitude === "number") {
+      updates.latitude = req.body.latitude;
     }
     if (Object.keys(updates).length === 0) {
       throw new HttpError(400, "No valid fields provided to update");
