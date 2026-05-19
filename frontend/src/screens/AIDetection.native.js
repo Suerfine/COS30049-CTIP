@@ -100,6 +100,8 @@ export default function DetectionScreen() {
   const [resolvingEventId, setResolvingEventId] = useState(null);
 
   const [cameraLayout, setCameraLayout] = useState(null);
+  const [cameraReady, setCameraReady] = useState(false);
+  const [cameraError, setCameraError] = useState("");
 
   // Cover-mode coordinate mapping: CameraView scales the photo uniformly to fill the
   // container (like CSS object-fit: cover), so one dimension fills exactly and the
@@ -763,8 +765,28 @@ export default function DetectionScreen() {
             ref={cameraRef}
             style={styles.camera}
             facing="back"
+            mode="picture"
+            active={true}
             animateShutter={false}
+            onCameraReady={() => {
+              setCameraReady(true);
+              setCameraError("");
+            }}
+            onMountError={(event) => {
+              setCameraReady(false);
+              setCameraError(
+                event?.nativeEvent?.message || "Camera preview failed to start",
+              );
+            }}
           />
+          {!cameraReady && (
+            <View style={[styles.camera, styles.cameraLoading]}>
+              <ActivityIndicator size="large" color="#4CAF50" />
+              <Text style={styles.cameraLoadingText}>
+                {cameraError || "Starting camera..."}
+              </Text>
+            </View>
+          )}
           <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
             <Text
               style={[
@@ -1054,6 +1076,13 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "#1e1e1e",
+  },
+  cameraLoadingText: {
+    marginTop: 10,
+    paddingHorizontal: 16,
+    color: "#e5e7eb",
+    fontSize: 12,
+    textAlign: "center",
   },
 
   status: {
