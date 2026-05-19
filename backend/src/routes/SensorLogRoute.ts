@@ -4,7 +4,7 @@ import { auth } from "../middelware/Auth";
 import { body, param } from "express-validator";
 import { validate } from "../middelware/Validate";
 
-const router = Router({ mergeParams: true });
+const router = Router();
 
 /**
  * @swagger
@@ -41,7 +41,7 @@ const router = Router({ mergeParams: true });
  *         description: Sensor not found
  */
 router.post(
-  "/",
+  "/sensors/:sensor_id/logs",
   [
     param("sensor_id").isInt(),
     body("status").isString().notEmpty(),
@@ -144,7 +144,13 @@ router.get("/sensors/logs", auth, SensorLogController.getAllLogs);
  *             schema:
  *               $ref: '#/components/schemas/PaginatedSensorLogResponse'
  */
-router.get("/", auth, SensorLogController.getAllSensorLogs);
+router.get(
+  "/sensors/:sensor_id/logs",
+  auth,
+  [param("sensor_id").isInt()],
+  validate,
+  SensorLogController.getAllSensorLogs,
+);
 
 /**
  * @swagger

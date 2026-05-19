@@ -22,11 +22,11 @@ import {
 import {
   CircleMarker,
   MapContainer,
-  Popup,
+  Marker,
   TileLayer,
-  Tooltip,
   useMap,
 } from "react-leaflet";
+import { divIcon } from "leaflet";
 import { useTranslation } from "react-i18next";
 import { useNavigation } from "@react-navigation/native";
 
@@ -248,6 +248,7 @@ const AdminDashboard = () => {
   const { currentUser } = useAuth();
   const {
     events,
+    sensors,
     loading: mapLoading,
     error: mapError,
     refresh,
@@ -482,6 +483,20 @@ const AdminDashboard = () => {
                     ></CircleMarker>
                   );
                 })}
+                {sensors.map((sensor) => (
+                  <Marker
+                    key={sensor.id}
+                    position={[
+                      Number(sensor.latitude),
+                      Number(sensor.longitude),
+                    ]}
+                    icon={createSensorIcon(sensor)}
+                    eventHandlers={{
+                      mouseover: () => setHoveredSensor(sensor),
+                      mouseout: () => setHoveredSensor(null),
+                    }}
+                  />
+                ))}
               </MapContainer>
             )}
 
@@ -489,7 +504,35 @@ const AdminDashboard = () => {
               <HoverDetailCard
                 event={selectedAnomaly || hoveredAnomaly}
                 isPinned={!!selectedAnomaly}
+                resolvingId={resolvingAnomalyId}
+                onResolve={resolveAnomaly}
               />
+            ) : null}
+
+            {!mapLoading && !mapError && hoveredSensor ? (
+              <View style={styles.sensorHoverCard}>
+                <View style={styles.hoverHeader}>
+                  <Text style={styles.hoverTitle}>{hoveredSensor.name}</Text>
+                  <View
+                    style={[
+                      styles.hoverBadge,
+                      {
+                        backgroundColor:
+                          getSensorStateConfig(hoveredSensor).fillColor,
+                      },
+                    ]}
+                  >
+                    <Text style={styles.hoverBadgeText}>
+                      {getSensorStateConfig(hoveredSensor).label}
+                    </Text>
+                  </View>
+                </View>
+                <ScrollView style={styles.sensorJsonScroll}>
+                  <Text style={styles.sensorJson}>
+                    {getSensorStateConfig(hoveredSensor).data}
+                  </Text>
+                </ScrollView>
+              </View>
             ) : null}
 
             {!mapLoading && !mapError && events.length === 0 ? (

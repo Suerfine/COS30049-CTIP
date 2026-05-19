@@ -171,7 +171,7 @@ router.use("/progress", progressRouter);
 router.use("/courses/:course_id/discussion", discussionRouter);
 router.use("/", messageRouter);
 router.use("/sensors", sensorRouter);
-router.use("/sensors/{sensor_id}/logs", sensorLogRouter);
+router.use("/", sensorLogRouter);
 
 /*===============================
 =     NOTIFICATION ROUTES      =
