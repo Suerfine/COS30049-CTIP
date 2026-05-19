@@ -77,8 +77,8 @@ function createHttpOrHttpsServer(
 // Enable URL-encoded form data parsing with a 200mb limit
 app.use(express.urlencoded({ extended: true, limit: "200mb" }));
 
-// Middleware to parse JSON bodies
-app.use(express.json());
+// Middleware to parse JSON bodies (annotated anomaly frames are base64-encoded and can be large)
+app.use(express.json({ limit: "50mb" }));
 
 if (parseBooleanFlag(process.env.FORCE_HTTPS_REDIRECT)) {
   app.set("trust proxy", 1);

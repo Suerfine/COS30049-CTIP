@@ -11,17 +11,22 @@ import {
   TouchableOpacity,
   Modal,
   Image,
+  Platform,
   useWindowDimensions,
 } from "react-native";
-import { CameraView, useCameraPermissions } from "expo-camera";
+import {
+  Camera as VisionCamera,
+  useCameraDevice,
+  useCameraPermission,
+} from "react-native-vision-camera";
+import * as FileSystem from "expo-file-system";
 import Constants from "expo-constants";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from "react-i18next";
 
 import apiClient from "../config/apiConfig";
-import { DetectionService } from "../services/DetectionService";
 import { userDashboardService } from "../services/userDashboardService";
-import { Camera } from "lucide-react-native";
+import { Camera as CameraIcon } from "lucide-react-native";
 
 const SERVER_CONFIG_STORAGE_KEY = "aiDetectionServerConfig";
 
@@ -54,23 +59,26 @@ const SKELETON_EDGES = [
 ];
 
 export default function DetectionScreen() {
-  const { t, i18n} = useTranslation();
+  const { t, i18n } = useTranslation();
   const EVENT_LABELS = {
-    touch_plant: t('touch_plant'),
-    touch_animal: t('touch_animal'),
-    plucking_plant: t('plucking_plant'),
-    animal_strike: t('animal_strike'),
-    extended_touch_animal: t('extended_touch_animal'),
-    extended_touch_plant: t('extended_touch_plant'),
+    touch_plant: t("touch_plant"),
+    touch_animal: t("touch_animal"),
+    plucking_plant: t("plucking_plant"),
+    animal_strike: t("animal_strike"),
+    extended_touch_animal: t("extended_touch_animal"),
+    extended_touch_plant: t("extended_touch_plant"),
   };
   const { width } = useWindowDimensions();
   const isCompact = width < 720;
-  const [permission, requestPermission] = useCameraPermissions();
+  const { hasPermission, requestPermission } = useCameraPermission();
+  const device = useCameraDevice("back");
   const cameraRef = useRef(null);
   const isCapturing = useRef(false);
   const lastLogTime = useRef(0);
   const lastFrameBase64 = useRef(null);
   const lastPhotoDimensions = useRef({ width: 640, height: 480 });
+  const wsRef = useRef(null);
+  const reconnectTimerRef = useRef(null);
 
   const [serverConfig, setServerConfig] = useState({
     host: getAutoHost(),
@@ -113,7 +121,7 @@ export default function DetectionScreen() {
   const toRenderY = (py) => py * COVER_SCALE - OFFSET_Y;
 
   const getEventLabel = (eventType) => {
-    if (!eventType) return t('unknown_event');
+    if (!eventType) return t("unknown_event");
     if (EVENT_LABELS[eventType]) return EVENT_LABELS[eventType];
     return eventType
       .split("_")
@@ -200,59 +208,119 @@ export default function DetectionScreen() {
     if (currentUser) fetchAnomalyEvents();
   }, [currentUser?.id]);
 
-  // 3. Health Check
+  // 3. WebSocket Connection
   useEffect(() => {
-    const pingServer = async () => {
-      try {
-        const res = await fetch(
-          `http://${serverConfig.host}:${serverConfig.port}/health`,
-        );
-        setIsConnected(res.status === 200);
-      } catch {
+    const connect = () => {
+      if (reconnectTimerRef.current) {
+        clearTimeout(reconnectTimerRef.current);
+        reconnectTimerRef.current = null;
+      }
+
+      if (wsRef.current) {
+        wsRef.current.onopen = null;
+        wsRef.current.onmessage = null;
+        wsRef.current.onerror = null;
+        wsRef.current.onclose = null;
+        wsRef.current.close();
+      }
+
+      const ws = new WebSocket(
+        `ws://${serverConfig.host}:${serverConfig.port}/ws/detect`,
+      );
+      wsRef.current = ws;
+
+      ws.onopen = () => setIsConnected(true);
+
+      ws.onmessage = (event) => {
+        try {
+          const result = JSON.parse(event.data);
+          if (result && !result.error) setLatestResult(result);
+        } catch {}
+        isCapturing.current = false;
+      };
+
+      ws.onerror = () => {
         setIsConnected(false);
+        isCapturing.current = false;
+      };
+
+      ws.onclose = () => {
+        setIsConnected(false);
+        isCapturing.current = false;
+        reconnectTimerRef.current = setTimeout(connect, 3000);
+      };
+    };
+
+    connect();
+
+    return () => {
+      if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
+      if (wsRef.current) {
+        wsRef.current.onopen = null;
+        wsRef.current.onmessage = null;
+        wsRef.current.onerror = null;
+        wsRef.current.onclose = null;
+        wsRef.current.close();
       }
     };
-    pingServer();
-    const interval = setInterval(pingServer, 3000);
-    return () => clearInterval(interval);
   }, [serverConfig.host, serverConfig.port]);
 
-  // 4. Camera Capture Interval
+  // 4. Camera Capture Interval — sends frames over the open WebSocket.
+  // Android: takeSnapshot() grabs the preview surface (silent, no flash).
+  // iOS: takeSnapshot is unavailable, fall back to takePhoto with shutter sound disabled.
   useEffect(() => {
     const captureInterval = setInterval(async () => {
-      if (!cameraRef.current || isCapturing.current || !isConnected) return;
+      if (!cameraRef.current || isCapturing.current) return;
+      if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
 
       isCapturing.current = true;
+      let snapshotPath = null;
       try {
-        const photo = await cameraRef.current.takePictureAsync({
-          quality: 0.3,
-          base64: true,
-        });
-        lastFrameBase64.current = photo.base64;
+        const photo =
+          Platform.OS === "android"
+            ? await cameraRef.current.takeSnapshot({ quality: 30 })
+            : await cameraRef.current.takePhoto({
+                qualityPrioritization: "speed",
+                enableShutterSound: false,
+                flash: "off",
+              });
+
+        snapshotPath = photo.path;
         lastPhotoDimensions.current = {
           width: photo.width,
           height: photo.height,
         };
 
-        const result = await DetectionService.analyzeFrame(
-          photo.base64,
-          currentUser?.id,
-          serverConfig.host,
-          serverConfig.port,
-        );
+        const fileUri = snapshotPath.startsWith("file://")
+          ? snapshotPath
+          : `file://${snapshotPath}`;
 
-        if (result && !result.error) {
-          setLatestResult(result);
-        }
-      } catch (error) {
-        // Silently ignore capture errors
-      } finally {
+        const base64 = await FileSystem.readAsStringAsync(fileUri, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+        lastFrameBase64.current = base64;
+
+        wsRef.current.send(
+          JSON.stringify({
+            image_base64: base64,
+            user_id: currentUser?.id || 1,
+          }),
+        );
+      } catch {
         isCapturing.current = false;
+      } finally {
+        // Free the temp snapshot file immediately so we don't fill device storage.
+        if (snapshotPath) {
+          const fileUri = snapshotPath.startsWith("file://")
+            ? snapshotPath
+            : `file://${snapshotPath}`;
+          FileSystem.deleteAsync(fileUri, { idempotent: true }).catch(() => {});
+        }
       }
     }, 250);
 
     return () => clearInterval(captureInterval);
-  }, [currentUser, isConnected, serverConfig]);
+  }, [currentUser]);
 
   // 5. Client-Side Anomaly Logging
   useEffect(() => {
@@ -314,8 +382,8 @@ export default function DetectionScreen() {
                 err.response?.data?.error ||
                 err.message;
               Alert.alert(
-                t('database_error_title'),
-                `${t('backend_rejected_anomaly_log')}\n${errorMsg}`,
+                t("database_error_title"),
+                `${t("backend_rejected_anomaly_log")}\n${errorMsg}`,
               );
             });
         }
@@ -338,7 +406,7 @@ export default function DetectionScreen() {
       const message =
         error?.response?.data?.message ||
         error?.message ||
-        t('failed_resolve_anomaly_event');
+        t("failed_resolve_anomaly_event");
       Alert.alert("Error", message);
     } finally {
       setResolvingEventId(null);
@@ -407,15 +475,15 @@ export default function DetectionScreen() {
     return (
       <View style={styles.configContainer}>
         <ScrollView style={styles.configFormScroll}>
-          <Text style={styles.configTitle}>{t('ai_server_configuration')}</Text>
-          <Text style={styles.configLabel}>{t('server_host')}</Text>
+          <Text style={styles.configTitle}>{t("ai_server_configuration")}</Text>
+          <Text style={styles.configLabel}>{t("server_host")}</Text>
           <TextInput
             style={styles.input}
             placeholder={getAutoHost()}
             value={tempConfig.host}
             onChangeText={(t) => setTempConfig({ ...tempConfig, host: t })}
           />
-          <Text style={styles.configLabel}>{t('server_port')}</Text>
+          <Text style={styles.configLabel}>{t("server_port")}</Text>
           <TextInput
             style={styles.input}
             placeholder="8000"
@@ -425,7 +493,7 @@ export default function DetectionScreen() {
           />
           <View style={styles.buttonContainer}>
             <Button
-              title={t('save')}
+              title={t("save")}
               onPress={() => {
                 setServerConfig({
                   host: (tempConfig.host || "").trim() || getAutoHost(),
@@ -438,7 +506,7 @@ export default function DetectionScreen() {
           </View>
           <View style={styles.buttonContainer}>
             <Button
-              title={t('cancel')}
+              title={t("cancel")}
               onPress={() => {
                 setTempConfig(serverConfig);
                 setConfigMode(false);
@@ -452,27 +520,22 @@ export default function DetectionScreen() {
   }
 
   // --- MAIN UI ---
-  if (!permission) {
-    return (
-      <View style={styles.loadingView}>
-        <ActivityIndicator size="large" color="#4CAF50" />
-      </View>
-    );
-  }
-  if (!permission.granted) {
+  if (!hasPermission) {
     return (
       <View style={styles.permissionContainer}>
         <View style={styles.permissionCard}>
           <View style={styles.iconCircle}>
             <Text style={styles.cameraIcon}>
-              <Camera color="grey" />
+              <CameraIcon color="grey" />
             </Text>
           </View>
 
-          <Text style={styles.permissionTitle}>{t('camera_access_required')}</Text>
+          <Text style={styles.permissionTitle}>
+            {t("camera_access_required")}
+          </Text>
 
           <Text style={styles.permissionDescription}>
-            {t('camera_permission_description')}
+            {t("camera_permission_description")}
           </Text>
 
           <TouchableOpacity
@@ -480,11 +543,13 @@ export default function DetectionScreen() {
             onPress={requestPermission}
             activeOpacity={0.8}
           >
-            <Text style={styles.actionBtnText}>{t('grant_camera_permission')}</Text>
+            <Text style={styles.actionBtnText}>
+              {t("grant_camera_permission")}
+            </Text>
           </TouchableOpacity>
 
           <Text style={styles.permissionNotice}>
-            {t('privacy_notice_camera')}
+            {t("privacy_notice_camera")}
           </Text>
         </View>
       </View>
@@ -493,7 +558,7 @@ export default function DetectionScreen() {
   if (userLoading)
     return (
       <View style={styles.loadingView}>
-        <Text style={{ color: "#888" }}>{t('loading_user_short')}</Text>
+        <Text style={{ color: "#888" }}>{t("loading_user_short")}</Text>
       </View>
     );
 
@@ -516,27 +581,35 @@ export default function DetectionScreen() {
                   {selectedEvent ? getEventLabel(selectedEvent.event_type) : ""}
                 </Text>
                 <TouchableOpacity onPress={() => setSelectedEvent(null)}>
-                  <Text style={styles.detailClose}>{t('cancel')}</Text>
+                  <Text style={styles.detailClose}>{t("cancel")}</Text>
                 </TouchableOpacity>
               </View>
               {selectedEvent && (
                 <>
                   <View style={styles.detailMetaGrid}>
                     <Text style={styles.detailMetaText}>
-                      <Text style={styles.detailMetaLabel}>{t('detected')}: </Text>
+                      <Text style={styles.detailMetaLabel}>
+                        {t("detected")}:{" "}
+                      </Text>
                       {new Date(selectedEvent.created_at).toLocaleString()}
                     </Text>
                     <Text style={styles.detailMetaText}>
-                      <Text style={styles.detailMetaLabel}>{t('confidence')}: </Text>
+                      <Text style={styles.detailMetaLabel}>
+                        {t("confidence")}:{" "}
+                      </Text>
                       {getEventConfidence(selectedEvent)}
                     </Text>
                     <Text style={styles.detailMetaText}>
-                      <Text style={styles.detailMetaLabel}>{t('latitude')}: </Text>
-                      {selectedEvent.latitude ?? t('not_available')}
+                      <Text style={styles.detailMetaLabel}>
+                        {t("latitude")}:{" "}
+                      </Text>
+                      {selectedEvent.latitude ?? t("not_available")}
                     </Text>
                     <Text style={styles.detailMetaText}>
-                      <Text style={styles.detailMetaLabel}>{t('longitude')}: </Text>
-                      {selectedEvent.longitude ?? t('not_available')}
+                      <Text style={styles.detailMetaLabel}>
+                        {t("longitude")}:{" "}
+                      </Text>
+                      {selectedEvent.longitude ?? t("not_available")}
                     </Text>
                   </View>
                   {selectedEvent.annotated_frame_base64 ? (
@@ -550,7 +623,7 @@ export default function DetectionScreen() {
                   ) : (
                     <View style={styles.emptyEvidence}>
                       <Text style={styles.emptyEvidenceText}>
-                        {t('no_annotated_frame')}
+                        {t("no_annotated_frame")}
                       </Text>
                     </View>
                   )}
@@ -570,7 +643,9 @@ export default function DetectionScreen() {
                       disabled={resolvingEventId === selectedEvent.id}
                     >
                       <Text style={styles.resolveButtonText}>
-                        {resolvingEventId === selectedEvent.id ? t('resolving') : t('mark_resolved')}
+                        {resolvingEventId === selectedEvent.id
+                          ? t("resolving")
+                          : t("mark_resolved")}
                       </Text>
                     </TouchableOpacity>
                   )}
@@ -587,16 +662,16 @@ export default function DetectionScreen() {
       >
         <View style={styles.titleBar}>
           <View style={styles.titleCopy}>
-            <Text style={styles.title}>{t('ai_detection_dashboard')}</Text>
+            <Text style={styles.title}>{t("ai_detection_dashboard")}</Text>
             <Text style={styles.pageSubtitle}>
-              {t('monitor_anomaly_alerts')}
+              {t("monitor_anomaly_alerts")}
             </Text>
           </View>
           <TouchableOpacity
             style={styles.refreshButtonContainer}
             onPress={fetchAnomalyEvents}
           >
-            <Text style={styles.refreshButton}>{t('refresh')}</Text>
+            <Text style={styles.refreshButton}>{t("refresh")}</Text>
           </TouchableOpacity>
         </View>
 
@@ -607,7 +682,7 @@ export default function DetectionScreen() {
         ) : (
           <View style={styles.eventsPanel}>
             <View style={styles.panelHeader}>
-              <Text style={styles.panelTitle}>{t('active_anomalies')}</Text>
+              <Text style={styles.panelTitle}>{t("active_anomalies")}</Text>
               <View style={styles.badgeCount}>
                 <Text style={styles.badgeCountText}>
                   {anomalyEvents.length}
@@ -615,7 +690,7 @@ export default function DetectionScreen() {
               </View>
             </View>
             {anomalyEvents.length === 0 ? (
-              <Text style={styles.emptyText}>{t('no_active_anomalies')}</Text>
+              <Text style={styles.emptyText}>{t("no_active_anomalies")}</Text>
             ) : (
               <ScrollView style={styles.eventsList}>
                 {anomalyEvents.map((event) => (
@@ -637,7 +712,9 @@ export default function DetectionScreen() {
                           {new Date(event.created_at).toLocaleString()}
                         </Text>
                         <View style={styles.activePill}>
-                          <Text style={styles.activePillText}>{t('active')}</Text>
+                          <Text style={styles.activePillText}>
+                            {t("active")}
+                          </Text>
                         </View>
                       </View>
                     </View>
@@ -665,7 +742,22 @@ export default function DetectionScreen() {
             })
           }
         >
-          <CameraView ref={cameraRef} style={styles.camera} facing="back">
+          {device == null ? (
+            <View style={[styles.camera, styles.cameraLoading]}>
+              <ActivityIndicator size="large" color="#4CAF50" />
+            </View>
+          ) : (
+            <VisionCamera
+              ref={cameraRef}
+              style={styles.camera}
+              device={device}
+              isActive={true}
+              photo={true}
+              audio={false}
+              enableZoomGesture={false}
+            />
+          )}
+          <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
             <Text
               style={[
                 styles.status,
@@ -676,7 +768,9 @@ export default function DetectionScreen() {
                 },
               ]}
             >
-              {isConnected ? t('connected_ai_api') : t('ai_server_disconnected')}
+              {isConnected
+                ? t("connected_ai_api")
+                : t("ai_server_disconnected")}
             </Text>
 
             {/* Detections Overlay */}
@@ -759,7 +853,7 @@ export default function DetectionScreen() {
                         { color: isTouching ? "#FF6600" : "#FFD700" },
                       ]}
                     >
-                      {isTouching ? t('touch') : t('hand')}
+                      {isTouching ? t("touch") : t("hand")}
                     </Text>
                   </View>
                 );
@@ -813,9 +907,9 @@ export default function DetectionScreen() {
               style={styles.settingsButton}
               onPress={() => setConfigMode(true)}
             >
-              {t('config')}
+              {t("config")}
             </Text>
-          </CameraView>
+          </View>
         </View>
       </View>
     </View>
@@ -947,7 +1041,12 @@ const styles = StyleSheet.create({
     backgroundColor: "#1e1e1e",
   },
   cameraWrapperCompact: { height: "100%", aspectRatio: undefined },
-  camera: { flex: 1 },
+  camera: { ...StyleSheet.absoluteFillObject },
+  cameraLoading: {
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#1e1e1e",
+  },
 
   status: {
     position: "absolute",

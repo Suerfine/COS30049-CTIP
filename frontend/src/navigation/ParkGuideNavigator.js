@@ -16,7 +16,7 @@ import UserAnomaly from "../screens/UserAnomaly";
 import Badge from "../screens/Badge";
 import Notification from "../screens/Notification";
 import Payment from "../screens/Payment";
-import AIDetection from "../screens/AIDetection.native";
+import AIDetection from "../screens/AIDetection";
 import TotpSetup from "../screens/TotpSetup";
 
 // Import components
