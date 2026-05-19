@@ -25,7 +25,7 @@ PubSubClient client(espClient);
 #define PIN_MQ2 33
 #define PIN_TEMP 27
 #define PIN_ACOUSTIC 35
-#define PIN_MICROWAVE 25
+#define PIN_PIR 25
 #define PIN_BUZZER 32
 #define PIN_LED 2
 
@@ -40,7 +40,7 @@ DHT dht(PIN_TEMP, DHT11);
 
 // --- Individual Timers for each sensor ---
 unsigned long lastFireLog = 0;
-unsigned long lastMicrowaveLog = 0;
+unsigned long lastPirLog = 0;
 unsigned long lastAcousticLog = 0;
 unsigned long lastSmokingLog = 0;
 
@@ -52,7 +52,7 @@ unsigned long lastLogTime = 0;
 
 // Sensor States
 String lastFireStatus = "normal";
-String lastMicroStatus = "normal";
+String lastPirStatus = "normal";
 String lastSoundStatus = "normal";
 String lastSmokingStatus = "normal";
 
@@ -62,7 +62,7 @@ void setup() {
   Serial.println("\n--- System Initializing ---");
   
   dht.begin();
-  pinMode(PIN_MICROWAVE, INPUT_PULLDOWN);
+  pinMode(PIN_PIR, INPUT);
   pinMode(PIN_ACOUSTIC, INPUT_PULLUP);
   pinMode(PIN_BUZZER, OUTPUT);
   pinMode(PIN_LED, OUTPUT);
@@ -238,20 +238,20 @@ void processSensors() {
     lastSmokingStatus = currentSmokingStatus;
   }
 
-  // 3. MICROWAVE SENSOR
-  bool motion = digitalRead(PIN_MICROWAVE);
-  String currentMicroStatus = motion ? "alerting" : "normal";
-  unsigned long microInterval = (currentMicroStatus == "alerting") ? INT_ALERT : INT_NORMAL;
+  // 3. PIR MOTION SENSOR
+  bool motion = digitalRead(PIN_PIR) == HIGH;
+  String currentPirStatus = motion ? "alerting" : "normal";
+  unsigned long pirInterval = (currentPirStatus == "alerting") ? INT_ALERT : INT_NORMAL;
 
-  if (currentMicroStatus != lastMicroStatus || (now - lastMicrowaveLog >= microInterval)) {
+  if (currentPirStatus != lastPirStatus || (now - lastPirLog >= pirInterval)) {
     String motionData = "{";
     motionData += "\"motion\":" + String(motion ? "true" : "false");
     motionData += "}";
     
-    sendLog(2, currentMicroStatus, motionData);
+    sendLog(2, currentPirStatus, motionData);
     
-    lastMicrowaveLog = now;
-    lastMicroStatus = currentMicroStatus;
+    lastPirLog = now;
+    lastPirStatus = currentPirStatus;
   }
 
   // 4. ACOUSTIC SENSOR
@@ -270,7 +270,7 @@ void processSensors() {
     lastSoundStatus = currentSoundStatus;
   }
 
-  if (currentMicroStatus == "alerting") {
+  if (currentPirStatus == "alerting") {
     digitalWrite(PIN_BUZZER, HIGH); // Alarm ON
   } else {
     digitalWrite(PIN_BUZZER, LOW);  // Alarm OFF
@@ -288,12 +288,8 @@ void loop() {
   reconnectMQTT();
   client.loop();
 
-  if (DEVICE_CONNECTED) {
-    processSensors();
-    processQueue();
-  } else {
-    Serial.println("Device not connected. Sensor logging disabled.");
-  }
+  processSensors();
+  processQueue();
 
   delay(1000);
 }

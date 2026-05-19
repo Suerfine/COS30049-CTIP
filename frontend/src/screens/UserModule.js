@@ -106,6 +106,11 @@ const UserModule = ({ navigation }) => {
   const [activeTab, setActiveTab] = useState("Overview");
   const scrollViewRef = useRef(null);
 
+  const memoizedPageMetadata = React.useMemo(() => ({
+    ...selectedPage,
+    course,
+  }), [selectedPage, course]);
+
   useEffect(() => {
     setResolvedEnrollmentStatus(enrollmentStatus);
     setResolvedEnrollmentId(enrollmentId);
@@ -502,7 +507,6 @@ const UserModule = ({ navigation }) => {
                     }}
                     userMarks={userMarks}
                     isFinalQuiz={selectedPage.page.final_quiz}
-                    pageMetadata={selectedPage}
                     enrollmentId={enrollmentId}
                     fullHistoryMap={fullHistoryMap}
                     onFetchHistory={() => {
@@ -515,7 +519,7 @@ const UserModule = ({ navigation }) => {
                     scrollToTop={scrollToTop}
                     isFailed={isFailed}
                     onSelectPage={setSelectedPage}
-                    pageMetadata={{ ...selectedPage, course: course }}
+                    pageMetadata={memoizedPageMetadata}
                     progressMap={progressMap}
                   />
                 )}

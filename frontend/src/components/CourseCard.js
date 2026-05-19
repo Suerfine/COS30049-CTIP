@@ -167,7 +167,7 @@ const CourseCard = ({
         {enrollmentStatus === EnrollmentStatus.COMPLETED && (
           <View style={styles.completedBadgeFloating}>
             <Award size={12} color="#fff" />
-            <Text style={styles.completedBadgeText}>Badge Received</Text>
+            <Text style={styles.completedBadgeText}>{t('badge_received')}</Text>
           </View>
         )}
       </View>
@@ -219,7 +219,7 @@ const CourseCard = ({
         {isPublished && isAdmin && (
           <View style={styles.publishedBadge}>
             <CheckCircle2 size={12} color="#065f46" strokeWidth={3} />
-            <Text style={styles.publishedText}>PUBLISHED</Text>
+            <Text style={styles.publishedText}>{t('status.published')}</Text>
           </View>
         )}
 

@@ -192,7 +192,7 @@ export default function ParkGuideNavigator() {
           <Stack.Screen name="Dashboard" component={UserDashboard} />
           <Stack.Screen name="Courses" component={UserCourse} />
           <Stack.Screen name="UserModule" component={UserModule} />
-          <Stack.Screen name="UserAnomaly" component={UserAnomaly} />
+          {/* <Stack.Screen name="UserAnomaly" component={UserAnomaly} /> */}
           <Stack.Screen name="Badge" component={Badge} />
           <Stack.Screen name="Notification" component={Notification} />
           <Stack.Screen name="Payment" component={Payment} />

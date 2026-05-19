@@ -16,6 +16,7 @@ import {
 import { CameraView, useCameraPermissions } from "expo-camera";
 import Constants from "expo-constants";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useTranslation } from 'react-i18next';
 
 import apiClient from "../config/apiConfig";
 import { DetectionService } from "../services/DetectionService";
@@ -52,16 +53,16 @@ const SKELETON_EDGES = [
   [14, 16],
 ];
 
-const EVENT_LABELS = {
-  touch_plant: "Touch Plant",
-  touch_animal: "Touch Animal",
-  plucking_plant: "Plucking Plant",
-  animal_strike: "Animal Strike",
-  extended_touch_animal: "Extended Touch Animal",
-  extended_touch_plant: "Extended Touch Plant",
-};
-
 export default function DetectionScreen() {
+  const { t, i18n} = useTranslation();
+  const EVENT_LABELS = {
+    touch_plant: t('touch_plant'),
+    touch_animal: t('touch_animal'),
+    plucking_plant: t('plucking_plant'),
+    animal_strike: t('animal_strike'),
+    extended_touch_animal: t('extended_touch_animal'),
+    extended_touch_plant: t('extended_touch_plant'),
+  };
   const { width } = useWindowDimensions();
   const isCompact = width < 720;
   const [permission, requestPermission] = useCameraPermissions();
@@ -112,7 +113,7 @@ export default function DetectionScreen() {
   const toRenderY = (py) => py * COVER_SCALE - OFFSET_Y;
 
   const getEventLabel = (eventType) => {
-    if (!eventType) return "Unknown";
+    if (!eventType) return t('unknown_event');
     if (EVENT_LABELS[eventType]) return EVENT_LABELS[eventType];
     return eventType
       .split("_")
@@ -313,8 +314,8 @@ export default function DetectionScreen() {
                 err.response?.data?.error ||
                 err.message;
               Alert.alert(
-                "Database Error",
-                `Backend rejected the anomaly log:\n${errorMsg}`,
+                t('database_error_title'),
+                `${t('backend_rejected_anomaly_log')}\n${errorMsg}`,
               );
             });
         }
@@ -337,7 +338,7 @@ export default function DetectionScreen() {
       const message =
         error?.response?.data?.message ||
         error?.message ||
-        "Failed to resolve anomaly event.";
+        t('failed_resolve_anomaly_event');
       Alert.alert("Error", message);
     } finally {
       setResolvingEventId(null);
@@ -406,15 +407,15 @@ export default function DetectionScreen() {
     return (
       <View style={styles.configContainer}>
         <ScrollView style={styles.configFormScroll}>
-          <Text style={styles.configTitle}>AI Server Configuration</Text>
-          <Text style={styles.configLabel}>Server Host (IP Address)</Text>
+          <Text style={styles.configTitle}>{t('ai_server_configuration')}</Text>
+          <Text style={styles.configLabel}>{t('server_host')}</Text>
           <TextInput
             style={styles.input}
             placeholder={getAutoHost()}
             value={tempConfig.host}
             onChangeText={(t) => setTempConfig({ ...tempConfig, host: t })}
           />
-          <Text style={styles.configLabel}>Server Port</Text>
+          <Text style={styles.configLabel}>{t('server_port')}</Text>
           <TextInput
             style={styles.input}
             placeholder="8000"
@@ -424,7 +425,7 @@ export default function DetectionScreen() {
           />
           <View style={styles.buttonContainer}>
             <Button
-              title="Save"
+              title={t('save')}
               onPress={() => {
                 setServerConfig({
                   host: (tempConfig.host || "").trim() || getAutoHost(),
@@ -437,7 +438,7 @@ export default function DetectionScreen() {
           </View>
           <View style={styles.buttonContainer}>
             <Button
-              title="Cancel"
+              title={t('cancel')}
               onPress={() => {
                 setTempConfig(serverConfig);
                 setConfigMode(false);
@@ -468,12 +469,10 @@ export default function DetectionScreen() {
             </Text>
           </View>
 
-          <Text style={styles.permissionTitle}>Camera Access Required</Text>
+          <Text style={styles.permissionTitle}>{t('camera_access_required')}</Text>
 
           <Text style={styles.permissionDescription}>
-            To perform real-time AI compliance monitoring and keep our park
-            safe, the application requires permission to access your device's
-            camera stream.
+            {t('camera_permission_description')}
           </Text>
 
           <TouchableOpacity
@@ -481,12 +480,11 @@ export default function DetectionScreen() {
             onPress={requestPermission}
             activeOpacity={0.8}
           >
-            <Text style={styles.actionBtnText}>Grant Camera Permission</Text>
+            <Text style={styles.actionBtnText}>{t('grant_camera_permission')}</Text>
           </TouchableOpacity>
 
           <Text style={styles.permissionNotice}>
-            Your privacy is guarded. The video stream is processed completely
-            locally for on-site edge model inference.
+            {t('privacy_notice_camera')}
           </Text>
         </View>
       </View>
@@ -495,7 +493,7 @@ export default function DetectionScreen() {
   if (userLoading)
     return (
       <View style={styles.loadingView}>
-        <Text style={{ color: "#888" }}>Loading user...</Text>
+        <Text style={{ color: "#888" }}>{t('loading_user_short')}</Text>
       </View>
     );
 
@@ -518,27 +516,27 @@ export default function DetectionScreen() {
                   {selectedEvent ? getEventLabel(selectedEvent.event_type) : ""}
                 </Text>
                 <TouchableOpacity onPress={() => setSelectedEvent(null)}>
-                  <Text style={styles.detailClose}>Close</Text>
+                  <Text style={styles.detailClose}>{t('cancel')}</Text>
                 </TouchableOpacity>
               </View>
               {selectedEvent && (
                 <>
                   <View style={styles.detailMetaGrid}>
                     <Text style={styles.detailMetaText}>
-                      <Text style={styles.detailMetaLabel}>Detected: </Text>
+                      <Text style={styles.detailMetaLabel}>{t('detected')}: </Text>
                       {new Date(selectedEvent.created_at).toLocaleString()}
                     </Text>
                     <Text style={styles.detailMetaText}>
-                      <Text style={styles.detailMetaLabel}>Confidence: </Text>
+                      <Text style={styles.detailMetaLabel}>{t('confidence')}: </Text>
                       {getEventConfidence(selectedEvent)}
                     </Text>
                     <Text style={styles.detailMetaText}>
-                      <Text style={styles.detailMetaLabel}>Latitude: </Text>
-                      {selectedEvent.latitude ?? "N/A"}
+                      <Text style={styles.detailMetaLabel}>{t('latitude')}: </Text>
+                      {selectedEvent.latitude ?? t('not_available')}
                     </Text>
                     <Text style={styles.detailMetaText}>
-                      <Text style={styles.detailMetaLabel}>Longitude: </Text>
-                      {selectedEvent.longitude ?? "N/A"}
+                      <Text style={styles.detailMetaLabel}>{t('longitude')}: </Text>
+                      {selectedEvent.longitude ?? t('not_available')}
                     </Text>
                   </View>
                   {selectedEvent.annotated_frame_base64 ? (
@@ -552,7 +550,7 @@ export default function DetectionScreen() {
                   ) : (
                     <View style={styles.emptyEvidence}>
                       <Text style={styles.emptyEvidenceText}>
-                        No annotated frame recorded for this event.
+                        {t('no_annotated_frame')}
                       </Text>
                     </View>
                   )}
@@ -572,9 +570,7 @@ export default function DetectionScreen() {
                       disabled={resolvingEventId === selectedEvent.id}
                     >
                       <Text style={styles.resolveButtonText}>
-                        {resolvingEventId === selectedEvent.id
-                          ? "Resolving..."
-                          : "Mark as Resolved"}
+                        {resolvingEventId === selectedEvent.id ? t('resolving') : t('mark_resolved')}
                       </Text>
                     </TouchableOpacity>
                   )}
@@ -591,16 +587,16 @@ export default function DetectionScreen() {
       >
         <View style={styles.titleBar}>
           <View style={styles.titleCopy}>
-            <Text style={styles.title}>AI Detection</Text>
+            <Text style={styles.title}>{t('ai_detection_dashboard')}</Text>
             <Text style={styles.pageSubtitle}>
-              Monitor and review active anomaly alerts
+              {t('monitor_anomaly_alerts')}
             </Text>
           </View>
           <TouchableOpacity
             style={styles.refreshButtonContainer}
             onPress={fetchAnomalyEvents}
           >
-            <Text style={styles.refreshButton}>Refresh</Text>
+            <Text style={styles.refreshButton}>{t('refresh')}</Text>
           </TouchableOpacity>
         </View>
 
@@ -611,7 +607,7 @@ export default function DetectionScreen() {
         ) : (
           <View style={styles.eventsPanel}>
             <View style={styles.panelHeader}>
-              <Text style={styles.panelTitle}>Active Anomalies</Text>
+              <Text style={styles.panelTitle}>{t('active_anomalies')}</Text>
               <View style={styles.badgeCount}>
                 <Text style={styles.badgeCountText}>
                   {anomalyEvents.length}
@@ -619,7 +615,7 @@ export default function DetectionScreen() {
               </View>
             </View>
             {anomalyEvents.length === 0 ? (
-              <Text style={styles.emptyText}>No active anomalies</Text>
+              <Text style={styles.emptyText}>{t('no_active_anomalies')}</Text>
             ) : (
               <ScrollView style={styles.eventsList}>
                 {anomalyEvents.map((event) => (
@@ -641,7 +637,7 @@ export default function DetectionScreen() {
                           {new Date(event.created_at).toLocaleString()}
                         </Text>
                         <View style={styles.activePill}>
-                          <Text style={styles.activePillText}>Active</Text>
+                          <Text style={styles.activePillText}>{t('active')}</Text>
                         </View>
                       </View>
                     </View>
@@ -680,7 +676,7 @@ export default function DetectionScreen() {
                 },
               ]}
             >
-              {isConnected ? "Connected (AI API)" : "AI Server Disconnected"}
+              {isConnected ? t('connected_ai_api') : t('ai_server_disconnected')}
             </Text>
 
             {/* Detections Overlay */}
@@ -763,7 +759,7 @@ export default function DetectionScreen() {
                         { color: isTouching ? "#FF6600" : "#FFD700" },
                       ]}
                     >
-                      {isTouching ? "TOUCH" : "HAND"}
+                      {isTouching ? t('touch') : t('hand')}
                     </Text>
                   </View>
                 );
@@ -817,7 +813,7 @@ export default function DetectionScreen() {
               style={styles.settingsButton}
               onPress={() => setConfigMode(true)}
             >
-              Config
+              {t('config')}
             </Text>
           </CameraView>
         </View>

@@ -41,6 +41,7 @@ import {
   useWindowDimensions,
   Alert,
 } from "react-native";
+import { useTranslation } from "react-i18next";
 
 // Import other components and hooks
 import { useAccountManagement } from "../hooks/useAccountManagement";
@@ -80,6 +81,7 @@ const AccountManagement = () => {
   const [editForm, setEditForm] = useState(null);
   const { width } = useWindowDimensions();
   const isCompact = width < 420;
+  const { t } = useTranslation();
 
   const handleStartEdit = () => {
     setEditForm({ ...selectedAcc });
@@ -163,13 +165,13 @@ const AccountManagement = () => {
   const renderHeader = () => (
     <View style={[styles.tableHeader, styles.row]}>
       <Text style={[styles.headerRow, { flex: 1, textAlign: "center" }]}>
-        <Text style={styles.headerText}>ID.</Text>
+        <Text style={styles.headerText}>{t("id")}</Text>
       </Text>
       <Pressable
         onPress={() => requestSort("firstname")}
         style={[styles.headerRow, { flex: 3 }]}
       >
-        <Text style={styles.headerText}>Full Name</Text>
+        <Text style={styles.headerText}>{t("full_name")}</Text>
         {sortConfig.key === "firstname" && sortConfig.direction === "asc" ? (
           <ArrowUpNarrowWide size={14} color="white" />
         ) : (
@@ -180,7 +182,7 @@ const AccountManagement = () => {
         onPress={() => requestSort("username")}
         style={[styles.headerRow, { flex: 2 }]}
       >
-        <Text style={styles.headerText}>Username</Text>
+        <Text style={styles.headerText}>{t("username")}</Text>
         {sortConfig.key === "username" && sortConfig.direction === "asc" ? (
           <ArrowUpNarrowWide size={14} color="white" />
         ) : (
@@ -188,16 +190,16 @@ const AccountManagement = () => {
         )}
       </Pressable>
       <Text style={[styles.headerRow, { flex: 3 }]}>
-        <Text style={styles.headerText}>Work Email</Text>
+        <Text style={styles.headerText}>{t("work_email")}</Text>
       </Text>
       <Text style={[styles.headerRow, { flex: 1 }]}>
-        <Text style={styles.headerText}>Role</Text>
+        <Text style={styles.headerText}>{t("role")}</Text>
       </Text>
       <Pressable
         onPress={() => requestSort("created_at")}
         style={[styles.headerRow, { flex: 2 }]}
       >
-        <Text style={styles.headerText}>Joined On</Text>
+        <Text style={styles.headerText}>{t("joined_on")}</Text>
         {sortConfig.key === "created_at" && sortConfig.direction === "asc" ? (
           <ArrowUpNarrowWide size={14} color="white" />
         ) : (
@@ -208,7 +210,7 @@ const AccountManagement = () => {
         onPress={() => requestSort("last_login_at")}
         style={[styles.headerRow, { flex: 2 }]}
       >
-        <Text style={styles.headerText}>Last Login</Text>
+        <Text style={styles.headerText}>{t("last_login")}</Text>
         {sortConfig.key === "last_login_at" &&
         sortConfig.direction === "asc" ? (
           <ArrowUpNarrowWide size={14} color="white" />
@@ -251,7 +253,9 @@ const AccountManagement = () => {
       <Text style={{ flex: 3 }}>{item.username + "@sfc.gov.my"}</Text>
       {/* Role */}
       <Text style={{ flex: 1 }}>
-        {item.role === "admin" ? "Admin" : "Park Guide"}
+        {item.role === "admin"
+          ? t("role.admin")
+          : t("role.park_guide")}
       </Text>
       <Text style={{ flex: 2 }}>{formatDate(item.created_at)}</Text>
       <Text style={{ flex: 2 }}>{formatDate(item.last_login_at)}</Text>
@@ -266,8 +270,8 @@ const AccountManagement = () => {
     return (
       <View style={[styles.paginationContainer, styles.row]}>
         <Text style={styles.pageInfo}>
-          Showing {accounts?.length > 0 ? indexOfFirstItem + 1 : 0} to{" "}
-          {indexOfLastItem} of {totalUsers} users
+          {t("showing")} {accounts?.length > 0 ? indexOfFirstItem + 1 : 0}  {t("to")} {" "}
+          {indexOfLastItem} {t("of")} {totalUsers} {t("users")}
         </Text>
         <View style={styles.row}>
           <Pressable
@@ -341,7 +345,7 @@ const AccountManagement = () => {
       style={styles.pageScroll}
       contentContainerStyle={styles.container}
     >
-      <Text style={styles.title}>Account Management</Text>
+      <Text style={styles.title}>{t("account_management")}</Text>
       <View style={[styles.toolbar, isCompact && styles.toolbarCompact]}>
         <View
           style={[styles.toolbarRow, isCompact && styles.toolbarGroupCompact]}
@@ -359,7 +363,7 @@ const AccountManagement = () => {
             <Search size={18} />
             <TextInput
               style={styles.input}
-              placeholder="Search..."
+              placeholder={t("search")}
               placeholderTextColor="#8f8f8f"
               value={searchQuery}
               onChangeText={handleSearch}
@@ -371,7 +375,9 @@ const AccountManagement = () => {
               onPress={() => setIsOpen(!isOpen)}
             >
               <Text style={styles.pillText}>
-                {currentRole !== "All" ? currentRole : "Role"}
+                {currentRole !== "all"
+                  ? t(`role.${currentRole}`)
+                  : t("role")}
               </Text>
               {isOpen ? (
                 <ChevronUp size={16} color="#4b5563" />
@@ -382,26 +388,33 @@ const AccountManagement = () => {
 
             {isOpen && (
               <View style={styles.dropdownMenu}>
-                {["All", "Admin", "Park Guide"].map((role) => (
+                {[
+                  { key: "all", label: t("role") },
+                  { key: "admin", label: t("role.admin") },
+                  { key: "park_guide", label: t("role.park_guide") },
+                ].map((role) => (
                   <Pressable
-                    key={role}
+                    key={role.key}
                     style={({ hovered }) => [
                       styles.menuItem,
-                      currentRole === role && styles.menuItemActive,
-                      hovered && currentRole != role && styles.menuItemHover,
+                      currentRole === role.key && styles.menuItemActive,
+                      hovered &&
+                        currentRole !== role.key &&
+                        styles.menuItemHover,
                     ]}
                     onPress={() => {
-                      setCurrentRole(role);
+                      setCurrentRole(role.key);
                       setIsOpen(false);
                     }}
                   >
                     <Text
                       style={[
                         styles.menuItemText,
-                        currentRole === role && styles.menuItemTextActive,
+                        currentRole === role.key &&
+                          styles.menuItemTextActive,
                       ]}
                     >
-                      {role}
+                      {role.label}
                     </Text>
                   </Pressable>
                 ))}
@@ -417,7 +430,7 @@ const AccountManagement = () => {
             ]}
           >
             <Plus size={16} style={styles.btnText} />
-            <Text style={styles.btnText}>Add User</Text>
+            <Text style={styles.btnText}>{t("add_user")}</Text>
           </Pressable>
         </View>
       </View>
@@ -455,7 +468,7 @@ const AccountManagement = () => {
               ListEmptyComponent={
                 <View style={styles.tableRow}>
                   <Text style={{ flex: 1, paddingVertical: 2 }}>
-                    No Users Found.
+                    {t("no_users_found")}
                   </Text>
                 </View>
               }
@@ -552,7 +565,7 @@ const AccountManagement = () => {
               {isEditing ? (
                 <View style={styles.nameEditRow}>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.panelLabel}>First Name</Text>
+                    <Text style={styles.panelLabel}>{t('first name')}</Text>
                     <TextInput
                       style={[styles.userDetails, styles.inputEditing]}
                       value={editForm?.firstname || ""}
@@ -896,7 +909,7 @@ const styles = StyleSheet.create({
   sidePanel: {
     width: 350,
     backgroundColor: "white",
-    height: "100%",
+    height: "100vh",
     position: "absolute",
     right: 0,
     top: 0,

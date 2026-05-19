@@ -61,7 +61,7 @@ const Security = ({ navigation }) => {
   const handleDisable2FA = async () => {
     if (disableCode.length !== 6) {
       setDisableError(
-        "* Please enter the 6-digit code from your authenticator app.",
+        t("enter_6_digit_code"),
       );
       return;
     }
@@ -71,7 +71,7 @@ const Security = ({ navigation }) => {
       await totpService.disable(disableCode);
       setDisableModalVisible(false);
       setDisableCode("");
-      window.alert("Two-factor authentication has been disabled.");
+      window.alert(t("two_factor_disabled"));
     } catch (err) {
       setDisableError(err.message);
     } finally {
@@ -91,10 +91,10 @@ const Security = ({ navigation }) => {
     let tempErrors = {};
 
     if (!username.trim()) {
-      tempErrors.username = "* Username is required.";
+      tempErrors.username = t("username_required");
     } else if (!/^[A-Za-z]+#[0-9]{4}$/.test(username)) {
       tempErrors.username =
-        "* Username must follow format: name#1234 (letters + # + 4 digits).";
+        t("username_format_validation");
     }
 
     setErrors(tempErrors);
@@ -125,7 +125,7 @@ const Security = ({ navigation }) => {
                   setUsername(text);
                   clearError("username");
                 }}
-                placeholder="Username"
+                placeholder={t("username")}
                 placeholderTextColor="grey"
                 editable={editingUsername}
                 autoCapitalize="none"
@@ -172,7 +172,7 @@ const Security = ({ navigation }) => {
 
           {/* Password */}
           <View style={styles.securityField}>
-            <Text style={styles.fieldLabel}>Password</Text>
+            <Text style={styles.fieldLabel}>{t("password")}</Text>
             <View style={styles.securityRow}>
               <TextInput
                 style={[
@@ -219,7 +219,9 @@ const Security = ({ navigation }) => {
 
         {/* Two-Factor Authentication */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Two-Factor Authentication</Text>
+          <Text style={styles.sectionTitle}>
+            {t("two_factor_authentication")}
+          </Text>
 
           <View style={styles.twoFARow}>
             <View style={styles.twoFAInfo}>
@@ -230,12 +232,12 @@ const Security = ({ navigation }) => {
               )}
               <View style={styles.twoFAText}>
                 <Text style={styles.twoFAStatus}>
-                  {totpEnabled ? "Enabled" : "Disabled"}
+                  {totpEnabled ? t("enabled") : t("disabled")}
                 </Text>
                 <Text style={styles.twoFAHint}>
                   {totpEnabled
-                    ? "Your account is protected with an authenticator app."
-                    : "Add an extra layer of security to your account."}
+                    ? t("account_protected_authenticator")
+                    : t("extra_security_layer")}
                 </Text>
               </View>
             </View>
@@ -248,7 +250,7 @@ const Security = ({ navigation }) => {
                 ]}
                 onPress={() => setDisableModalVisible(true)}
               >
-                <Text style={styles.dangerBtnText}>Disable</Text>
+                <Text style={styles.dangerBtnText}>{t("disable")}</Text>
               </Pressable>
             ) : (
               <Pressable
@@ -258,7 +260,7 @@ const Security = ({ navigation }) => {
                 ]}
                 onPress={() => navigation.navigate("TotpSetup")}
               >
-                <Text style={styles.changeBtnText}>Enable</Text>
+                <Text style={styles.changeBtnText}>{t("enable")}</Text>
               </Pressable>
             )}
           </View>
@@ -275,10 +277,10 @@ const Security = ({ navigation }) => {
         >
           <View style={styles.disableModal}>
             <Text style={styles.disableModalTitle}>
-              Disable Two-Factor Authentication
+              {t("disable_two_factor_authentication")}
             </Text>
             <Text style={styles.disableModalHint}>
-              Enter the 6-digit code from your authenticator app to confirm.
+              {t("enter_2fa_code")}
             </Text>
             <TextInput
               style={styles.codeInput}
@@ -317,7 +319,7 @@ const Security = ({ navigation }) => {
                 disabled={disableLoading}
               >
                 <Text style={styles.dangerBtnText}>
-                  {disableLoading ? "Disabling..." : "Disable 2FA"}
+                  {disableLoading ? t("disabling") : t("disable_2fa")}
                 </Text>
               </Pressable>
             </View>

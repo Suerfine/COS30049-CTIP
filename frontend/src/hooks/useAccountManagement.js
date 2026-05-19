@@ -15,17 +15,18 @@ export const useAccountManagement = () => {
     direction: "asc",
   });
   const [loading, setLoading] = useState(false);
-  const [currentRole, setCurrentRole] = useState("All");
+  const [currentRole, setCurrentRole] = useState("all");
 
   // Fetch all accounts
   const fetchAccounts = async () => {
     try {
+      const roleParam = currentRole === "all" ? "" : currentRole;
       const response = await AccountService.getAll(
         currentPage,
         10,
         searchQuery,
         sortConfig,
-        currentRole,
+        roleParam,
       );
       const rawUsers = Array.isArray(response)
         ? response
