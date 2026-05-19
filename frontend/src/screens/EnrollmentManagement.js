@@ -124,7 +124,7 @@ const EnrollmentManagement = () => {
   const isCompact = width < 480;
 
   const enrollmentStatusOptions = [
-    "all",
+    "All",
     "in_progress",
     "in_review",
     "completed",
@@ -136,7 +136,7 @@ const EnrollmentManagement = () => {
   ];
 
   const ProgressStatusOptions = [
-    "all",
+    "All",
     "in_progress",
     "completed",
     "failed",
@@ -146,7 +146,7 @@ const EnrollmentManagement = () => {
   ];
 
   const paymentStatusOptions = [ 
-    "all", 
+    "All", 
     "pending", 
     "paid", 
     "failed", 
