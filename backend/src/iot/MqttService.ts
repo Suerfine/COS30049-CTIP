@@ -2,6 +2,9 @@ import * as mqtt from 'mqtt';
 import { SensorLog, Sensor } from '../models';
 import { SensorStatus } from '../enum/SensorStatus';
 import { mqttConfig } from './MqttConfig';
+import sequelize from '../config/Database';
+import { sendNotification } from '../utils/sendNotification';
+import { NotificationCategory } from '../enum/NotificationCategory';
 
 interface SensorData {
   sensor_id: number;
@@ -100,18 +103,58 @@ class MqttService {
         createdAt = new Date();
       }
 
-      // Create sensor log entry
-      const logEntry = await SensorLog.create({
-        sensor_id: sensorId,
-        status: status as SensorStatus,
-        data: data,
-        created_at: createdAt,
-      });
+      const transaction = await sequelize.transaction();
+      try {
+        // Create sensor log entry
+        const logEntry = await SensorLog.create(
+          {
+            sensor_id: sensorId,
+            status: status as SensorStatus,
+            data: data,
+            created_at: createdAt,
+          },
+          { transaction },
+        );
 
-      // Update sensor's current status
-      await sensor.update({ current_status: status });
+        // Update sensor's current status
+        await sensor.update(
+          { current_status: status },
+          { transaction },
+        );
 
-      console.log(`Sensor log created for sensor ${sensorId}:`, logEntry.id);
+        if (status === SensorStatus.ALERTING) {
+          const title = `Sensor Alert: ${sensor.name}`;
+          const message = `Sensor "${sensor.name}" (${sensor.type}) is in alerting state.`;
+          const url = `/sensors/${sensor.id}`;
+
+          await sendNotification(
+            'admin',
+            title,
+            message,
+            transaction,
+            undefined,
+            false,
+            NotificationCategory.ANOMALY_ALERT,
+            url,
+          );
+          await sendNotification(
+            'park_guides',
+            title,
+            message,
+            transaction,
+            undefined,
+            false,
+            NotificationCategory.ANOMALY_ALERT,
+            url,
+          );
+        }
+
+        await transaction.commit();
+        console.log(`Sensor log created for sensor ${sensorId}:`, logEntry.id);
+      } catch (error) {
+        await transaction.rollback();
+        throw error;
+      }
 
     } catch (error) {
       console.error('Error processing sensor data:', error);
