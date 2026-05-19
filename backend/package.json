@@ -5,6 +5,7 @@
   "scripts": {
     "start": "node dist/server.js",
     "build": "tsc -p .",
+    "predev": "powershell -Command \"@(5000,5001) | ForEach-Object { $p = Get-NetTCPConnection -LocalPort $_ -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess; if ($p) { Stop-Process -Id $p -Force; Write-Host \"Killed process on port $_\" } }\"",
     "dev": "nodemon",
     "seed:dev": "ts-node database/seeders/DevelopmentSeeder.ts",
     "test": "node --require ts-node/register/transpile-only --test ./test/registration.controller.test.js",

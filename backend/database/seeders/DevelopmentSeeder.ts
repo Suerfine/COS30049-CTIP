@@ -32,8 +32,10 @@ export async function runSeeders(
   user_park_guide_count: number = 10,
   course_count: number = 5,
 ): Promise<void> {
-  // Clear existing data
+  // Clear existing data — disable FK checks so table drop order doesn't matter
+  await sequelize.query("PRAGMA foreign_keys = OFF");
   await sequelize.drop();
+  await sequelize.query("PRAGMA foreign_keys = ON");
   await sequelize.sync();
 
   // Default Admin user
