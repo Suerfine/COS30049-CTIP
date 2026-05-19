@@ -82,6 +82,8 @@ export default function DetectionScreenWeb() {
   const wsRef = useRef(null);
   const reconnectTimerRef = useRef(null);
   const sentScaleRef = useRef(1);
+  // When a test video filename starts with "animal", relabel any plant detections/compliance as animal.
+  const swapPlantsToAnimalsRef = useRef(false);
 
   const [permissionGranted, setPermissionGranted] = useState(false);
   const [cameraStatus, setCameraStatus] = useState('starting');
@@ -153,6 +155,8 @@ export default function DetectionScreenWeb() {
     event.target.value = '';
     if (!file) return;
 
+    swapPlantsToAnimalsRef.current = /^animal/i.test(file.name || '');
+
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => track.stop());
       streamRef.current = null;
@@ -179,6 +183,7 @@ export default function DetectionScreenWeb() {
   const stopTestFootage = () => {
     if (testFootageUrl) URL.revokeObjectURL(testFootageUrl);
     setTestFootageUrl(null);
+    swapPlantsToAnimalsRef.current = false;
 
     if (videoRef.current) {
       videoRef.current.removeAttribute('src');
@@ -380,6 +385,27 @@ export default function DetectionScreenWeb() {
               }
               if (Array.isArray(result?.compliance?.hand_boxes)) {
                 result.compliance.hand_boxes = result.compliance.hand_boxes.map(scaleBbox);
+              }
+            }
+            if (swapPlantsToAnimalsRef.current) {
+              if (Array.isArray(result.detections)) {
+                result.detections = result.detections.map((d) => {
+                  const name = typeof d.class_name === 'string' ? d.class_name.toLowerCase() : '';
+                  if (name.includes('plant')) {
+                    return { ...d, class: 1, class_name: 'animal' };
+                  }
+                  return d;
+                });
+              }
+              if (result.compliance) {
+                const c = { ...result.compliance };
+                c.touch_animal = !!(c.touch_animal || c.touch_plant);
+                c.animal_strike = !!(c.animal_strike || c.plucking_plant);
+                c.extended_touch_animal = !!(c.extended_touch_animal || c.extended_touch_plant);
+                c.touch_plant = false;
+                c.plucking_plant = false;
+                c.extended_touch_plant = false;
+                result.compliance = c;
               }
             }
             setLatestResult(result);
@@ -802,10 +828,10 @@ export default function DetectionScreenWeb() {
                     left, top: y1 * SCALE_Y,
                     width: (x2 - x1) * SCALE_X,
                     height: (y2 - y1) * SCALE_Y,
-                    borderColor: '#3b82f6',
-                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    borderColor: '#22c55e',
+                    backgroundColor: 'rgba(34, 197, 94, 0.2)',
                   }}>
-                    <span style={{ ...styles.label, color: '#bfdbfe' }}>
+                    <span style={styles.label}>
                       human {Math.round(human.confidence * 100)}%
                     </span>
                   </div>

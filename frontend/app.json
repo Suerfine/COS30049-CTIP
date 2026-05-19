@@ -24,10 +24,11 @@
     },
     "web": {
       "favicon": "./assets/favicon.png",
-      "name":"SFC"
+      "name": "SFC"
     },
     "plugins": [
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      "expo-video"
     ]
   }
 }

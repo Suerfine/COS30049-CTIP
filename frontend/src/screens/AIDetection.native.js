@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from "react";
+import React, { useRef, useEffect, useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -11,17 +11,43 @@ import {
   TouchableOpacity,
   Modal,
   Image,
-  Platform,
   useWindowDimensions,
 } from "react-native";
-import {
-  Camera as VisionCamera,
-  useCameraDevice,
-  useCameraPermission,
-} from "react-native-vision-camera";
+import { CameraView, useCameraPermissions } from "expo-camera";
 import * as FileSystem from "expo-file-system";
+import * as ImagePicker from "expo-image-picker";
 import Constants from "expo-constants";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+// expo-video is used for test footage playback (expo-av v14+ removed the Video component)
+let TestVideoPlayer = null;
+try {
+  const { VideoView, useVideoPlayer } = require("expo-video");
+  TestVideoPlayer = ({ uri, style, onPlayerReady, onTimeUpdate }) => {
+    const player = useVideoPlayer(uri, (p) => {
+      p.loop = true;
+      p.timeUpdateEventInterval = 0.2;
+      p.play();
+    });
+    useEffect(() => {
+      onPlayerReady?.(player);
+      let sub;
+      try {
+        sub = player.addListener("timeUpdate", (event) => {
+          const t = typeof event === "number" ? event : event?.currentTime;
+          if (typeof t === "number") onTimeUpdate?.(t);
+        });
+      } catch (_) {}
+      return () => {
+        onPlayerReady?.(null);
+        try { sub?.remove(); } catch (_) {}
+      };
+    }, [player]);
+    return <VideoView player={player} style={style} contentFit="contain" />;
+  };
+} catch (_) {}
+
+let VideoThumbnails = null;
+try { VideoThumbnails = require("expo-video-thumbnails"); } catch (_) {}
 
 import apiClient from "../config/apiConfig";
 import { userDashboardService } from "../services/userDashboardService";
@@ -37,6 +63,20 @@ const getAutoHost = () => {
   if (hostUri) return hostUri.split(":")[0];
   return "localhost";
 };
+
+const boxOverlapRatio = (boxA, boxB) => {
+  const [ax1, ay1, ax2, ay2] = boxA;
+  const [bx1, by1, bx2, by2] = boxB;
+  const ix1 = Math.max(ax1, bx1), iy1 = Math.max(ay1, by1);
+  const ix2 = Math.min(ax2, bx2), iy2 = Math.min(ay2, by2);
+  if (ix2 <= ix1 || iy2 <= iy1) return 0;
+  const intersection = (ix2 - ix1) * (iy2 - iy1);
+  const areaA = (ax2 - ax1) * (ay2 - ay1);
+  return areaA > 0 ? intersection / areaA : 0;
+};
+
+const NON_ANOMALY_EVENT_TYPES = new Set(["touch_plant", "touch_animal"]);
+const isNonAnomalyEvent = (eventType) => NON_ANOMALY_EVENT_TYPES.has(eventType);
 
 const SKELETON_EDGES = [
   [0, 1],
@@ -69,8 +109,7 @@ const EVENT_LABELS = {
 export default function DetectionScreen() {
   const { width } = useWindowDimensions();
   const isCompact = width < 720;
-  const { hasPermission, requestPermission } = useCameraPermission();
-  const device = useCameraDevice("back");
+  const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef(null);
   const isCapturing = useRef(false);
   const lastLogTime = useRef(0);
@@ -78,14 +117,20 @@ export default function DetectionScreen() {
   const lastPhotoDimensions = useRef({ width: 640, height: 480 });
   const wsRef = useRef(null);
   const reconnectTimerRef = useRef(null);
+  const videoPlayerRef = useRef(null);
+  const videoCurrentTimeRef = useRef(0);
+  const captureStartedAtRef = useRef(0);
+  const lastSendAtRef = useRef(0);
 
   const [serverConfig, setServerConfig] = useState({
     host: getAutoHost(),
     port: "8000",
+    inferenceResolution: 640,
   });
   const [tempConfig, setTempConfig] = useState({
     host: getAutoHost(),
     port: "8000",
+    inferenceResolution: 640,
   });
   const [configMode, setConfigMode] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
@@ -100,6 +145,11 @@ export default function DetectionScreen() {
   const [resolvingEventId, setResolvingEventId] = useState(null);
 
   const [cameraLayout, setCameraLayout] = useState(null);
+  const [cameraEnabled, setCameraEnabled] = useState(true);
+  const [testVideoUri, setTestVideoUri] = useState(null);
+  const isTestMode = !!testVideoUri;
+  const [testModeStatus, setTestModeStatus] = useState(null);
+  const testStartedAtRef = useRef(0);
 
   // Cover-mode coordinate mapping: CameraView scales the photo uniformly to fill the
   // container (like CSS object-fit: cover), so one dimension fills exactly and the
@@ -118,6 +168,31 @@ export default function DetectionScreen() {
   }
   const toRenderX = (px) => px * COVER_SCALE - OFFSET_X;
   const toRenderY = (py) => py * COVER_SCALE - OFFSET_Y;
+
+  const filteredCompliance = useMemo(() => {
+    const compliance = latestResult?.compliance;
+    if (!compliance) return compliance;
+    const humanBoxes = latestResult?.human_boxes || [];
+    const detections = latestResult?.detections || [];
+    const hasVisibleAnimal = detections.some(
+      (det) => det.class === 1 && !humanBoxes.some((human) => boxOverlapRatio(det.bbox, human.bbox) >= 0.8)
+    );
+    if (hasVisibleAnimal) return compliance;
+    return { ...compliance, touch_animal: false, animal_strike: false, extended_touch_animal: false };
+  }, [latestResult]);
+
+  const isResolvedEvent = (event) => {
+    if (!event) return false;
+    const raw = event.is_resolved ?? event.isResolved;
+    return raw === true || raw === 1 || raw === "1" || raw === "true";
+  };
+
+  const extractEvents = (data) => {
+    if (Array.isArray(data)) return data;
+    if (data?.data && Array.isArray(data.data)) return data.data;
+    if (data?.events && Array.isArray(data.events)) return data.events;
+    return [];
+  };
 
   const getEventLabel = (eventType) => {
     if (!eventType) return "Unknown";
@@ -146,6 +221,7 @@ export default function DetectionScreen() {
         const loaded = {
           host: parsed?.host || getAutoHost(),
           port: parsed?.port || "8000",
+          inferenceResolution: Number(parsed?.inferenceResolution) || 640,
         };
         setServerConfig(loaded);
         setTempConfig(loaded);
@@ -180,21 +256,17 @@ export default function DetectionScreen() {
     fetchCurrentUser();
   }, []);
 
-  // 2. Fetch Anomaly Events (active only)
+  // 2. Fetch Anomaly Events (active only, non-anomaly types excluded)
   const fetchAnomalyEvents = async () => {
     if (!currentUser) return;
     setEventsLoading(true);
     try {
-      const response = await apiClient.get(
-        `/anomaly-events/${currentUser.id}?includeResolved=false`,
+      const response = await apiClient.get(`/anomaly-events/${currentUser.id}`, {
+        params: { includeResolved: false, page: 1, size: 100, orderBy: "created_at desc" },
+      });
+      const events = extractEvents(response.data).filter(
+        (event) => !isResolvedEvent(event) && !isNonAnomalyEvent(event?.event_type)
       );
-      const data = response.data;
-
-      let events = [];
-      if (Array.isArray(data)) events = data;
-      else if (data.data && Array.isArray(data.data)) events = data.data;
-      else if (data.events && Array.isArray(data.events)) events = data.events;
-
       setAnomalyEvents(events);
     } catch (error) {
       setAnomalyEvents([]);
@@ -262,85 +334,129 @@ export default function DetectionScreen() {
     };
   }, [serverConfig.host, serverConfig.port]);
 
-  // 4. Camera Capture Interval — sends frames over the open WebSocket.
-  // Android: takeSnapshot() grabs the preview surface (silent, no flash).
-  // iOS: takeSnapshot is unavailable, fall back to takePhoto with shutter sound disabled.
+  // 4. Camera / Test-Video Capture Interval — sends frames over the open WebSocket.
   useEffect(() => {
     const captureInterval = setInterval(async () => {
-      if (!cameraRef.current || isCapturing.current) return;
-      if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
+      const now = Date.now();
+      const wsOpen = wsRef.current?.readyState === WebSocket.OPEN;
+
+      // Watchdog: reset isCapturing if a previous send never got a reply within 3s
+      if (isCapturing.current && now - captureStartedAtRef.current > 3000) {
+        isCapturing.current = false;
+      }
+
+      // Keepalive: if WS would otherwise sit idle, send a tiny ping so NAT/router
+      // doesn't drop the TCP connection. Server replies with a decode error which
+      // resets isCapturing via onmessage.
+      if (wsOpen && !isCapturing.current && now - lastSendAtRef.current > 8000) {
+        try {
+          isCapturing.current = true;
+          captureStartedAtRef.current = now;
+          wsRef.current.send(JSON.stringify({ keepalive: true }));
+          lastSendAtRef.current = now;
+        } catch {
+          isCapturing.current = false;
+        }
+        return;
+      }
+
+      if (!cameraEnabled && !isTestMode) return;
+      if (isCapturing.current) return;
+      if (!wsOpen) {
+        if (isTestMode) setTestModeStatus("Waiting for AI server connection…");
+        return;
+      }
 
       isCapturing.current = true;
-      let snapshotPath = null;
-      try {
-        const photo =
-          Platform.OS === "android"
-            ? await cameraRef.current.takeSnapshot({ quality: 30 })
-            : await cameraRef.current.takePhoto({
-                qualityPrioritization: "speed",
-                enableShutterSound: false,
-                flash: "off",
-              });
+      captureStartedAtRef.current = now;
 
-        snapshotPath = photo.path;
-        lastPhotoDimensions.current = {
-          width: photo.width,
-          height: photo.height,
-        };
-
-        const fileUri = snapshotPath.startsWith("file://")
-          ? snapshotPath
-          : `file://${snapshotPath}`;
-
-        const base64 = await FileSystem.readAsStringAsync(fileUri, {
-          encoding: FileSystem.EncodingType.Base64,
-        });
-        lastFrameBase64.current = base64;
-
-        wsRef.current.send(
-          JSON.stringify({
+      if (isTestMode) {
+        // Extract a frame from the test video at the current playback position.
+        if (!VideoThumbnails?.getThumbnailAsync) {
+          setTestModeStatus("expo-video-thumbnails not loaded — rebuild native app");
+          isCapturing.current = false;
+          return;
+        }
+        if (!testVideoUri) {
+          isCapturing.current = false;
+          return;
+        }
+        let thumbUri = null;
+        try {
+          const eventTime = videoCurrentTimeRef.current || 0;
+          const playerTime = videoPlayerRef.current?.currentTime || 0;
+          const elapsedSec = testStartedAtRef.current
+            ? (Date.now() - testStartedAtRef.current) / 1000
+            : 0;
+          const currentTimeSec = eventTime || playerTime || elapsedSec;
+          const thumb = await VideoThumbnails.getThumbnailAsync(testVideoUri, {
+            time: Math.max(0, Math.floor(currentTimeSec * 1000)),
+            quality: 0.5,
+          });
+          thumbUri = thumb.uri;
+          lastPhotoDimensions.current = { width: thumb.width, height: thumb.height };
+          const base64 = await FileSystem.readAsStringAsync(thumbUri, {
+            encoding: FileSystem.EncodingType.Base64,
+          });
+          lastFrameBase64.current = base64;
+          wsRef.current.send(JSON.stringify({
             image_base64: base64,
             user_id: currentUser?.id || 1,
-          }),
-        );
+            imgsz: serverConfig.inferenceResolution || 640,
+          }));
+          lastSendAtRef.current = Date.now();
+          setTestModeStatus(`t=${currentTimeSec.toFixed(1)}s ${thumb.width}x${thumb.height}`);
+        } catch (err) {
+          setTestModeStatus(`Thumb error: ${err?.message || String(err)}`);
+          isCapturing.current = false;
+        } finally {
+          if (thumbUri) FileSystem.deleteAsync(thumbUri, { idempotent: true }).catch(() => {});
+        }
+        return;
+      }
+
+      // Live camera capture
+      if (!cameraRef.current) { isCapturing.current = false; return; }
+      let photoUri = null;
+      try {
+        const photo = await cameraRef.current.takePictureAsync({
+          base64: true,
+          quality: 0.3,
+          skipProcessing: true,
+        });
+        photoUri = photo.uri;
+        lastPhotoDimensions.current = { width: photo.width, height: photo.height };
+        lastFrameBase64.current = photo.base64;
+        wsRef.current.send(JSON.stringify({
+          image_base64: photo.base64,
+          user_id: currentUser?.id || 1,
+          imgsz: serverConfig.inferenceResolution || 640,
+        }));
+        lastSendAtRef.current = Date.now();
       } catch {
         isCapturing.current = false;
       } finally {
-        // Free the temp snapshot file immediately so we don't fill device storage.
-        if (snapshotPath) {
-          const fileUri = snapshotPath.startsWith("file://")
-            ? snapshotPath
-            : `file://${snapshotPath}`;
-          FileSystem.deleteAsync(fileUri, { idempotent: true }).catch(() => {});
-        }
+        if (photoUri) FileSystem.deleteAsync(photoUri, { idempotent: true }).catch(() => {});
       }
     }, 250);
 
     return () => clearInterval(captureInterval);
-  }, [currentUser]);
+  }, [currentUser, cameraEnabled, isTestMode, testVideoUri]);
 
   // 5. Client-Side Anomaly Logging
   useEffect(() => {
-    if (latestResult?.compliance && currentUser) {
-      const {
-        plucking_plant,
-        animal_strike,
-        extended_touch_animal,
-        extended_touch_plant,
-        touch_animal,
-        touch_plant,
-      } = latestResult.compliance;
+    if (filteredCompliance && currentUser) {
+      const { plucking_plant, animal_strike, extended_touch_animal, extended_touch_plant, touch_animal, touch_plant } = filteredCompliance;
       let detectedEventType = null;
 
       if (plucking_plant) detectedEventType = "plucking_plant";
       else if (animal_strike) detectedEventType = "animal_strike";
-      else if (extended_touch_animal)
-        detectedEventType = "extended_touch_animal";
+      else if (extended_touch_animal) detectedEventType = "extended_touch_animal";
       else if (extended_touch_plant) detectedEventType = "extended_touch_plant";
       else if (touch_animal) detectedEventType = "touch_animal";
       else if (touch_plant) detectedEventType = "touch_plant";
 
-      if (detectedEventType) {
+      if (detectedEventType && !isNonAnomalyEvent(detectedEventType)) {
         const now = Date.now();
         if (now - lastLogTime.current > 3000) {
           lastLogTime.current = now;
@@ -348,45 +464,63 @@ export default function DetectionScreen() {
           const confidenceCandidates = (latestResult?.detections || [])
             .map((d) => Number(d.confidence))
             .filter(Number.isFinite);
-          const maxConfidence = confidenceCandidates.length
-            ? Math.max(...confidenceCandidates)
-            : null;
+          const maxConfidence = confidenceCandidates.length ? Math.max(...confidenceCandidates) : null;
 
           const payload = {
             user_id: currentUser.id,
             event_type: detectedEventType,
             latitude: 1.5533,
             longitude: 110.3592,
-            metadata: JSON.stringify({
+            metadata: {
               source: "mobile_ai_detection",
               timestamp: new Date().toISOString(),
               detection_confidence: maxConfidence,
               detections: latestResult?.detections?.length || 0,
               poses: latestResult?.poses?.length || 0,
               inference_ms: latestResult?.inference_ms || 0,
-            }),
+            },
             annotated_frame_base64: lastFrameBase64.current,
           };
 
           apiClient
             .post("/anomaly-events", payload)
-            .then(() => {
-              fetchAnomalyEvents();
-            })
+            .then(() => { fetchAnomalyEvents(); })
             .catch((err) => {
-              const errorMsg =
-                err.response?.data?.message ||
-                err.response?.data?.error ||
-                err.message;
-              Alert.alert(
-                "Database Error",
-                `Backend rejected the anomaly log:\n${errorMsg}`,
-              );
+              const errorMsg = err.response?.data?.message || err.response?.data?.error || err.message;
+              Alert.alert("Database Error", `Backend rejected the anomaly log:\n${errorMsg}`);
             });
         }
       }
     }
-  }, [latestResult]);
+  }, [filteredCompliance]);
+
+  const toggleCamera = () => {
+    if (isTestMode) return;
+    setCameraEnabled((prev) => !prev);
+  };
+
+  const handlePickTestVideo = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["videos"],
+      allowsEditing: false,
+      quality: 1,
+    });
+    if (result.canceled || !result.assets?.[0]?.uri) return;
+    testStartedAtRef.current = Date.now();
+    videoCurrentTimeRef.current = 0;
+    setTestModeStatus("Starting…");
+    setTestVideoUri(result.assets[0].uri);
+    setCameraEnabled(false);
+    setConfigMode(false);
+  };
+
+  const stopTestVideo = () => {
+    setTestVideoUri(null);
+    setCameraEnabled(true);
+    setTestModeStatus(null);
+    testStartedAtRef.current = 0;
+    videoCurrentTimeRef.current = 0;
+  };
 
   // Resolve Event
   const resolveEvent = async (eventId) => {
@@ -488,6 +622,38 @@ export default function DetectionScreen() {
             onChangeText={(t) => setTempConfig({ ...tempConfig, port: t })}
             keyboardType="numeric"
           />
+          <Text style={styles.configLabel}>Inference Resolution</Text>
+          {[320, 416, 480, 640, 800].map((res) => (
+            <TouchableOpacity
+              key={res}
+              onPress={() => setTempConfig({ ...tempConfig, inferenceResolution: res })}
+              style={[styles.resolutionOption, tempConfig.inferenceResolution === res && styles.resolutionOptionActive]}
+            >
+              <Text style={[styles.resolutionOptionText, tempConfig.inferenceResolution === res && styles.resolutionOptionTextActive]}>
+                {res} px{res === 640 ? " (default)" : res === 320 ? " — fastest" : res === 800 ? " — slowest, highest accuracy" : ""}
+              </Text>
+            </TouchableOpacity>
+          ))}
+
+          <View style={styles.configDivider} />
+          <Text style={styles.configLabel}>Test with pre-recorded footage</Text>
+          <Text style={styles.configHint}>
+            Pick a video from your library to play it in the viewfinder. Note: AI frame capture is paused in test mode.
+          </Text>
+          {isTestMode ? (
+            <View style={styles.buttonContainer}>
+              <Button
+                title="Stop test footage & resume camera"
+                onPress={() => { stopTestVideo(); setConfigMode(false); }}
+                color="#dc2626"
+              />
+            </View>
+          ) : (
+            <View style={styles.buttonContainer}>
+              <Button title="Upload test video" onPress={handlePickTestVideo} color="#1d4ed8" />
+            </View>
+          )}
+
           <View style={styles.buttonContainer}>
             <Button
               title="Save"
@@ -495,6 +661,7 @@ export default function DetectionScreen() {
                 setServerConfig({
                   host: (tempConfig.host || "").trim() || getAutoHost(),
                   port: (tempConfig.port || "").trim() || "8000",
+                  inferenceResolution: Number(tempConfig.inferenceResolution) || 640,
                 });
                 setConfigMode(false);
               }}
@@ -517,7 +684,7 @@ export default function DetectionScreen() {
   }
 
   // --- MAIN UI ---
-  if (!hasPermission) {
+  if (!permission?.granted) {
     return (
       <View style={styles.permissionContainer}>
         <View style={styles.permissionCard}>
@@ -699,8 +866,22 @@ export default function DetectionScreen() {
                         <Text style={styles.eventTime}>
                           {new Date(event.created_at).toLocaleString()}
                         </Text>
-                        <View style={styles.activePill}>
-                          <Text style={styles.activePillText}>Active</Text>
+                        <View style={styles.eventActions}>
+                          <View style={styles.activePill}>
+                            <Text style={styles.activePillText}>Active</Text>
+                          </View>
+                          <TouchableOpacity
+                            style={[styles.resolveInlineBtn, resolvingEventId === event.id && styles.resolveInlineBtnDisabled]}
+                            disabled={resolvingEventId === event.id}
+                            onPress={(e) => {
+                              e.stopPropagation?.();
+                              resolveEvent(event.id);
+                            }}
+                          >
+                            <Text style={styles.resolveInlineBtnText}>
+                              {resolvingEventId === event.id ? "Resolving..." : "Resolve"}
+                            </Text>
+                          </TouchableOpacity>
                         </View>
                       </View>
                     </View>
@@ -728,21 +909,34 @@ export default function DetectionScreen() {
             })
           }
         >
-          {device == null ? (
-            <View style={[styles.camera, styles.cameraLoading]}>
-              <ActivityIndicator size="large" color="#4CAF50" />
-            </View>
+          {isTestMode ? (
+            TestVideoPlayer ? (
+              <TestVideoPlayer
+                uri={testVideoUri}
+                style={StyleSheet.absoluteFillObject}
+                onPlayerReady={(player) => { videoPlayerRef.current = player; }}
+                onTimeUpdate={(t) => { videoCurrentTimeRef.current = t; }}
+              />
+            ) : (
+              <View style={styles.cameraOff}>
+                <Text style={styles.cameraOffTitle}>Test Video Selected</Text>
+                <Text style={styles.cameraOffText}>
+                  Install expo-video for in-app playback:{"\n"}npx expo install expo-video
+                </Text>
+                <Text style={[styles.cameraOffText, { marginTop: 8, color: "#facc15" }]}>
+                  AI capture paused
+                </Text>
+              </View>
+            )
+          ) : cameraEnabled ? (
+            <CameraView ref={cameraRef} style={styles.camera} facing="back" />
           ) : (
-            <VisionCamera
-              ref={cameraRef}
-              style={styles.camera}
-              device={device}
-              isActive={true}
-              photo={true}
-              audio={false}
-              enableZoomGesture={false}
-            />
+            <View style={styles.cameraOff}>
+              <Text style={styles.cameraOffTitle}>Camera Off</Text>
+              <Text style={styles.cameraOffText}>Tap the button below to turn it back on</Text>
+            </View>
           )}
+
           <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
             <Text
               style={[
@@ -847,26 +1041,16 @@ export default function DetectionScreen() {
             {latestResult?.compliance?.plucking_plant && (
               <Text style={styles.warningText}>WARNING: PLUCKING DETECTED</Text>
             )}
-            {latestResult?.compliance?.animal_strike && (
+            {filteredCompliance?.animal_strike && (
               <Text style={styles.warningText}>ALERT: ANIMAL STRIKE</Text>
             )}
-            {latestResult?.compliance?.extended_touch_animal && (
-              <Text
-                style={[
-                  styles.warningText,
-                  { backgroundColor: "rgba(255, 165, 0, 0.8)" },
-                ]}
-              >
+            {filteredCompliance?.extended_touch_animal && (
+              <Text style={[styles.warningText, { backgroundColor: "rgba(255, 165, 0, 0.8)" }]}>
                 EXTENDED ANIMAL TOUCH
               </Text>
             )}
             {latestResult?.compliance?.extended_touch_plant && (
-              <Text
-                style={[
-                  styles.warningText,
-                  { backgroundColor: "rgba(255, 165, 0, 0.8)" },
-                ]}
-              >
+              <Text style={[styles.warningText, { backgroundColor: "rgba(255, 165, 0, 0.8)" }]}>
                 EXTENDED PLANT TOUCH
               </Text>
             )}
@@ -886,13 +1070,38 @@ export default function DetectionScreen() {
               </View>
             )}
 
-            {/* Settings Button */}
-            <Text
-              style={styles.settingsButton}
-              onPress={() => setConfigMode(true)}
-            >
-              Config
-            </Text>
+            {/* Test mode badge */}
+            {isTestMode && (
+              <View style={styles.testModeBadge}>
+                <Text style={styles.testModeBadgeText}>TEST FOOTAGE — AI active</Text>
+              </View>
+            )}
+            {isTestMode && testModeStatus ? (
+              <View style={styles.testDiagnosticPanel}>
+                <Text style={styles.testDiagnosticLabel}>Test capture status</Text>
+                <Text style={styles.testDiagnosticText}>{testModeStatus}</Text>
+              </View>
+            ) : null}
+
+            {/* Bottom controls */}
+            <View style={styles.bottomControls}>
+              <TouchableOpacity style={styles.overlayBtn} onPress={() => setConfigMode(true)}>
+                <Text style={styles.overlayBtnText}>⚙ Config</Text>
+              </TouchableOpacity>
+              {!isTestMode && (
+                <TouchableOpacity
+                  style={[styles.overlayBtn, !cameraEnabled && styles.overlayBtnDanger]}
+                  onPress={toggleCamera}
+                >
+                  <Text style={styles.overlayBtnText}>{cameraEnabled ? "⏸ Camera" : "⏵ Camera"}</Text>
+                </TouchableOpacity>
+              )}
+              {isTestMode && (
+                <TouchableOpacity style={[styles.overlayBtn, styles.overlayBtnDanger]} onPress={stopTestVideo}>
+                  <Text style={styles.overlayBtnText}>✕ Stop Test</Text>
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
         </View>
       </View>
@@ -1001,6 +1210,15 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   activePillText: { color: "#166534", fontSize: 11, fontWeight: "700" },
+  eventActions: { flexDirection: "row", alignItems: "center", gap: 6 },
+  resolveInlineBtn: {
+    backgroundColor: "#065f46",
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  resolveInlineBtnDisabled: { opacity: 0.6 },
+  resolveInlineBtnText: { color: "white", fontSize: 11, fontWeight: "700" },
   emptyText: { color: "#9ca3af", fontSize: 13, marginTop: 8 },
 
   cameraSidebar: {
@@ -1088,19 +1306,73 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     borderRadius: 2,
   },
-  settingsButton: {
+  cameraOff: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "#1f2937",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 8,
+    padding: 24,
+  },
+  cameraOffTitle: { color: "white", fontSize: 16, fontWeight: "700" },
+  cameraOffText: { color: "#9ca3af", fontSize: 12, textAlign: "center" },
+  testModeBadge: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    backgroundColor: "#1d4ed8",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+  },
+  testModeBadgeText: { color: "white", fontSize: 11, fontWeight: "700" },
+  testDiagnosticPanel: {
+    position: "absolute",
+    top: 50,
+    left: 10,
+    right: 10,
+    backgroundColor: "rgba(17,24,39,0.92)",
+    borderRadius: 8,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: "#fbbf24",
+  },
+  testDiagnosticLabel: {
+    color: "#fbbf24",
+    fontSize: 10,
+    fontWeight: "700",
+    marginBottom: 4,
+    letterSpacing: 0.5,
+  },
+  testDiagnosticText: { color: "#f9fafb", fontSize: 13, fontWeight: "600" },
+  bottomControls: {
     position: "absolute",
     bottom: 10,
     left: 10,
-    color: "white",
-    fontSize: 12,
-    fontWeight: "700",
+    flexDirection: "row",
+    gap: 8,
+  },
+  overlayBtn: {
     backgroundColor: "rgba(17,24,39,0.75)",
     paddingHorizontal: 10,
     paddingVertical: 7,
     borderRadius: 16,
-    overflow: "hidden",
   },
+  overlayBtnDanger: { backgroundColor: "rgba(220,38,38,0.75)" },
+  overlayBtnText: { color: "white", fontSize: 12, fontWeight: "700" },
+  configDivider: { borderTopWidth: 1, borderTopColor: "#333", marginVertical: 16 },
+  configHint: { color: "#888", fontSize: 12, marginBottom: 10, lineHeight: 18 },
+  resolutionOption: {
+    borderWidth: 1,
+    borderColor: "#444",
+    borderRadius: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginBottom: 6,
+  },
+  resolutionOptionActive: { borderColor: "#4CAF50", backgroundColor: "rgba(76,175,80,0.15)" },
+  resolutionOptionText: { color: "#aaa", fontSize: 13 },
+  resolutionOptionTextActive: { color: "#4CAF50", fontWeight: "700" },
 
   detailModalOverlay: {
     flex: 1,

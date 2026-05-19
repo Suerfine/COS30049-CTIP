@@ -11,6 +11,7 @@ import {
   CheckCircle,
   Circle,
   MapPin,
+  X,
 } from "lucide-react-native";
 import React, { useState, useEffect } from "react";
 import {
@@ -21,6 +22,7 @@ import {
   Text,
   TextInput,
   ActivityIndicator,
+  Image,
   Modal,
   ScrollView,
   useWindowDimensions,
@@ -52,7 +54,7 @@ const AnomalyDetection = () => {
   const [resolvingId, setResolvingId] = useState(null);
 
   const [selectedAnomaly, setSelectedAnomaly] = useState(null);
-  const [showMapModal, setShowMapModal] = useState(false);
+  const [showDetailModal, setShowDetailModal] = useState(false);
 
   // Calculate pagination info
   const itemsPerPage = 10;
@@ -72,6 +74,12 @@ const AnomalyDetection = () => {
       other: "Other",
     };
     return typeMap[eventType?.toLowerCase()] || eventType;
+  };
+
+  const getConfidenceLabel = (metadata) => {
+    const raw = metadata?.detection_confidence ?? metadata?.confidence;
+    const n = Number(raw);
+    return Number.isFinite(n) ? `${Math.round(n * 100)}%` : null;
   };
 
   const renderHeader = () => (
@@ -121,7 +129,7 @@ const AnomalyDetection = () => {
 
   const renderAnomalyItem = ({ item }) => (
     <Pressable
-      onPress={() => setSelectedAnomaly(item)}
+      onPress={() => { setSelectedAnomaly(item); setShowDetailModal(true); }}
       style={({ hovered }) => [
         styles.row,
         styles.tableRow,
@@ -144,7 +152,7 @@ const AnomalyDetection = () => {
         onPress={() => {
           if (item.latitude && item.longitude) {
             setSelectedAnomaly(item);
-            setShowMapModal(true);
+            setShowDetailModal(true);
           }
         }}
       >
@@ -180,7 +188,7 @@ const AnomalyDetection = () => {
         ) : (
           <View style={styles.unresolvedBadge}>
             <Circle size={12} color="#dc2626" />
-            <Text style={styles.unresolvedBadgeText}>Open</Text>
+            <Text style={styles.unresolvedBadgeText}>Active</Text>
           </View>
         )}
       </View>
@@ -319,71 +327,138 @@ const AnomalyDetection = () => {
     );
   };
 
-  const renderMapModal = () => {
-    if (!selectedAnomaly?.latitude || !selectedAnomaly?.longitude) {
-      return null;
-    }
+  const closeDetailModal = () => {
+    setShowDetailModal(false);
+    setSelectedAnomaly(null);
+  };
 
-    const mapUrl = `https://www.openstreetmap.org/export/embed.html?bbox=${(
-      selectedAnomaly.longitude - 0.01
-    ).toFixed(4)},${(selectedAnomaly.latitude - 0.01).toFixed(
-      4
-    )},${(selectedAnomaly.longitude + 0.01).toFixed(
-      4
-    )},${(selectedAnomaly.latitude + 0.01).toFixed(
-      4
-    )}&layer=mapnik&marker=${selectedAnomaly.latitude.toFixed(
-      4
-    )},${selectedAnomaly.longitude.toFixed(4)}`;
+  const renderDetailModal = () => {
+    if (!selectedAnomaly) return null;
+
+    const a = selectedAnomaly;
+    const confidence = getConfidenceLabel(a.metadata);
+    const hasCoords = a.latitude && a.longitude;
+    const mapUrl = hasCoords
+      ? `https://www.openstreetmap.org/export/embed.html?bbox=${(a.longitude - 0.01).toFixed(4)},${(a.latitude - 0.01).toFixed(4)},${(a.longitude + 0.01).toFixed(4)},${(a.latitude + 0.01).toFixed(4)}&layer=mapnik&marker=${a.latitude.toFixed(4)},${a.longitude.toFixed(4)}`
+      : null;
 
     return (
       <Modal
-        visible={showMapModal}
-        transparent={true}
+        visible={showDetailModal}
+        transparent
         animationType="fade"
-        onRequestClose={() => setShowMapModal(false)}
+        onRequestClose={closeDetailModal}
       >
-        <Pressable
-          style={styles.modalOverlay}
-          onPress={() => setShowMapModal(false)}
-        >
-          <View style={styles.modalContent} onStartShouldSetResponder={() => true}>
-            <View
-              style={[
-                styles.mapContainer,
-                isCompact && { height: Math.min(height * 0.75, 520) },
-              ]}
-            >
-              <View style={styles.mapHeader}>
-                <Text style={styles.mapTitle}>
-                  {getEventTypeLabel(selectedAnomaly.event_type)}
-                </Text>
-                <Pressable onPress={() => setShowMapModal(false)}>
-                  <Text style={styles.mapCloseBtn}>✕</Text>
-                </Pressable>
+        <Pressable style={styles.modalOverlay} onPress={closeDetailModal}>
+          <View style={styles.detailModal} onStartShouldSetResponder={() => true}>
+            {/* Header */}
+            <View style={styles.detailHeader}>
+              <View style={styles.detailHeaderLeft}>
+                <Text style={styles.detailTitle}>{getEventTypeLabel(a.event_type)}</Text>
+                <Text style={styles.detailId}>#{a.id}</Text>
               </View>
-              <iframe
-                title="anomaly-map"
-                style={styles.iframe}
-                src={mapUrl}
-                frameBorder="0"
-                marginHeight="0"
-                marginWidth="0"
-                scrolling="no"
-              />
-              <View style={styles.mapFooter}>
-                <View style={styles.coordinateInfo}>
-                  <MapPin size={16} color="#059669" />
-                  <Text style={styles.coordinateLabel}>
-                    {selectedAnomaly.latitude.toFixed(6)},{" "}
-                    {selectedAnomaly.longitude.toFixed(6)}
-                  </Text>
-                </View>
-                <Text style={styles.mapTimestamp}>
-                  {formatDate(selectedAnomaly.created_at)}
-                </Text>
-              </View>
+              <Pressable onPress={closeDetailModal} style={({ hovered }) => [styles.closeBtn, hovered && styles.closeBtnHover]}>
+                <X size={18} color="#6b7280" />
+              </Pressable>
             </View>
+
+            <ScrollView style={styles.detailScroll} showsVerticalScrollIndicator={false}>
+              {/* Screenshot */}
+              {a.annotated_frame_base64 ? (
+                <Image
+                  source={{ uri: `data:image/jpeg;base64,${a.annotated_frame_base64}` }}
+                  style={styles.detailSnapshot}
+                  resizeMode="contain"
+                />
+              ) : (
+                <View style={styles.noSnapshot}>
+                  <AlertTriangle size={24} color="#d1d5db" />
+                  <Text style={styles.noSnapshotText}>No snapshot available</Text>
+                </View>
+              )}
+
+              {/* Info grid */}
+              <View style={styles.detailGrid}>
+                <View style={styles.detailGridItem}>
+                  <Text style={styles.detailLabel}>Detected At</Text>
+                  <Text style={styles.detailValue}>{formatDate(a.created_at)}</Text>
+                </View>
+                <View style={styles.detailGridItem}>
+                  <Text style={styles.detailLabel}>Status</Text>
+                  {a.is_resolved ? (
+                    <View style={styles.resolvedBadge}>
+                      <CheckCircle size={12} color="#059669" />
+                      <Text style={styles.resolvedBadgeText}>Resolved</Text>
+                    </View>
+                  ) : (
+                    <View style={styles.unresolvedBadge}>
+                      <Circle size={12} color="#dc2626" />
+                      <Text style={styles.unresolvedBadgeText}>Active</Text>
+                    </View>
+                  )}
+                </View>
+                <View style={styles.detailGridItem}>
+                  <Text style={styles.detailLabel}>User</Text>
+                  <Text style={styles.detailValue}>{a.user ? [a.user.firstname, a.user.lastname].filter(Boolean).join(" ") || a.user.username : a.user_id || "—"}</Text>
+                </View>
+                {confidence ? (
+                  <View style={styles.detailGridItem}>
+                    <Text style={styles.detailLabel}>Confidence</Text>
+                    <Text style={styles.detailValue}>{confidence}</Text>
+                  </View>
+                ) : null}
+                {hasCoords ? (
+                  <View style={[styles.detailGridItem, { flex: 2 }]}>
+                    <Text style={styles.detailLabel}>Coordinates</Text>
+                    <View style={styles.coordinateInfo}>
+                      <MapPin size={13} color="#059669" />
+                      <Text style={styles.coordinateLabel}>{Number(a.latitude).toFixed(6)}, {Number(a.longitude).toFixed(6)}</Text>
+                    </View>
+                  </View>
+                ) : null}
+              </View>
+
+              {/* Map */}
+              {mapUrl ? (
+                <View style={styles.detailMapShell}>
+                  <iframe
+                    title="anomaly-location"
+                    src={mapUrl}
+                    style={styles.iframe}
+                    frameBorder="0"
+                    marginHeight="0"
+                    marginWidth="0"
+                    scrolling="no"
+                  />
+                </View>
+              ) : null}
+
+              {/* Resolve action */}
+              {!a.is_resolved ? (
+                <Pressable
+                  onPress={async () => {
+                    setResolvingId(a.id);
+                    try {
+                      await resolveAnomaly(a.id);
+                      closeDetailModal();
+                    } finally {
+                      setResolvingId(null);
+                    }
+                  }}
+                  disabled={resolvingId === a.id}
+                  style={({ hovered }) => [
+                    styles.detailResolveBtn,
+                    hovered && styles.detailResolveBtnHover,
+                    resolvingId === a.id && styles.resolveBtnDisabled,
+                  ]}
+                >
+                  {resolvingId === a.id
+                    ? <ActivityIndicator size="small" color="white" />
+                    : <Text style={styles.detailResolveBtnText}>Mark as Resolved</Text>
+                  }
+                </Pressable>
+              ) : null}
+            </ScrollView>
           </View>
         </Pressable>
       </Modal>
@@ -468,7 +543,7 @@ const AnomalyDetection = () => {
         </>
       )}
 
-      {renderMapModal()}
+      {renderDetailModal()}
     </ScrollView>
   );
 };
@@ -808,6 +883,123 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 12,
     fontWeight: "600",
+  },
+  detailModal: {
+    backgroundColor: "white",
+    borderRadius: 14,
+    overflow: "hidden",
+    width: "90%",
+    maxWidth: 560,
+    maxHeight: "90%",
+    display: "flex",
+    flexDirection: "column",
+  },
+  detailHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: "#e5e7eb",
+    backgroundColor: "#f9fafb",
+  },
+  detailHeaderLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    flex: 1,
+  },
+  detailTitle: {
+    fontSize: 17,
+    fontWeight: "700",
+    color: "#111827",
+  },
+  detailId: {
+    fontSize: 13,
+    color: "#9ca3af",
+    fontWeight: "500",
+  },
+  closeBtn: {
+    padding: 6,
+    borderRadius: 8,
+    backgroundColor: "#f3f4f6",
+  },
+  closeBtnHover: {
+    backgroundColor: "#e5e7eb",
+  },
+  detailScroll: {
+    flex: 1,
+  },
+  detailSnapshot: {
+    width: "100%",
+    height: 220,
+    backgroundColor: "#111827",
+  },
+  noSnapshot: {
+    width: "100%",
+    height: 100,
+    backgroundColor: "#f9fafb",
+    borderBottomWidth: 1,
+    borderBottomColor: "#e5e7eb",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    flexDirection: "row",
+  },
+  noSnapshotText: {
+    color: "#9ca3af",
+    fontSize: 13,
+  },
+  detailGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    gap: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f3f4f6",
+  },
+  detailGridItem: {
+    flex: 1,
+    minWidth: 140,
+    gap: 4,
+  },
+  detailLabel: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: "#9ca3af",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  detailValue: {
+    fontSize: 14,
+    color: "#111827",
+    fontWeight: "500",
+  },
+  detailMapShell: {
+    height: 240,
+    marginHorizontal: 20,
+    marginTop: 16,
+    borderRadius: 8,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+  },
+  detailResolveBtn: {
+    margin: 20,
+    paddingVertical: 12,
+    backgroundColor: "#0a6340",
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  detailResolveBtnHover: {
+    backgroundColor: "#065f2e",
+  },
+  detailResolveBtnText: {
+    color: "white",
+    fontWeight: "700",
+    fontSize: 14,
   },
 });
 

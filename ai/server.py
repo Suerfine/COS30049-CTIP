@@ -142,6 +142,8 @@ def parse_detections(results) -> list[dict]:
         for box in r.boxes:
             x1, y1, x2, y2 = box.xyxy[0].tolist()
             conf, cls_id = box.conf[0].item(), int(box.cls[0].item())
+            if cls_id not in (PLANT_CLASS_ID, ANIMAL_CLASS_ID):
+                continue
             threshold = CLASS_CONF_THRESH.get(cls_id, DEFAULT_CONF)
             if conf < threshold:
                 continue
@@ -281,3 +283,11 @@ async def ws_detect(websocket: WebSocket):
         logger.info("WebSocket client disconnected")
     except Exception as exc:
         logger.exception("WebSocket error: %s", exc)
+
+
+if __name__ == "__main__":
+    import uvicorn
+    # Bind to 0.0.0.0 so phones / other devices on the LAN can connect.
+    # 127.0.0.1 (the uvicorn default) only accepts loopback from the same host,
+    # which is why the web client worked but the native mobile client could not.
+    uvicorn.run(app, host="0.0.0.0", port=8000)

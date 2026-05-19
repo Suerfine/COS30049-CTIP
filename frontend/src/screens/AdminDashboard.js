@@ -1,6 +1,6 @@
 import { AlertTriangle, Book, ClipboardList, Flag, MapPin, RefreshCcw, User, RotateCcw, Pin } from "lucide-react-native";
 import React, { useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
+import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { CircleMarker, MapContainer, Popup, TileLayer, Tooltip, useMap } from "react-leaflet";
 import { useTranslation } from "react-i18next";
 import { useNavigation } from "@react-navigation/native";
@@ -22,28 +22,7 @@ const getEventTypeLabel = (eventType) => {
   return EVENT_LABELS[eventType.toLowerCase()] || eventType;
 };
 
-const getEventSeverity = (eventType) => {
-  const normalizedType = eventType?.toLowerCase();
-
-  if (["forest_fire", "flooding"].includes(normalizedType)) {
-    return "high";
-  }
-
-  if (
-    [
-      "plucking_plants",
-      "hitting_animal",
-      "extended_plant_touch",
-      "extended_animal_touch",
-      "loud_noise",
-      "trespassing",
-    ].includes(normalizedType)
-  ) {
-    return "high";
-  }
-
-  return "low";
-};
+const getEventSeverity = () => "high";
 
 const getUserLabel = (event) => {
   const user = event.user;
@@ -113,11 +92,14 @@ const HoverDetailCard = ({ event, isPinned, resolvingId, onResolve }) => {
     <View style={styles.hoverCard}>
       <View style={styles.hoverHeader}>
         <Text style={styles.hoverTitle}>{getEventTypeLabel(event.event_type)}</Text>
-        
-        <View style={[styles.hoverBadge, { backgroundColor: SEVERITY_CONFIG[severity].fillColor }]}>
-          <Text style={styles.hoverBadgeText}>{SEVERITY_CONFIG[severity].label}</Text>
-        </View>
       </View>
+      {event.annotated_frame_base64 ? (
+        <Image
+          source={{ uri: `data:image/jpeg;base64,${event.annotated_frame_base64}` }}
+          style={styles.hoverSnapshot}
+          resizeMode="cover"
+        />
+      ) : null}
       <Text style={styles.hoverRow}>Detected: {formatDate(event.created_at)}</Text>
       <Text style={styles.hoverRow}>
         Coordinates: {Number(event.latitude).toFixed(6)}, {Number(event.longitude).toFixed(6)}
@@ -242,7 +224,7 @@ const AdminDashboard = () => {
         <View style={[styles.adminCard, isCompact && styles.adminCardCompact]}>
           <View>
             <Text style={styles.label}>{t("mapped anomalies")}</Text>
-            <Text style={styles.value}>{stats.totalAnomalies}</Text>
+            <Text style={styles.value}>{severityCounts.high}</Text>
           </View>
           <View style={[styles.iconContainer, styles.alertTheme]}>
             <Flag size={30} color="#dc2626" />
@@ -683,6 +665,13 @@ const styles = StyleSheet.create({
     borderColor: "#d1d5db",
     boxShadow: "0 14px 30px rgba(15, 23, 42, 0.18)",
     zIndex: 1200,
+  },
+  hoverSnapshot: {
+    width: "100%",
+    height: 140,
+    borderRadius: 6,
+    marginBottom: 8,
+    backgroundColor: "#111827",
   },
   hoverHeader: {
     flexDirection: "row",
