@@ -61,7 +61,7 @@ const Notification = () => {
                                 <Text style={styles.notificationMessage}>{notification.message}</Text>
                                 
                                 <Text style={styles.notificationDate}>
-                                    {new Date(notification.created_at).toLocaleDateString()} at{' '}
+                                    {new Date(notification.created_at).toLocaleDateString()} {t("at")}{' '}
                                     {new Date(notification.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                 </Text>
                             </View>

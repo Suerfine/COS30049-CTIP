@@ -12,7 +12,7 @@ import {
   RotateCcw,
   Search,
 } from "lucide-react-native";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -28,10 +28,8 @@ import {
 import { useTranslation } from "react-i18next";
 
 import { useAnomalyDetection } from "../hooks/useAnomalyDetection";
-import { sensorService } from "../services/SensorService";
 import { formatDate } from "../utils/formatDate";
 
-const PAGE_SIZE = 10;
 const TABS = {
   ANOMALIES: "anomalies",
   SENSORS: "sensors",
@@ -63,42 +61,6 @@ const STATUS_STYLES = {
     borderColor: "#bfdbfe",
     color: "#2563eb",
   },
-};
-
-const emptyPaginatedState = {
-  data: [],
-  page: 1,
-  size: PAGE_SIZE,
-  totalElements: 0,
-  totalPages: 1,
-};
-
-const normalizePaginatedResponse = (response) => {
-  const data = Array.isArray(response?.data) ? response.data : [];
-
-  return {
-    data,
-    page: response?.page ?? 1,
-    size: response?.size ?? PAGE_SIZE,
-    totalElements: response?.totalElements ?? data.length,
-    totalPages: response?.totalPages ?? 1,
-  };
-};
-
-const extractErrorMessage = (error, fallbackMessage) =>
-  error?.response?.data?.message || error?.message || fallbackMessage;
-
-const formatCoordinates = (sensor) => {
-  if (
-    sensor?.latitude === null ||
-    sensor?.latitude === undefined ||
-    sensor?.longitude === null ||
-    sensor?.longitude === undefined
-  ) {
-    return "-";
-  }
-
-  return `${Number(sensor.latitude).toFixed(4)}, ${Number(sensor.longitude).toFixed(4)}`;
 };
 
 const formatStatusLabel = (value) => {
@@ -161,7 +123,7 @@ const PaginatedTableControls = ({
   if (totalPages <= 1) {
     return null;
   }
-
+  const { t } = useTranslation();
   const pageNumbers = [];
   for (let i = 1; i <= totalPages; i += 1) {
     pageNumbers.push(i);
@@ -174,7 +136,7 @@ const PaginatedTableControls = ({
   return (
     <View style={[styles.paginationContainer, styles.row]}>
       <Text style={styles.pageInfo}>
-        Showing {firstItem} to {lastItem} of {totalElements} {itemLabel}
+        {t("showing")} {firstItem} {t("to")} {lastItem} {t("of")} {totalElements} {itemLabel}
       </Text>
       <View style={styles.row}>
         <Pressable
@@ -275,22 +237,25 @@ const StatusBadge = ({ value }) => {
   );
 };
 
+const formatCoordinates = (sensor) => {
+  if (
+    sensor?.latitude === null ||
+    sensor?.latitude === undefined ||
+    sensor?.longitude === null ||
+    sensor?.longitude === undefined
+  ) {
+    return "-";
+  }
+
+  return `${Number(sensor.latitude).toFixed(4)}, ${Number(sensor.longitude).toFixed(4)}`;
+};
+
 const AnomalyDetection = () => {
   const { t } = useTranslation();
   const { width, height } = useWindowDimensions();
   const isCompact = width < 700;
 
   const [activeTab, setActiveTab] = useState(TABS.ANOMALIES);
-  const [sensorsPage, setSensorsPage] = useState(1);
-  const [sensorState, setSensorState] = useState(emptyPaginatedState);
-  const [sensorLoading, setSensorLoading] = useState(true);
-  const [sensorError, setSensorError] = useState(null);
-  const [selectedSensorForLogs, setSelectedSensorForLogs] = useState(null);
-  const [showSensorLogsModal, setShowSensorLogsModal] = useState(false);
-  const [sensorLogsPage, setSensorLogsPage] = useState(1);
-  const [sensorLogsState, setSensorLogsState] = useState(emptyPaginatedState);
-  const [sensorLogsLoading, setSensorLogsLoading] = useState(false);
-  const [sensorLogsError, setSensorLogsError] = useState(null);
 
   const {
     anomalies,
@@ -307,71 +272,43 @@ const AnomalyDetection = () => {
     error,
     refresh,
     resolveAnomaly,
+    sensorsPage,
+    setSensorsPage,
+    sensorState,
+    sensorLoading,
+    sensorError,
+    sensorLogsPage,
+    setSensorLogsPage,
+    sensorLogsState,
+    sensorLogsLoading,
+    sensorLogsError,
+    loadSensors,
+    loadSensorLogs,
+    refreshSensors,
   } = useAnomalyDetection();
 
   const [resolvingId, setResolvingId] = useState(null);
   const [selectedAnomaly, setSelectedAnomaly] = useState(null);
   const [showMapModal, setShowMapModal] = useState(false);
+  const [showSensorLogsModal, setShowSensorLogsModal] = useState(false);
+  const [selectedSensorForLogs, setSelectedSensorForLogs] = useState(null);
 
-  const loadSensors = useCallback(async () => {
-    setSensorLoading(true);
-    setSensorError(null);
-
-    try {
-      const response = await sensorService.getAll({
-        page: sensorsPage,
-        size: PAGE_SIZE,
-        orderBy: "id asc",
-      });
-      setSensorState(normalizePaginatedResponse(response));
-    } catch (loadError) {
-      setSensorError(extractErrorMessage(loadError, "Unable to load sensors"));
-      setSensorState(emptyPaginatedState);
-    } finally {
-      setSensorLoading(false);
-    }
-  }, [sensorsPage]);
-
-  const loadSensorLogs = useCallback(async (sensorId, page) => {
-    if (!sensorId) {
+  useEffect(() => {
+    if (
+      !showSensorLogsModal ||
+      !selectedSensorForLogs?.id
+    ) {
       return;
     }
 
-    setSensorLogsLoading(true);
-    setSensorLogsError(null);
-
-    try {
-      const response = await sensorService.getLogsBySensor(sensorId, {
-        page,
-        size: PAGE_SIZE,
-        orderBy: "created_at desc",
-      });
-      setSensorLogsState(normalizePaginatedResponse(response));
-    } catch (loadError) {
-      setSensorLogsError(
-        extractErrorMessage(loadError, "Unable to load sensor logs"),
-      );
-      setSensorLogsState(emptyPaginatedState);
-    } finally {
-      setSensorLogsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    loadSensors();
-  }, [loadSensors]);
-
-  useEffect(() => {
-    if (!showSensorLogsModal || !selectedSensorForLogs?.id) {
-      return;
-    }
-
-    loadSensorLogs(selectedSensorForLogs.id, sensorLogsPage);
+    loadSensorLogs(
+      selectedSensorForLogs.id,
+      sensorLogsPage
+    );
   }, [
     showSensorLogsModal,
     selectedSensorForLogs,
     sensorLogsPage,
-    loadSensorLogs,
   ]);
 
   const refreshActiveTab = () => {
@@ -381,7 +318,7 @@ const AnomalyDetection = () => {
     }
 
     if (activeTab === TABS.SENSORS) {
-      loadSensors();
+      refreshSensors();
       return;
     }
   };
@@ -389,8 +326,6 @@ const AnomalyDetection = () => {
   const openSensorLogsModal = (sensor) => {
     setSelectedSensorForLogs(sensor);
     setSensorLogsPage(1);
-    setSensorLogsState(emptyPaginatedState);
-    setSensorLogsError(null);
     setShowSensorLogsModal(true);
   };
 
@@ -398,8 +333,6 @@ const AnomalyDetection = () => {
     setShowSensorLogsModal(false);
     setSelectedSensorForLogs(null);
     setSensorLogsPage(1);
-    setSensorLogsState(emptyPaginatedState);
-    setSensorLogsError(null);
   };
 
   const renderTabButton = (tabKey, title, subtitle) => {
@@ -428,13 +361,13 @@ const AnomalyDetection = () => {
 
   const renderSensorHeader = () => (
     <View style={[styles.tableHeader, styles.row]}>
-      <Text style={[styles.headerCell, styles.sensorIdCell]}>ID</Text>
-      <Text style={[styles.headerCell, styles.sensorNameCell]}>Name</Text>
-      <Text style={[styles.headerCell, styles.sensorTypeCell]}>Type</Text>
+      <Text style={[styles.headerCell, styles.sensorIdCell]}>{t("id")}</Text>
+      <Text style={[styles.headerCell, styles.sensorNameCell]}>{t("name")}</Text>
+      <Text style={[styles.headerCell, styles.sensorTypeCell]}>{t("type")}</Text>
       <Text style={[styles.headerCell, styles.sensorLocationCell]}>
-        Location
+        {t("location")}
       </Text>
-      <Text style={[styles.headerCell, styles.sensorStatusCell]}>Status</Text>
+      <Text style={[styles.headerCell, styles.sensorStatusCell]}>{t("status_label")}</Text>
     </View>
   );
 
@@ -467,10 +400,10 @@ const AnomalyDetection = () => {
 
   const renderSensorLogsHeader = () => (
     <View style={[styles.tableHeader, styles.row]}>
-      <Text style={[styles.headerCell, styles.logIdCell]}>ID</Text>
-      <Text style={[styles.headerCell, styles.logStatusCell]}>Status</Text>
-      <Text style={[styles.headerCell, styles.logDataCell]}>Data</Text>
-      <Text style={[styles.headerCell, styles.logDateCell]}>Created At</Text>
+      <Text style={[styles.headerCell, styles.logIdCell]}>{t("id")}</Text>
+      <Text style={[styles.headerCell, styles.logStatusCell]}>{t("status_label")}</Text>
+      <Text style={[styles.headerCell, styles.logDataCell]}>{t("data")}</Text>
+      <Text style={[styles.headerCell, styles.logDateCell]}>{t("created_at")}</Text>
     </View>
   );
 
@@ -491,12 +424,12 @@ const AnomalyDetection = () => {
 
   const renderAnomalyHeader = () => (
     <View style={[styles.tableHeader, styles.row]}>
-      <Text style={[styles.headerCell, styles.anomalyIdCell]}>ID</Text>
+      <Text style={[styles.headerCell, styles.anomalyIdCell]}>{t("id")}</Text>
       <Pressable
         onPress={() => requestSort("event_type")}
         style={[styles.headerPressableCell, styles.anomalyTypeCell]}
       >
-        <Text style={styles.headerCell}>Event Type</Text>
+        <Text style={styles.headerCell}>{t("event_type")}</Text>
         {sortConfig.key === "event_type" && sortConfig.direction === "asc" ? (
           <ArrowUpNarrowWide size={14} color="white" />
         ) : (
@@ -504,22 +437,22 @@ const AnomalyDetection = () => {
         )}
       </Pressable>
       <View style={[styles.headerPressableCell, styles.anomalyCoordinateCell]}>
-        <Text style={styles.headerCell}>Coordinates</Text>
+        <Text style={styles.headerCell}>{t("coordinates")}</Text>
       </View>
       <Pressable
         onPress={() => requestSort("created_at")}
         style={[styles.headerPressableCell, styles.anomalyDetectedCell]}
       >
-        <Text style={styles.headerCell}>Detected At</Text>
+        <Text style={styles.headerCell}>{t("detected_at")}</Text>
         {sortConfig.key === "created_at" && sortConfig.direction === "asc" ? (
           <ArrowUpNarrowWide size={14} color="white" />
         ) : (
           <ArrowDownWideNarrow size={14} color="white" />
         )}
       </Pressable>
-      <Text style={[styles.headerCell, styles.anomalyUserCell]}>User</Text>
-      <Text style={[styles.headerCell, styles.anomalyStatusCell]}>Status</Text>
-      <Text style={[styles.headerCell, styles.anomalyActionCell]}>Action</Text>
+      <Text style={[styles.headerCell, styles.anomalyUserCell]}>{t("user")}</Text>
+      <Text style={[styles.headerCell, styles.anomalyStatusCell]}>{t("status_label")}</Text>
+      <Text style={[styles.headerCell, styles.anomalyActionCell]}>{t("action")}</Text>
     </View>
   );
 
@@ -580,12 +513,12 @@ const AnomalyDetection = () => {
         {item.is_resolved ? (
           <View style={styles.resolvedBadge}>
             <CheckCircle size={12} color="#059669" />
-            <Text style={styles.resolvedBadgeText}>Resolved</Text>
+            <Text style={styles.resolvedBadgeText}>{t("resolved")}</Text>
           </View>
         ) : (
           <View style={styles.unresolvedBadge}>
             <Circle size={12} color="#dc2626" />
-            <Text style={styles.unresolvedBadgeText}>Open</Text>
+            <Text style={styles.unresolvedBadgeText}>{t("open")}</Text>
           </View>
         )}
       </View>
@@ -612,7 +545,7 @@ const AnomalyDetection = () => {
             {resolvingId === item.id ? (
               <ActivityIndicator size="small" color="white" />
             ) : (
-              <Text style={styles.resolveBtnText}>Resolve</Text>
+              <Text style={styles.resolveBtnText}>{t("resolved")}</Text>
             )}
           </Pressable>
         )}
@@ -625,7 +558,7 @@ const AnomalyDetection = () => {
       return (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#0a6340" />
-          <Text style={styles.loadingText}>Loading anomalies...</Text>
+          <Text style={styles.loadingText}>{t("loading_anomalies")}</Text>
         </View>
       );
     }
@@ -634,7 +567,7 @@ const AnomalyDetection = () => {
       return (
         <View style={styles.errorContainer}>
           <AlertTriangle size={48} color="#dc2626" />
-          <Text style={styles.errorText}>Failed to load anomalies</Text>
+          <Text style={styles.errorText}>{t("failed_load_anomalies")}</Text>
           <Text style={styles.errorDetail}>{error}</Text>
           <Pressable
             onPress={refresh}
@@ -643,7 +576,7 @@ const AnomalyDetection = () => {
               hovered && styles.retryBtnHover,
             ]}
           >
-            <Text style={styles.retryBtnText}>Try Again</Text>
+            <Text style={styles.retryBtnText}>{t("try_again")}</Text>
           </Pressable>
         </View>
       );
@@ -666,7 +599,7 @@ const AnomalyDetection = () => {
               <Search size={18} color="#5b6b63" />
               <TextInput
                 style={styles.input}
-                placeholder="Search anomalies..."
+                placeholder={t("search")}
                 placeholderTextColor="#8f8f8f"
                 value={searchQuery}
                 onChangeText={handleSearch}
@@ -692,7 +625,7 @@ const AnomalyDetection = () => {
                 ListEmptyComponent={
                   <View style={styles.emptyContainer}>
                     <AlertTriangle size={48} color="#d1d5db" />
-                    <Text style={styles.emptyText}>No anomalies detected</Text>
+                    <Text style={styles.emptyText}>{t("no_anomalies_detected")}</Text>
                   </View>
                 }
               />
@@ -704,8 +637,8 @@ const AnomalyDetection = () => {
           page={currentPage}
           totalPages={totalPages}
           totalElements={totalAnomalies}
-          size={PAGE_SIZE}
-          itemLabel="anomalies"
+          size={10}
+          itemLabel={t("anomalies")}
           onPageChange={setCurrentPage}
         />
       </>
@@ -717,7 +650,7 @@ const AnomalyDetection = () => {
       return (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#0a6340" />
-          <Text style={styles.loadingText}>Loading sensors...</Text>
+          <Text style={styles.loadingText}>{t("loading_sensors")}</Text>
         </View>
       );
     }
@@ -726,7 +659,7 @@ const AnomalyDetection = () => {
       return (
         <View style={styles.errorContainer}>
           <AlertTriangle size={48} color="#dc2626" />
-          <Text style={styles.errorText}>Failed to load sensors</Text>
+          <Text style={styles.errorText}>{t("failed_load_sensors")}</Text>
           <Text style={styles.errorDetail}>{sensorError}</Text>
           <Pressable
             onPress={refreshActiveTab}
@@ -760,7 +693,7 @@ const AnomalyDetection = () => {
                 ListEmptyComponent={
                   <View style={styles.emptyContainer}>
                     <AlertTriangle size={48} color="#d1d5db" />
-                    <Text style={styles.emptyText}>No sensors found</Text>
+                    <Text style={styles.emptyText}>{t("no_sensors_found")}</Text>
                   </View>
                 }
               />
@@ -772,7 +705,7 @@ const AnomalyDetection = () => {
           totalPages={sensorState.totalPages}
           totalElements={sensorState.totalElements}
           size={sensorState.size}
-          itemLabel="sensors"
+          itemLabel={t("sensors")}
           onPageChange={setSensorsPage}
         />
       </>
@@ -798,7 +731,7 @@ const AnomalyDetection = () => {
           >
             <View style={styles.sensorLogsModalHeader}>
               <Text style={styles.sensorLogsModalTitle}>
-                Sensor Logs -{" "}
+                {t("sensor_logs")} -{" "}
                 {selectedSensorForLogs.name ||
                   `Sensor #${selectedSensorForLogs.id}`}
               </Text>
@@ -810,12 +743,12 @@ const AnomalyDetection = () => {
             {sensorLogsLoading ? (
               <View style={styles.loadingContainer}>
                 <ActivityIndicator size="large" color="#0a6340" />
-                <Text style={styles.loadingText}>Loading sensor logs...</Text>
+                <Text style={styles.loadingText}>{t("loading_sensor_logs")}</Text>
               </View>
             ) : sensorLogsError ? (
               <View style={styles.errorContainer}>
                 <AlertTriangle size={48} color="#dc2626" />
-                <Text style={styles.errorText}>Failed to load sensor logs</Text>
+                <Text style={styles.errorText}>{t("failed_load_sensor_logs")}</Text>
                 <Text style={styles.errorDetail}>{sensorLogsError}</Text>
                 <Pressable
                   onPress={() =>
@@ -826,7 +759,7 @@ const AnomalyDetection = () => {
                     hovered && styles.retryBtnHover,
                   ]}
                 >
-                  <Text style={styles.retryBtnText}>Try Again</Text>
+                  <Text style={styles.retryBtnText}>{t("try_again")}</Text>
                 </Pressable>
               </View>
             ) : (
@@ -862,7 +795,7 @@ const AnomalyDetection = () => {
                   totalPages={sensorLogsState.totalPages}
                   totalElements={sensorLogsState.totalElements}
                   size={sensorLogsState.size}
-                  itemLabel="sensor logs"
+                  itemLabel={t("sensor_logs")}
                   onPageChange={setSensorLogsPage}
                 />
               </>
@@ -952,9 +885,9 @@ const AnomalyDetection = () => {
     >
       <View style={styles.headerRow}>
         <View>
-          <Text style={styles.title}>Anomaly Detection</Text>
+          <Text style={styles.title}>{t('anomaly_detection')}</Text>
           <Text style={styles.subtitle}>
-            Sensor inventory and anomaly event tracking
+            {t("sensor_inventory_tracking")}
           </Text>
         </View>
         <Pressable
@@ -971,13 +904,13 @@ const AnomalyDetection = () => {
       <View style={[styles.tabStrip, isCompact && styles.tabStripCompact]}>
         {renderTabButton(
           TABS.ANOMALIES,
-          "Anomalies",
-          `${totalAnomalies} total anomalies`,
+          t("anomalies"),
+          `${totalAnomalies} ${t("total_anomalies")}`,
         )}
         {renderTabButton(
           TABS.SENSORS,
-          "Sensors",
-          `${sensorState.totalElements} total sensors`,
+          t("sensors"),
+          `${sensorState.totalElements} ${t("total_sensors")}`,
         )}
       </View>
 

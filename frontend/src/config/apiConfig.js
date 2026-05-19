@@ -11,7 +11,7 @@ export const BASE_URL = () => {
     "localhost";
   const API_PORT = process.env.API_PORT || 5000;
   const API_PROTOCOL = process.env.EXPO_PUBLIC_API_PROTOCOL || "http";
-  return `${API_PROTOCOL}://${API_HOST}:${API_PORT}/api`;
+  return `https://172.26.16.1:5000/api`;
 };
 
 const apiClient = axios.create({

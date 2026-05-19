@@ -41,10 +41,6 @@ const FilterSidebar = ({ visible, tempFilters, setTempFilters, onApply, onReset,
         });
     };
 
-    // const setAllCategories=()=>{
-    //     setTempFilters(prev=>({...prev, category:'all'}));
-    // };
-
     const FilterItem = ({ label, isSelected, onPress }) => (
         <Pressable style={styles.item} onPress={onPress}>
             {isSelected
