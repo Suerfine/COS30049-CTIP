@@ -10,6 +10,9 @@ import {
 import { parseId, parseJsonField } from "../utils/parseRequest";
 import { UserRoles } from "../enum/UserRoles";
 import { SensorStatus } from "../enum/SensorStatus";
+import { sendNotification } from "../utils/sendNotification";
+import { NotificationCategory } from "../enum/NotificationCategory";
+import sequelize from "../config/Database";
 
 class HttpError extends Error {
   status: number;
@@ -35,6 +38,7 @@ export const createLog = async (
   res: Response<SensorLogResponse | { message: string }>,
   next: NextFunction,
 ) => {
+  const transaction = await sequelize.transaction();
   try {
     // Checking if its a valid sensor
     const sensorId = parseId(req.params.sensor_id);
@@ -59,18 +63,52 @@ export const createLog = async (
       throw new HttpError(400, "Invalid data payload");
     }
 
-    // Create log entry
-    const log = await SensorLog.create({
-      sensor_id: sensorId,
-      status: body.status as SensorStatus,
-      data: parsedData as any,
-    });
+    // Create log entry and update the sensor state
+    const log = await SensorLog.create(
+      {
+        sensor_id: sensorId,
+        status: body.status as SensorStatus,
+        data: parsedData as any,
+      },
+      { transaction },
+    );
 
-    // TODO: Consider whether we want to update the sensor's current status based on the log entry
-    await sensor.update({ current_status: body.status });
+    await sensor.update(
+      { current_status: body.status as SensorStatus },
+      { transaction },
+    );
 
+    if (body.status === SensorStatus.ALERTING) {
+      const title = `Sensor Alert: ${sensor.name}`;
+      const message = `Sensor "${sensor.name}" (${sensor.type}) is in alerting state.`;
+      const url = `/sensors/${sensor.id}`;
+
+      await sendNotification(
+        "admin",
+        title,
+        message,
+        transaction,
+        undefined,
+        false,
+        NotificationCategory.ANOMALY_ALERT,
+        url,
+      );
+      await sendNotification(
+        "park_guides",
+        title,
+        message,
+        transaction,
+        undefined,
+        false,
+        NotificationCategory.ANOMALY_ALERT,
+        url,
+      );
+    }
+
+    await transaction.commit();
     return res.status(201).json(toSensorLogResponse(log));
   } catch (err) {
+    await transaction.rollback();
     if (err instanceof HttpError) {
       res.status(err.status).json({ message: err.message });
     } else {

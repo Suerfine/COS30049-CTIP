@@ -618,7 +618,7 @@ export async function runSeeders(
     {
       id: 2,
       name: "Motion Radar - Park A Zone 1",
-      type: "microwave",
+      type: "motion",
       longitude: 101.6869,
       latitude: 3.139,
       current_status: SensorStatus.NORMAL,
