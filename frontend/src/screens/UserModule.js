@@ -42,6 +42,7 @@ import { useTranslation } from "react-i18next";
 import DiscussionSection from "../components/DiscussionSection.js";
 import { enrollmentService } from "../services/EnrollmentService.js";
 
+
 const UserModule = ({ navigation }) => {
   const route = useRoute();
   const {
@@ -56,6 +57,7 @@ const UserModule = ({ navigation }) => {
   const [resolvedEnrollmentId, setResolvedEnrollmentId] = useState(enrollmentId);
   const [localStatus, setLocalStatus] = useState(initialStatus);
   const hasfailedRef = useRef(false);
+  const {t, i18n}=useTranslation();
 
   const isLocked =
     resolvedEnrollmentStatus === null ||
@@ -160,6 +162,17 @@ const UserModule = ({ navigation }) => {
       animated: true,
     });
   };
+
+  const handleEnrollPress = () => {
+    const screenName = Platform.OS === "web" ? "Payment" : "PaymentScreen";
+    navigation.navigate(screenName, { course });
+  };
+
+  const isEnrollButtonVisible =
+    !resolvedEnrollmentStatus ||
+    resolvedEnrollmentStatus === "failed" ||
+    resolvedEnrollmentStatus === "rejected" ||
+    resolvedEnrollmentStatus === "expired";
 
   const {
     elements,
@@ -619,6 +632,12 @@ const UserModule = ({ navigation }) => {
                       </View>
                     </View>
                   </View>
+
+                  {isEnrollButtonVisible && (
+                    <Pressable style={styles.enrollBtn} onPress={handleEnrollPress}>
+                      <Text style={styles.enrollText}>{t("enroll", "Enroll")}</Text>
+                    </Pressable>
+                  )}
                 </View>
 
                 <Image
@@ -712,6 +731,20 @@ const styles = StyleSheet.create({
   },
   content: {
     marginTop: 20,
+    flex: 1,
+  },
+  enrollBtn: {
+    backgroundColor: "#efab21",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  enrollText: {
+    color: "#fff",
+    fontWeight: "700",
+    fontSize: 14,
   },
   headerRow: {
     flexDirection: "row",
