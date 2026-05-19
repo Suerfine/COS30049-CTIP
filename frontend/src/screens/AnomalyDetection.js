@@ -9,8 +9,6 @@ import {
   ChevronsRight,
   Circle,
   MapPin,
-  RotateCcw,
-  Search,
 } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import {
@@ -424,35 +422,49 @@ const AnomalyDetection = () => {
 
   const renderAnomalyHeader = () => (
     <View style={[styles.tableHeader, styles.row]}>
-      <Text style={[styles.headerCell, styles.anomalyIdCell]}>{t("id")}</Text>
+      <Text style={[styles.headerText, { flex: 1, textAlign: "center" }]}>
+        {t("id")}
+      </Text>
+
       <Pressable
         onPress={() => requestSort("event_type")}
-        style={[styles.headerPressableCell, styles.anomalyTypeCell]}
+        style={[styles.headerPressRow, { flex: 3 }]}
       >
-        <Text style={styles.headerCell}>{t("event_type")}</Text>
+        <Text style={styles.headerText}>{t("event_type")}</Text>
         {sortConfig.key === "event_type" && sortConfig.direction === "asc" ? (
           <ArrowUpNarrowWide size={14} color="white" />
         ) : (
           <ArrowDownWideNarrow size={14} color="white" />
         )}
       </Pressable>
-      <View style={[styles.headerPressableCell, styles.anomalyCoordinateCell]}>
-        <Text style={styles.headerCell}>{t("coordinates")}</Text>
-      </View>
+
+      <Text style={[styles.headerText, { flex: 3 }]}>
+        {t("coordinates")}
+      </Text>
+
       <Pressable
         onPress={() => requestSort("created_at")}
-        style={[styles.headerPressableCell, styles.anomalyDetectedCell]}
+        style={[styles.headerPressRow, { flex: 2 }]}
       >
-        <Text style={styles.headerCell}>{t("detected_at")}</Text>
+        <Text style={styles.headerText}>{t("detected_at")}</Text>
         {sortConfig.key === "created_at" && sortConfig.direction === "asc" ? (
           <ArrowUpNarrowWide size={14} color="white" />
         ) : (
           <ArrowDownWideNarrow size={14} color="white" />
         )}
       </Pressable>
-      <Text style={[styles.headerCell, styles.anomalyUserCell]}>{t("user")}</Text>
-      <Text style={[styles.headerCell, styles.anomalyStatusCell]}>{t("status_label")}</Text>
-      <Text style={[styles.headerCell, styles.anomalyActionCell]}>{t("action")}</Text>
+
+      <Text style={[styles.headerText, { flex: 1, textAlign: "center" }]}>
+        {t("user")}
+      </Text>
+
+      <Text style={[styles.headerText, { flex: 2, textAlign: "center" }]}>
+        {t("status_label")}
+      </Text>
+
+      <Text style={[styles.headerText, { flex: 2, textAlign: "center" }]}>
+        {t("action")}
+      </Text>
     </View>
   );
 
@@ -466,18 +478,16 @@ const AnomalyDetection = () => {
         selectedAnomaly?.id === item.id && { backgroundColor: "#fff8e1" },
       ]}
     >
-      <Text
-        style={[styles.cellText, styles.anomalyIdCell, styles.centeredText]}
-      >
+      <Text style={[styles.cellText, { flex: 1, textAlign: "center" }]}>
         {item.id}
       </Text>
 
-      <Text style={[styles.cellText, styles.anomalyTypeCell]}>
+      <Text style={[styles.cellText, { flex: 3 }]}>
         {getEventTypeLabel(item.event_type, t)}
       </Text>
 
       <Pressable
-        style={[styles.anomalyCoordinateCell, styles.coordinatePressable]}
+        style={[{ flex: 3 }, styles.coordinatePressable]}
         onPress={() => {
           if (item.latitude && item.longitude) {
             setSelectedAnomaly(item);
@@ -497,19 +507,15 @@ const AnomalyDetection = () => {
         )}
       </Pressable>
 
-      <Text
-        style={[styles.cellText, styles.anomalyDetectedCell, styles.mutedText]}
-      >
+      <Text style={[styles.cellText, styles.mutedText, { flex: 2 }]}>
         {formatDate(item.created_at)}
       </Text>
 
-      <Text
-        style={[styles.cellText, styles.anomalyUserCell, styles.centeredText]}
-      >
+      <Text style={[styles.cellText, { flex: 1, textAlign: "center" }]}>
         {item.user_id || "-"}
       </Text>
 
-      <View style={[styles.anomalyStatusCell, styles.centeredCell]}>
+      <View style={[{ flex: 2 }, styles.centeredCell]}>
         {item.is_resolved ? (
           <View style={styles.resolvedBadge}>
             <CheckCircle size={12} color="#059669" />
@@ -523,7 +529,7 @@ const AnomalyDetection = () => {
         )}
       </View>
 
-      <View style={[styles.anomalyActionCell, styles.centeredCell]}>
+      <View style={[{ flex: 2 }, styles.centeredCell]}>
         {!item.is_resolved && (
           <Pressable
             onPress={async (e) => {
@@ -545,7 +551,7 @@ const AnomalyDetection = () => {
             {resolvingId === item.id ? (
               <ActivityIndicator size="small" color="white" />
             ) : (
-              <Text style={styles.resolveBtnText}>{t("resolved")}</Text>
+              <Text style={styles.resolveBtnText}>{t("resolve")}</Text>
             )}
           </Pressable>
         )}
@@ -584,30 +590,6 @@ const AnomalyDetection = () => {
 
     return (
       <>
-        <View style={[styles.toolbar, styles.row]}>
-          <View style={styles.row}>
-            <Pressable
-              onPress={resetSort}
-              style={({ hovered }) => [
-                styles.iconBtn,
-                hovered && styles.iconBtnHover,
-              ]}
-            >
-              <RotateCcw size={18} />
-            </Pressable>
-            <View style={[styles.search, styles.row]}>
-              <Search size={18} color="#5b6b63" />
-              <TextInput
-                style={styles.input}
-                placeholder={t("search")}
-                placeholderTextColor="#8f8f8f"
-                value={searchQuery}
-                onChangeText={handleSearch}
-              />
-            </View>
-          </View>
-        </View>
-
         <View style={styles.tableContainer}>
           <ScrollView
             horizontal
@@ -883,23 +865,12 @@ const AnomalyDetection = () => {
       style={styles.pageScroll}
       contentContainerStyle={styles.container}
     >
-      <View style={styles.headerRow}>
         <View>
           <Text style={styles.title}>{t('anomaly_detection')}</Text>
           <Text style={styles.subtitle}>
             {t("sensor_inventory_tracking")}
           </Text>
         </View>
-        <Pressable
-          onPress={refreshActiveTab}
-          style={({ hovered }) => [
-            styles.iconBtn,
-            hovered && styles.iconBtnHover,
-          ]}
-        >
-          <RotateCcw size={18} />
-        </Pressable>
-      </View>
 
       <View style={[styles.tabStrip, isCompact && styles.tabStripCompact]}>
         {renderTabButton(
@@ -937,10 +908,13 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   headerRow: {
-    flexDirection: "row",
-    alignItems: "flex-start",
     justifyContent: "space-between",
-    gap: 16,
+    alignItems: "center",
+  },
+  headerText: {
+    color: "white",
+    alignSelf: "center",
+    fontWeight: "500",
   },
   title: {
     fontSize: 28,
@@ -951,42 +925,6 @@ const styles = StyleSheet.create({
     marginTop: 6,
     fontSize: 14,
     color: "#5b6b63",
-  },
-  toolbar: {
-    justifyContent: "space-between",
-    marginTop: 10,
-    marginBottom: 14,
-    alignItems: "center",
-  },
-  iconBtn: {
-    alignSelf: "flex-start",
-    padding: 10,
-    borderRadius: 999,
-    backgroundColor: "white",
-    borderWidth: 1,
-    borderColor: "#d7e0da",
-  },
-  iconBtnHover: {
-    backgroundColor: "#edf7f0",
-    borderColor: "#b7cfbf",
-  },
-  search: {
-    gap: 7,
-    borderWidth: 1,
-    borderColor: "#d7e0da",
-    minWidth: 280,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
-    backgroundColor: "white",
-    borderRadius: 14,
-    alignItems: "center",
-    marginLeft: 8,
-  },
-  input: {
-    flex: 1,
-    paddingVertical: 0,
-    color: "#1f2933",
-    outlineStyle: "none",
   },
   tabStrip: {
     flexDirection: "row",
@@ -1033,18 +971,13 @@ const styles = StyleSheet.create({
     color: "rgba(255,255,255,0.78)",
   },
   panel: {
-    borderRadius: 20,
-    backgroundColor: "white",
-    borderWidth: 1,
-    borderColor: "#dce6df",
-    overflow: "hidden",
+    backgroundColor: "transparent",
   },
   row: {
     flexDirection: "row",
   },
   tableContainer: {
     width: "100%",
-    backgroundColor: "white",
   },
   tableScrollContent: {
     minWidth: "100%",
@@ -1067,28 +1000,33 @@ const styles = StyleSheet.create({
   },
   tableHeader: {
     backgroundColor: "#0a6340",
-    paddingVertical: 10,
+    paddingVertical: 8,
     userSelect: "none",
+  },
+  headerPressRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 10,
   },
   headerCell: {
     color: "white",
-    fontWeight: "600",
+    fontWeight: "500",
     fontSize: 13,
     paddingHorizontal: 10,
     alignSelf: "center",
   },
   headerPressableCell: {
     flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
+    alignSelf: "center",
+    gap: 10,
     paddingHorizontal: 10,
   },
   tableRow: {
-    paddingVertical: 10,
+    paddingVertical: 5,
     borderBottomWidth: 1,
-    borderBottomColor: "#e7ece8",
+    borderBottomColor:  "#8f8f8f84",
     alignItems: "center",
-    paddingHorizontal: 10,
   },
   cellText: {
     fontSize: 13,
@@ -1275,11 +1213,9 @@ const styles = StyleSheet.create({
   paginationContainer: {
     justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: 14,
-    paddingHorizontal: 18,
-    backgroundColor: "#fbfcfb",
-    borderTopWidth: 1,
-    borderTopColor: "#e7ece8",
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+    backgroundColor: "white",
   },
   pageInfo: {
     color: "#5b6b63",
@@ -1288,17 +1224,17 @@ const styles = StyleSheet.create({
   pageBtn: {
     width: 32,
     height: 32,
-    borderRadius: 999,
+    borderRadius: 16,
     backgroundColor: "white",
     borderWidth: 1,
-    borderColor: "#d0d8d2",
+    borderColor: "#ccc",
     alignItems: "center",
     justifyContent: "center",
     marginLeft: 10,
   },
   pageBtnText: {
-    color: "#0a6340",
-    fontWeight: "700",
+    color: "#ecaa25",
+    fontWeight: "600",
   },
   btnDisabled: {
     backgroundColor: "#f3f4f6",
@@ -1311,8 +1247,8 @@ const styles = StyleSheet.create({
     paddingTop: 2,
   },
   activePageBtn: {
-    backgroundColor: "#0a6340",
-    borderColor: "#0a6340",
+    backgroundColor: "#ffc758",
+    borderColor: "#ffc758",
   },
   loadingContainer: {
     paddingVertical: 64,
