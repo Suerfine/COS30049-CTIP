@@ -40,13 +40,13 @@ export const RegisterService = {
       const params = { page, size };
       let filters = [];
       if (q) {
-        filters.push(`(
-                    firstname like "%${q}%"
-                    or lastname like "%${q}%"
-                    or identification like "%${q}%"
-                    or personal_email like "%${q}%"
-                    or tel like "%${q}%"
-                )`);
+       filters.push(`(
+            firstname like "%${q}%"
+            or lastname like "%${q}%"
+            or identification like "%${q}%"
+            or personal_email like "%${q}%"
+            or tel like "%${q}%"
+        )`);
       }
 
       if (status && status !== "All") {

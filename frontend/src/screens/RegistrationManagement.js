@@ -393,6 +393,7 @@ const RegistrationManagement = () => {
                         styles.menuItemHover,
                     ]}
                     onPress={() => {
+                      setCurrentPage(1);
                       setCurrentStatus(status.key);
                       setIsOpen(false);
                     }}

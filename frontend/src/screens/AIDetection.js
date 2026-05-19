@@ -346,17 +346,14 @@ export default function DetectionScreenWeb() {
     if (!currentUser) return;
     setEventsLoading(true);
     try {
-      const activeResponse = await apiClient.get(
-        `/anomaly-events/${currentUser.id}`,
-        {
-          params: {
-            includeResolved: false,
-            page: 1,
-            size: 100,
-            orderBy: "created_at desc",
-          },
+      const activeResponse = await apiClient.get("/Anomaly-events", {
+        params: {
+          includeResolved: false,
+          page: 1,
+          size: 100,
+          orderBy: "created_at desc",
         },
-      );
+      });
       const events = extractEvents(activeResponse.data).filter((event) => {
         if (isResolvedEvent(event)) return false;
         if (isNonAnomalyEvent(event?.event_type)) return false;
@@ -502,6 +499,90 @@ export default function DetectionScreenWeb() {
     const confidence = Number(raw);
     if (!Number.isFinite(confidence)) return t("not_available");
     return `${Math.round(confidence * 100)}%`;
+  };
+
+  const isIotAnomaly = (event) => event?.metadata?.source === "iot_sensor";
+
+  const formatEvidenceValue = (value) => {
+    if (value === null || value === undefined || value === "") return "N/A";
+    return String(value);
+  };
+
+  const renderEvidenceValue = (value) => {
+    if (Array.isArray(value)) {
+      if (value.length === 0) return <span style={styles.evidenceValue}>N/A</span>;
+
+      return (
+        <span style={styles.evidenceChipWrap}>
+          {value.map((item, index) => (
+            <span key={`${item}-${index}`} style={styles.evidenceChip}>
+              {formatEvidenceValue(item)}
+            </span>
+          ))}
+        </span>
+      );
+    }
+
+    if (value && typeof value === "object") {
+      const entries = Object.entries(value);
+
+      if (entries.length === 0) return <span style={styles.evidenceValue}>N/A</span>;
+
+      return (
+        <span style={styles.evidenceObjectList}>
+          {entries.map(([key, nestedValue]) => (
+            <span key={key} style={styles.evidenceObjectRow}>
+              <span style={styles.evidenceObjectKey}>{key}</span>
+              <span style={styles.evidenceObjectValue}>
+                {formatEvidenceValue(nestedValue)}
+              </span>
+            </span>
+          ))}
+        </span>
+      );
+    }
+
+    return <span style={styles.evidenceValue}>{formatEvidenceValue(value)}</span>;
+  };
+
+  const renderEventEvidence = (event) => {
+    if (isIotAnomaly(event)) {
+      const metadata = event.metadata || {};
+      const sensorData = metadata.sensor_data || {};
+      const rows = [
+        ["Source", "IoT sensor"],
+        ["Sensor ID", metadata.sensor_id],
+        ["Sensor Name", metadata.sensor_name],
+        ["Sensor Type", metadata.sensor_type],
+        ["Sensor Status", metadata.sensor_status],
+        ["Sensor Log ID", metadata.sensor_log_id],
+        ...Object.entries(sensorData).map(([key, value]) => [key, value]),
+      ];
+
+      return (
+        <div style={styles.evidencePanel}>
+          <h4 style={styles.evidenceTitle}>Sensor data</h4>
+          {rows.map(([label, value]) => (
+            <div key={label} style={styles.evidenceRow}>
+              <span style={styles.evidenceLabel}>{label}</span>
+              <span style={styles.evidenceValueContainer}>
+                {renderEvidenceValue(value)}
+              </span>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    return event.annotated_frame_base64 ? (
+      <img
+        alt="Annotated anomaly evidence"
+        src={`data:image/jpeg;base64,${event.annotated_frame_base64}`}
+        style={styles.detailImage}
+      />
+    ) : (
+      <div style={styles.emptyEvidence}>{t("no_annotated_frame")}</div>
+    );
   };
 
   const captureAnnotatedFrame = (result) => {
@@ -1202,15 +1283,7 @@ export default function DetectionScreenWeb() {
                 {selectedEvent.longitude ?? "N/A"}
               </div>
             </div>
-            {selectedEvent.annotated_frame_base64 ? (
-              <img
-                alt="Annotated anomaly evidence"
-                src={`data:image/jpeg;base64,${selectedEvent.annotated_frame_base64}`}
-                style={styles.detailImage}
-              />
-            ) : (
-              <div style={styles.emptyEvidence}>{t("no_annotated_frame")}</div>
-            )}
+            {renderEventEvidence(selectedEvent)}
             <div style={styles.detailMapShell}>
               <MapContainer
                 key={`event-map-${selectedEvent.id}`}
@@ -1800,6 +1873,74 @@ const styles = {
     overflow: "auto",
     fontSize: 12,
     color: "#374151",
+  },
+  evidencePanel: {
+    border: "1px solid #e5e7eb",
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 12,
+    backgroundColor: "#ffffff",
+  },
+  evidenceTitle: {
+    margin: "0 0 10px 0",
+    color: "#111827",
+    fontSize: 15,
+  },
+  evidenceRow: {
+    display: "grid",
+    gridTemplateColumns: "150px 1fr",
+    gap: 12,
+    padding: "8px 0",
+    borderTop: "1px solid #f3f4f6",
+  },
+  evidenceLabel: {
+    color: "#6b7280",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  evidenceValue: {
+    color: "#111827",
+    fontSize: 13,
+    wordBreak: "break-word",
+  },
+  evidenceValueContainer: {
+    minWidth: 0,
+  },
+  evidenceChipWrap: {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: 6,
+  },
+  evidenceChip: {
+    backgroundColor: "#f0fdf4",
+    border: "1px solid #bbf7d0",
+    borderRadius: 999,
+    color: "#047857",
+    fontSize: 12,
+    fontWeight: "700",
+    padding: "4px 9px",
+  },
+  evidenceObjectList: {
+    display: "grid",
+    gap: 6,
+  },
+  evidenceObjectRow: {
+    display: "grid",
+    gridTemplateColumns: "120px 1fr",
+    gap: 8,
+    padding: "5px 8px",
+    backgroundColor: "#f9fafb",
+    borderRadius: 6,
+  },
+  evidenceObjectKey: {
+    color: "#6b7280",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  evidenceObjectValue: {
+    color: "#111827",
+    fontSize: 12,
+    wordBreak: "break-word",
   },
   resolveButton: {
     marginTop: 12,
