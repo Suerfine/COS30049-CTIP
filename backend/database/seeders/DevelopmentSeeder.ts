@@ -13,6 +13,7 @@ import Module from "../../src/models/Module";
 import Page from "../../src/models/Page";
 import Element from "../../src/models/Element";
 import Sensor from "../../src/models/Sensor";
+import SensorLog from "../../src/models/SensorLogs";
 import Notification from "../../src/models/Notification";
 import Discussion from "../../src/models/Discussion";
 import Message from "../../src/models/Messages";
@@ -49,6 +50,8 @@ import { EventType } from "../../src/enum/EventType";
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 const addDays = (date: Date, days: number): Date =>
   new Date(date.getTime() + days * MS_PER_DAY);
+const DEMO_AI_ANOMALY_FRAME_BASE64 =
+  "/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////2wBDAf//////////////////////////////////////////////////////////////////////////////////////wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAX/xAAVEAEBAAAAAAAAAAAAAAAAAAAAAf/aAAwDAQACEAMQAAAB9A//xAAUEAEAAAAAAAAAAAAAAAAAAAAA/9oACAEBAAEFAqf/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oACAEDAQE/ASP/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oACAECAQE/ASP/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/9oACAEBAAY/Aqf/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/9oACAEBAAE/IR//2gAMAwEAAgADAAAAEP/EABQRAQAAAAAAAAAAAAAAAAAAABD/2gAIAQMBAT8QH//EABQRAQAAAAAAAAAAAAAAAAAAABD/2gAIAQIBAT8QH//EABQQAQAAAAAAAAAAAAAAAAAAABD/2gAIAQEAAT8QH//Z";
 
 export async function runSeeders(
   user_admin_count: number = 5,
@@ -238,6 +241,27 @@ export async function runSeeders(
   console.log(
     `✅ Created ${createdParkGuideUsers.length * eventTypesPerUser} compliance events`,
   );
+
+  await AnomalyEvent.create({
+    user_id: createdParkGuideUser.id,
+    event_type: "plucking_plants",
+    metadata: {
+      source: "ai_camera",
+      camera_name: "Demo AI Camera - Boardwalk Entrance",
+      detection_confidence: 0.94,
+      frame_number: 1284,
+      pose_keypoints_detected: 15,
+      evidence_label: "AI demo anomaly with photo evidence",
+    },
+    latitude: 1.5572,
+    longitude: 110.3441,
+    is_resolved: false,
+    resolved_at: null,
+    annotated_frame_base64: DEMO_AI_ANOMALY_FRAME_BASE64,
+    created_at: addDays(new Date(), -1),
+    updated_at: addDays(new Date(), -1),
+  });
+  console.log("Seeded demo AI anomaly with photo evidence");
 
   if (courses.length > 0) {
     for (const parkGuideUser of createdParkGuideUsers) {
@@ -613,7 +637,7 @@ export async function runSeeders(
       type: "gas_temp",
       longitude: 101.6869,
       latitude: 3.139,
-      current_status: SensorStatus.NORMAL,
+      current_status: SensorStatus.ALERTING,
     },
     {
       id: 2,
@@ -655,6 +679,48 @@ export async function runSeeders(
       created_at: new Date(),
       updated_at: new Date(),
     });
+  }
+
+  const demoIotSensor = await Sensor.findByPk(1);
+  if (demoIotSensor) {
+    const demoIotSensorData = {
+      temperature_celsius: 86.4,
+      smoke_ppm: 428,
+      humidity_percent: 31,
+      battery_percent: 88,
+      event_type: "forest_fire",
+      severity: "high",
+      threshold_exceeded: ["temperature_celsius", "smoke_ppm"],
+    };
+    const demoIotLog = await SensorLog.create({
+      sensor_id: demoIotSensor.id,
+      status: SensorStatus.ALERTING,
+      data: demoIotSensorData as any,
+      created_at: addDays(new Date(), -1),
+    });
+
+    await AnomalyEvent.create({
+      user_id: createdParkGuideUser.id,
+      event_type: "forest_fire",
+      metadata: {
+        source: "iot_sensor",
+        sensor_id: demoIotSensor.id,
+        sensor_name: demoIotSensor.name,
+        sensor_type: demoIotSensor.type,
+        sensor_status: SensorStatus.ALERTING,
+        sensor_log_id: demoIotLog.id,
+        sensor_data: demoIotSensorData,
+        evidence_label: "IoT demo anomaly with sensor readings",
+      },
+      latitude: Number(demoIotSensor.latitude),
+      longitude: Number(demoIotSensor.longitude),
+      is_resolved: false,
+      resolved_at: null,
+      annotated_frame_base64: null,
+      created_at: addDays(new Date(), -1),
+      updated_at: addDays(new Date(), -1),
+    });
+    console.log("Seeded demo IoT anomaly with sensor readings");
   }
   console.log("Sensors seeded successfully");
 }

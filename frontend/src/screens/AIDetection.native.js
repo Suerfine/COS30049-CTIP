@@ -139,6 +139,100 @@ export default function DetectionScreen() {
     return `${Math.round(confidence * 100)}%`;
   };
 
+  const isIotAnomaly = (event) => event?.metadata?.source === "iot_sensor";
+
+  const formatEvidenceValue = (value) => {
+    if (value === null || value === undefined || value === "") {
+      return t("not_available");
+    }
+    return String(value);
+  };
+
+  const renderEvidenceValue = (value) => {
+    if (Array.isArray(value)) {
+      if (value.length === 0) {
+        return <Text style={styles.evidenceValue}>{t("not_available")}</Text>;
+      }
+
+      return (
+        <View style={styles.evidenceChipWrap}>
+          {value.map((item, index) => (
+            <Text key={`${item}-${index}`} style={styles.evidenceChip}>
+              {formatEvidenceValue(item)}
+            </Text>
+          ))}
+        </View>
+      );
+    }
+
+    if (value && typeof value === "object") {
+      const entries = Object.entries(value);
+
+      if (entries.length === 0) {
+        return <Text style={styles.evidenceValue}>{t("not_available")}</Text>;
+      }
+
+      return (
+        <View style={styles.evidenceObjectList}>
+          {entries.map(([key, nestedValue]) => (
+            <View key={key} style={styles.evidenceObjectRow}>
+              <Text style={styles.evidenceObjectKey}>{key}</Text>
+              <Text style={styles.evidenceObjectValue}>
+                {formatEvidenceValue(nestedValue)}
+              </Text>
+            </View>
+          ))}
+        </View>
+      );
+    }
+
+    return <Text style={styles.evidenceValue}>{formatEvidenceValue(value)}</Text>;
+  };
+
+  const renderEventEvidence = (event) => {
+    if (isIotAnomaly(event)) {
+      const metadata = event.metadata || {};
+      const sensorData = metadata.sensor_data || {};
+      const rows = [
+        ["Source", "IoT sensor"],
+        ["Sensor ID", metadata.sensor_id],
+        ["Sensor Name", metadata.sensor_name],
+        ["Sensor Type", metadata.sensor_type],
+        ["Sensor Status", metadata.sensor_status],
+        ["Sensor Log ID", metadata.sensor_log_id],
+        ...Object.entries(sensorData).map(([key, value]) => [key, value]),
+      ];
+
+      return (
+        <View style={styles.evidencePanel}>
+          <Text style={styles.evidenceTitle}>Sensor data</Text>
+          {rows.map(([label, value]) => (
+            <View key={label} style={styles.evidenceRow}>
+              <Text style={styles.evidenceLabel}>{label}</Text>
+              <View style={styles.evidenceValueContainer}>
+                {renderEvidenceValue(value)}
+              </View>
+            </View>
+          ))}
+        </View>
+      );
+    }
+
+    return event.annotated_frame_base64 ? (
+      <Image
+        source={{
+          uri: `data:image/jpeg;base64,${event.annotated_frame_base64}`,
+        }}
+        style={styles.detailImage}
+        resizeMode="contain"
+      />
+    ) : (
+      <View style={styles.emptyEvidence}>
+        <Text style={styles.emptyEvidenceText}>{t("no_annotated_frame")}</Text>
+      </View>
+    );
+  };
+
   // Load persisted config on mount
   useEffect(() => {
     AsyncStorage.getItem(SERVER_CONFIG_STORAGE_KEY).then((saved) => {
@@ -202,9 +296,14 @@ export default function DetectionScreen() {
     if (!currentUser) return;
     setEventsLoading(true);
     try {
-      const response = await apiClient.get(
-        `/anomaly-events/${currentUser.id}?includeResolved=false`,
-      );
+      const response = await apiClient.get("/Anomaly-events", {
+        params: {
+          includeResolved: false,
+          page: 1,
+          size: 100,
+          orderBy: "created_at desc",
+        },
+      });
       const data = response.data;
 
       let events = [];
@@ -631,21 +730,7 @@ export default function DetectionScreen() {
                       {selectedEvent.longitude ?? t("not_available")}
                     </Text>
                   </View>
-                  {selectedEvent.annotated_frame_base64 ? (
-                    <Image
-                      source={{
-                        uri: `data:image/jpeg;base64,${selectedEvent.annotated_frame_base64}`,
-                      }}
-                      style={styles.detailImage}
-                      resizeMode="contain"
-                    />
-                  ) : (
-                    <View style={styles.emptyEvidence}>
-                      <Text style={styles.emptyEvidenceText}>
-                        {t("no_annotated_frame")}
-                      </Text>
-                    </View>
-                  )}
+                  {renderEventEvidence(selectedEvent)}
                   <ScrollView horizontal style={styles.metadataBlock}>
                     <Text style={styles.metadataText}>
                       {JSON.stringify(selectedEvent.metadata || {}, null, 2)}
@@ -1228,6 +1313,81 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   metadataText: { fontSize: 11, color: "#374151", fontFamily: "monospace" },
+  evidencePanel: {
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 12,
+    backgroundColor: "#ffffff",
+  },
+  evidenceTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#111827",
+    marginBottom: 8,
+  },
+  evidenceRow: {
+    flexDirection: "row",
+    gap: 10,
+    paddingVertical: 7,
+    borderTopWidth: 1,
+    borderTopColor: "#f3f4f6",
+    alignItems: "flex-start",
+  },
+  evidenceLabel: {
+    width: 110,
+    color: "#6b7280",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  evidenceValue: {
+    flex: 1,
+    color: "#111827",
+    fontSize: 13,
+  },
+  evidenceValueContainer: {
+    flex: 1,
+    minWidth: 0,
+  },
+  evidenceChipWrap: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
+  },
+  evidenceChip: {
+    backgroundColor: "#f0fdf4",
+    borderColor: "#bbf7d0",
+    borderWidth: 1,
+    borderRadius: 999,
+    color: "#047857",
+    fontSize: 12,
+    fontWeight: "700",
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+  },
+  evidenceObjectList: {
+    gap: 6,
+  },
+  evidenceObjectRow: {
+    flexDirection: "row",
+    gap: 8,
+    paddingVertical: 5,
+    paddingHorizontal: 8,
+    backgroundColor: "#f9fafb",
+    borderRadius: 6,
+  },
+  evidenceObjectKey: {
+    width: 110,
+    color: "#6b7280",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  evidenceObjectValue: {
+    flex: 1,
+    color: "#111827",
+    fontSize: 12,
+  },
   resolveButton: {
     marginTop: 4,
     backgroundColor: "#065f46",

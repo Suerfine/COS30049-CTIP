@@ -92,6 +92,72 @@ const formatLogData = (value) => {
   return output.length > 110 ? `${output.slice(0, 107)}...` : output;
 };
 
+const isIotAnomaly = (event) => event?.metadata?.source === "iot_sensor";
+
+const formatEvidenceValue = (value) => {
+  if (value === null || value === undefined || value === "") return "-";
+  return String(value);
+};
+
+const renderEvidenceValue = (value) => {
+  if (Array.isArray(value)) {
+    if (value.length === 0) {
+      return <Text style={styles.evidenceValue}>-</Text>;
+    }
+
+    return (
+      <View style={styles.evidenceChipWrap}>
+        {value.map((item, index) => (
+          <Text key={`${item}-${index}`} style={styles.evidenceChip}>
+            {formatEvidenceValue(item)}
+          </Text>
+        ))}
+      </View>
+    );
+  }
+
+  if (value && typeof value === "object") {
+    const entries = Object.entries(value);
+
+    if (entries.length === 0) {
+      return <Text style={styles.evidenceValue}>-</Text>;
+    }
+
+    return (
+      <View style={styles.evidenceObjectList}>
+        {entries.map(([key, nestedValue]) => (
+          <View key={key} style={styles.evidenceObjectRow}>
+            <Text style={styles.evidenceObjectKey}>{formatStatusLabel(key)}</Text>
+            <Text style={styles.evidenceObjectValue}>
+              {formatEvidenceValue(nestedValue)}
+            </Text>
+          </View>
+        ))}
+      </View>
+    );
+  }
+
+  return <Text style={styles.evidenceValue}>{formatEvidenceValue(value)}</Text>;
+};
+
+const getIotEvidenceRows = (event) => {
+  const metadata = event?.metadata || {};
+  const sensorData = metadata.sensor_data || {};
+
+  return [
+    ["Source", "IoT sensor"],
+    ["Sensor ID", metadata.sensor_id],
+    ["Sensor Name", metadata.sensor_name],
+    ["Sensor Type", metadata.sensor_type],
+    ["Sensor Status", metadata.sensor_status],
+    ["Sensor Log ID", metadata.sensor_log_id],
+    ...Object.entries(sensorData).map(([key, value]) => [
+      formatStatusLabel(key),
+      value,
+    ]),
+  ];
+};
+
 const getStatusStyle = (status) => {
   const key = String(status || "").toLowerCase();
   return STATUS_STYLES[key] || STATUS_STYLES.default;
@@ -553,6 +619,141 @@ const AnomalyDetection = () => {
     </Pressable>
   );
 
+  const renderAnomalyEvidence = (event) => {
+    if (!event) return null;
+
+    if (isIotAnomaly(event)) {
+      return (
+        <View style={styles.evidenceSection}>
+          <Text style={styles.evidenceTitle}>Sensor Evidence</Text>
+          <View style={styles.evidenceGrid}>
+            {getIotEvidenceRows(event).map(([label, value]) => (
+              <View key={label} style={styles.evidenceRow}>
+                <Text style={styles.evidenceLabel}>{label}</Text>
+                <View style={styles.evidenceValueContainer}>
+                  {renderEvidenceValue(value)}
+                </View>
+              </View>
+            ))}
+          </View>
+        </View>
+      );
+    }
+
+    return (
+      <View style={styles.evidenceSection}>
+        <Text style={styles.evidenceTitle}>AI Evidence</Text>
+        {event.annotated_frame_base64 ? (
+          <img
+            alt="Annotated anomaly evidence"
+            src={`data:image/jpeg;base64,${event.annotated_frame_base64}`}
+            style={styles.evidenceImage}
+          />
+        ) : (
+          <View style={styles.emptyEvidence}>
+            <Text style={styles.emptyEvidenceText}>No anomaly photo available</Text>
+          </View>
+        )}
+      </View>
+    );
+  };
+
+  const renderAnomalyDetailModal = () => {
+    if (!selectedAnomaly || showMapModal) return null;
+
+    return (
+      <Modal
+        visible={!!selectedAnomaly && !showMapModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setSelectedAnomaly(null)}
+      >
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => setSelectedAnomaly(null)}
+        >
+          <View
+            style={styles.anomalyDetailModalContent}
+            onStartShouldSetResponder={() => true}
+          >
+            <View style={styles.sensorLogsModalHeader}>
+              <View>
+                <Text style={styles.sensorLogsModalTitle}>
+                  {getEventTypeLabel(selectedAnomaly.event_type, t)}
+                </Text>
+                <Text style={styles.detailSubtitle}>
+                  {isIotAnomaly(selectedAnomaly) ? "IoT anomaly" : "AI anomaly"} ·{" "}
+                  {formatDate(selectedAnomaly.created_at)}
+                </Text>
+              </View>
+              <Pressable onPress={() => setSelectedAnomaly(null)}>
+                <Text style={styles.mapCloseBtn}>x</Text>
+              </Pressable>
+            </View>
+
+            <ScrollView
+              style={styles.detailScroll}
+              contentContainerStyle={styles.detailScrollContent}
+            >
+              <View style={styles.detailMetaGrid}>
+                <View style={styles.detailMetaItem}>
+                  <Text style={styles.evidenceLabel}>Status</Text>
+                  <Text style={styles.evidenceValue}>
+                    {selectedAnomaly.is_resolved ? t("resolved") : t("open")}
+                  </Text>
+                </View>
+                <View style={styles.detailMetaItem}>
+                  <Text style={styles.evidenceLabel}>Coordinates</Text>
+                  <Text style={styles.evidenceValue}>
+                    {selectedAnomaly.latitude && selectedAnomaly.longitude
+                      ? `${Number(selectedAnomaly.latitude).toFixed(6)}, ${Number(
+                          selectedAnomaly.longitude,
+                        ).toFixed(6)}`
+                      : "-"}
+                  </Text>
+                </View>
+                <View style={styles.detailMetaItem}>
+                  <Text style={styles.evidenceLabel}>User ID</Text>
+                  <Text style={styles.evidenceValue}>
+                    {selectedAnomaly.user_id || "-"}
+                  </Text>
+                </View>
+              </View>
+
+              {renderAnomalyEvidence(selectedAnomaly)}
+
+              {!selectedAnomaly.is_resolved && (
+                <Pressable
+                  onPress={async () => {
+                    setResolvingId(selectedAnomaly.id);
+                    try {
+                      await resolveAnomaly(selectedAnomaly.id);
+                      setSelectedAnomaly(null);
+                    } finally {
+                      setResolvingId(null);
+                    }
+                  }}
+                  disabled={resolvingId === selectedAnomaly.id}
+                  style={[
+                    styles.resolveDetailBtn,
+                    resolvingId === selectedAnomaly.id &&
+                      styles.resolveBtnDisabled,
+                  ]}
+                >
+                  {resolvingId === selectedAnomaly.id ? (
+                    <ActivityIndicator size="small" color="white" />
+                  ) : (
+                    <Text style={styles.resolveBtnText}>{t("resolved")}</Text>
+                  )}
+                </Pressable>
+              )}
+            </ScrollView>
+          </View>
+        </Pressable>
+      </Modal>
+    );
+  };
+
   const renderAnomalyTableState = () => {
     if (loading) {
       return (
@@ -921,6 +1122,7 @@ const AnomalyDetection = () => {
       </View>
 
       {activeTab === TABS.ANOMALIES ? renderMapModal() : null}
+      {activeTab === TABS.ANOMALIES ? renderAnomalyDetailModal() : null}
       {renderSensorLogsModal()}
     </ScrollView>
   );
@@ -1362,7 +1564,11 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0, 0, 0, 0.5)",
     justifyContent: "center",
     alignItems: "center",
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingTop: 84,
+    paddingBottom: 24,
+    zIndex: 9999,
+    elevation: 9999,
   },
   modalContent: {
     backgroundColor: "white",
@@ -1457,6 +1663,152 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "700",
     color: "#111827",
+  },
+  anomalyDetailModalContent: {
+    backgroundColor: "white",
+    borderRadius: 12,
+    overflow: "hidden",
+    width: "92%",
+    maxWidth: 820,
+    maxHeight: "calc(100vh - 120px)",
+    zIndex: 10000,
+    elevation: 10000,
+  },
+  detailSubtitle: {
+    marginTop: 4,
+    color: "#6b7280",
+    fontSize: 12,
+  },
+  detailScroll: {
+    flexGrow: 0,
+  },
+  detailScrollContent: {
+    padding: 16,
+    paddingBottom: 20,
+  },
+  detailMetaGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+    marginBottom: 14,
+  },
+  detailMetaItem: {
+    flexGrow: 1,
+    minWidth: 180,
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+    borderRadius: 8,
+    padding: 10,
+    backgroundColor: "#f9fafb",
+  },
+  evidenceSection: {
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 14,
+    backgroundColor: "#ffffff",
+  },
+  evidenceTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#111827",
+    marginBottom: 10,
+  },
+  evidenceGrid: {
+    gap: 8,
+  },
+  evidenceRow: {
+    flexDirection: "row",
+    gap: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f3f4f6",
+    paddingBottom: 10,
+    alignItems: "flex-start",
+  },
+  evidenceLabel: {
+    width: 140,
+    color: "#6b7280",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  evidenceValue: {
+    flex: 1,
+    color: "#111827",
+    fontSize: 13,
+  },
+  evidenceValueContainer: {
+    flex: 1,
+    minWidth: 0,
+  },
+  evidenceChipWrap: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
+  },
+  evidenceChip: {
+    backgroundColor: "#f0fdf4",
+    borderColor: "#bbf7d0",
+    borderWidth: 1,
+    borderRadius: 999,
+    color: "#047857",
+    fontSize: 12,
+    fontWeight: "700",
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+  },
+  evidenceObjectList: {
+    gap: 6,
+  },
+  evidenceObjectRow: {
+    flexDirection: "row",
+    gap: 8,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    backgroundColor: "#f9fafb",
+    borderRadius: 6,
+  },
+  evidenceObjectKey: {
+    width: 130,
+    color: "#6b7280",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  evidenceObjectValue: {
+    flex: 1,
+    color: "#111827",
+    fontSize: 12,
+  },
+  evidenceImage: {
+    width: "100%",
+    maxHeight: 320,
+    objectFit: "contain",
+    borderRadius: 8,
+    backgroundColor: "#111827",
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+  },
+  emptyEvidence: {
+    padding: 14,
+    borderWidth: 1,
+    borderStyle: "dashed",
+    borderColor: "#d1d5db",
+    borderRadius: 8,
+    backgroundColor: "#f9fafb",
+  },
+  emptyEvidenceText: {
+    color: "#6b7280",
+    fontSize: 13,
+  },
+  resolveDetailBtn: {
+    alignSelf: "flex-start",
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    backgroundColor: "#0a6340",
+    borderRadius: 8,
+    minWidth: 100,
+    alignItems: "center",
+    marginBottom: 16,
   },
 });
 

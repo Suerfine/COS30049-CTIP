@@ -1,7 +1,8 @@
 import request from "supertest";
 import app from "../../src/server";
-import { AnomalyEvent, Notification, User } from "../../src/models";
+import { AnomalyEvent, Notification, Sensor, User } from "../../src/models";
 import { UserRoles } from "../../src/enum/UserRoles";
+import { SensorStatus } from "../../src/enum/SensorStatus";
 import { hashPassword } from "../../src/utils/password";
 import { login } from "../helper/auth";
 import { describe, expect, it } from "@jest/globals";
@@ -72,6 +73,45 @@ describe("Anomaly Event Controller Integration Tests", () => {
     const statsResponse = await request(app).get(`/api/anomaly-events/stats/${guide.id}`);
     expect(statsResponse.status).toBe(200);
     expect(statsResponse.body.total_events).toBe(1);
+  });
+
+  it("POST /api/sensors/:sensor_id/logs - alerting sensor also creates an IoT anomaly event", async () => {
+    const admin = await createUser(UserRoles.ADMIN, ADMIN_EMAIL, ADMIN_PASSWORD);
+    await createUser(UserRoles.PARK_GUIDE, GUIDE_EMAIL, GUIDE_PASSWORD);
+    const sensor = await Sensor.create({
+      name: "Forest Fire Sensor",
+      type: "temperature",
+      latitude: 1.5533,
+      longitude: 110.3592,
+      current_status: SensorStatus.NORMAL,
+    });
+
+    const response = await request(app)
+      .post(`/api/sensors/${sensor.id}/logs`)
+      .send({
+        status: SensorStatus.ALERTING,
+        data: {
+          temperature: 82,
+          smokeLevel: "high",
+        },
+      });
+
+    expect(response.status).toBe(201);
+
+    const iotAnomaly = await AnomalyEvent.findOne({
+      where: { event_type: "forest_fire" },
+    });
+    expect(iotAnomaly).not.toBeNull();
+    expect(iotAnomaly?.user_id).toBe(admin.id);
+    expect(iotAnomaly?.latitude).toBeCloseTo(1.5533);
+    expect(iotAnomaly?.metadata?.source).toBe("iot_sensor");
+    expect(iotAnomaly?.metadata?.sensor_id).toBe(sensor.id);
+
+    expect(
+      await Notification.findOne({
+        where: { user_id: admin.id, title: "Sensor Alert: Forest Fire Sensor" },
+      }),
+    ).not.toBeNull();
   });
 
   it("PATCH /api/anomaly-events/:eventId/resolve - marks an anomaly as resolved", async () => {
