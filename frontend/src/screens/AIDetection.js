@@ -1334,39 +1334,41 @@ export default function DetectionScreenWeb() {
                 {selectedEvent.longitude ?? "N/A"}
               </div>
             </div>
-            {renderEventEvidence(selectedEvent)}
-            <div style={styles.detailMapShell}>
-              <MapContainer
-                key={`event-map-${selectedEvent.id}`}
-                center={selectedEventCenter}
-                zoom={15}
-                scrollWheelZoom
-                style={styles.mapCanvas}
-              >
-                <ModalMapResizer />
-                <TileLayer
-                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                />
-                {selectedEvent?.latitude && selectedEvent?.longitude ? (
+            <div style={styles.mediaRow}>
+              <div style={styles.mediaColumn}>
+                <h4 style={styles.sectionTitle}>Evidence</h4>
+                {renderEventEvidence(selectedEvent)}
+              </div>
+              <div style={styles.mediaColumn}>
+                <h4 style={styles.sectionTitle}>Location</h4>
+
+                <MapContainer
+                  key={`event-map-${selectedEvent.id}`}
+                  center={selectedEventCenter}
+                  zoom={15}
+                  scrollWheelZoom
+                  style={styles.mapCanvas}
+                >
+                  <TileLayer
+                    attribution='&copy; OpenStreetMap contributors'
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  />
+
                   <CircleMarker
                     center={[
                       Number(selectedEvent.latitude),
                       Number(selectedEvent.longitude),
                     ]}
-                    radius={9}
+                    radius={10}
                     pathOptions={{
                       color: "#dc2626",
-                      fillColor: "#ef4444",
-                      fillOpacity: 0.8,
+                      fillColor: "#dc2626",
+                      fillOpacity: 0.6,
                     }}
                   />
-                ) : null}
-              </MapContainer>
+                </MapContainer>
+              </div>
             </div>
-            <pre style={styles.metadataBlock}>
-              {JSON.stringify(selectedEvent.metadata || {}, null, 2)}
-            </pre>
             {!selectedEvent.is_resolved && (
               <button
                 style={{
@@ -1858,16 +1860,18 @@ const styles = {
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
-    padding: 16,
+    padding: "80px 16px 24px",
+    boxSizing: "border-box",
   },
   detailModal: {
     width: "min(900px, 96vw)",
-    maxHeight: "90vh",
+    maxHeight: "calc(100vh - 120px)",
     overflowY: "auto",
     backgroundColor: "white",
     borderRadius: 12,
     padding: 16,
     border: "1px solid #e5e7eb",
+    boxSizing: "border-box",
   },
   detailHeader: {
     display: "flex",
@@ -2105,5 +2109,32 @@ const styles = {
     fontWeight: "700",
     letterSpacing: "0.04em",
     zIndex: 10,
+  },
+  mediaRow: {
+    display: "flex",
+    flexDirection: "row",
+    gap: "20px",
+    marginTop: "20px",
+    alignItems: "stretch",
+  },
+
+  mediaColumn: {
+    flex: 1,
+    display: "flex",
+    flexDirection: "column",
+  },
+
+  mapCanvas: {
+    width: "100%",
+    height: "320px",
+    borderRadius: "12px",
+    overflow: "hidden",
+  },
+
+  detailImage: {
+    width: "100%",
+    height: "320px",
+    objectFit: "cover",
+    borderRadius: "12px",
   },
 };

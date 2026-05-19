@@ -8,7 +8,10 @@ import {
   ChevronsLeft,
   ChevronsRight,
   Circle,
+  CircleCheckBig,
+  SlidersHorizontal,
   MapPin,
+  X,
 } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import {
@@ -161,19 +164,26 @@ const getStatusStyle = (status) => {
   return STATUS_STYLES[key] || STATUS_STYLES.default;
 };
 
-const getEventTypeLabel = (eventType, t) => {
-  const typeMap = {
-    touching_plant: t("touch_plant"),
-    touching_animal: t("touch_animal"),
-    plucking_plants: t("plucking_plant"),
-    hitting_animal: t("animal_strike"),
-    extended_plant_touch: t("extended_touch_plant"),
-    extended_animal_touch: t("extended_touch_animal"),
-    forest_fire: t("forest_fire"),
-    other: t("other"),
-  };
+const getEventTypeLabel = (type, t) => {
+  switch (type) {
+    case "forest_fire":
+      return t("forest_fire");
 
-  return typeMap[eventType?.toLowerCase()] || eventType || "-";
+    case "plucking_plants":
+      return t("plucking_plants");
+
+    case "hitting_animal":
+      return t("hitting_animal");
+
+    case "extended_plant_touch":
+      return t("extended_plant_touch");
+
+    case "extended_animal_touch":
+      return t("extended_animal_touch");
+
+    default:
+      return type;
+  }
 };
 
 const PaginatedTableControls = ({
@@ -194,15 +204,14 @@ const PaginatedTableControls = ({
   }
 
   const firstItem = totalElements === 0 ? 0 : (page - 1) * size + 1;
-  const lastItem =
-    totalElements === 0 ? 0 : Math.min(totalElements, page * size);
+  const lastItem = Math.min(totalElements, page * size);
 
   return (
     <View style={[styles.paginationContainer, styles.row]}>
       <Text style={styles.pageInfo}>
         {t("showing")} {firstItem} {t("to")} {lastItem} {t("of")} {totalElements} {itemLabel}
       </Text>
-      <View style={styles.row}>
+      <View style={styles.paginationControls}>
         <Pressable
           disabled={page === 1}
           onPress={() => onPageChange(1)}
@@ -321,6 +330,14 @@ const AnomalyDetection = () => {
 
   const [activeTab, setActiveTab] = useState(TABS.ANOMALIES);
 
+  const [filterVisible, setFilterVisible] = useState(false);
+
+  const [tempAnomalyFilters, setTempAnomalyFilters] = useState({
+    status: 'all',
+    eventType: [],
+    time: 'anytime',
+  })
+
   const {
     anomalies,
     currentPage,
@@ -349,11 +366,12 @@ const AnomalyDetection = () => {
     loadSensors,
     loadSensorLogs,
     refreshSensors,
+    anomalyFilters,
+    setAnomalyFilters,
   } = useAnomalyDetection();
 
   const [resolvingId, setResolvingId] = useState(null);
   const [selectedAnomaly, setSelectedAnomaly] = useState(null);
-  const [showMapModal, setShowMapModal] = useState(false);
   const [showSensorLogsModal, setShowSensorLogsModal] = useState(false);
   const [selectedSensorForLogs, setSelectedSensorForLogs] = useState(null);
 
@@ -397,6 +415,156 @@ const AnomalyDetection = () => {
     setShowSensorLogsModal(false);
     setSelectedSensorForLogs(null);
     setSensorLogsPage(1);
+  };
+
+  const AnomalyFilterSidebar = () => {
+    const statusOptions = ["all", "active", "resolved"];
+
+    const eventTypeOptions = [
+      "forest_fire",
+      "plucking_plants",
+      "hitting_animal",
+      "extended_plant_touch",
+      "extended_animal_touch",
+    ];
+
+    const timeOptions = ["anytime", "today", "3_days", "1_week"];
+
+    const toggleEventType = (type) => {
+      setTempAnomalyFilters((prev) => {
+        const selected = prev.eventType.includes(type);
+
+        return {
+          ...prev,
+          eventType: selected
+            ? prev.eventType.filter((item) => item !== type)
+            : [...prev.eventType, type],
+        };
+      });
+    };
+
+    const FilterItem = ({ label, selected, onPress }) => (
+      <Pressable style={styles.filterItem} onPress={onPress}>
+        {selected ? (
+          <CircleCheckBig size={18} color="#0a6340" />
+        ) : (
+          <Circle size={18} color="gray" />
+        )}
+        <Text style={[styles.filterItemText, selected && styles.filterItemTextActive]}>
+          {label}
+        </Text>
+      </Pressable>
+    );
+
+    return (
+      <>
+        {filterVisible && (
+          <Pressable
+            style={styles.filterBackdrop}
+            onPress={() => setFilterVisible(false)}
+          />
+        )}
+
+        {filterVisible && (
+          <View style={styles.filterSidebar}>
+            <View style={styles.filterHeader}>
+              <Text style={styles.filterTitle}>{t("filters")}</Text>
+              <Pressable onPress={() => setFilterVisible(false)}>
+                <X size={22} color="#666" />
+              </Pressable>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false}>
+              <View style={styles.filterSection}>
+                <Text style={styles.filterSectionTitle}>{t("status_label")}</Text>
+
+                {statusOptions.map((status) => (
+                  <FilterItem
+                    key={status}
+                    label={
+                      status === "all"
+                        ? t("status.all")
+                        : status === "active"
+                          ? t("active")
+                          : t("resolved")
+                    }
+                    selected={tempAnomalyFilters.status === status}
+                    onPress={() =>
+                      setTempAnomalyFilters((prev) => ({
+                        ...prev,
+                        status,
+                      }))
+                    }
+                  />
+                ))}
+              </View>
+
+              <View style={styles.filterSection}>
+                <Text style={styles.filterSectionTitle}>{t("event_type")}</Text>
+
+                {eventTypeOptions.map((type) => (
+                  <FilterItem
+                    key={type}
+                    label={getEventTypeLabel(type, t)}
+                    selected={tempAnomalyFilters.eventType.includes(type)}
+                    onPress={() => toggleEventType(type)}
+                  />
+                ))}
+              </View>
+
+              <View style={styles.filterSection}>
+                <Text style={styles.filterSectionTitle}> {t("detected_within")}</Text>
+
+                {timeOptions.map((time) => (
+                  <FilterItem
+                    key={time}
+                    label={t(time)}
+                    selected={tempAnomalyFilters.time === time}
+                    onPress={() =>
+                      setTempAnomalyFilters((prev) => ({
+                        ...prev,
+                        time,
+                      }))
+                    }
+                  />
+                ))}
+              </View>
+            </ScrollView>
+
+            <View style={styles.filterButtons}>
+              <Pressable
+                style={styles.applyBtn}
+                onPress={() => {
+                  setAnomalyFilters(tempAnomalyFilters);
+                  setCurrentPage(1);
+                  setFilterVisible(false);
+                }}
+              >
+                <Text style={styles.filterBtnText}>{t("apply")}</Text>
+              </Pressable>
+
+              <Pressable
+                style={styles.resetBtn}
+                onPress={() => {
+                  const resetValue = {
+                    status: "all",
+                    eventType: [],
+                    time: "anytime",
+                  };
+
+                  setTempAnomalyFilters(resetValue);
+                  setAnomalyFilters(resetValue);
+                  setCurrentPage(1);
+                  setFilterVisible(false);
+                }}
+              >
+                <Text style={styles.filterBtnText}>{t("reset")}</Text>
+              </Pressable>
+            </View>
+          </View>
+        )}
+      </>
+    );
   };
 
   const renderTabButton = (tabKey, title, subtitle) => {
@@ -492,17 +660,9 @@ const AnomalyDetection = () => {
         {t("id")}
       </Text>
 
-      <Pressable
-        onPress={() => requestSort("event_type")}
-        style={[styles.headerPressRow, { flex: 3 }]}
-      >
+      <View style={[styles.headerPressRow, { flex: 3 }]}>
         <Text style={styles.headerText}>{t("event_type")}</Text>
-        {sortConfig.key === "event_type" && sortConfig.direction === "asc" ? (
-          <ArrowUpNarrowWide size={14} color="white" />
-        ) : (
-          <ArrowDownWideNarrow size={14} color="white" />
-        )}
-      </Pressable>
+      </View>
 
       <Text style={[styles.headerText, { flex: 3 }]}>
         {t("coordinates")}
@@ -554,11 +714,9 @@ const AnomalyDetection = () => {
 
       <Pressable
         style={[{ flex: 3 }, styles.coordinatePressable]}
-        onPress={() => {
-          if (item.latitude && item.longitude) {
-            setSelectedAnomaly(item);
-            setShowMapModal(true);
-          }
+        onPress={(e) => {
+          e.stopPropagation?.();
+          setSelectedAnomaly(item);
         }}
       >
         {item.latitude && item.longitude ? (
@@ -590,7 +748,7 @@ const AnomalyDetection = () => {
         ) : (
           <View style={styles.unresolvedBadge}>
             <Circle size={12} color="#dc2626" />
-            <Text style={styles.unresolvedBadgeText}>{t("open")}</Text>
+            <Text style={styles.unresolvedBadgeText}>{t("active")}</Text>
           </View>
         )}
       </View>
@@ -665,11 +823,11 @@ const AnomalyDetection = () => {
   };
 
   const renderAnomalyDetailModal = () => {
-    if (!selectedAnomaly || showMapModal) return null;
+    if (!selectedAnomaly) return null;
 
     return (
       <Modal
-        visible={!!selectedAnomaly && !showMapModal}
+        visible={!!selectedAnomaly}
         transparent
         animationType="fade"
         onRequestClose={() => setSelectedAnomaly(null)}
@@ -705,7 +863,7 @@ const AnomalyDetection = () => {
                 <View style={styles.detailMetaItem}>
                   <Text style={styles.evidenceLabel}>Status</Text>
                   <Text style={styles.evidenceValue}>
-                    {selectedAnomaly.is_resolved ? t("resolved") : t("open")}
+                    {selectedAnomaly.is_resolved ? t("resolved") : t("active")}
                   </Text>
                 </View>
                 <View style={styles.detailMetaItem}>
@@ -726,7 +884,37 @@ const AnomalyDetection = () => {
                 </View>
               </View>
 
-              {renderAnomalyEvidence(selectedAnomaly)}
+              <View style={styles.detailMediaRow}>
+                <View style={styles.detailMediaColumn}>
+                  {renderAnomalyEvidence(selectedAnomaly)}
+                </View>
+
+                {selectedAnomaly.latitude && selectedAnomaly.longitude && (
+                  <View style={styles.detailMediaColumn}>
+                    <View style={styles.evidenceSection}>
+                      <Text style={styles.evidenceTitle}>{t("location")}</Text>
+
+                      <iframe
+                        title="anomaly-location-map"
+                        style={styles.detailMap}
+                        src={`https://www.openstreetmap.org/export/embed.html?bbox=${(
+                          selectedAnomaly.longitude - 0.01
+                        ).toFixed(4)},${(selectedAnomaly.latitude - 0.01).toFixed(4)},${(
+                          selectedAnomaly.longitude + 0.01
+                        ).toFixed(4)},${(selectedAnomaly.latitude + 0.01).toFixed(
+                          4
+                        )}&layer=mapnik&marker=${selectedAnomaly.latitude.toFixed(
+                          4
+                        )},${selectedAnomaly.longitude.toFixed(4)}`}
+                        frameBorder="0"
+                        marginHeight="0"
+                        marginWidth="0"
+                        scrolling="no"
+                      />
+                    </View>
+                  </View>
+                )}
+              </View>
 
               {!selectedAnomaly.is_resolved && (
                 <Pressable
@@ -759,6 +947,72 @@ const AnomalyDetection = () => {
       </Modal>
     );
   };
+
+  const filteredAnomalies = anomalies.filter((item) => {
+    // status filter
+    if (anomalyFilters.status === "active" && item.is_resolved) {
+      return false;
+    }
+
+    if (anomalyFilters.status === "resolved" && !item.is_resolved) {
+      return false;
+    }
+
+    // event type filter
+    if (
+      anomalyFilters.eventType.length > 0 &&
+      !anomalyFilters.eventType.includes(item.event_type)
+    ) {
+      return false;
+    }
+
+    // time filter
+    if (anomalyFilters.time !== "anytime") {
+      const createdAt = new Date(item.created_at);
+      const now = new Date();
+      const start = new Date();
+
+      if (anomalyFilters.time === "today") {
+        start.setHours(0, 0, 0, 0);
+      }
+
+      if (anomalyFilters.time === "3_days") {
+        start.setDate(now.getDate() - 3);
+      }
+
+      if (anomalyFilters.time === "1_week") {
+        start.setDate(now.getDate() - 7);
+      }
+
+      if (createdAt < start) {
+        return false;
+      }
+    }
+
+    return true;
+  });
+
+  const anomalyPageSize = 10;
+
+  const hasActiveAnomalyFilter =
+    anomalyFilters.status !== "all" ||
+    anomalyFilters.eventType.length > 0 ||
+    anomalyFilters.time !== "anytime";
+
+  const displayAnomalies = hasActiveAnomalyFilter
+    ? filteredAnomalies.slice(
+        (currentPage - 1) * anomalyPageSize,
+        currentPage * anomalyPageSize
+      )
+    : anomalies;
+
+  const displayTotalElements = hasActiveAnomalyFilter
+    ? filteredAnomalies.length
+    : totalAnomalies;
+
+  const displayTotalPages = hasActiveAnomalyFilter
+    ? Math.ceil(filteredAnomalies.length / anomalyPageSize)
+    : totalPages;
 
   const renderAnomalyTableState = () => {
     if (loading) {
@@ -801,7 +1055,7 @@ const AnomalyDetection = () => {
               <FlatList
                 style={styles.table}
                 scrollEnabled={false}
-                data={anomalies}
+                data={displayAnomalies}
                 ListHeaderComponent={renderAnomalyHeader}
                 renderItem={renderAnomalyItem}
                 keyExtractor={(item) => item.id.toString()}
@@ -815,15 +1069,17 @@ const AnomalyDetection = () => {
             </View>
           </ScrollView>
         </View>
-
-        <PaginatedTableControls
-          page={currentPage}
-          totalPages={totalPages}
-          totalElements={totalAnomalies}
-          size={10}
-          itemLabel={t("anomalies")}
-          onPageChange={setCurrentPage}
-        />
+        
+        {displayTotalPages > 1 && (
+          <PaginatedTableControls
+            page={currentPage}
+            totalPages={displayTotalPages}
+            totalElements={displayTotalElements}
+            size={anomalyPageSize}
+            itemLabel={t("anomalies")}
+            onPageChange={setCurrentPage}
+          />
+        )}
       </>
     );
   };
@@ -1077,7 +1333,7 @@ const AnomalyDetection = () => {
         {renderTabButton(
           TABS.ANOMALIES,
           t("anomalies"),
-          `${totalAnomalies} ${t("total_anomalies")}`,
+          `${filteredAnomalies.length} ${t("total_anomalies")}`,
         )}
         {renderTabButton(
           TABS.SENSORS,
@@ -1086,15 +1342,40 @@ const AnomalyDetection = () => {
         )}
       </View>
 
+      {activeTab === TABS.ANOMALIES && (
+        <View style={styles.filterButtonRow}>
+          <Pressable
+            style={({ hovered }) => [
+              styles.filter,
+              hovered && styles.filterHover,
+            ]}
+            onPress={() => {
+              setTempAnomalyFilters(anomalyFilters);
+              setFilterVisible(true);
+            }}
+          >
+            <SlidersHorizontal
+              color={
+                anomalyFilters.status !== "all" ||
+                anomalyFilters.eventType.length > 0 ||
+                anomalyFilters.time !== "anytime"
+                  ? "#0a6340"
+                  : "#6b7280"
+              }
+            />
+          </Pressable>
+        </View>
+      )}
+
       <View style={styles.panel}>
         {activeTab === TABS.ANOMALIES
           ? renderAnomalyTableState()
           : renderSensorState()}
       </View>
 
-      {activeTab === TABS.ANOMALIES ? renderMapModal() : null}
       {activeTab === TABS.ANOMALIES ? renderAnomalyDetailModal() : null}
       {renderSensorLogsModal()}
+      {activeTab === TABS.ANOMALIES && <AnomalyFilterSidebar />}
     </ScrollView>
   );
 };
@@ -1103,11 +1384,13 @@ const styles = StyleSheet.create({
   pageScroll: {
     flex: 1,
     backgroundColor: "#f8faf7",
+    minHeight: '100vh',
   },
   container: {
     paddingVertical: 24,
     paddingHorizontal: 28,
     gap: 16,
+    minHeight: '100vh',
   },
   headerRow: {
     justifyContent: "space-between",
@@ -1419,6 +1702,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     backgroundColor: "white",
   },
+  paginationControls: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-end",
+  },
   pageInfo: {
     color: "#5b6b63",
     fontSize: 14,
@@ -1637,6 +1925,28 @@ const styles = StyleSheet.create({
     padding: 10,
     backgroundColor: "#f9fafb",
   },
+  detailMap: {
+    width: "100%",
+    height: 280,
+    border: "none",
+    borderRadius: 8,
+  },
+  detailMediaRow: {
+    flexDirection: "row",
+    gap: 14,
+    alignItems: "stretch",
+  },
+
+  detailMediaColumn: {
+    flex: 1,
+  },
+
+  detailMap: {
+    width: "100%",
+    height: 320,
+    border: "none",
+    borderRadius: 8,
+  },
   evidenceSection: {
     borderWidth: 1,
     borderColor: "#e5e7eb",
@@ -1717,7 +2027,7 @@ const styles = StyleSheet.create({
   },
   evidenceImage: {
     width: "100%",
-    maxHeight: 320,
+    height: 320,
     objectFit: "contain",
     borderRadius: 8,
     backgroundColor: "#111827",
@@ -1745,6 +2055,92 @@ const styles = StyleSheet.create({
     minWidth: 100,
     alignItems: "center",
     marginBottom: 16,
+  },
+  filterButtonRow: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+  },
+  filter: {
+    flexDirection: "row",
+    paddingVertical: 5,
+    paddingRight: 10,
+    borderRadius: 5,
+  },
+  filterHover: {
+    color: "#efab21",
+  },
+  filterBackdrop: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0,0,0,0.3)",
+    zIndex: 10,
+  },
+  filterSidebar: {
+    position: "absolute",
+    right: 0,
+    top: 0,
+    bottom: 0,
+    width: 280,
+    backgroundColor: "white",
+    padding: 20,
+    zIndex: 20,
+    elevation: 20,
+  },
+  filterHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  filterTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+  },
+  filterSection: {
+    marginBottom: 22,
+  },
+  filterSectionTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#444",
+    marginBottom: 10,
+  },
+  filterItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingVertical: 8,
+  },
+  filterItemText: {
+    fontSize: 14,
+    color: "#333",
+  },
+  filterItemTextActive: {
+    color: "#0a6340",
+    fontWeight: "600",
+  },
+  filterButtons: {
+    marginTop: "auto",
+    gap: 10,
+  },
+  applyBtn: {
+    backgroundColor: "#2f6618fe",
+    padding: 10,
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  resetBtn: {
+    backgroundColor: "gray",
+    padding: 10,
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  filterBtnText: {
+    color: "white",
+    fontWeight: "600",
   },
 });
 

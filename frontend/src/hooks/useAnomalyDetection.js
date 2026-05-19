@@ -60,6 +60,12 @@ export const useAnomalyDetection = () => {
   const [sensorLogsLoading, setSensorLogsLoading] = useState(false);
   const [sensorLogsError, setSensorLogsError] = useState(null);
 
+  const [anomalyFilters, setAnomalyFilters] = useState({
+    status: "all",
+    eventType: [],
+    time: "anytime",
+  })
+
   // Fetch all anomalies
   const fetchAnomalies = async () => {
     try {
@@ -71,7 +77,7 @@ export const useAnomalyDetection = () => {
         10,
         searchQuery,
         sortConfig,
-        { excludeType: "touching" } 
+        anomalyFilters
       );
 
       console.log("Anomaly Response:", response);
@@ -104,7 +110,7 @@ export const useAnomalyDetection = () => {
 
   useEffect(() => {
     fetchAnomalies();
-  }, [currentPage, searchQuery, sortConfig]);
+  }, [currentPage, searchQuery, sortConfig, anomalyFilters]);
 
   const handleSearch = (query) => {
     setSearchQuery(query);
@@ -239,5 +245,7 @@ export const useAnomalyDetection = () => {
     loadSensors,
     loadSensorLogs,
     refreshSensors,
+    anomalyFilters,
+    setAnomalyFilters,
   };
 };
