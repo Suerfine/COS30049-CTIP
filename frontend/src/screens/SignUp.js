@@ -9,6 +9,8 @@ import {
   Alert,
   Image,
   useWindowDimensions,
+  Modal,
+  ActivityIndicator,
 } from "react-native";
 import {
   User,
@@ -19,6 +21,8 @@ import {
   FileCheck,
   FileIcon,
   X,
+  Clock,
+  CheckCircle,
 } from "lucide-react-native";
 
 // Import other hook and component
@@ -27,6 +31,7 @@ import { useSignUp } from "../hooks/useSignUp";
 const SignUp = ({ navigation }) => {
   const { width } = useWindowDimensions();
   const isDesktop = width >= 980;
+  const [isSuccessModalVisible, setIsSuccessModalVisible] = useState(false);
   const {
     fname,
     setFname,
@@ -48,6 +53,16 @@ const SignUp = ({ navigation }) => {
     error,
     setError,
   } = useSignUp();
+
+  const onFormSubmit = async () => {
+    try {
+      const success = await handleSignUp(navigation);
+      
+      setIsSuccessModalVisible(true);
+    } catch (err) {
+      console.error("Registration error encountered:", err);
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -236,7 +251,7 @@ const SignUp = ({ navigation }) => {
               {error.file && <Text style={styles.errorText}>{error.file}</Text>}
               <Pressable
                 style={[styles.signupButton, loading && styles.disabledButton]}
-                onPress={() => handleSignUp(navigation)}
+                onPress={onFormSubmit}
               >
                 <Text style={styles.signupButtonText}>
                   {loading ? "Creating Account..." : "Create Account"}
@@ -253,6 +268,46 @@ const SignUp = ({ navigation }) => {
           </View>
         </View>
       </ScrollView>
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={isSuccessModalVisible}
+        onRequestClose={() => setIsSuccessModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <View style={styles.successIconBadge}>
+              <Clock size={36} color="#0a6340" />
+            </View>
+            
+            <Text style={styles.modalTitleText}>Registration Submitted</Text>
+            
+            <Text style={styles.modalBodyText}>
+              Thank you for registering. Your application has been successfully sent to the administration team for compliance verification.
+            </Text>
+
+            <View style={styles.infoAlertCard}>
+              <Text style={styles.infoAlertTitle}>What happens next?</Text>
+              <Text style={styles.infoAlertBody}>
+                Once an administrator reviews and approves your submission, credentials will be issued to you via email containing your official <Text style={{fontWeight: 'bold'}}>SFC Work Email Address</Text> along with a <Text style={{fontWeight: 'bold'}}>Temporary Access Password</Text>.
+              </Text>
+            </View>
+
+            <Pressable 
+              style={({ pressed }) => [
+                styles.modalDismissBtn,
+                pressed && { opacity: 0.8 }
+              ]} 
+              onPress={() => {
+                setIsSuccessModalVisible(false);
+                navigation.navigate("Login"); 
+              }}
+            >
+              <Text style={styles.modalDismissBtnText}>Understood</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -568,6 +623,83 @@ const styles = StyleSheet.create({
     color: "#991b1b",
     fontSize: 14,
     fontWeight: "500",
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 24,
+  },
+  modalCard: {
+    width: "100%",
+    maxWidth: 480,
+    backgroundColor: "#ffffff",
+    borderRadius: 20,
+    padding: 32,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  successIconBadge: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: "rgba(10, 99, 64, 0.1)",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  modalTitleText: {
+    fontSize: 22,
+    fontWeight: "bold",
+    color: "#1f4f13",
+    textAlign: "center",
+    marginBottom: 12,
+  },
+  modalBodyText: {
+    fontSize: 14,
+    color: "#4b5563",
+    textAlign: "center",
+    lineHeight: 22,
+    marginBottom: 24,
+  },
+  infoAlertCard: {
+    width: "100%",
+    backgroundColor: "#f0fdf4",
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: "#bbf7d0",
+    marginBottom: 28,
+  },
+  infoAlertTitle: {
+    fontSize: 14,
+    fontWeight: "bold",
+    color: "#166534",
+    marginBottom: 6,
+  },
+  infoAlertBody: {
+    fontSize: 13,
+    color: "#1f2937",
+    lineHeight: 20,
+  },
+  modalDismissBtn: {
+    backgroundColor: "#2f6618fe",
+    width: "100%",
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: "center",
+  },
+  modalDismissBtnText: {
+    color: "#ffffff",
+    fontSize: 15,
+    fontWeight: "600",
   },
 });
 
