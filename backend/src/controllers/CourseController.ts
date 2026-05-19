@@ -105,7 +105,8 @@ function toCourseResponse(course: Course, req?: Request<any>): CourseResponse {
       ? `${req.protocol}://${req.get("host")}${course.cover_img_path.startsWith("/") ? course.cover_img_path : `/${course.cover_img_path}`}`
       : null;
 
-  const module_count = Number((course.toJSON() as any).module_count ?? 0);
+  const module_count =
+    Number((course as any).dataValues?.module_count ?? 0);
 
   return {
     id: course.id,
@@ -511,7 +512,7 @@ export const createCourse = async (
     const coverFile = uploadedFiles.cover?.[0];
     const badgeFile = uploadedFiles.badge?.[0];
 
-    // Check if conver file exists if not reject the request as cover image is required for course creation. Badge image is optional so we will not reject the request if badge image is not provided.
+    // Save a cover image when one is provided. Cover images are optional for course creation.
     if (coverFile) {
       logger.debug("Saving course cover image", {
         courseId: course.id,
@@ -530,8 +531,6 @@ export const createCourse = async (
         courseId: course.id,
         path: savedPath,
       });
-    } else {
-      throw new HttpError(400, "Cover image is required for course creation");
     }
 
     if (badgeFile) {
@@ -596,16 +595,16 @@ export const getAllCourses = async (
     page: req.query.page,
     size: req.query.size,
   });
+
   try {
     const isDeletedRaw = req.query.isDeleted;
+
     const includeDeleted =
       (typeof isDeletedRaw === "string" &&
         isDeletedRaw.toLowerCase() === "true") ||
       (typeof isDeletedRaw === "boolean" && isDeletedRaw === true);
 
-    logger.debug("Course fetch parameters", { includeDeleted });
-
-    // First, get pagination info and course IDs without the many-to-many include
+    // STEP 1: pagination + module COUNT
     const coursesPaginated = await paginateModel(Course, req.query, {
       paranoid: !includeDeleted,
       include: [
@@ -622,36 +621,31 @@ export const getAllCourses = async (
       subQuery: false,
     });
 
-    // Then, fetch full course data with all tags for the paginated courses
     const courseIds = coursesPaginated.data.map((c) => c.id);
+
+    // STEP 2: full data fetch (tags + prerequisites)
     const courses = await Course.findAll({
-      where: {
-        id: courseIds,
-      },
+      where: { id: courseIds },
       include: COURSE_PREREQUISITE_INCLUDE,
       paranoid: !includeDeleted,
     });
 
-    // Create a map of courses with their module counts
+    // STEP 3: build module count map (FIXED)
     const moduleCountMap = new Map(
       coursesPaginated.data.map((c) => [
         c.id,
-        Number((c.toJSON() as any).module_count ?? 0),
+        Number((c as any).dataValues?.module_count ?? 0),
       ]),
     );
 
-    // Enhance courses with module counts
+    // STEP 4: inject module_count correctly (FIXED)
     courses.forEach((course) => {
-      (course.toJSON() as any).module_count =
+      (course as any).dataValues.module_count =
         moduleCountMap.get(course.id) || 0;
     });
 
-    logger.info("Courses fetched successfully", {
-      totalElements: coursesPaginated.totalElements,
-      totalPages: coursesPaginated.totalPages,
-    });
-
     const baseUrl = `${req.protocol}://${req.get("host")}${req.originalUrl}`;
+
     const formattedResponse = formatPaginateResponse(
       courses.map((c) => toCourseResponse(c, req)),
       req.query,
@@ -683,10 +677,10 @@ export const getAllUserCourses = async (
   next: NextFunction,
 ) => {
   logger.info("Fetching all user courses", { userId: req.user?.id });
+
   try {
     let responseData: UserCourseEnrollmentResponse[] = [];
 
-    // Retrieve all released courses with tags and prerequisites
     const courses = await Course.findAll({
       where: {
         status: CourseStatus.RELEASED,
@@ -698,17 +692,38 @@ export const getAllUserCourses = async (
           include: [{ model: Prerequisite, as: "prerequisites" }],
         },
         { model: Tag, as: "tags" },
+        {
+          model: Module,
+          as: "modules",
+          attributes: [],
+        },
       ],
+      attributes: {
+        include: [
+          [
+            sequelize.literal(`(
+              SELECT COUNT(DISTINCT m.id)
+              FROM modules m
+              WHERE m.course_id = Course.id
+            )`),
+            "module_count",
+          ],
+        ],
+      },
+      group: ["Course.id"],
+      subQuery: false,
     });
 
-    // For each course, determine if the user can enroll and include enrollment status
+    const moduleCountMap = new Map(
+      courses.map((c) => [
+        c.id,
+        Number((c as any).dataValues?.module_count ?? 0),
+      ]),
+    );
+
     for (const course of courses) {
-      let canEnroll = false;
+      let canEnroll = await canUserEnrollCourse(req.user!, course);
 
-      // Check if user can enroll in this course
-      canEnroll = await canUserEnrollCourse(req.user!, course);
-
-      // Latest enrollment should be most relevant for determining the user's current status in relation to the course
       const enrollment = await Enrollment.findOne({
         where: {
           user_id: req.user!.id,
@@ -717,8 +732,8 @@ export const getAllUserCourses = async (
         order: [["created_at", "DESC"]],
       });
 
-      // Format enrollment to response if exist else return null
       let enrollmentResponse: EnrollmentResponse | null = null;
+
       if (enrollment) {
         enrollmentResponse = {
           id: enrollment.id,
@@ -738,14 +753,15 @@ export const getAllUserCourses = async (
 
       responseData.push({
         ...toCourseResponse(course, req),
+        module_count: moduleCountMap.get(course.id) || 0, 
         status: enrollment ? enrollment.status : null,
-        is_enrollable: canEnroll,
+        is_enrollable: canEnroll.allowed,
         enrollment: enrollmentResponse,
       });
     }
 
-    // Format pagination data
     const baseUrl = `${req.protocol}://${req.get("host")}${req.originalUrl}`;
+
     const formattedResponse = formatPaginateResponse(
       responseData,
       req.query,
@@ -770,6 +786,7 @@ export const getAllUserCourses = async (
       userId: req.user?.id,
       error: err instanceof Error ? err.message : String(err),
     });
+
     if (err instanceof HttpError) {
       res.status(err.status).json({ message: err.message });
     } else {

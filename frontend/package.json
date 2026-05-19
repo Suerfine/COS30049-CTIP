@@ -3,10 +3,11 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "start": "expo start",
+    "start": "concurrently -n expo,proxy \"expo start\" \"npm run https-proxy\"",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "https-proxy": "node scripts/https-proxy.js"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "2.2.0",
@@ -17,7 +18,7 @@
     "@react-navigation/stack": "^7.8.10",
     "axios": "^1.15.2",
     "datetimepicker": "^0.1.39",
-    "expo": "~55.0.23",
+    "expo": "^55.0.24",
     "expo-camera": "~55.0.18",
     "expo-checkbox": "~55.0.4",
     "expo-document-picker": "~55.0.13",
@@ -53,6 +54,9 @@
   "devDependencies": {
     "@react-native-community/cli": "^20.1.3",
     "babel-preset-expo": "^55.0.17",
+    "concurrently": "^9.2.1",
+    "dotenv": "^17.4.2",
+    "local-ssl-proxy": "^2.0.5",
     "metro-react-native-babel-preset": "^0.77.0",
     "tailwindcss": "^3.3.2"
   }

@@ -70,6 +70,13 @@ export const enrollmentService = {
           fullName: user
             ? `${user.firstname} ${user.lastname}`
             : `User #${enroll.user_id}`,
+          profileImage:
+            user?.profileImage ||
+            user?.pfp_url ||
+            user?.pfp ||
+            user?.user_profile_image ||
+            user?.profile_image ||
+            null,
           courseName: course ? course.title : `Course #${enroll.course_id}`,
           course: course,
           expiry_date: expiryDate,
@@ -109,12 +116,35 @@ export const enrollmentService = {
     }
   },
 
+  getAllNoPagination: async () => {
+    let page = 1;
+    const size = 100;
+    let all = [];
+    let totalPages = 1;
+
+    do {
+      const res = await enrollmentService.getAll(page, size);
+
+      const data = res?.data || [];
+      all = [...all, ...data];
+
+      totalPages = res?.totalPages || 1;
+      page++;
+    } while (page <= totalPages);
+
+    return all;
+  },
+
   /**
    * GET: Filter enrollments based on user id locally
    */
   getByUserId: async (userId) => {
-    const allEnrollments = await enrollmentService.getAll();
-    return allEnrollments.filter((enroll) => enroll.user_id === userId);
+      const allEnrollments = await enrollmentService.getAllNoPagination(); 
+      console.log("ALL enrollment:", allEnrollments);
+
+      return allEnrollments.filter(
+          (enroll) => enroll.user_id === userId
+      );
   },
 
   /**

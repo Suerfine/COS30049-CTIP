@@ -1,5 +1,5 @@
 import React from "react";
-import {Modal, View, StyleSheet} from 'react-native';
+import {Modal, View, StyleSheet, ScrollView} from 'react-native';
 import {X} from 'lucide-react-native';
 
 const ModalLayout=({visible, onClose, children})=>{
@@ -7,7 +7,13 @@ const ModalLayout=({visible, onClose, children})=>{
         <Modal animationType="fade" transparent={true} visible={visible} onRequestClose={onClose}>
             <View style={styles.modalOverlay}>
                 <View style={styles.modalContent}>
-                    {children}
+                    <ScrollView
+                        style={styles.modalScroll}
+                        contentContainerStyle={styles.modalScrollContent}
+                        showsVerticalScrollIndicator={false}
+                    >
+                        {children}
+                    </ScrollView>
                 </View>
             </View>
         </Modal>
@@ -30,6 +36,12 @@ const styles=StyleSheet.create({
         backgroundColor: 'white',
         borderRadius: 20,
         overflow: 'hidden'
+    },
+    modalScroll: {
+        width: '100%',
+    },
+    modalScrollContent: {
+        flexGrow: 1,
     }
 });
 

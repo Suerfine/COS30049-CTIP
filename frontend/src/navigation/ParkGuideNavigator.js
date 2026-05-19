@@ -2,7 +2,13 @@ import React, { useState } from "react";
 import { createStackNavigator } from "@react-navigation/stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { View, Platform } from "react-native";
-import { LayoutDashboard, Book, Award, ListTodo, Group} from "lucide-react-native";
+import {
+  LayoutDashboard,
+  Book,
+  Award,
+  ListTodo,
+  Group,
+} from "lucide-react-native";
 import { useNavigationState, useNavigation } from "@react-navigation/native";
 
 // Import screens
@@ -11,13 +17,13 @@ import UserCourse from "../screens/UserCourse";
 import UserModule from "../screens/UserModule";
 import UserProfile from "../screens/UserProfile";
 import Calendar from "../screens/Calendar.native";
-import TaskDetails from "../screens/TaskDetails.native";
 import Settings from "../screens/Settings.native";
 import UserAnomaly from "../screens/UserAnomaly";
 import Badge from "../screens/Badge";
 import Notification from "../screens/Notification";
 import Payment from "../screens/Payment";
-import AIDetection from "../screens/AIDetection.native";
+import AIDetection from "../screens/AIDetection";
+import TotpSetup from "../screens/TotpSetup";
 
 // Import components
 import MobileTopBar from "../components/MobileTopBar";
@@ -29,16 +35,6 @@ import PaymentScreen from "../screens/Payment";
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
-
-// Stack for To Do tab
-function TodoStackScreen() {
-  return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="To Do Calendar" component={Calendar} />
-      <Stack.Screen name="TaskDetails" component={TaskDetails} />
-    </Stack.Navigator>
-  );
-}
 
 // Mobile tab navigator for park guide
 function MobileTabNavigator() {
@@ -83,20 +79,11 @@ function MobileTabNavigator() {
         />
         <Tab.Screen
           name="To Do"
-          component={TodoStackScreen}
+          component={Calendar}
+          initialParams={{ layout: "list" }}
           options={{
             tabBarIcon: ({ color }) => <ListTodo color={color} size={20} />,
           }}
-          listeners={({ navigation }) => ({
-            tabPress: (e) => {
-              e.preventDefault();
-
-              navigation.navigate("To Do", {
-                screen: "To Do Calendar",
-                params: { layout: "list" },
-              });
-            },
-          })}
         />
         <Tab.Screen
           name="Badge"
@@ -139,6 +126,14 @@ function MobileTabNavigator() {
         <Tab.Screen
           name="Settings"
           component={Settings}
+          options={{
+            tabBarButton: () => null,
+            tabBarItemStyle: { display: "none" },
+          }}
+        />
+        <Tab.Screen
+          name="TotpSetup"
+          component={TotpSetup}
           options={{
             tabBarButton: () => null,
             tabBarItemStyle: { display: "none" },
@@ -202,7 +197,7 @@ export default function ParkGuideNavigator() {
           <Stack.Screen name="Dashboard" component={UserDashboard} />
           <Stack.Screen name="Courses" component={UserCourse} />
           <Stack.Screen name="UserModule" component={UserModule} />
-          <Stack.Screen name="UserAnomaly" component={UserAnomaly} />
+          {/* <Stack.Screen name="UserAnomaly" component={UserAnomaly} /> */}
           <Stack.Screen name="Badge" component={Badge} />
           <Stack.Screen name="Notification" component={Notification} />
           <Stack.Screen name="Payment" component={Payment} />

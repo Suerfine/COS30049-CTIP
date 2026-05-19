@@ -10,8 +10,10 @@ import {
   ImageBackground,
   Dimensions,
   Modal,
+  Platform,
+  useWindowDimensions
 } from "react-native";
-import { SquarePen } from "lucide-react-native";
+import { SquarePen, ShieldCheck } from "lucide-react-native";
 import { Eye, EyeOff, FileUp } from "lucide-react-native";
 
 // Import other hooks and components
@@ -23,6 +25,7 @@ import { useUserProfile } from "../hooks/useUserProfile";
 import { userProfileService } from "../services/userProfileService";
 import { useSignUp } from "../hooks/useSignUp";
 import { isValidEmail, isOnlyLetters, phoneRegex, isValidPassword } from "../utils/Validation";
+import { useTranslation } from 'react-i18next';
 
 const UserProfile = ({ navigation }) => {
   const {
@@ -48,6 +51,9 @@ const UserProfile = ({ navigation }) => {
   const [originalData, setOriginalData] = useState(null);
   const [errors, setErrors] = useState({}); 
   const { handleUpload, file, setFile} = useSignUp();
+  const { width } = useWindowDimensions();
+  const isSmallScreen = width < 768;
+  const { t, i18n }=useTranslation();
 
   // validate form
   const validateForm = () => {
@@ -154,16 +160,19 @@ const UserProfile = ({ navigation }) => {
             </View>
 
             {/* Personal Information */}
-            <View style={styles.section}>
+            <View style={[
+              styles.section,
+              isSmallScreen && styles.sectionMobile
+            ]}>
             <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Personal Information</Text>
+                <Text style={styles.sectionTitle}>{t('personal information')}</Text>
                 <View style={styles.actionButtons}>
                 {!isEditing ? (
                     <Pressable style={styles.saveBtn} onPress={() => {
                         setOriginalData(form);
                         setIsEditing(true);
                     }}>
-                    <Text style={styles.saveBtnText}>Edit</Text>
+                    <Text style={styles.saveBtnText}>{t('edit')}</Text>
                     </Pressable>
                     ) : (
                     <>
@@ -173,7 +182,7 @@ const UserProfile = ({ navigation }) => {
                         }
                         setIsEditing(false);
                     }}>
-                        <Text style={styles.cancelBtnText}>Cancel</Text>
+                        <Text style={styles.cancelBtnText}>{t('cancel')}</Text>
                     </Pressable>
 
                     <Pressable style={styles.saveBtn} onPress={() => {
@@ -182,7 +191,7 @@ const UserProfile = ({ navigation }) => {
                         }
                     }}
                     >
-                        <Text style={styles.saveBtnText}>Save Changes</Text>
+                        <Text style={styles.saveBtnText}>{t('save changes')}</Text>
                     </Pressable>
                     </>
                 )}
@@ -190,9 +199,12 @@ const UserProfile = ({ navigation }) => {
             </View>
 
             {/* first name, last name and IC row*/}
-            <View style={styles.fieldRow}>
+            <View style={[
+              styles.fieldRow,
+              isSmallScreen && styles.fieldRowMobile
+            ]}>
                 <View style={styles.fieldGroup}>
-                <Text style={styles.fieldLabel}>First Name</Text>
+                <Text style={styles.fieldLabel}>{t('first name')}</Text>
                 <TextInput
                     style={[styles.input, !isEditing && styles.inputDisabled]}
                     value={form.firstname}
@@ -210,7 +222,7 @@ const UserProfile = ({ navigation }) => {
                 </View>
 
                 <View style={styles.fieldGroup}>
-                <Text style={styles.fieldLabel}>Last Name</Text>
+                <Text style={styles.fieldLabel}>{t('last name')}</Text>
                 <TextInput
                     style={[styles.input, !isEditing && styles.inputDisabled]}
                     value={form.lastname}
@@ -228,7 +240,10 @@ const UserProfile = ({ navigation }) => {
                 </View>
             </View>
 
-            <View style={styles.fieldRow}>
+            <View style={[
+              styles.fieldRow,
+              isSmallScreen && styles.fieldRowMobile
+            ]}>
                 <View style={styles.fieldGroup}>
                 <Text style={styles.fieldLabel}>IC / Passport No.</Text>
                 <TextInput
@@ -242,9 +257,12 @@ const UserProfile = ({ navigation }) => {
                 </View>
             </View>
 
-            <View style={styles.fieldRow}>
+            <View style={[
+              styles.fieldRow,
+              isSmallScreen && styles.fieldRowMobile
+            ]}>
                 <View style={styles.fieldGroup}>
-                <Text style={styles.fieldLabel}>Email</Text>
+                <Text style={styles.fieldLabel}>{t('email')}</Text>
                 <TextInput
                     style={[styles.input, !isEditing && styles.inputDisabled]}
                     value={form.personal_email}
@@ -264,7 +282,7 @@ const UserProfile = ({ navigation }) => {
                 </View>
 
                 <View style={styles.fieldGroup}>
-                <Text style={styles.fieldLabel}>Phone Number</Text>
+                <Text style={styles.fieldLabel}>{t('phone number')}</Text>
                 <TextInput
                     style={[styles.input, !isEditing && styles.inputDisabled]}
                     value={form.tel}
@@ -282,6 +300,22 @@ const UserProfile = ({ navigation }) => {
                 )}
                 </View>
             </View>
+            </View>
+
+            {/* Security */}
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>{t('Security')}</Text>
+              </View>
+              <Pressable
+                style={({ hovered }) => [styles.securityBtn, hovered && styles.securityBtnHover]}
+                onPress={() => navigation.navigate('Security')}
+              >
+                <ShieldCheck size={18} color="#2f6618fe" />
+                <Text style={styles.securityBtnText}>
+                    {t('password_two_factor_auth')}
+                </Text>              
+              </Pressable>
             </View>
         </ScrollView>
         </View>
@@ -360,7 +394,9 @@ const styles = StyleSheet.create({
   // Personal info section
   section: {
     backgroundColor: "white",
-    marginHorizontal: 100,
+    width: "90%",
+    maxWidth: 1000,
+    alignSelf: "center",
     marginVertical: 16,
     borderRadius: 12,
     padding: 30,
@@ -370,14 +406,19 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
+  sectionMobile: {
+    width: "92%",
+    padding: 18,
+  },
   sectionHeader: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start",
     justifyContent: "space-between",
     marginBottom: 20,
+    gap: 12,
+    flexWrap: "wrap",
   },
   sectionTitle: {
-    marginBottom: 20,
     fontSize: 17,
     fontWeight: "700",
     color: "black",
@@ -385,6 +426,7 @@ const styles = StyleSheet.create({
   actionButtons: {
     flexDirection: "row",
     gap: 12,
+    flexWrap: "wrap",
   },
   cancelBtn: {
     borderWidth: 1,
@@ -414,11 +456,14 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 40,
     marginBottom: 25,
-    flexWrap: "wrap",
+  },
+  fieldRowMobile: {
+    flexDirection: "column",
+    gap: 16,
   },
   fieldGroup: {
     flex: 1,
-    minWidth: 140,
+    minWidth: 0,
   },
   fieldLabel: {
     fontSize: 13,
@@ -427,6 +472,7 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   input: {
+    width: "100%",
     borderWidth: 1,
     borderColor: "#2f6618fe",
     borderRadius: 8,
@@ -474,6 +520,25 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     marginTop: 2,
     textAlign: "left",
+  },
+  securityBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    borderWidth: 1,
+    borderColor: "#2f6618fe",
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    alignSelf: "flex-start",
+  },
+  securityBtnHover: {
+    backgroundColor: "#e6f2e6",
+  },
+  securityBtnText: {
+    fontSize: 14,
+    color: "#2f6618fe",
+    fontWeight: "500",
   },
 });
 

@@ -15,7 +15,8 @@ class Sensor extends Model<
   declare id: CreationOptional<number>;
   declare name: string;
   declare type: string;
-  declare location: string;
+  declare longitude: number;
+  declare latitude: number;
   declare current_status: SensorStatus;
   declare created_at: CreationOptional<Date>;
   declare updated_at: CreationOptional<Date>;
@@ -36,8 +37,12 @@ Sensor.init(
       type: DataTypes.STRING,
       allowNull: false,
     },
-    location: {
-      type: DataTypes.STRING,
+    longitude: {
+      type: DataTypes.DECIMAL(10, 7),
+      allowNull: false,
+    },
+    latitude: {
+      type: DataTypes.DECIMAL(10, 7),
       allowNull: false,
     },
     current_status: {

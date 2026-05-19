@@ -40,6 +40,7 @@ import { useCourseProgress } from "../components/useCourseProgress.js";
 import AIChatBot from "../components/AIChatbot.js";
 import { useTranslation } from "react-i18next";
 import DiscussionSection from "../components/DiscussionSection.js";
+import { enrollmentService } from "../services/EnrollmentService.js";
 
 const UserModule = ({ navigation }) => {
   const route = useRoute();
@@ -51,16 +52,18 @@ const UserModule = ({ navigation }) => {
     initialSection,
     discussionId,
   } = route.params;
+  const [resolvedEnrollmentStatus, setResolvedEnrollmentStatus] = useState(enrollmentStatus);
+  const [resolvedEnrollmentId, setResolvedEnrollmentId] = useState(enrollmentId);
   const [localStatus, setLocalStatus] = useState(initialStatus);
   const hasfailedRef = useRef(false);
 
   const isLocked =
-    enrollmentStatus === null ||
-    enrollmentStatus === undefined ||
-    enrollmentStatus === "expired" ||
-    enrollmentStatus == "pending_payment" ||
-    enrollmentStatus == "applied" ||
-    enrollmentStatus == "failed";
+    resolvedEnrollmentStatus === null ||
+    resolvedEnrollmentStatus === undefined ||
+    resolvedEnrollmentStatus === "expired" ||
+    resolvedEnrollmentStatus == "pending_payment" ||
+    resolvedEnrollmentStatus == "applied" ||
+    resolvedEnrollmentStatus == "failed";
 
   const { currentUser } = useAuth();
   const {
@@ -78,7 +81,7 @@ const UserModule = ({ navigation }) => {
     refreshHistory,
     handleFetchHistory,
     failEnrollment,
-  } = useCourseDetails(id, enrollmentId);
+  } = useCourseDetails(id, resolvedEnrollmentId);
   const { allCourseList } = useCourses();
   const [chatOpen, setChatOpen] = useState(false);
 
@@ -98,11 +101,51 @@ const UserModule = ({ navigation }) => {
     : null;
 
   const [selectedPage, setSelectedPage] = useState({ type: "overview" });
+  const [pendingDiscussionId, setPendingDiscussionId] = useState(discussionId);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [activeTab, setActiveTab] = useState("Overview");
   const scrollViewRef = useRef(null);
 
+  const memoizedPageMetadata = React.useMemo(() => ({
+    ...selectedPage,
+    course,
+  }), [selectedPage, course]);
+
   useEffect(() => {
+    setResolvedEnrollmentStatus(enrollmentStatus);
+    setResolvedEnrollmentId(enrollmentId);
+    setLocalStatus(initialStatus);
+  }, [id, enrollmentStatus, enrollmentId, initialStatus]);
+
+  useEffect(() => {
+    if (resolvedEnrollmentStatus !== undefined && resolvedEnrollmentId !== undefined) return;
+
+    let isMounted = true;
+
+    const loadEnrollmentContext = async () => {
+      const response = await enrollmentService.getMyEnrollments();
+      const enrollments = response?.data ?? response ?? [];
+      const matchingEnrollment = enrollments.find(
+        (enrollment) => String(enrollment.course_id) === String(id),
+      );
+
+      if (!isMounted || !matchingEnrollment) return;
+
+      setResolvedEnrollmentStatus(matchingEnrollment.status ?? null);
+      setResolvedEnrollmentId(matchingEnrollment.id ?? null);
+      setLocalStatus(matchingEnrollment.status ?? null);
+    };
+
+    loadEnrollmentContext();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [id, resolvedEnrollmentStatus, resolvedEnrollmentId]);
+
+  useEffect(() => {
+    setPendingDiscussionId(discussionId);
+
     if (initialSection === "forum") {
       setSelectedPage({ type: "forum" });
       return;
@@ -309,12 +352,15 @@ const UserModule = ({ navigation }) => {
           )}
         </View>
         {/* Render the dynamic content */}
+      {course.description !== "undefined" && (
         <View style={styles.markdownContainer}>
           <Markdown style={markdownStyles}>
             {course?.description ||
               "_No content provided yet. Click edit to start._"}
           </Markdown>
         </View>
+      )}
+        
 
         {/* Badge Achievement Section */}
         <View>
@@ -461,7 +507,6 @@ const UserModule = ({ navigation }) => {
                     }}
                     userMarks={userMarks}
                     isFinalQuiz={selectedPage.page.final_quiz}
-                    pageMetadata={selectedPage}
                     enrollmentId={enrollmentId}
                     fullHistoryMap={fullHistoryMap}
                     onFetchHistory={() => {
@@ -474,7 +519,7 @@ const UserModule = ({ navigation }) => {
                     scrollToTop={scrollToTop}
                     isFailed={isFailed}
                     onSelectPage={setSelectedPage}
-                    pageMetadata={{ ...selectedPage, course: course }}
+                    pageMetadata={memoizedPageMetadata}
                     progressMap={progressMap}
                   />
                 )}
@@ -509,7 +554,8 @@ const UserModule = ({ navigation }) => {
             ) : selectedPage?.type === "forum" ? (
               <DiscussionSection
                 courseId={id}
-                initialDiscussionId={discussionId}
+                initialDiscussionId={pendingDiscussionId}
+                onInitialDiscussionOpened={() => setPendingDiscussionId(null)}
                 navigation={navigation}
                 styles={styles}
               />
@@ -579,7 +625,7 @@ const UserModule = ({ navigation }) => {
                   source={
                     normalizedCoverUrl
                       ? { uri: normalizedCoverUrl }
-                      : require("../../assets/first_aid.png")
+                      : ''
                   }
                   style={styles.course_cover}
                 />
@@ -660,9 +706,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 20,
   },
   statLabel: {
     color: "#363636",
@@ -894,8 +937,10 @@ const styles = StyleSheet.create({
   course_cover: {
     alignSelf: "center",
     borderRadius: 13,
-    width: "800px",
-    height: "400px",
+    width: "100%",
+    maxWidth: 800,
+    aspectRatio: 2,
+    height: undefined,
     marginBottom: 20,
   },
   contentWrapper: {
@@ -1018,11 +1063,6 @@ const styles = StyleSheet.create({
     color: "#374151",
     textTransform: "uppercase",
     letterSpacing: 0.5,
-  },
-  statsRow: {
-    flexDirection: "row",
-    gap: 24,
-    marginBottom: 12,
   },
   guideStatChip: {
     flexDirection: "column",

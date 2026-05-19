@@ -77,8 +77,11 @@ export const enrollCourse = async (
       throw new HttpError(400, "Receipt image is required");
     }
 
-    //Validate the user satisfies the prerequisites for the course.
-    // TODO: Implement proper prerequisite check based on the course's actual prerequisites instead of just checking if they have completed any course
+    // Check if user is eligible to enroll in the course
+    const { allowed, message } = await canUserEnrollCourse(user, course);
+    if (!allowed) {
+      throw new HttpError(400, message);
+    }
 
     //Create the enrollment record
     const enrollment = await Enrollment.create(
@@ -557,12 +560,16 @@ export const getEnrollmentAudit = async (
   }
 };
 
-export const approveBadge = async (req: Request<{ id: string }>, res: Response) => {
+export const approveBadge = async (
+  req: Request<{ id: string }>,
+  res: Response,
+) => {
   const transaction = await sequelize.transaction();
 
   try {
     const enrollmentId = Number(req.params.id);
-    if (Number.isNaN(enrollmentId)) throw new HttpError(400, "Invalid enrollment id");
+    if (Number.isNaN(enrollmentId))
+      throw new HttpError(400, "Invalid enrollment id");
 
     const enrollment = await Enrollment.findByPk(enrollmentId, {
       include: [{ model: Course }],
@@ -582,7 +589,7 @@ export const approveBadge = async (req: Request<{ id: string }>, res: Response) 
       include: [
         {
           model: Module,
-          as: "module", 
+          as: "module",
           where: {
             course_id: enrollment.course_id,
           },
@@ -604,7 +611,9 @@ export const approveBadge = async (req: Request<{ id: string }>, res: Response) 
 
     if (courseData?.badge_expire_in_months) {
       const expireDate = new Date();
-      expireDate.setMonth(expireDate.getMonth() + courseData.badge_expire_in_months);
+      expireDate.setMonth(
+        expireDate.getMonth() + courseData.badge_expire_in_months,
+      );
       enrollment.badge_expire_at = expireDate;
     }
 

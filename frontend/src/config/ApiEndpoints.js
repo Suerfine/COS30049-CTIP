@@ -48,7 +48,7 @@ export const API_ENDPOINTS = {
     PATCH: (id) => `/enrollments/${id}/approve`,
     HISTORY_BY_ENROLLMENT: (enrollmentId) =>
       `/submission/enrollment/${enrollmentId}`,
-    APPROVE: (id)=> `/enrollments/${id}/approve`,
+    APPROVE: (id) => `/enrollments/${id}/approve`,
   },
   WORKSHOP: {
     JOIN_WORKSHOP: (courseId, elementId) =>
@@ -79,6 +79,13 @@ export const API_ENDPOINTS = {
     BASE: "/events",
     STATUS: (id) => `/events/${id}/status`,
   },
+  SENSOR: {
+    LIST: "/sensors",
+    DETAIL: (id) => `/sensors/${id}`,
+    LOGS: "/sensors/logs",
+    SENSOR_LOGS: (sensorId) => `/sensors/${sensorId}/logs`,
+    LOG_DETAIL: (id) => `/logs/${id}`,
+  },
   AR: {
     LIST: "/ar-models",
     DETAIL: (id) => `/ar-models/${id}`,
@@ -105,5 +112,10 @@ export const API_ENDPOINTS = {
   },
   SEARCH: {
     PARK_GUIDE: "/search/park-guide",
+  },
+  TOTP: {
+    SETUP: "/totp/setup",
+    VERIFY_SETUP: "/totp/verify-setup",
+    DISABLE: "/totp/disable",
   },
 };

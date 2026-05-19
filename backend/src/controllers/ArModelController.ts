@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import path from "path";
 import { ArModel } from "../models";
+import { renderArViewerHtml } from "../views/arViewer";
 import { ErrorResponse, PaginateRequestParams, PaginateResponse } from "../types/common";
 import { ArModelResponse, CreateArModelRequest } from "../types/ArModel";
 import { formatPaginateResponse, paginateModel } from "../utils/paginate";
@@ -238,6 +239,34 @@ export const uploadPattern = async (
     if (err instanceof HttpError) {
       return res.status(err.status).json({ message: err.message });
     }
+    next(err);
+  }
+};
+
+export const getArViewer = async (
+  req: Request<{ id: string }>,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const modelId = Number(req.params.id);
+    if (!Number.isFinite(modelId)) {
+      res.status(400).send("Invalid model id");
+      return;
+    }
+
+    const model = await ArModel.findByPk(modelId);
+    if (!model) {
+      res.status(404).send("AR model not found");
+      return;
+    }
+
+    const modelUrl = buildPublicUrl(req, model.model_path) ?? "";
+    const patternUrl = buildPublicUrl(req, model.pattern_path);
+
+    res.setHeader("Content-Type", "text/html");
+    res.send(renderArViewerHtml(model.title, modelUrl, patternUrl));
+  } catch (err) {
     next(err);
   }
 };

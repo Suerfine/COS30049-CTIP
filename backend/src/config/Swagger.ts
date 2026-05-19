@@ -18,6 +18,10 @@ const options: swaggerJSDoc.Options = {
         url: "http://localhost:5000",
         description: "Local development server",
       },
+      {
+        url: "https://localhost:5000",
+        description: "Local HTTPS development server",
+      },
     ],
     tags: [
       {
@@ -80,6 +84,10 @@ const options: swaggerJSDoc.Options = {
         name: "Chatbot",
         description: "AI chatbot interaction endpoints",
       },
+      {
+        name: "Submissions",
+        description: "Submission and assessment data endpoints",
+      },
     ],
     components: {
       securitySchemes: {
@@ -130,6 +138,25 @@ const options: swaggerJSDoc.Options = {
               format: "binary",
               description: "Optional profile image file",
             },
+          },
+        },
+        ForgotPasswordRequest: {
+          type: "object",
+          required: ["email"],
+          properties: {
+            email: {
+              type: "string",
+              format: "email",
+              example: "admin@sfc.gov.my",
+            },
+          },
+        },
+        ResetPasswordRequest: {
+          type: "object",
+          required: ["token", "password"],
+          properties: {
+            token: { type: "string" },
+            password: { type: "string", example: "NewPassword123!" },
           },
         },
         User: {
@@ -1168,7 +1195,8 @@ const options: swaggerJSDoc.Options = {
             id: { type: "integer", example: 1 },
             name: { type: "string", example: "Temperature Sensor A" },
             type: { type: "string", example: "temperature" },
-            location: { type: "string", example: "Building A - Room 101" },
+            longitude: { type: "number", format: "double", example: 101.6869 },
+            latitude: { type: "number", format: "double", example: 3.139 },
             current_status: {
               type: "string",
               enum: ["normal", "alerting", "maintenance", "deactivated"],
@@ -1193,11 +1221,12 @@ const options: swaggerJSDoc.Options = {
         },
         CreateSensorRequest: {
           type: "object",
-          required: ["name", "type", "location"],
+          required: ["name", "type", "longitude", "latitude"],
           properties: {
             name: { type: "string", example: "Temperature Sensor A" },
             type: { type: "string", example: "temperature" },
-            location: { type: "string", example: "Building A - Room 101" },
+            longitude: { type: "number", format: "double", example: 101.6869 },
+            latitude: { type: "number", format: "double", example: 3.139 },
           },
         },
         UpdateSensorRequest: {
@@ -1205,7 +1234,8 @@ const options: swaggerJSDoc.Options = {
           properties: {
             name: { type: "string", example: "Temperature Sensor A Updated" },
             type: { type: "string", example: "temperature" },
-            location: { type: "string", example: "Building B - Room 201" },
+            longitude: { type: "number", format: "double", example: 101.6869 },
+            latitude: { type: "number", format: "double", example: 3.139 },
           },
         },
         SensorLog: {

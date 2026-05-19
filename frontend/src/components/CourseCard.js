@@ -18,17 +18,7 @@ import {
 } from "lucide-react-native";
 import ProgressBar from "./ProgressBar.js";
 import { useTranslation } from "react-i18next";
-
-const EnrollmentStatus = {
-  APPLIED: "applied",
-  IN_PROGRESS: "in_progress",
-  IN_REVIEW: "in_review",
-  COMPLETED: "completed",
-  FAILED: "failed",
-  EXPIRED: "expired",
-  REJECTED: "rejected",
-  PENDING_PAYMENT: "pending_payment",
-};
+import { EnrollmentStatus } from "../enum/EnrollmentStatus.js";
 
 const CourseCard = ({
   coverImgUrl,
@@ -64,90 +54,99 @@ const CourseCard = ({
 
   // show status
   const renderEnrollmentWidget = () => {
-    if (enrollmentStatus === EnrollmentStatus.APPLIED) {
-      return (
-        <View style={[styles.statusBadge, styles.badgeApplied]}>
-          <Text style={styles.statusBadgeText}>
-            {t("status.pending_approval", "Pending Approval")}
-          </Text>
-        </View>
-      );
-    }
-
-    if (enrollmentStatus === EnrollmentStatus.PENDING_PAYMENT) {
-      return (
-        <View style={[styles.statusBadge, styles.badgePendingPayment]}>
-          <Text style={styles.statusBadgeText}>
-            {t("status.pending_payment", "Pending Payment")}
-          </Text>
-        </View>
-      );
-    }
-
-    if (enrollmentStatus === EnrollmentStatus.IN_PROGRESS) {
-      return <ProgressBar progress={progress} />;
-    }
-
-    if (enrollmentStatus === EnrollmentStatus.IN_REVIEW) {
-      return (
-        <View style={[styles.statusBadge, styles.badgeInReview]}>
-          <Text style={styles.statusBadgeText}>
-            {t("status.in_review", "Under Admin Review")}
-          </Text>
-        </View>
-      );
-    }
-
-    if (enrollmentStatus === EnrollmentStatus.COMPLETED) {
-      return <ProgressBar progress={progress} />;
-    }
-
-    // 2. Check for FAILED/REJECTED (This is where your history button lives)
-    if (
-      enrollmentStatus === EnrollmentStatus.FAILED ||
-      enrollmentStatus === EnrollmentStatus.REJECTED
-    ) {
-      return (
-        <View style={styles.historyActionContainer}>
-          <Pressable
-            style={[styles.enrollBtn, { marginTop: 8 }]}
-            onPress={handleEnrollPress}
-          >
-            <Text style={styles.enrollText}>
-              {t("enroll_again", "Enroll Again")}
+    switch (enrollmentStatus ?? null) {
+      case EnrollmentStatus.PENDING_PAYMENT:
+        return (
+          <View style={[styles.statusBadge, styles.badgePendingPayment]}>
+            <Text style={styles.statusBadgeText}>
+              {t("status.pending_payment", "Pending Payment")}
             </Text>
-          </Pressable>
-          {hasHistory && (
-            <Pressable style={styles.historyBtn} onPress={onViewHistory}>
-              <Text style={styles.historyBtnText}>
-                {t("view_history", "View History")}
+          </View>
+        );
+      case EnrollmentStatus.APPLIED:
+        return (
+          <View style={[styles.statusBadge, styles.badgeApplied]}>
+            <Text style={styles.statusBadgeText}>
+              {t("status.pending_approval", "Pending Approval")}
+            </Text>
+          </View>
+        );
+      case EnrollmentStatus.IN_PROGRESS:
+      case EnrollmentStatus.COMPLETED:
+        return <ProgressBar progress={progress} />;
+      case EnrollmentStatus.IN_REVIEW:
+        return (
+          <View style={[styles.statusBadge, styles.badgeInReview]}>
+            <Text style={styles.statusBadgeText}>
+              {t("status.in_review", "Under Admin Review")}
+            </Text>
+          </View>
+        );
+      case EnrollmentStatus.FAILED:
+      case EnrollmentStatus.REJECTED:
+        return (
+          <View style={styles.historyActionContainer}>
+            <Pressable
+              style={[styles.enrollBtn, { marginTop: 8 }]}
+              onPress={handleEnrollPress}
+            >
+              <Text style={styles.enrollText}>
+                {t("enroll_again", "Enroll Again")}
               </Text>
             </Pressable>
-          )}
-        </View>
-      );
-    }
-
-    // 3. Fallback for NO STATUS (New Users)
-    if (!enrollmentStatus) {
-      return (
-        <View style={styles.historyActionContainer}>
-          <Pressable style={styles.enrollBtn} onPress={handleEnrollPress}>
-            <Text style={styles.enrollText}>{t("enroll", "Enroll")}</Text>
-          </Pressable>
-          {/* Show history link even if they aren't currently enrolled but have past attempts */}
-          {hasHistory && (
-            <Pressable style={styles.historyBtnLink} onPress={onViewHistory}>
-              <Text style={styles.historyLinkText}>
-                {t("view_past_records", "Show Past Records")}
+            {hasHistory && (
+              <Pressable style={styles.historyBtn} onPress={onViewHistory}>
+                <Text style={styles.historyBtnText}>
+                  {t("view_history", "View History")}
+                </Text>
+              </Pressable>
+            )}
+          </View>
+        );
+      case EnrollmentStatus.EXPIRED:
+        return (
+          <View>
+            <View style={[styles.statusBadge, styles.badgeExpired]}>
+              <Text style={styles.statusBadgeText}>
+                {t("status.badge_expired", "Badge Expired")}
               </Text>
+            </View>
+            <View style={styles.historyActionContainer}>
+              <Pressable
+                style={[styles.enrollBtn, { marginTop: 8 }]}
+                onPress={handleEnrollPress}
+              >
+                <Text style={styles.enrollText}>
+                  {t("enroll_again", "Enroll Again")}
+                </Text>
+              </Pressable>
+              {hasHistory && (
+                <Pressable style={styles.historyBtn} onPress={onViewHistory}>
+                  <Text style={styles.historyBtnText}>
+                    {t("view_history", "View History")}
+                  </Text>
+                </Pressable>
+              )}
+            </View>
+          </View>
+        );
+      default:
+        return (
+          <View style={styles.historyActionContainer}>
+            <Pressable style={styles.enrollBtn} onPress={handleEnrollPress}>
+              <Text style={styles.enrollText}>{t("enroll", "Enroll")}</Text>
             </Pressable>
-          )}
-        </View>
-      );
+            {/* Show history link even if they aren't currently enrolled but have past attempts */}
+            {hasHistory && (
+              <Pressable style={styles.historyBtnLink} onPress={onViewHistory}>
+                <Text style={styles.historyLinkText}>
+                  {t("view_past_records", "Show Past Records")}
+                </Text>
+              </Pressable>
+            )}
+          </View>
+        );
     }
-
-    return null;
   };
 
   return (
@@ -168,7 +167,7 @@ const CourseCard = ({
         {enrollmentStatus === EnrollmentStatus.COMPLETED && (
           <View style={styles.completedBadgeFloating}>
             <Award size={12} color="#fff" />
-            <Text style={styles.completedBadgeText}>Badge Received</Text>
+            <Text style={styles.completedBadgeText}>{t('badge_received')}</Text>
           </View>
         )}
       </View>
@@ -185,11 +184,11 @@ const CourseCard = ({
             </View>
             <View style={styles.courseDetails}>
               <Timer size={isWeb ? 20 : 15} />
-              <Text style={styles.DetailsText}>{duration} Weeks</Text>
+              <Text style={styles.DetailsText}>{duration} {t('weeks')}</Text>
             </View>
             <View style={styles.courseDetails}>
               <ClockAlert size={isWeb ? 20 : 15} />
-              <Text style={styles.DetailsText}>Valid for {expiry} Weeks</Text>
+              <Text style={styles.DetailsText}>{t('valid_for')} {expiry} {t('weeks')}</Text>
             </View>
           </View>
 
@@ -220,7 +219,7 @@ const CourseCard = ({
         {isPublished && isAdmin && (
           <View style={styles.publishedBadge}>
             <CheckCircle2 size={12} color="#065f46" strokeWidth={3} />
-            <Text style={styles.publishedText}>PUBLISHED</Text>
+            <Text style={styles.publishedText}>{t('status.published')}</Text>
           </View>
         )}
 
@@ -246,10 +245,6 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     overflow: "hidden",
     borderColor: "#897474",
-    width: Platform.select({
-      web: 300,
-      default: 200,
-    }),
   },
   imageWrapper: {
     width: "100%",
@@ -365,7 +360,8 @@ const styles = StyleSheet.create({
     alignItems: "flex-end",
   },
   webWidgetContainer: {
-    marginTop: 10,
+    minHeight: 44,
+    justifyContent: 'center',
   },
   // status
   statusBadge: {
@@ -388,6 +384,11 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff3cd",
     borderWidth: 1,
     borderColor: "#ffc107",
+  },
+  badgeExpired: {
+    backgroundColor: "#fee2e2",
+    borderWidth: 1,
+    borderColor: "#fecaca",
   },
   statusBadgeText: {
     fontSize: Platform.select({ web: 13, default: 10 }),

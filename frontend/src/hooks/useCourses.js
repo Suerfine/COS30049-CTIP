@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { courseService } from "../services/courseService";
 import { useTranslation } from "react-i18next";
+import { useAuth } from "../context/AuthContext";
 
 export const useCourses = () => {
   const [courses, setCourses] = useState([]);
@@ -12,6 +13,7 @@ export const useCourses = () => {
     totalPages: 0,
     totalElements: 0,
   });
+  const {currentUser}=useAuth();
   const { t, i18n } = useTranslation();
   const [filterVisible, setFilterVisible] = useState(false);
   const [filters, setFilters] = useState({
@@ -27,6 +29,11 @@ export const useCourses = () => {
     completed: t("status.completed"),
     notEnrolled: t("not enrolled"),
   };
+  useEffect(()=>{
+    if(!currentUser){
+      return;
+    }
+  })
 
   const loadCourses = useCallback(
     async (params = {}) => {

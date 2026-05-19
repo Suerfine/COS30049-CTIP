@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView, Image, ImageBackground, StatusBar } from 'react-native';
+import React, {useMemo} from 'react';
+import { View, Text, StyleSheet, Pressable, ScrollView, Image, ImageBackground, StatusBar, Dimensions, Platform, useWindowDimensions } from 'react-native';
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 import Checkbox from 'expo-checkbox';
 import { ClockFading, Phone, Mail} from 'lucide-react-native';
@@ -53,6 +53,27 @@ const UserDashboard=({navigation})=>{
     // ];
     // const inProgressCourses = __DEV__ ? MOCK_IN_PROGRESS : realInProgress;
     const {t, i18n}=useTranslation();
+    const { width } = useWindowDimensions();
+    const isMobile = width < 1024;
+    const isSmallMobile = width < 700;
+
+    const cardStyles = useMemo(() => {
+        if (Platform.OS !== 'web') {
+            return { width: '100%', gap: 0 };
+        }
+
+        let columns = 3;
+        if (width < 600) columns = 1;
+        else if (width < 900) columns = 2;
+
+        const gapPercent = 2; 
+        const calculatedWidth = (100 - (gapPercent * (columns - 1))) / columns;
+
+        return {
+            width: `${calculatedWidth}%`,
+            gap: `${gapPercent}%`
+        };
+    }, [width]);
 
     return(
         <SafeAreaView style={styles.container} edges={['left','right']}>
@@ -112,7 +133,7 @@ const UserDashboard=({navigation})=>{
                         {courseFilter === 'in progress' && (
                             inProgressCourses.length > 0 ? (
                                 inProgressCourses.map(course => (
-                                    <View key={course.id} style={[styles.cardWrapper]}>
+                                    <View key={course.id} style={[styles.cardWrapper, { flexBasis: cardStyles.width, minWidth: cardStyles.width }]}>
                                         <CourseCard
                                             key={course.id}
                                             id={course.id}

@@ -8,6 +8,7 @@ import FilterSidebar from '../components/FilterSidebar';
 import { formatDate } from '../utils/formatDate';
 import { useTranslation } from 'react-i18next';
 import { useUserDashboard } from '../hooks/useUserDashboard';
+import SFCFooter from '../components/Footer';
 
 const Badge = ({ navigation }) => {
     const {
@@ -54,10 +55,10 @@ const Badge = ({ navigation }) => {
     }, [courses, getEnrollment]);
 
     const statusLabels = {
-        all: 'All Status',
-        COMPLETED: 'Completed',
-        IN_PROGRESS: 'In Progress',
-        not_enrolled: 'Not Enrolled'
+        all: t('all_status'),
+        COMPLETED: t('status.completed'),
+        IN_PROGRESS: t('status.in_progress'),
+        not_enrolled: t('status.not_enrolled')
     };
 
     if (loading) {
@@ -108,7 +109,7 @@ const Badge = ({ navigation }) => {
 
                 {isCompleted && expiry && (
                     <Text style={styles.expiryText}>
-                        Expires: {formatDate(new Date(expiry))}
+                        {t('expires')}: {formatDate(new Date(expiry))}
                     </Text>
                 )}
 
@@ -122,14 +123,14 @@ const Badge = ({ navigation }) => {
                             borderWidth={0}
                             height={6}
                         />
-                        <Text style={styles.progressLabel}>{Math.round(progressValue * 100)}% Complete</Text> 
+                        <Text style={styles.progressLabel}>{Math.round(progressValue * 100)}% {t('complete')}</Text> 
                     </View>
                 )}
 
                 {isReview && (
                     <View style={styles.reviewBadgeTag}>
                         <Clock size={10} color="#856404" />
-                        <Text style={styles.reviewText}>Verification Pending</Text>
+                        <Text style={styles.reviewText}>{t('verification_pending')}</Text>
                     </View>
                 )}
 
@@ -142,7 +143,7 @@ const Badge = ({ navigation }) => {
 
                 {isLocked && (
                     <View style={styles.lockedHintRow}>
-                        <Text style={styles.lockedHintText}>Enroll to Earn</Text>
+                        <Text style={styles.lockedHintText}>{t('enroll_to_earn')}</Text>
                     </View>
                 )}
             </View>
@@ -179,63 +180,56 @@ const Badge = ({ navigation }) => {
     )};
 
     return (
-        <View style={{ flex: 1, backgroundColor: '#fcfcfc' }}>
-            <ScrollView style={styles.container}>
-                <View style={styles.headerSection}>
-                    <View style={styles.titleRow}>
-                        <Text style={styles.headerTitle}>My Certifications</Text>
+        <View style={styles.page}>
+            <ScrollView
+                style={styles.container}
+                contentContainerStyle={styles.scrollContent}
+            >   
+                <View style={styles.contentWrapper}>
+                    <View style={styles.headerSection}>
+                        <View style={styles.titleRow}>
+                            <Text style={styles.headerTitle}>{t('my_certifications')}</Text>
+                        </View>
                     </View>
 
-                    <View style={styles.pillContainer}>
-                        {filters.status !== 'all' && (
-                            <View style={styles.pill}>
-                                <Text style={styles.pillText}>{statusLabels[filters.status]}</Text>
-                                <Pressable onPress={() => removeFilter('status')}><CircleX size={14} color="white" /></Pressable>
-                            </View>
-                        )}
-                        {filters.tag !== 'all' && (
-                            <View style={styles.pill}>
-                                <Text style={styles.pillText}>{filters.tag}</Text>
-                                <Pressable onPress={() => removeFilter('tag')}><CircleX size={14} color="white" /></Pressable>
-                            </View>
-                        )}
-                    </View>
+                    <RenderSection 
+                        title={t('achieved_badges')}
+                        data={sections.achieved} 
+                        type="achieved"
+                        emptyMsg={t('complete_courses_badges')}
+                    />
+
+                    <RenderSection 
+                        title={t('status.in_progress')} 
+                        data={sections.inProgress} 
+                        type="progress"
+                        emptyMsg={t('no_courses_active')}
+                    />
+
+                    <RenderSection 
+                        title={t('pending_verification')}
+                        data={sections.inReview} 
+                        type="review"
+                        hideIfEmpty={true}
+                    />
+
+                    <RenderSection 
+                        title={t('expired_or_failed')}
+                        data={sections.nonAchieved} 
+                        type="alert"
+                        emptyMsg={t('no_failed_records')}
+                    />
+
+                    <RenderSection 
+                        title={t('available_badges')}
+                        data={sections.available} 
+                        type="locked"
+                        emptyMsg={t('all_courses_enrolled')}
+                    />
                 </View>
-
-                <RenderSection 
-                    title="Achieved Badges" 
-                    data={sections.achieved} 
-                    type="achieved"
-                    emptyMsg="Complete courses to earn professional badges."
-                />
-
-                <RenderSection 
-                    title="In Progress" 
-                    data={sections.inProgress} 
-                    type="progress"
-                    emptyMsg="No courses currently active."
-                />
-
-                <RenderSection 
-                    title="Pending Verification" 
-                    data={sections.inReview} 
-                    type="review"
-                    hideIfEmpty={true}
-                />
-
-                <RenderSection 
-                    title="Expired or Failed" 
-                    data={sections.nonAchieved} 
-                    type="alert"
-                    emptyMsg="No expired or failed records."
-                />
-
-                <RenderSection 
-                    title="Available Badges" 
-                    data={sections.available} 
-                    type="locked"
-                    emptyMsg="All available courses have been enrolled."
-                />
+                <View style={styles.footerWrapper}>
+                    <SFCFooter />
+                </View>
             </ScrollView>
 
             <FilterSidebar
@@ -254,6 +248,8 @@ const Badge = ({ navigation }) => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+    },
+    contentWrapper: {
         paddingHorizontal: Platform.OS === 'web' ? 60 : 20,
     },
     centered: {
@@ -419,25 +415,16 @@ const styles = StyleSheet.create({
         fontSize: 14,
         marginLeft: 5,
     },
-    pillContainer: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: 8,
-        marginBottom: 10,
+    page: {
+        flex: 1,
+        backgroundColor: '#fcfcfc',
     },
-    pill: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#0a6340',
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 20,
-        gap: 6,
+    scrollContent: {
+        flexGrow: 1,
+        minHeight: '100%',
     },
-    pillText: {
-        fontSize: 12,
-        color: "white",
-        fontWeight: '600',
+    footerWrapper: {
+        marginTop: 'auto',
     },
 });
 

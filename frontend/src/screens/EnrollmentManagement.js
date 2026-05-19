@@ -9,6 +9,7 @@ import {
   FlatList,
   Image,
   Modal,
+  useWindowDimensions,
 } from "react-native";
 import {
   RotateCcw,
@@ -27,6 +28,7 @@ import {
   X,
   Filter,
 } from "lucide-react-native";
+import { useTranslation } from "react-i18next";
 
 // Import hooks and assets
 import SlidingTabs from "../components/SlidingTabs";
@@ -39,6 +41,7 @@ import { Status_Config } from "../utils/status_config";
 import { paymentService } from "../services/PaymentService";
 
 const EnrollmentManagement = () => {
+  const { t } = useTranslation();
   // Enrollment management
   const {
     enrollments,
@@ -60,7 +63,10 @@ const EnrollmentManagement = () => {
     currentCourseId,
     setCurrentCourseId,
     fetchEnrollments,
-    handleApproveBadge, handleRejectBadge
+    handleApproveBadge,
+    handleRejectBadge,
+    selectedUserHistory,
+    getUserEnrollments,setSelectedUserHistory
   } = useEnrollmentManagement();
 
   // Progress
@@ -80,6 +86,7 @@ const EnrollmentManagement = () => {
     auditLoading,
     fetchEnrollmentAudit,
     resetSubmissionSort,
+    fetchSubmissions
   } = useSubmissionManagement();
 
   const {
@@ -94,50 +101,57 @@ const EnrollmentManagement = () => {
     paymentSortConfig,
     requestPaymentSort,
     resetPaymentSort,
-    fetchPayments
+    fetchPayments,
   } = usePayment();
 
   const [activeTab, setActiveTab] = useState("enrollment");
   const [isOpen, setIsOpen] = useState(false);
   const [detailModalVisible, setDetailModalVisible] = useState(false);
   const [selectedUserEnrollment, setSelectedUserEnrollment] = useState(null);
-  const [selectedUserHistory, setSelectedUserHistory] = useState([]);
   const [paymentModalVisible, setPaymentModalVisible] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState(null);
   const [filterVisible, setFilterVisible] = useState(false);
   const [translateX, setTranslateX] = useState(300);
-  const [tempCourseFilter, setTempCourseFilter] = useState("All");
+  const [tempCourseFilter, setTempCourseFilter] = useState("all");
   const [rejectModalVisible, setRejectModalVisible] = useState(false);
   const [adminRemark, setAdminRemark] = useState("");
-  const [selectedCourseFilter, setSelectedCourseFilter] = useState("All");
+  const [selectedCourseFilter, setSelectedCourseFilter] = useState("all");
   const [receiptUri, setReceiptUri] = useState(null);
   const [receiptLoading, setReceiptLoading] = useState(false);
   const [receiptError, setReceiptError] = useState("");
   const [selectedAuditId, setSelectedAuditId] = useState(null);
+  const { width } = useWindowDimensions();
+  const isCompact = width < 480;
 
   const enrollmentStatusOptions = [
-    "All",
+    "all",
     "in_progress",
     "in_review",
     "completed",
     "failed",
     "expired",
-    "Rejected",
+    "rejected",
     "pending_payment",
-    "applied"
+    "applied",
   ];
 
   const ProgressStatusOptions = [
-    "All",
+    "all",
     "in_progress",
     "completed",
     "failed",
     "dropped",
     "expired",
-    'in_review'
+    "in_review",
   ];
 
-  const paymentStatusOptions = ["All", "pending", "paid", "failed", "refunded"];
+  const paymentStatusOptions = [ 
+    "all", 
+    "pending", 
+    "paid", 
+    "failed", 
+    "refunded",
+  ];
 
   const isEnrollment = activeTab === "enrollment";
   const isSubmission = activeTab === "progress";
@@ -183,7 +197,7 @@ const EnrollmentManagement = () => {
     ? setSearchQuery
     : isSubmission
       ? setSubmissionSearchQuery
-      : () => { };
+      : () => {};
 
   const getActiveStatus = () => {
     if (isPayment) {
@@ -248,25 +262,27 @@ const EnrollmentManagement = () => {
   };
 
   const tabs = [
-    { id: "enrollment", label: "Enrollment" },
-    { id: "progress", label: "Progress" },
-    { id: "payment", label: "Payment" },
+    { id: "enrollment", label: t("enrollment") },
+    { id: "progress", label: t("progress") },
+    { id: "payment", label: t("payment") },
   ];
 
   const formatted = (status) => {
-    if (!status) return "N/A";
-    return status
-      .split("_")
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(" ");
+    if (!status) return t("not_available");
+
+    const key = status.toLowerCase();
+
+    return t(`status.${key}`, {
+      defaultValue: status
+        .split("_")
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(" "),
+    });
   };
 
-  const handleRowPress = (enrollment) => {
+  const handleRowPress = async (enrollment) => {
     setSelectedUserEnrollment(enrollment);
-    const userHistory = enrollments.filter(
-      (e) => e.user_id === enrollment.user_id,
-    );
-    setSelectedUserHistory(userHistory);
+    await getUserEnrollments(enrollment.user_id);
     setDetailModalVisible(true);
   };
 
@@ -298,8 +314,8 @@ const EnrollmentManagement = () => {
           setReceiptUri(null);
           setReceiptError(
             err?.response?.data?.message ||
-            err?.message ||
-            "Failed to load receipt",
+              err?.message ||
+              t("failed_to_load_receipt"),
           );
         }
       } finally {
@@ -318,68 +334,76 @@ const EnrollmentManagement = () => {
 
   const renderEnrollmentHeader = () => (
     <View style={[styles.tableHeader, styles.row]}>
-      <Text style={[styles.headerText, { flex: 3 }]}>Full Name</Text>
+      <Text style={[styles.headerText, { flex: 3 }]}>{t("full_name")}</Text>
       <Pressable
         onPress={() => requestSort("course_id")}
         style={[styles.headerRow, { flex: 2 }]}
       >
-        <Text style={styles.headerText}>Course Code</Text>
+        <Text style={styles.headerText}>{t("course_code")}</Text>
         {sortConfig.key === "course_id" && sortConfig.direction === "asc" ? (
           <ArrowUpNarrowWide size={14} color="white" />
         ) : (
           <ArrowDownWideNarrow size={14} color="white" />
         )}
       </Pressable>
-      <Text style={[styles.headerText, { flex: 4 }]}>Course Name</Text>
+      <Text style={[styles.headerText, { flex: 4 }]}>{t("course_name")}</Text>
       <Pressable
         onPress={() => requestSort("enrolled_at")}
         style={[styles.headerRow, { flex: 2 }]}
       >
-        <Text style={styles.headerText}>Enrolled On</Text>
+        <Text style={styles.headerText}>{t("enrolled_on")}</Text>
         {sortConfig.key === "enrolled_at" && sortConfig.direction === "asc" ? (
           <ArrowUpNarrowWide size={14} color="white" />
         ) : (
           <ArrowDownWideNarrow size={14} color="white" />
         )}
       </Pressable>
-      <Text style={[styles.headerText, { flex: 2 }]}>Status</Text>
-      <Text style={[styles.headerText, { flex: 2 }]}>Expiry On</Text>
+      <Text style={[styles.headerText, { flex: 2 }]}>{t("status_label")}</Text>
+      <Text style={[styles.headerText, { flex: 2 }]}>{t("expiry_on")}</Text>
     </View>
   );
 
   const renderSubmissionsHeader = () => (
     <View style={[styles.tableHeader, styles.row]}>
-      <Text style={[styles.headerText, { flex: 3 }]}>Full Name</Text>
+      <Text style={[styles.headerText, { flex: 3 }]}>{t("full_name")}</Text>
       <Pressable
         onPress={() => requestSubmissionSort("course_id")}
         style={[styles.headerRow, { flex: 2 }]}
       >
-        <Text style={styles.headerText}>Course Code</Text>
+        <Text style={styles.headerText}>{t("course_code")}</Text>
         {sortSubmissionConfig.key === "course_id" &&
-          sortSubmissionConfig.direction === "asc" ? (
+        sortSubmissionConfig.direction === "asc" ? (
           <ArrowUpNarrowWide size={14} color="white" />
         ) : (
           <ArrowDownWideNarrow size={14} color="white" />
         )}
       </Pressable>
-      <Text style={[styles.headerText, { flex: 4 }]}>Course Name</Text>
-      <Text style={[styles.headerText, { flex: 2 }]}>Status</Text>
-      <Text style={[styles.headerText, { flex: 1 }]}>Badge</Text>
-      <Text style={[styles.headerText, { flex: 2 }]}>Issued On</Text>
-      <Text style={[styles.headerText, { flex: 2 }]}>Expiry On</Text>
+      <Text style={[styles.headerText, { flex: 4 }]}>{t("course_name")}</Text>
+      <Text style={[styles.headerText, { flex: 2 }]}>{t("status_label")}</Text>
+      <Text style={[styles.headerText, { flex: 1 }]}>{t("badge")}</Text>
+      <Text style={[styles.headerText, { flex: 2 }]}>{t("issued_on")}</Text>
+      <Text style={[styles.headerText, { flex: 2 }]}>{t("expiry_on")}</Text>
     </View>
   );
 
   const renderPaymentHeader = () => (
     <View style={[styles.tableHeader, styles.row]}>
-      <Text style={[styles.headerText, { flex: 4 }]}>Full Name</Text>
-      <Text style={[styles.headerText, { flex: 3 }]}>Amount</Text>
-      <Text style={[styles.headerText, { flex: 3 }]}>Status</Text>
-      <Text style={[styles.headerText, { flex: 3 }]}>Paid On</Text>
-      <Text style={[styles.headerText, { flex: 3 }]}>Processed On</Text>
-      <Text style={[styles.headerText, { flex: 2 }]}>Receipt</Text>
+      <Text style={[styles.headerText, { flex: 4 }]}>{t("full_name")}</Text>
+      <Text style={[styles.headerText, { flex: 3 }]}>{t("amount")}</Text>
+      <Text style={[styles.headerText, { flex: 3 }]}>{t("status_label")}</Text>
+      <Text style={[styles.headerText, { flex: 3 }]}>{t("paid_on")}</Text>
+      <Text style={[styles.headerText, { flex: 3 }]}>{t("processed_on")}</Text>
+      <Text style={[styles.headerText, { flex: 2 }]}>{t("receipt")}</Text>
     </View>
   );
+
+  const getProfileImageUri = (item) =>
+    item?.profileImage ||
+    item?.pfp_url ||
+    item?.pfp ||
+    item?.user_profile_image ||
+    item?.profile_image ||
+    null;
 
   const renderEnrollmentItem = ({ item }) => {
     const statusConfig = Status_Config[item.status?.toLowerCase()] || {
@@ -399,8 +423,11 @@ const EnrollmentManagement = () => {
         ]}
       >
         <View style={[{ flex: 3 }, styles.userInfo, styles.row]}>
-          {item.profileImage ? (
-            <Image source={{ uri: item.profileImage }} style={styles.avatar} />
+          {getProfileImageUri(item) ? (
+            <Image
+              source={{ uri: getProfileImageUri(item) }}
+              style={styles.avatar}
+            />
           ) : (
             <View style={styles.pfpPlaceholder}>
               <Text style={styles.pfpInitials}>
@@ -420,10 +447,10 @@ const EnrollmentManagement = () => {
             fill={statusConfig.color}
           />
           <Text style={[styles.badgeText, { color: statusConfig.color }]}>
-            {statusConfig.label || formatted(item.status)}
+              {formatted(item.status)}
           </Text>
         </View>
-        <Text style={{ flex: 2 }}>{item.expiry_date || "N/A"}</Text>
+        <Text style={{ flex: 2 }}>{item.expiry_date || t("not_available")}</Text>
       </Pressable>
     );
   };
@@ -450,8 +477,11 @@ const EnrollmentManagement = () => {
         ]}
       >
         <View style={[{ flex: 3 }, styles.userInfo, styles.row]}>
-          {item.profileImage ? (
-            <Image source={{ uri: item.profileImage }} style={styles.avatar} />
+          {getProfileImageUri(item) ? (
+            <Image
+              source={{ uri: getProfileImageUri(item) }}
+              style={styles.avatar}
+            />
           ) : (
             <View style={styles.pfpPlaceholder}>
               <Text style={styles.pfpInitials}>
@@ -470,7 +500,7 @@ const EnrollmentManagement = () => {
             fill={statusConfig.color}
           />
           <Text style={[styles.badgeText, { color: statusConfig.color }]}>
-            {statusConfig.label || item.status}
+            {formatted(item.status)}
           </Text>
         </View>
         <View style={{ flex: 1, alignItems: "center" }}>
@@ -484,10 +514,10 @@ const EnrollmentManagement = () => {
           />
         </View>
         <Text style={{ flex: 2 }}>
-          {formatDate(item.completed_at) || "N/A"}
+          {formatDate(item.completed_at) || t("not_available")}
         </Text>
         <Text style={{ flex: 2 }}>
-          {item.badge_expiry_on ? formatDate(item.badge_expiry_on) : "N/A"}
+          {item.badge_expire_at ? formatDate(item.badge_expire_at) : t("not_available")}
         </Text>
       </Pressable>
     );
@@ -528,27 +558,29 @@ const EnrollmentManagement = () => {
         setAuditModalVisible(false);
         await fetchEnrollmentAudit(id);
         await setSubmissionCurrentPage((p) => p);
-        await fetchEnrollments();
+        await fetchSubmissions();
       } else {
-        alert("Failed to approve: " + result.error);
+        alert(`${t("failed_to_approve")}: ` + result.error);
       }
     } catch (err) {
       console.error(err);
     }
-  }
+  };
   // Handle reject badge
   const RejectBadgeAction = async (id) => {
-    if (!window.confirm("Reject this badge and mark enrollment as failed?")) return;
+    if (!window.confirm(t("confirm_reject_badge")))
+      return;
 
     const result = await handleRejectBadge(id);
     if (result.success) {
-      alert("Badge rejected.");
+      alert(t("badge_rejected"));
       setAuditModalVisible(false);
       await fetchEnrollmentAudit(id);
       await setSubmissionCurrentPage((p) => p);
       await fetchEnrollments();
+      await fetchSubmissions();
     } else {
-      alert("Error rejecting badge: " + result.error);
+      alert(`${t("error_rejecting_badge")}: ${result.error}`);
     }
   };
 
@@ -560,7 +592,7 @@ const EnrollmentManagement = () => {
           window.open(receipt.uri, "_blank");
         })
         .catch((err) => {
-          console.error("Failed to open receipt", err);
+          console.error(t("failed_open_receipt"), err);
         });
     }
   };
@@ -568,7 +600,7 @@ const EnrollmentManagement = () => {
   const renderPaymentItem = ({ item }) => {
     const statusConfig = Status_Config[item.status?.toLowerCase()] || {
       color: "#8f8f8f",
-      label: item.status || "Unknown",
+      label: item.status || t("unknown"),
     };
 
     return (
@@ -584,9 +616,9 @@ const EnrollmentManagement = () => {
         ]}
       >
         <View style={[{ flex: 4 }, styles.userInfo, styles.row]}>
-          {item.user_profile_image ? (
+          {getProfileImageUri(item) ? (
             <Image
-              source={{ uri: item.user_profile_image }}
+              source={{ uri: getProfileImageUri(item) }}
               style={styles.avatar}
             />
           ) : (
@@ -607,14 +639,14 @@ const EnrollmentManagement = () => {
             fill={statusConfig.color}
           />
           <Text style={[styles.badgeText, { color: statusConfig.color }]}>
-            {statusConfig.label}
+            {formatted(item.status)}
           </Text>
         </View>
         <Text style={{ flex: 3 }}>
-          {item.created_at ? formatDate(item.created_at) : "N/A"}
+          {item.created_at ? formatDate(item.created_at) : t("not_available")}
         </Text>
         <Text style={{ flex: 3 }}>
-          {item.processed_at ? formatDate(item.processed_at) : "N/A"}
+          {item.processed_at ? formatDate(item.processed_at) : t("not_available")}
         </Text>
         <View style={{ flex: 2 }}>
           <Pressable
@@ -625,7 +657,8 @@ const EnrollmentManagement = () => {
             }}
             style={styles.downloadBtn}
           >
-            <Text style={styles.downloadBtnText}>Download</Text>
+            <Text style={styles.downloadBtnText}>{
+          t("download")}</Text>
           </Pressable>
         </View>
       </Pressable>
@@ -638,12 +671,12 @@ const EnrollmentManagement = () => {
       pageNumbers.push(i);
     }
     return (
-      <View style={[styles.paginationContainer, styles.row]}>
+      <View style={styles.paginationContainer}>
         <Text style={styles.pageInfo}>
-          Showing {displayData.length > 0 ? indexOfFirstItem + 1 : 0} to{" "}
-          {indexOfLastItem} of {activeTotalElements} records
+          {t("showing")} {displayData.length > 0 ? indexOfFirstItem + 1 : 0} {t("to")}{" "}
+          {indexOfLastItem} {t("of")} {activeTotalElements} {t("records")}
         </Text>
-        <View style={styles.row}>
+        <View style={styles.paginationControls}>
           <Pressable
             disabled={activeCurrentPage === 1}
             onPress={() => setActivePage(1)}
@@ -735,10 +768,11 @@ const EnrollmentManagement = () => {
   return (
     <>
       <ScrollView style={styles.container}>
-        <Text style={styles.title}>Enrollment Management</Text>
+        <Text style={styles.title}>{t("enrollment_management")}</Text>
         <SlidingTabs
           tabs={tabs}
           activeTab={activeTab}
+          collapseOnCompact
           onTabChange={(id) => {
             setActiveTab(id);
             if (id === "enrollment") {
@@ -751,8 +785,10 @@ const EnrollmentManagement = () => {
           }}
         />
 
-        <View style={[styles.toolbar, styles.row]}>
-          <View style={styles.row}>
+        <View style={[styles.toolbar, isCompact && styles.toolbarCompact]}>
+          <View
+            style={[styles.toolbarRow, isCompact && styles.toolbarGroupCompact]}
+          >
             <Pressable onPress={activeResetConfig} style={styles.iconBtn}>
               <RotateCcw size={20} />
             </Pressable>
@@ -760,7 +796,7 @@ const EnrollmentManagement = () => {
               <Search size={18} color="#8f8f8f" />
               <TextInput
                 style={styles.input}
-                placeholder="Search..."
+                placeholder={t("search")}
                 value={activeSearchQuery}
                 onChangeText={(text) => {
                   setActiveSearchQuery(text);
@@ -779,8 +815,8 @@ const EnrollmentManagement = () => {
                   ellipsizeMode="tail"
                   style={styles.pillText}
                 >
-                  {getActiveStatus() === "All"
-                    ? "Status"
+                  {getActiveStatus() === "all"
+                    ? t("status_label")
                     : formatted(getActiveStatus())}
                 </Text>
                 {isOpen ? (
@@ -814,8 +850,8 @@ const EnrollmentManagement = () => {
                         numberOfLines={1}
                         ellipsizeMode="tail"
                         style={[
-                          getActiveStatus() === status &&
-                          styles.menuItemTextActive,
+                          styles.menuItemText,
+                          getActiveStatus() === status && styles.menuItemTextActive,
                         ]}
                       >
                         {formatted(status)}
@@ -825,43 +861,52 @@ const EnrollmentManagement = () => {
                 </View>
               )}
             </View>
+            {activeTab === "enrollment" && (
+              <Pressable
+                onPress={() => setFilterVisible(true)}
+                style={() => [styles.iconBtn]}
+              >
+                <Filter size={20} color={filterVisible ? "#0a6340" : "#666"} />
+              </Pressable>
+            )}
           </View>
-          {activeTab === "enrollment" && (
-            <Pressable
-              onPress={() => setFilterVisible(true)}
-              style={() => [styles.iconBtn]}
-            >
-              <Filter size={20} color={filterVisible ? "#0a6340" : "#666"} />
-            </Pressable>
-          )}
         </View>
 
         <View style={styles.tableContainer}>
-          <FlatList
-            style={styles.table}
-            data={displayData}
-            loading={loading}
-            ListHeaderComponent={
-              isEnrollment
-                ? renderEnrollmentHeader
-                : isSubmission
-                  ? renderSubmissionsHeader
-                  : renderPaymentHeader
-            }
-            renderItem={
-              isEnrollment
-                ? renderEnrollmentItem
-                : isSubmission
-                  ? renderSubmissionsItem
-                  : renderPaymentItem
-            }
-            keyExtractor={(item) => item.id.toString()}
-            ListEmptyComponent={
-              <View style={styles.tableRow}>
-                <Text>{loading ? "Loading..." : "No Record Found."}</Text>
-              </View>
-            }
-          />
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator
+            contentContainerStyle={styles.tableScrollContent}
+          >
+            <View style={styles.tableInner}>
+              <FlatList
+                style={styles.table}
+                scrollEnabled={false}
+                data={displayData}
+                loading={loading}
+                ListHeaderComponent={
+                  isEnrollment
+                    ? renderEnrollmentHeader
+                    : isSubmission
+                      ? renderSubmissionsHeader
+                      : renderPaymentHeader
+                }
+                renderItem={
+                  isEnrollment
+                    ? renderEnrollmentItem
+                    : isSubmission
+                      ? renderSubmissionsItem
+                      : renderPaymentItem
+                }
+                keyExtractor={(item) => item.id.toString()}
+                ListEmptyComponent={
+                  <View style={styles.tableRow}>
+                    <Text>{loading ? t("loading") : t("no_record_found")}</Text>
+                  </View>
+                }
+              />
+            </View>
+          </ScrollView>
         </View>
 
         {activeTotalPages > 1 && renderPagination()}
@@ -881,11 +926,11 @@ const EnrollmentManagement = () => {
           }}
           // Rejected
           onUnenroll={async (id) => {
-            const res = await handleUpdateStatus(id, "dropped");
+            const res = await handleUpdateStatus(id, "rejected");
             if (res.success) setDetailModalVisible(false);
           }}
           onDelete={async (id) => {
-            if (window.confirm("Delete this record permanently?")) {
+            if (window.confirm(t("delete_record_permanently"))) {
               const res = await deleteRecord(id);
               if (res.success) setDetailModalVisible(false);
             }
@@ -899,12 +944,12 @@ const EnrollmentManagement = () => {
           onRequestClose={() => setAuditModalVisible(false)}
         >
           <View style={styles.modalOverlay}>
-            <View style={styles.auditModalContent}>
+            <View style={[styles.auditModalContent, isCompact && styles.auditModalContentCompact]}>
               <View style={styles.modalHeader}>
                 <Text style={styles.modalTitle}>
                   {auditLoading
-                    ? "Syncing..."
-                    : `Progress: ${auditData?.course?.title}`}
+                    ? t("syncing")
+                    : `${t("progress")}: ${auditData?.course?.title}`}
                 </Text>
                 <Pressable onPress={() => setAuditModalVisible(false)}>
                   <Text style={styles.closeBtn}>✕</Text>
@@ -914,13 +959,13 @@ const EnrollmentManagement = () => {
               <ScrollView>
                 {auditLoading ? (
                   <Text style={styles.loadingText}>
-                    Fetching database logs...
+                    {t("fetching_database_logs")}
                   </Text>
                 ) : (
                   auditData?.course?.modules?.map((module, mIdx) => (
                     <View key={mIdx} style={styles.moduleCard}>
                       <Text style={styles.moduleTitle}>
-                        Module: {module.title}
+                        {t("module")}: {module.title}
                       </Text>
                       {module.pages?.map((page) => {
                         const earned =
@@ -937,8 +982,8 @@ const EnrollmentManagement = () => {
                               </Text>
                               <Text style={styles.pageSubText}>
                                 {page.final_quiz
-                                  ? "Final Assessment"
-                                  : "Content Module"}
+                                  ? t("final_assessment")
+                                  : t("content_module")}
                               </Text>
                             </View>
                             <ProgressRing
@@ -952,24 +997,23 @@ const EnrollmentManagement = () => {
                   ))
                 )}
               </ScrollView>
-              {auditData?.status === 'in_review' && (
+              {auditData?.status === "in_review" && (
                 <View style={styles.row}>
-                  
                   <Pressable
                     style={[styles.actionBtn, styles.outlineBtn]}
-                    onPress={()=>RejectBadgeAction(selectedAuditId)}
+                    onPress={() => RejectBadgeAction(selectedAuditId)}
                   >
-                    <Text style={styles.outlineBtnText}>Reject</Text>
+                    <Text style={styles.outlineBtnText}>{t("reject")}</Text>
                   </Pressable>
 
                   <Pressable
                     style={[styles.actionBtn, styles.solidApproveBtn]}
                     onPress={() => ApproveBadgeAction(selectedAuditId)}
                   >
-                    <Text style={styles.solidBtnText}>Approve</Text>
+                    <Text style={styles.solidBtnText}>{t("approve")}</Text>
                   </Pressable>
                 </View>
-                )}
+              )}
             </View>
           </View>
         </Modal>
@@ -981,9 +1025,9 @@ const EnrollmentManagement = () => {
           onRequestClose={() => setPaymentModalVisible(false)}
         >
           <View style={styles.modalOverlay}>
-            <View style={styles.paymentModalContent}>
+            <View style={[styles.paymentModalContent, isCompact && styles.paymentModalContentCompact]}>
               <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Payment Details</Text>
+                <Text style={styles.modalTitle}>{t("payment_details")}</Text>
 
                 <Pressable onPress={() => setPaymentModalVisible(false)}>
                   <Text style={styles.closeBtn}>✕</Text>
@@ -994,10 +1038,10 @@ const EnrollmentManagement = () => {
                 <>
                   <ScrollView showsVerticalScrollIndicator={false}>
                     <View style={styles.paymentUserSection}>
-                      {selectedPayment.user_profile_image ? (
+                      {getProfileImageUri(selectedPayment) ? (
                         <Image
                           source={{
-                            uri: selectedPayment.user_profile_image,
+                            uri: getProfileImageUri(selectedPayment),
                           }}
                           style={styles.paymentAvatar}
                         />
@@ -1014,7 +1058,7 @@ const EnrollmentManagement = () => {
                           {selectedPayment.user_fullname}
                         </Text>
                         <Text style={styles.paymentCourse}>
-                          {selectedPayment.course_title || "Course"}
+                          {selectedPayment.course_title || t("course")}
                         </Text>
                       </View>
                     </View>
@@ -1022,7 +1066,7 @@ const EnrollmentManagement = () => {
                       {receiptLoading ? (
                         <View style={styles.noReceiptBox}>
                           <Text style={styles.noReceiptText}>
-                            Loading receipt...
+                            {t("loading_receipt")}
                           </Text>
                         </View>
                       ) : receiptUri ? (
@@ -1034,12 +1078,14 @@ const EnrollmentManagement = () => {
                         />
                       ) : receiptError ? (
                         <View style={styles.noReceiptBox}>
-                          <Text style={styles.noReceiptText}>{receiptError}</Text>
+                          <Text style={styles.noReceiptText}>
+                            {receiptError}
+                          </Text>
                         </View>
                       ) : (
                         <View style={styles.noReceiptBox}>
                           <Text style={styles.noReceiptText}>
-                            No Receipt Uploaded
+                            {t("no_receipt_uploaded")}
                           </Text>
                         </View>
                       )}
@@ -1052,14 +1098,14 @@ const EnrollmentManagement = () => {
                           style={[styles.actionBtn, styles.outlineBtn]}
                           onPress={() => setRejectModalVisible(true)}
                         >
-                          <Text style={styles.outlineBtnText}>Reject</Text>
+                          <Text style={styles.outlineBtnText}>{t("not_received")}</Text>
                         </Pressable>
 
                         <Pressable
                           style={[styles.actionBtn, styles.solidApproveBtn]}
                           onPress={handleApprovePayment}
                         >
-                          <Text style={styles.solidBtnText}>Approve</Text>
+                          <Text style={styles.solidBtnText}>{t("received")}</Text>
                         </Pressable>
                       </View>
                     )}
@@ -1076,22 +1122,22 @@ const EnrollmentManagement = () => {
           onRequestClose={() => setRejectModalVisible(false)}
         >
           <View style={styles.modalOverlay}>
-            <View style={styles.rejectModalContent}>
+            <View style={[styles.rejectModalContent, isCompact && styles.rejectModalContentCompact]}>
               <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Reject Payment</Text>
+                <Text style={styles.modalTitle}>{t("reject_payment")}</Text>
 
                 <Pressable onPress={() => setRejectModalVisible(false)}>
                   <Text style={styles.closeBtn}>✕</Text>
                 </Pressable>
               </View>
 
-              <Text style={styles.rejectLabel}>Admin Remarks</Text>
+              <Text style={styles.rejectLabel}>{t("admin_remarks")}</Text>
 
               <TextInput
                 multiline
                 value={adminRemark}
                 onChangeText={setAdminRemark}
-                placeholder="Enter rejection remarks..."
+                placeholder={t("enter_rejection_remarks")}
                 style={styles.rejectInput}
               />
 
@@ -1100,14 +1146,14 @@ const EnrollmentManagement = () => {
                   style={styles.cancelBtn}
                   onPress={() => setRejectModalVisible(false)}
                 >
-                  <Text style={styles.cancelBtnText}>Cancel</Text>
+                  <Text style={styles.cancelBtnText}>{t("cancel")}</Text>
                 </Pressable>
 
                 <Pressable
                   style={styles.rejectConfirmBtn}
                   onPress={handleRejectPayment}
                 >
-                  <Text style={styles.actionBtnText}>Confirm Reject</Text>
+                  <Text style={styles.actionBtnText}>{t("confirm_reject")}</Text>
                 </Pressable>
               </View>
             </View>
@@ -1116,7 +1162,7 @@ const EnrollmentManagement = () => {
       </ScrollView>
       <View style={[styles.filterSidebar, { transform: [{ translateX }] }]}>
         <View style={styles.sidebarHeader}>
-          <Text style={styles.sidebarTitle}>Courses Filters</Text>
+          <Text style={styles.sidebarTitle}>{t("course_filters")}</Text>
           <Pressable onPress={() => setFilterVisible(false)}>
             <X size={24} color="#666" />
           </Pressable>
@@ -1130,17 +1176,17 @@ const EnrollmentManagement = () => {
             <Pressable
               style={[
                 styles.sidebarItem,
-                tempCourseFilter === "All" && styles.sidebarItemActive,
+                tempCourseFilter ===  "all" && styles.sidebarItemActive,
               ]}
-              onPress={() => setTempCourseFilter("All")}
+              onPress={() => setTempCourseFilter("all")}
             >
               <Text
                 style={[
                   styles.sidebarItemText,
-                  tempCourseFilter === "All" && styles.sidebarItemTextActive,
+                  tempCourseFilter ===  "all" && styles.sidebarItemTextActive,
                 ]}
               >
-                All Courses
+                {t("all_courses")}
               </Text>
             </Pressable>
 
@@ -1158,7 +1204,7 @@ const EnrollmentManagement = () => {
                   style={[
                     styles.sidebarItemText,
                     tempCourseFilter === course.title &&
-                    styles.sidebarItemTextActive,
+                      styles.sidebarItemTextActive,
                   ]}
                 >
                   {course.id} - {course.title}
@@ -1172,12 +1218,12 @@ const EnrollmentManagement = () => {
           <Pressable
             style={styles.sidebarResetBtn}
             onPress={() => {
-              setTempCourseFilter("All");
-              setSelectedCourseFilter("All");
+              setTempCourseFilter("all");
+              setSelectedCourseFilter("all");
               setFilterVisible(false);
             }}
           >
-            <Text style={styles.sidebarResetText}>Reset</Text>
+            <Text style={styles.sidebarResetText}>{t("reset")}</Text>
           </Pressable>
           <Pressable
             style={styles.sidebarApplyBtn}
@@ -1185,12 +1231,12 @@ const EnrollmentManagement = () => {
               const selected = courses.find(
                 (c) => c.title === tempCourseFilter,
               );
-              setCurrentCourseId(selected ? selected.id : "All");
+              setCurrentCourseId(selected ? selected.id :  "all");
               setFilterVisible(false);
               setActivePage(1);
             }}
           >
-            <Text style={styles.sidebarApplyText}>Apply Filters</Text>
+            <Text style={styles.sidebarApplyText}>{t("apply_filters")}</Text>
           </Pressable>
         </View>
       </View>
@@ -1205,9 +1251,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
   },
   toolbar: {
-    justifyContent: "space-between",
     marginVertical: 20,
     zIndex: 500,
+    alignItems: "center",
+  },
+  toolbarCompact: {
+    flexDirection: "column",
+    alignItems: "stretch",
+    gap: 12,
+  },
+  toolbarRow: {
+    width: "100%",
+    flexDirection: "row",
+    alignItems: "center",
+    minWidth: 0,
+    gap: 12,
+  },
+  toolbarGroupCompact: {
+    flexWrap: "wrap",
   },
   table: {
     flexShrink: 1,
@@ -1217,14 +1278,15 @@ const styles = StyleSheet.create({
     fontWeight: 500,
     marginBottom: 5,
   },
-  row: {
-    flexDirection: "row",
-  },
   search: {
-    gap: 7,
     borderWidth: 1,
     borderColor: "#8f8f8f",
-    minWidth: 300,
+    width: "auto",
+    flexBasis: 260,
+    minWidth: 140,
+    maxWidth: 300,
+    flexGrow: 1,
+    flexShrink: 1,
     padding: 5,
     backgroundColor: "white",
     borderRadius: 15,
@@ -1240,7 +1302,6 @@ const styles = StyleSheet.create({
   iconBtn: {
     alignSelf: "center",
     padding: 8,
-    marginRight: 20,
     color: "#217837",
     borderRadius: 50,
     backgroundColor: "white",
@@ -1252,7 +1313,10 @@ const styles = StyleSheet.create({
   menuItem: {
     padding: 14,
     alignItems: "center",
-    width: "100px",
+    width: "100%",
+  },
+  menuItemText: {
+    whiteSpace: "nowrap",
   },
   menuItemActive: {
     backgroundColor: "#7d9f7a",
@@ -1274,13 +1338,15 @@ const styles = StyleSheet.create({
     elevation: 5,
     borderWidth: 1,
     borderColor: "#f0f0f0",
+    width: 160,
   },
   dropdownWrapper: {
     position: "relative",
+    flexShrink: 0,
   },
   pillTrigger: {
     border: "1px solid #0a6340",
-    width: 110,
+    width: 160,
     flexDirection: "row",
     gap: 10,
     height: 35,
@@ -1291,7 +1357,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     userSelect: "none",
     backgroundColor: "white",
-    paddingLeft: 4,
+    paddingHorizontal: 12,
   },
   tableHeader: {
     backgroundColor: "#0a6340",
@@ -1331,11 +1397,17 @@ const styles = StyleSheet.create({
     gap: 5,
   },
   paginationContainer: {
+    flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     paddingVertical: 15,
     paddingHorizontal: 20,
     backgroundColor: "white",
+  },
+  paginationControls: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-end",
   },
   pageInfo: {
     color: "#666",
@@ -1399,7 +1471,14 @@ const styles = StyleSheet.create({
     color: "white",
   },
   tableContainer: {
-    flex: 1,
+    width: "100%",
+  },
+  tableInner: {
+    minWidth: 980,
+    width: "100%",
+  },
+  tableScrollContent: {
+    minWidth: "100%",
   },
   modalOverlay: {
     flex: 1,
@@ -1413,6 +1492,11 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     borderRadius: 20,
     padding: 25,
+  },
+  auditModalContentCompact: {
+    width: "92%",
+    maxHeight: "90%",
+    padding: 16,
   },
   modalHeader: {
     flexDirection: "row",
@@ -1492,6 +1576,11 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     borderRadius: 20,
     padding: 25,
+  },
+  paymentModalContentCompact: {
+    width: "92%",
+    maxHeight: "90%",
+    padding: 16,
   },
   paymentUserSection: {
     flexDirection: "row",
@@ -1682,35 +1771,34 @@ const styles = StyleSheet.create({
     marginTop: 25,
   },
   downloadBtn: {
-    flex: 1,
     backgroundColor: "#f59e0b",
-    paddingVertical: 14,
+    paddingVertical: 4,
     borderRadius: 12,
     alignItems: "center",
   },
   row: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 10,
   },
   actionBtn: {
     height: 48,
     borderRadius: 6,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     gap: 8,
-    width: 170
+    width: 170,
   },
   outlineBtn: {
-    backgroundColor: 'transparent',
+    backgroundColor: "transparent",
     borderWidth: 1.5,
-    borderColor: '#e5e7eb',
+    borderColor: "#e5e7eb",
     paddingHorizontal: 16,
-    width: 170
+    width: 170,
   },
   outlineBtnText: {
-    color: '#4b5563',
-    fontWeight: '700',
+    color: "#4b5563",
+    fontWeight: "700",
     fontSize: 14,
   },
   downloadBtnText: {
@@ -1735,6 +1823,10 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
     borderRadius: 20,
     padding: 24,
+  },
+  rejectModalContentCompact: {
+    width: "92%",
+    padding: 16,
   },
   rejectLabel: {
     fontSize: 14,
@@ -1775,11 +1867,11 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   solidApproveBtn: {
-    backgroundColor: '#059669',
+    backgroundColor: "#059669",
   },
   solidBtnText: {
-    color: 'white',
-    fontWeight: '700',
+    color: "white",
+    fontWeight: "700",
     fontSize: 14,
   },
 });

@@ -13,6 +13,7 @@ import {
   useWindowDimensions
 } from "react-native";
 import { CopyPlus, Search, SlidersHorizontal, CircleX, Plus } from "lucide-react-native";
+import { useTranslation } from "react-i18next";
 
 // Import Components
 import CourseCard from "../components/CourseCard.js";
@@ -30,6 +31,7 @@ const AdminCourse = ({ navigation }) => {
   const [selectedCourse, setSelectedCourse] = useState(null);
   const {currentUser}=useAuth();
   const [isTagModalVisible, setTagModalVisible] = useState(false);
+  const { t } = useTranslation();
 
   const { width } = useWindowDimensions();
   const cardStyles = useMemo(() => {
@@ -101,16 +103,16 @@ const AdminCourse = ({ navigation }) => {
         <View style={styles.courseContainer}>
           <View>
             <Text style={styles.description}>
-              Here you can find all courses
+              {t('Here you can find all courses')}
             </Text>
-            <Text style={styles.title}>All Courses</Text>
+            <Text style={styles.title}>{t('All Courses')}</Text>
           </View>
           <Pressable
             onPress={handleAdd}
             style={({ hovered }) => [styles.btn, hovered && styles.btnHover]}
           >
             <CopyPlus />
-            <Text style={styles.btnText}> Add Course</Text>
+            <Text style={styles.btnText}> {t('add_courses')}</Text>
           </Pressable>
         </View>
       </ImageBackground>
@@ -131,14 +133,14 @@ const AdminCourse = ({ navigation }) => {
       </ModalLayout>
 
       {/* Search and Filter */}
-      <View style={styles.toolbar}>
+      <View style={[styles.toolbar, width < 700 && styles.toolbarCompact]}>
         <View style={styles.search}>
           <Search size={18} />
           <TextInput
             style={styles.input}
             value={searchText}
             onChangeText={handleSearch}
-            placeholder="Search..."
+            placeholder={t("search")}
             placeholderTextColor="#8f8f8f"
           />
         </View>
@@ -148,7 +150,7 @@ const AdminCourse = ({ navigation }) => {
               onPress={() => setTagModalVisible(true)}
           >
               <Plus size={16} color="white" />
-              <Text style={{color: 'white', fontWeight: 'bold'}}>New Tag</Text>
+              <Text style={{color: 'white', fontWeight: 'bold'}}>{t('new_tag')}</Text>
           </Pressable>
           <Pressable
             style={({ hovered }) => [
@@ -205,6 +207,7 @@ const AdminCourse = ({ navigation }) => {
           <View style={[styles.cardContainer, { columnGap: cardStyles.gap }]}>
             {Array.isArray(filteredCourses) && filteredCourses.length > 0 ? (
               filteredCourses.map((course) => {
+                console.log(course);
                 const numModules = course.module_count ? course.module_count : 0;
                 return (
                 <View key={course.id} style={[styles.cardWrapper, { flexBasis: cardStyles.width, minWidth: cardStyles.width }]}>
@@ -213,7 +216,7 @@ const AdminCourse = ({ navigation }) => {
                     id={course.id}
                     coverImgUrl={course.cover_img_url}
                     courseTitle={course.title}
-                    numModules={numModules || 16}
+                    numModules={numModules || 0}
                     duration={course.expected_completion_weeks}
                     expiry={course.must_complete_in_weeks}
                     userType="admin"
@@ -362,6 +365,11 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     marginTop: 20,
+  },
+  toolbarCompact: {
+    flexDirection: "column",
+    alignItems: "stretch",
+    gap: 12,
   },
   pillContainer:{
     flexDirection:'row',

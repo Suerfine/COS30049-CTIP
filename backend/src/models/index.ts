@@ -20,6 +20,8 @@ import Prerequisite from "./Prerequisite";
 import AnomalyEvent from "./AnomalyEvent";
 import ArModel from "./ArModel";
 import Payment from "./Payment";
+import PasswordResetToken from "./PasswordResetToken";
+import AuditLog from "./AuditLog";
 import { RegistrationStatus } from "../enum/RegistrationStatus";
 
 // Associations
@@ -34,18 +36,9 @@ Element.belongsTo(Page, { foreignKey: "page_id", as: "page" });
 
 User.hasMany(Enrollment, { foreignKey: "user_id", as: "enrollments" });
 Enrollment.belongsTo(User, { foreignKey: "user_id", as: "user" });
-User.belongsToMany(Course, {
-  through: Enrollment,
-  foreignKey: "user_id",
-  otherKey: "course_id",
-  as: "enrolled_courses",
-});
-Course.belongsToMany(User, {
-  through: Enrollment,
-  foreignKey: "course_id",
-  otherKey: "user_id",
-  as: "enrolled_users",
-});
+// Removed belongsToMany to allow multiple enrollments per user per course
+// User.belongsToMany(Course, {...});
+// Course.belongsToMany(User, {...});
 Course.hasMany(Enrollment, { foreignKey: "course_id", as: "enrollments" });
 Enrollment.belongsTo(Course, { foreignKey: "course_id", as: "course" });
 
@@ -178,10 +171,30 @@ Course.hasMany(Payment, { foreignKey: "course_id", as: "payments" });
 Payment.belongsTo(Course, { foreignKey: "course_id", as: "course" });
 
 Enrollment.hasOne(Payment, { foreignKey: "enrollment_id", as: "payment" });
-Payment.belongsTo(Enrollment, { foreignKey: "enrollment_id", as: "enrollment" });
+Payment.belongsTo(Enrollment, {
+  foreignKey: "enrollment_id",
+  as: "enrollment",
+});
 
-User.hasMany(Payment, { foreignKey: "processed_by_user_id", as: "processed_payments" });
-Payment.belongsTo(User, { foreignKey: "processed_by_user_id", as: "processed_by" });
+User.hasMany(Payment, {
+  foreignKey: "processed_by_user_id",
+  as: "processed_payments",
+});
+Payment.belongsTo(User, {
+  foreignKey: "processed_by_user_id",
+  as: "processed_by",
+});
+
+// Password reset tokens
+User.hasMany(PasswordResetToken, {
+  foreignKey: "user_id",
+  as: "password_reset_tokens",
+});
+PasswordResetToken.belongsTo(User, { foreignKey: "user_id", as: "user" });
+
+// Audit logs
+User.hasMany(AuditLog, { foreignKey: "user_id", as: "audit_logs" });
+AuditLog.belongsTo(User, { foreignKey: "user_id", as: "user" });
 
 export {
   User,
@@ -203,7 +216,9 @@ export {
   NotificationPreference,
   Sensor,
   SensorLog,
-  AnomalyEvent as AnomalyEvent,
+  AnomalyEvent,
   ArModel,
   Payment,
+  PasswordResetToken,
+  AuditLog,
 };

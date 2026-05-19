@@ -210,10 +210,10 @@ export const verifyPayment = async (
     } else if (statusFromUrl === PaymentStatus.FAILED) {
       await sendNotification(
         "single",
-        "Payment Rejected",
+        "Payment unsuccessful",
         adminRemark
-          ? `Your payment was rejected: ${adminRemark}`
-          : "Your payment was rejected. Please re-submit a valid receipt.",
+          ? `Your payment was unsuccessful due to ${adminRemark}`
+          : "Your payment was unsuccessful.",
         transaction,
         enrollment.user_id,
         false,

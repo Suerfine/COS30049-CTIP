@@ -47,4 +47,10 @@ export interface RejectRegistrationRequest {
 export interface ApproveRegistrationResponse {
   registration: RegistrationResponse;
   user: UserResponse;
+  email_sent: boolean;
+  email_error?: string;
+  manual_credentials?: {
+    account_email: string;
+    temporary_password: string;
+  };
 }

@@ -1,15 +1,46 @@
-import { AlertTriangle, Book, ClipboardList, Flag, MapPin, RefreshCcw, User, RotateCcw, Pin } from "lucide-react-native";
+import {
+  AlertTriangle,
+  Book,
+  ClipboardList,
+  Flag,
+  MapPin,
+  RefreshCcw,
+  User,
+  RotateCcw,
+  Pin,
+} from "lucide-react-native";
 import React, { useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { CircleMarker, MapContainer, Popup, TileLayer, Tooltip, useMap } from "react-leaflet";
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  useWindowDimensions,
+} from "react-native";
+import {
+  CircleMarker,
+  MapContainer,
+  Marker,
+  TileLayer,
+  useMap,
+} from "react-leaflet";
+import { divIcon } from "leaflet";
 import { useTranslation } from "react-i18next";
 import { useNavigation } from "@react-navigation/native";
 
+import apiClient from "../config/apiConfig";
 import { useAnomalyMapEvents } from "../hooks/useAnomalyMapEvents";
 import { formatDate } from "../utils/formatDate";
-import { DEFAULT_MAP_CENTER, LEAFLET_CSS, EVENT_LABELS, SEVERITY_CONFIG } from "../utils/AnomalyConstant";
+import {
+  DEFAULT_MAP_CENTER,
+  LEAFLET_CSS,
+  EVENT_LABELS,
+  getSeverityConfig,
+} from "../utils/AnomalyConstant";
 import { useAdminDashboard } from "../hooks/useAdminDashboard";
-import { useNotification } from '../hooks/useNotification';
+import { useNotification } from "../hooks/useNotification";
 import { useAuth } from "../context/AuthContext";
 import { navigateNotification } from "../utils/navigateNotification";
 
@@ -62,6 +93,48 @@ const getConfidenceLabel = (metadata) => {
   return `${Math.round(confidence * 100)}%`;
 };
 
+const getSensorState = (sensor) =>
+  String(sensor?.current_status || sensor?.status || "deactivated")
+    .trim()
+    .toLowerCase();
+
+const getSensorStateConfig = (sensor) => {
+  const state = getSensorState(sensor);
+
+  switch (state) {
+    case "normal":
+      return { label: "Normal", color: "#16a34a", fillColor: "#22c55e" };
+    case "alerting":
+      return { label: "Alerting", color: "#dc2626", fillColor: "#ef4444" };
+    case "maintenance":
+      return { label: "Maintenance", color: "#d97706", fillColor: "#f59e0b" };
+    case "deactivated":
+    default:
+      return { label: "Deactivated", color: "#6b7280", fillColor: "#9ca3af" };
+  }
+};
+
+const createSensorIcon = (sensor) => {
+  const stateConfig = getSensorStateConfig(sensor);
+
+  return divIcon({
+    className: "sensor-diamond-marker",
+    html: `
+      <div style="
+        width: 16px;
+        height: 16px;
+        background: linear-gradient(135deg, ${stateConfig.fillColor}, ${stateConfig.color});
+        transform: rotate(45deg);
+        border: 2px solid #161515;
+        border-radius: 3px;
+        box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.8);
+      "></div>
+    `,
+    iconSize: [20, 20],
+    iconAnchor: [10, 10],
+  });
+};
+
 const getMapCenter = (events) => {
   if (!events.length) {
     return DEFAULT_MAP_CENTER;
@@ -72,7 +145,7 @@ const getMapCenter = (events) => {
       latitude: acc.latitude + Number(event.latitude),
       longitude: acc.longitude + Number(event.longitude),
     }),
-    { latitude: 0, longitude: 0 }
+    { latitude: 0, longitude: 0 },
   );
 
   return [totals.latitude / events.length, totals.longitude / events.length];
@@ -88,7 +161,10 @@ const MapViewport = ({ events, center }) => {
     }
 
     if (events.length === 1) {
-      map.setView([Number(events[0].latitude), Number(events[0].longitude)], 15);
+      map.setView(
+        [Number(events[0].latitude), Number(events[0].longitude)],
+        15,
+      );
       return;
     }
 
@@ -97,54 +173,100 @@ const MapViewport = ({ events, center }) => {
       {
         padding: [28, 28],
         maxZoom: 15,
-      }
+      },
     );
   }, [center, events, map]);
 
   return null;
 };
 
-const HoverDetailCard = ({ event, isPinned }) => {
+const HoverDetailCard = ({ event, isPinned, resolvingId, onResolve }) => {
+  const { t } = useTranslation();
+  const severityConfig = getSeverityConfig();
   const severity = getEventSeverity(event.event_type);
   const confidence = getConfidenceLabel(event.metadata);
 
   return (
     <View style={styles.hoverCard}>
       <View style={styles.hoverHeader}>
-        <Text style={styles.hoverTitle}>{getEventTypeLabel(event.event_type)}</Text>
-        
-        <View style={[styles.hoverBadge, { backgroundColor: SEVERITY_CONFIG[severity].fillColor }]}>
-          <Text style={styles.hoverBadgeText}>{SEVERITY_CONFIG[severity].label}</Text>
+        <Text style={styles.hoverTitle}>
+          {getEventTypeLabel(event.event_type)}
+        </Text>
+
+        <View
+          style={[
+            styles.hoverBadge,
+            { backgroundColor: severityConfig[severity].fillColor },
+          ]}
+        >
+          <Text style={styles.hoverBadgeText}>
+            {severityConfig[severity].label}
+          </Text>
         </View>
       </View>
-      <Text style={styles.hoverRow}>Detected: {formatDate(event.created_at)}</Text>
       <Text style={styles.hoverRow}>
-        Coordinates: {Number(event.latitude).toFixed(6)}, {Number(event.longitude).toFixed(6)}
+        {t("detected")}: {formatDate(event.created_at)}
       </Text>
-      <Text style={styles.hoverRow}>User: {getUserLabel(event)}</Text>
-      <View style={{ flexDirection: "row", justifyContent: "space-between", }}>
-        {confidence ? <Text style={styles.hoverRow}>Confidence: {confidence}</Text> : null}
+      <Text style={styles.hoverRow}>
+        {t("coordinates")}: {Number(event.latitude).toFixed(6)},{" "}
+        {Number(event.longitude).toFixed(6)}
+      </Text>
+      <Text style={styles.hoverRow}>
+        {t("users")}: {getUserLabel(event)}
+      </Text>
+      <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+        {confidence ? (
+          <Text style={styles.hoverRow}>
+            {t("confidence")}: {confidence}
+          </Text>
+        ) : null}
         {isPinned && <Pin size={14} color="#b96363" fill="#b96363" />}
       </View>
+      {isPinned && !event.is_resolved ? (
+        <Pressable
+          onPress={() => onResolve?.(event.id)}
+          disabled={resolvingId === event.id}
+          style={({ pressed }) => [
+            styles.resolveBtn,
+            resolvingId === event.id && styles.resolveBtnDisabled,
+            pressed && !resolvingId && styles.resolveBtnPressed,
+          ]}
+        >
+          <Text style={styles.resolveText}>
+            {resolvingId === event.id ? "Resolving..." : "Mark as Resolved"}
+          </Text>
+        </Pressable>
+      ) : null}
     </View>
   );
 };
 
 const AdminDashboard = () => {
   const { t } = useTranslation();
+  const severityConfig = getSeverityConfig();
   const navigation = useNavigation();
   const { currentUser } = useAuth();
-  const { events, loading: mapLoading, error: mapError, refresh } = useAnomalyMapEvents();
+  const {
+    events,
+    sensors,
+    loading: mapLoading,
+    error: mapError,
+    refresh,
+  } = useAnomalyMapEvents();
   const { stats } = useAdminDashboard();
-  const { 
-    notifications, 
-    loading: notificationsLoading, 
-    error: notificationsError, 
-    fetchNotifications
+  const {
+    notifications,
+    loading: notificationsLoading,
+    error: notificationsError,
+    fetchNotifications,
   } = useNotification();
+  const [resolvingAnomalyId, setResolvingAnomalyId] = useState(null);
 
   const [hoveredAnomaly, setHoveredAnomaly] = useState(null);
   const [selectedAnomaly, setSelectedAnomaly] = useState(null);
+  const [hoveredSensor, setHoveredSensor] = useState(null);
+  const { width } = useWindowDimensions();
+  const isCompact = width < 1200;
   const mapCenter = useMemo(() => getMapCenter(events), [events]);
 
   const severityCounts = useMemo(
@@ -154,9 +276,9 @@ const AdminDashboard = () => {
           acc[getEventSeverity(event.event_type)] += 1;
           return acc;
         },
-        { high: 0, medium: 0, low: 0 }
+        { high: 0, medium: 0, low: 0 },
       ),
-    [events]
+    [events],
   );
 
   const latestNotifications = useMemo(() => {
@@ -166,40 +288,84 @@ const AdminDashboard = () => {
       .slice(0, 20);
   }, [notifications]);
 
+  const resolveAnomaly = async (eventId) => {
+    if (!eventId) return;
+    setResolvingAnomalyId(eventId);
+    try {
+      try {
+        await apiClient.post(`/anomaly-events/${eventId}/resolve`);
+      } catch (firstError) {
+        await apiClient.post(`/Anomaly-events/${eventId}/resolve`);
+      }
+      setSelectedAnomaly(null);
+      setHoveredAnomaly(null);
+      refresh();
+    } catch (error) {
+      const message =
+        error?.response?.data?.message ||
+        error?.message ||
+        "Failed to resolve anomaly event.";
+      alert(message);
+    } finally {
+      setResolvingAnomalyId(null);
+    }
+  };
+
+  const hoveredSensorCard = useMemo(() => {
+    if (!hoveredSensor) {
+      return null;
+    }
+
+    return JSON.stringify(
+      {
+        ...hoveredSensor,
+        state: getSensorStateConfig(hoveredSensor).label,
+      },
+      null,
+      2,
+    );
+  }, [hoveredSensor]);
+
   return (
-    <View style={styles.screenContainer}>
+    <ScrollView style={styles.screenContainer}>
       <style>{LEAFLET_CSS}</style>
-      <View style={styles.cards}>
-        <View style={styles.adminCard}>
+      <View style={[styles.cards, isCompact && styles.cardsCompact]}>
+        <View style={[styles.adminCard, isCompact && styles.adminCardCompact]}>
           <View>
-            <Text style={styles.label}>Total Users</Text>
+            <Text style={styles.label}>
+              {t("total")} {t("users")}
+            </Text>
             <Text style={styles.value}>{stats.totalUsers}</Text>
           </View>
           <View style={[styles.iconContainer, styles.usersTheme]}>
             <User size={30} color="#4338ca" />
           </View>
         </View>
-        <View style={styles.adminCard}>
+        <View style={[styles.adminCard, isCompact && styles.adminCardCompact]}>
           <View>
-            <Text style={styles.label}>Total Courses</Text>
+            <Text style={styles.label}>
+              {t("total")} {t("courses")}
+            </Text>
             <Text style={styles.value}>{stats.totalCourses}</Text>
           </View>
           <View style={[styles.iconContainer, styles.coursesTheme]}>
             <Book size={30} color="#ea580c" />
           </View>
         </View>
-        <View style={styles.adminCard}>
+        <View style={[styles.adminCard, isCompact && styles.adminCardCompact]}>
           <View>
-            <Text style={styles.label}>Total Enrollments</Text>
+            <Text style={styles.label}>
+              {t("total")} {t("enrollments")}
+            </Text>
             <Text style={styles.value}>{stats.totalEnrollments}</Text>
           </View>
           <View style={[styles.iconContainer, styles.enrollTheme]}>
             <ClipboardList size={30} color="#16a34a" />
           </View>
         </View>
-        <View style={styles.adminCard}>
+        <View style={[styles.adminCard, isCompact && styles.adminCardCompact]}>
           <View>
-            <Text style={styles.label}>Mapped Anomalies</Text>
+            <Text style={styles.label}>{t("mapped anomalies")}</Text>
             <Text style={styles.value}>{stats.totalAnomalies}</Text>
           </View>
           <View style={[styles.iconContainer, styles.alertTheme]}>
@@ -208,114 +374,205 @@ const AdminDashboard = () => {
         </View>
       </View>
 
-      <View style={styles.mapRow}>
-        <View style={styles.mapSection}>
-          <View style={styles.mapHeader}>
+      <View style={[styles.mapRow, isCompact && styles.mapRowCompact]}>
+        <View
+          style={[styles.mapSection, isCompact && styles.mapSectionCompact]}
+        >
+          <View
+            style={[styles.mapHeader, isCompact && styles.mapHeaderCompact]}
+          >
             <View>
-              <Text style={styles.mapTitle}>Anomaly Map</Text>
-            <Text style={styles.mapSubtitle}>All anomaly events with valid coordinates</Text>
-          </View>
-          <View style={styles.mapActions}>
-            <View style={styles.legend}>
-              <View style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: SEVERITY_CONFIG.high.fillColor }]} />
-                <Text style={styles.legendText}>Anomaly Live Count: {severityCounts.high}</Text>
-              </View>
+              <Text style={styles.mapTitle}>{t("anomaly map")}</Text>
+              <Text style={styles.mapSubtitle}>
+                {t("all anomaly events with valid coordinates")}
+              </Text>
             </View>
-            <Pressable
-              onPress={refresh}
-              style={({ hovered }) => [styles.refreshBtn, hovered && styles.refreshBtnHover]}
+            <View
+              style={[styles.mapActions, isCompact && styles.mapActionsCompact]}
             >
-              <RefreshCcw size={17} color="#0a6340" />
-              <Text style={styles.refreshText}>Refresh</Text>
-            </Pressable>
-          </View>
-        </View>
-
-        <View style={styles.mapShell}>
-          {mapLoading ? (
-            <View style={styles.mapState}>
-              <ActivityIndicator size="large" color="#0a6340" />
-              <Text style={styles.stateText}>Loading anomaly map...</Text>
-            </View>
-          ) : mapError ? (
-            <View style={styles.mapState}>
-              <AlertTriangle size={42} color="#dc2626" />
-              <Text style={styles.errorText}>Failed to load anomaly map</Text>
-              <Text style={styles.errorDetail}>{mapError}</Text>
+              <View style={styles.legend}>
+                <View style={styles.legendItem}>
+                  <View
+                    style={[
+                      styles.legendDot,
+                      { backgroundColor: severityConfig.high.fillColor },
+                    ]}
+                  />
+                  <Text style={styles.legendText}>
+                    {t("anomaly live count")}: {severityCounts.high}
+                  </Text>
+                </View>
+              </View>
               <Pressable
                 onPress={refresh}
-                style={({ hovered }) => [styles.retryBtn, hovered && styles.retryBtnHover]}
+                style={({ hovered }) => [
+                  styles.refreshBtn,
+                  hovered && styles.refreshBtnHover,
+                ]}
               >
-                <Text style={styles.retryText}>Try Again</Text>
+                <RefreshCcw size={17} color="#0a6340" />
+                <Text style={styles.refreshText}>{t("refresh")}</Text>
               </Pressable>
             </View>
-          ) : (
-            <MapContainer center={mapCenter} zoom={13} scrollWheelZoom style={webStyles.map}>
-              <MapViewport events={events} center={mapCenter} />
-              <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              />
-              {events.map((event) => {
-                const severity = getEventSeverity(event.event_type);
-                const severityConfig = SEVERITY_CONFIG[severity];
+          </View>
 
-                return (
-                  <CircleMarker
-                    key={event.id}
-                    center={[Number(event.latitude), Number(event.longitude)]}
-                    radius={8}
+          <View style={styles.mapShell}>
+            {mapLoading ? (
+              <View style={styles.mapState}>
+                <ActivityIndicator size="large" color="#0a6340" />
+                <Text style={styles.stateText}>
+                  {t("loading")} {t("anomaly map")}...
+                </Text>
+              </View>
+            ) : mapError ? (
+              <View style={styles.mapState}>
+                <AlertTriangle size={42} color="#dc2626" />
+                <Text style={styles.errorText}>
+                  {t("failed to load anomaly map")}
+                </Text>
+                <Text style={styles.errorDetail}>{mapError}</Text>
+                <Pressable
+                  onPress={refresh}
+                  style={({ hovered }) => [
+                    styles.retryBtn,
+                    hovered && styles.retryBtnHover,
+                  ]}
+                >
+                  <Text style={styles.retryText}>{t("try again")}</Text>
+                </Pressable>
+              </View>
+            ) : (
+              <MapContainer
+                center={mapCenter}
+                zoom={13}
+                scrollWheelZoom
+                style={webStyles.map}
+              >
+                <MapViewport events={events} center={mapCenter} />
+                <TileLayer
+                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
+                {events.map((event) => {
+                  const severity = getEventSeverity(event.event_type);
+                  const config = severityConfig[severity];
+
+                  return (
+                    <CircleMarker
+                      key={event.id}
+                      center={[Number(event.latitude), Number(event.longitude)]}
+                      radius={8}
+                      eventHandlers={{
+                        mouseover: () => setHoveredAnomaly(event),
+                        mouseout: () => setHoveredAnomaly(null),
+                        click: () => {
+                          setSelectedAnomaly((prev) =>
+                            prev?.id === event.id ? null : event,
+                          );
+                        },
+                      }}
+                      pathOptions={{
+                        color:
+                          selectedAnomaly?.id === event.id
+                            ? "#161515"
+                            : config.color,
+                        fillColor: config.fillColor,
+                        fillOpacity: 0.82,
+                        weight: selectedAnomaly?.id === event.id ? 3 : 2,
+                      }}
+                    ></CircleMarker>
+                  );
+                })}
+                {sensors.map((sensor) => (
+                  <Marker
+                    key={sensor.id}
+                    position={[
+                      Number(sensor.latitude),
+                      Number(sensor.longitude),
+                    ]}
+                    icon={createSensorIcon(sensor)}
                     eventHandlers={{
-                      mouseover: () => setHoveredAnomaly(event),
-                      mouseout: () => setHoveredAnomaly(null),
-                      click: () => {
-                        setSelectedAnomaly(prev => prev?.id === event.id ? null : event);
+                      mouseover: () => setHoveredSensor(sensor),
+                      mouseout: () => setHoveredSensor(null),
+                    }}
+                  />
+                ))}
+              </MapContainer>
+            )}
+
+            {!mapLoading && !mapError && (selectedAnomaly || hoveredAnomaly) ? (
+              <HoverDetailCard
+                event={selectedAnomaly || hoveredAnomaly}
+                isPinned={!!selectedAnomaly}
+                resolvingId={resolvingAnomalyId}
+                onResolve={resolveAnomaly}
+              />
+            ) : null}
+
+            {!mapLoading && !mapError && hoveredSensor ? (
+              <View style={styles.sensorHoverCard}>
+                <View style={styles.hoverHeader}>
+                  <Text style={styles.hoverTitle}>{hoveredSensor.name}</Text>
+                  <View
+                    style={[
+                      styles.hoverBadge,
+                      {
+                        backgroundColor:
+                          getSensorStateConfig(hoveredSensor).fillColor,
                       },
-                    }}
-                    pathOptions={{
-                      color: selectedAnomaly?.id === event.id ? "#161515" : severityConfig.color,
-                      fillColor: severityConfig.fillColor,
-                      fillOpacity: 0.82,
-                      weight: selectedAnomaly?.id === event.id ? 3 : 2,
-                    }}
+                    ]}
                   >
-                  </CircleMarker>
-                );
-              })}
-            </MapContainer>
-          )}
+                    <Text style={styles.hoverBadgeText}>
+                      {getSensorStateConfig(hoveredSensor).label}
+                    </Text>
+                  </View>
+                </View>
+                <ScrollView style={styles.sensorJsonScroll}>
+                  <Text style={styles.sensorJson}>
+                    {getSensorStateConfig(hoveredSensor).data}
+                  </Text>
+                </ScrollView>
+              </View>
+            ) : null}
 
-          {!mapLoading && !mapError && (selectedAnomaly || hoveredAnomaly) ? (
-            <HoverDetailCard 
-              event={selectedAnomaly || hoveredAnomaly} 
-              isPinned={!!selectedAnomaly}
-            />
-          ) : null}
-
-          {!mapLoading && !mapError && events.length === 0 ? (
-            <View style={styles.emptyOverlay}>
-              <MapPin size={32} color="#9ca3af" />
-              <Text style={styles.emptyText}>No coordinate-bearing anomalies found</Text>
-            </View>
-          ) : null}
+            {!mapLoading && !mapError && events.length === 0 ? (
+              <View style={styles.emptyOverlay}>
+                <MapPin size={32} color="#9ca3af" />
+                <Text style={styles.emptyText}>
+                  {t("no coordinate-bearing anomalies found")}
+                </Text>
+              </View>
+            ) : null}
+          </View>
         </View>
-      </View>
 
-      <View style={styles.latestUpdatesSection}>
+        <View
+          style={[
+            styles.latestUpdatesSection,
+            isCompact && styles.latestUpdatesSectionCompact,
+          ]}
+        >
           <View style={styles.sectionHeader}>
             <View>
-              <Text style={styles.sectionTitle}>Latest Updates</Text>
-              <Text style={styles.sectionSubtitle}>20 most recent notifications</Text>
+              <Text style={styles.sectionTitle}>{t("latest updates")}</Text>
+              <Text style={styles.sectionSubtitle}>
+                20 {t("most recent notifications")}
+              </Text>
             </View>
-            <Pressable onPress={fetchNotifications} disabled={notificationsLoading} style={styles.refreshBtn}>
+            <Pressable
+              onPress={fetchNotifications}
+              disabled={notificationsLoading}
+              style={styles.refreshBtn}
+            >
               <RotateCcw size={20} color="#666" />
             </Pressable>
           </View>
 
           {notificationsError ? (
             <View style={styles.centerContainer}>
-              <Text style={styles.errorText}>Failed to load updates</Text>
+              <Text style={styles.errorText}>
+                {t("failed to load updates")}
+              </Text>
               <Text style={styles.errorDetail}>{notificationsError}</Text>
             </View>
           ) : notificationsLoading ? (
@@ -324,14 +581,20 @@ const AdminDashboard = () => {
             </View>
           ) : latestNotifications.length === 0 ? (
             <View style={styles.centerContainer}>
-              <Text style={styles.emptyText}>{t('no notifications')}</Text>
+              <Text style={styles.emptyText}>{t("no notifications")}</Text>
             </View>
           ) : (
             <ScrollView style={styles.latestUpdatesList}>
               {latestNotifications.map((notification) => (
                 <Pressable
                   key={notification.id}
-                  onPress={() => navigateNotification(navigation, notification.url, currentUser)}
+                  onPress={() =>
+                    navigateNotification(
+                      navigation,
+                      notification.url,
+                      currentUser,
+                    )
+                  }
                   style={({ hovered, pressed }) => [
                     styles.notificationItem,
                     hovered && styles.notificationItemHover,
@@ -340,12 +603,20 @@ const AdminDashboard = () => {
                 >
                   <View style={styles.notificationContent}>
                     <View style={styles.titleRow}>
-                      <Text style={styles.notificationTitle}>{notification.title}</Text>
+                      <Text style={styles.notificationTitle}>
+                        {notification.title}
+                      </Text>
                     </View>
-                    <Text style={styles.notificationMessage}>{notification.message}</Text>
+                    <Text style={styles.notificationMessage}>
+                      {notification.message}
+                    </Text>
                     <Text style={styles.notificationDate}>
-                      {new Date(notification.created_at).toLocaleDateString()} at{' '}
-                      {new Date(notification.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      {new Date(notification.created_at).toLocaleDateString()}{" "}
+                      at{" "}
+                      {new Date(notification.created_at).toLocaleTimeString(
+                        [],
+                        { hour: "2-digit", minute: "2-digit" },
+                      )}
                     </Text>
                   </View>
                 </Pressable>
@@ -354,13 +625,13 @@ const AdminDashboard = () => {
           )}
         </View>
       </View>
-    </View>
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
   screenContainer: {
-    height: '100vh', 
+    height: "100vh",
     backgroundColor: "#f6f8f7",
     padding: 20,
     gap: 20,
@@ -386,6 +657,11 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     flex: 1,
   },
+  adminCardCompact: {
+    width: "48%",
+    minWidth: "48%", // Ensures explicit control over width bounds
+    flex: 0,
+  },
   label: {
     fontSize: 14,
     color: "#666",
@@ -408,18 +684,28 @@ const styles = StyleSheet.create({
     flexWrap: "nowrap",
     marginHorizontal: 20,
     marginVertical: 10,
-    height: 120,
+    minHeight: 120,
+  },
+  cardsCompact: {
+    flexWrap: "wrap",
+    height: "auto",
+    justifyContent: "space-between",
+    gap: 10,
   },
   usersTheme: { backgroundColor: "#eef2ff" },
   coursesTheme: { backgroundColor: "#fff7ed" },
   enrollTheme: { backgroundColor: "#f0fdf4" },
   alertTheme: { backgroundColor: "#fef2f2" },
   mapRow: {
-    flex: 1, 
+    flex: 1,
     flexDirection: "row",
     gap: 20,
-    minHeight: 0,
+    minHeight: 560,
     paddingHorizontal: 20,
+  },
+  mapRowCompact: {
+    flexDirection: "column",
+    minHeight: 0,
   },
   mapSection: {
     backgroundColor: "white",
@@ -427,8 +713,13 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     flex: 2,
     minWidth: 520,
+    minHeight: 560,
     borderWidth: 1,
     borderColor: "#e5e7eb",
+  },
+  mapSectionCompact: {
+    minWidth: 0,
+    minHeight: 0,
   },
   latestUpdatesSection: {
     backgroundColor: "white",
@@ -436,9 +727,15 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     flex: 1,
     minWidth: 360,
+    minHeight: 560,
     maxHeight: 560,
     borderWidth: 1,
     borderColor: "#e5e7eb",
+  },
+  latestUpdatesSectionCompact: {
+    minWidth: 0,
+    minHeight: 0,
+    maxHeight: "none",
   },
   sectionHeader: {
     flexDirection: "row",
@@ -476,6 +773,10 @@ const styles = StyleSheet.create({
     borderBottomColor: "#e5e7eb",
     zIndex: 1000,
   },
+  mapHeaderCompact: {
+    flexDirection: "column",
+    alignItems: "flex-start",
+  },
   mapTitle: {
     fontSize: 20,
     fontWeight: "700",
@@ -492,6 +793,10 @@ const styles = StyleSheet.create({
     gap: 14,
     flexWrap: "wrap",
     justifyContent: "flex-end",
+  },
+  mapActionsCompact: {
+    width: "100%",
+    justifyContent: "space-between",
   },
   legend: {
     flexDirection: "row",
@@ -606,6 +911,21 @@ const styles = StyleSheet.create({
     boxShadow: "0 14px 30px rgba(15, 23, 42, 0.18)",
     zIndex: 1200,
   },
+  sensorHoverCard: {
+    position: "absolute",
+    bottom: 18,
+    left: 18,
+    width: 320,
+    maxHeight: 360,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    backgroundColor: "white",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#d1d5db",
+    boxShadow: "0 14px 30px rgba(15, 23, 42, 0.18)",
+    zIndex: 1200,
+  },
   hoverHeader: {
     flexDirection: "row",
     alignItems: "center",
@@ -633,6 +953,36 @@ const styles = StyleSheet.create({
     color: "#4b5563",
     fontSize: 12,
     lineHeight: 18,
+  },
+  resolveBtn: {
+    marginTop: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: "#065f46",
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  resolveBtnPressed: {
+    opacity: 0.9,
+  },
+  resolveBtnDisabled: {
+    opacity: 0.6,
+  },
+  resolveText: {
+    color: "white",
+    fontWeight: "700",
+    fontSize: 12,
+  },
+  sensorJsonScroll: {
+    marginTop: 8,
+    maxHeight: 280,
+  },
+  sensorJson: {
+    color: "#111827",
+    fontSize: 11,
+    lineHeight: 16,
+    fontFamily: "monospace",
+    whiteSpace: "pre-wrap",
   },
   centerContainer: {
     flex: 1,

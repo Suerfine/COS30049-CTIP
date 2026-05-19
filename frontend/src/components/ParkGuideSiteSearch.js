@@ -26,50 +26,51 @@ import {
   User,
 } from "lucide-react-native";
 import { searchService } from "../services/SearchService";
+import { useTranslation } from 'react-i18next';
 
 const accent = "#efab21";
 
-const SEARCH_ITEMS = [
+const getSearchItems = (t) => [
   {
-    title: "Dashboard",
-    category: "Overview",
-    description: "View learning summary, enrolled courses, and reminders",
+    title: t('search_item_dashboard_title'),
+    category: t('search_item_category_overview'),
+    description: t('search_item_dashboard_desc'),
     keywords: ["home", "summary", "overview", "dashboard"],
     icon: LayoutDashboard,
     mobileTarget: { screen: "Dashboard" },
     webTarget: { screen: "Dashboard" },
   },
   {
-    title: "Courses",
-    category: "Courses & learning",
-    description: "Browse, enroll, and continue training courses",
+    title: t('search_item_courses_title'),
+    category: t('search_item_category_courses'),
+    description: t('search_item_courses_desc'),
     keywords: ["course", "training", "learn", "enroll", "module", "page", "quiz"],
     icon: BookOpen,
     mobileTarget: { screen: "Courses" },
     webTarget: { screen: "Courses" },
   },
   {
-    title: "Course modules and quizzes",
-    category: "Courses & learning",
-    description: "Open course content, module pages, and quizzes",
+    title: t('search_item_modules_title'),
+    category: t('search_item_category_courses'),
+    description: t('search_item_modules_desc'),
     keywords: ["module", "modules", "page", "pages", "quiz", "quizzes", "lesson"],
     icon: BookOpen,
     mobileTarget: { screen: "Courses" },
     webTarget: { screen: "Courses" },
   },
   {
-    title: "Discussion",
-    category: "Courses & learning",
-    description: "Open courses to post or reply in discussions",
+    title: t('search_item_discussion_title'),
+    category: t('search_item_category_courses'),
+    description: t('search_item_discussion_desc'),
     keywords: ["discussion", "forum", "message", "reply", "comment", "chat"],
     icon: MessageSquare,
     mobileTarget: { screen: "Courses" },
     webTarget: { screen: "Courses" },
   },
   {
-    title: "Todo reminders",
-    category: "Events & todo",
-    description: "Create, edit, and track todo reminders",
+    title: t('search_item_todo_title'),
+    category: t('search_item_category_events'),
+    description: t('search_item_todo_desc'),
     keywords: ["todo", "to do", "task", "reminder", "calendar", "event"],
     icon: CalendarDays,
     mobileTarget: {
@@ -79,18 +80,18 @@ const SEARCH_ITEMS = [
     webTarget: { screen: "Dashboard" },
   },
   {
-    title: "Notifications",
-    category: "Notifications",
-    description: "View alerts and open linked updates",
+    title: t('search_item_notifications_title'),
+    category: t('search_item_category_notifications'),
+    description: t('search_item_notifications_desc'),
     keywords: ["notification", "alert", "message", "notice"],
     icon: Bell,
     mobileTarget: { screen: "Notification" },
     webTarget: { screen: "Notification" },
   },
   {
-    title: "Notification settings",
-    category: "Settings",
-    description: "Manage which notifications you receive",
+    title: t('search_item_notif_settings_title'),
+    category: t('search_item_category_settings'),
+    description: t('search_item_notif_settings_desc'),
     keywords: ["notification", "preference", "settings", "toggle", "alert"],
     icon: Settings,
     mobileTarget: { screen: "Settings" },
@@ -100,18 +101,18 @@ const SEARCH_ITEMS = [
     },
   },
   {
-    title: "Badges",
-    category: "Badges & progress",
-    description: "View earned badges and certification expiry",
+    title: t('search_item_badges_title'),
+    category: t('search_item_category_badges'),
+    description: t('search_item_badges_desc'),
     keywords: ["badge", "certificate", "certification", "expiry", "progress"],
     icon: Award,
     mobileTarget: { screen: "Badge" },
     webTarget: { screen: "Badge" },
   },
   {
-    title: "Profile",
-    category: "Users & account",
-    description: "Update your personal profile information",
+    title: t('search_item_profile_title'),
+    category: t('search_item_category_account'),
+    description: t('search_item_profile_desc'),
     keywords: ["profile", "account", "user", "details", "personal"],
     icon: User,
     mobileTarget: { screen: "Profile" },
@@ -121,9 +122,9 @@ const SEARCH_ITEMS = [
     },
   },
   {
-    title: "Security",
-    category: "Users & account",
-    description: "Change password and review security options",
+    title: t('search_item_security_title'),
+    category: t('search_item_category_account'),
+    description: t('search_item_security_desc'),
     keywords: ["security", "password", "login", "account"],
     icon: Settings,
     mobileTarget: { screen: "Settings" },
@@ -133,18 +134,18 @@ const SEARCH_ITEMS = [
     },
   },
   {
-    title: "AI detection",
-    category: "Anomaly monitoring",
-    description: "Open AI detection and anomaly monitoring tools",
+    title: t('search_item_ai_detection_title'),
+    category: t('search_item_category_anomaly'),
+    description: t('search_item_ai_detection_desc'),
     keywords: ["ai", "anomaly", "detection", "iot", "sensor", "camera"],
     icon: ShieldAlert,
     mobileTarget: { screen: "AI Detection" },
     webTarget: { screen: "Anomaly" },
   },
   {
-    title: "AI chatbot",
-    category: "Courses & learning",
-    description: "Find the course assistant for learning support",
+    title: t('search_item_chatbot_title'),
+    category: t('search_item_category_courses'),
+    description: t('search_item_chatbot_desc'),
     keywords: ["chatbot", "ai assistant", "bot", "help", "question"],
     icon: Bot,
     mobileTarget: { screen: "Courses" },
@@ -262,15 +263,27 @@ const ParkGuideSiteSearch = ({ navigation, variant = "mobile", compact = false }
   const [query, setQuery] = useState("");
   const [remoteResults, setRemoteResults] = useState([]);
   const [loadingRemote, setLoadingRemote] = useState(false);
+  const {i18n, t}=useTranslation();
+  const SEARCH_ITEMS = useMemo(() => getSearchItems(t), [t]);
+ 
+  const getMatches = (q) => {
+    const normalizedQuery = normalize(q);
+    if (!normalizedQuery) return SEARCH_ITEMS;
+    return SEARCH_ITEMS.filter((item) => {
+      const haystack = [item.title, item.category, item.description, ...item.keywords]
+        .join(" ")
+        .toLowerCase();
+      return haystack.includes(normalizedQuery);
+    });
+  };
 
   const hasQuery = normalize(query).length > 0;
-  const featureResults = useMemo(() => (hasQuery ? getMatches(query) : []), [hasQuery, query]);
+  const featureResults = useMemo(() => (hasQuery ? getMatches(query) : []), [hasQuery, query, SEARCH_ITEMS]);
   const results = useMemo(() => {
     const normalizedRemoteResults = remoteResults.map((item) => ({
       ...item,
       icon: getRemoteIcon(item.type),
     }));
-
     return [...normalizedRemoteResults, ...featureResults];
   }, [featureResults, remoteResults]);
 
@@ -370,7 +383,7 @@ const ParkGuideSiteSearch = ({ navigation, variant = "mobile", compact = false }
               if (hasQuery) setVisible(true);
             }}
             onChangeText={handleEntryChange}
-            placeholder="Search..."
+            placeholder={t('search')}
             placeholderTextColor="#8f8f8f"
             style={styles.entryInput}
           />
@@ -387,8 +400,8 @@ const ParkGuideSiteSearch = ({ navigation, variant = "mobile", compact = false }
             <View style={styles.dropdown}>
               {results.length === 0 ? (
                 <View style={styles.dropdownEmpty}>
-                  <Text style={styles.emptyTitle}>{loadingRemote ? "Searching..." : "No results"}</Text>
-                  <Text style={styles.emptyText}>Try course, badge, todo, discussion, or anomaly.</Text>
+                  <Text style={styles.emptyTitle}>{loadingRemote ? t('searching') : t('no_results')}</Text>
+                  <Text style={styles.emptyText}>{t('search_hint')}</Text>
                 </View>
               ) : (
                 <FlatList
@@ -410,7 +423,7 @@ const ParkGuideSiteSearch = ({ navigation, variant = "mobile", compact = false }
     <>
       <Pressable onPress={open} style={[styles.entry, compact && styles.entryCompact]}>
         <Search size={18} color="#666" />
-        <Text style={styles.entryText}>Search...</Text>
+        <Text style={styles.entryText}>{t('search')}...</Text>
       </Pressable>
 
       <Modal
@@ -428,7 +441,7 @@ const ParkGuideSiteSearch = ({ navigation, variant = "mobile", compact = false }
                   autoFocus
                   value={query}
                   onChangeText={setQuery}
-                  placeholder="Search park guide features"
+                  placeholder={t('search_placeholder')}
                   placeholderTextColor="#888"
                   style={styles.input}
                 />
@@ -439,15 +452,15 @@ const ParkGuideSiteSearch = ({ navigation, variant = "mobile", compact = false }
                 )}
               </View>
               <Pressable onPress={close} style={styles.cancelBtn}>
-                <Text style={styles.cancelText}>Cancel</Text>
+                <Text style={styles.cancelText}>{t('cancel')}</Text>
               </Pressable>
             </View>
 
             <View style={styles.resultsCard}>
               {results.length === 0 ? (
                 <View style={styles.emptyState}>
-                  <Text style={styles.emptyTitle}>{loadingRemote ? "Searching..." : "No results found"}</Text>
-                  <Text style={styles.emptyText}>Try searching course, badge, todo, payment, or anomaly.</Text>
+                  <Text style={styles.emptyTitle}>{loadingRemote ? t('searching') : t('no_results_found')}</Text>
+                  <Text style={styles.emptyText}>{t('search_hint_extended')}</Text>
                 </View>
               ) : (
                 <FlatList

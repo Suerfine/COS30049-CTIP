@@ -1,45 +1,50 @@
-import {Platform} from "react-native";
-import axios from 'axios';
+import { Platform } from "react-native";
+import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import Constants from 'expo-constants';
+import Constants from "expo-constants";
 import { triggerLogout } from "../context/AuthContext";
 
-const BASE_URL=()=>{
-    const hostFromExpo=Constants?.expoConfig?.hostUri?.split(':')?.[0];
-    const defaultHost=Platform.OS==='android' ? '10.0.2.2': 'localhost';
-    const API_HOST=hostFromExpo || defaultHost;
-    return `http://${API_HOST}:5000/api`;
-}
+export const BASE_URL = () => {
+  const API_HOST =
+    process.env.API_HOST ||
+    Constants?.expoConfig?.hostUri?.split(":")?.[0] ||
+    "localhost";
+  const API_PORT = process.env.API_PORT || 5000;
+  const API_PROTOCOL = process.env.EXPO_PUBLIC_API_PROTOCOL || "http";
+  return `${API_PROTOCOL}://${API_HOST}:${API_PORT}/api`;
+};
 
-const apiClient=axios.create({
-    baseURL: BASE_URL()
+const apiClient = axios.create({
+  baseURL: BASE_URL(),
 });
 
-apiClient.interceptors.request.use(async (config)=>{
-    try{
-        const token=await AsyncStorage.getItem("accessToken");
-        if(token){
-            config.headers.Authorization=`Bearer ${token}`;
-        }
-    }catch(err){
-        console.error("Token retrieval error", err);
+apiClient.interceptors.request.use(
+  async (config) => {
+    try {
+      const token = await AsyncStorage.getItem("accessToken");
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+    } catch (err) {
+      console.error("Token retrieval error", err);
     }
     return config;
-},(error)=>{
+  },
+  (error) => {
     return Promise.reject(error);
-});
+  },
+);
 
 apiClient.interceptors.response.use(
-    (response)=>response,
-    async(error)=>{
-        const errorMessage = error.response?.data?.message;
-        if(error.response && errorMessage === "jwt expired"){
-            await AsyncStorage.multiRemove(["accessToken", "currentUser"]);
-            await triggerLogout();
-        }
-        return Promise.reject(error);
+  (response) => response,
+  async (error) => {
+    const errorMessage = error.response?.data?.message;
+    if (error.response && errorMessage === "jwt expired") {
+      await AsyncStorage.multiRemove(["accessToken", "currentUser"]);
+      await triggerLogout();
     }
+    return Promise.reject(error);
+  },
 );
 
 export default apiClient;
-

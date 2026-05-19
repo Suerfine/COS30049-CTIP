@@ -24,7 +24,7 @@ import {
 export async function canUserEnrollCourse(
   user: User,
   course: Course,
-): Promise<boolean> {
+): Promise<{ allowed: boolean; message: string }> {
   // Get the latest enrollment of the user for this course
   const enrollment = await Enrollment.findOne({
     where: {
@@ -44,7 +44,10 @@ export async function canUserEnrollCourse(
       EnrollmentStatus.REJECTED,
     ].includes(enrollment.status)
   ) {
-    return false;
+    return {
+      allowed: false,
+      message: `User has an active enrollment with status ${enrollment.status}`,
+    };
   }
 
   // Get Prerequisites for the course
@@ -80,8 +83,12 @@ export async function canUserEnrollCourse(
 
     // If no prerequisite in the group is completed, the user cannot enroll in the course
     if (!completedPrerequisite) {
-      return false;
+      const ids = prerequisiteCourseIds.join(", ");
+      return {
+        allowed: false,
+        message: `User has not completed any prerequisite from group ${prerequisiteGroup.id}. Required one of courses: ${ids}`,
+      };
     }
   }
-  return true;
+  return { allowed: true, message: "User can enroll in the course" };
 }

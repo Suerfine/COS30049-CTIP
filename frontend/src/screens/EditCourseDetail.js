@@ -11,6 +11,8 @@ import {
   Modal,
   TextInput,
   TouchableOpacity,
+  useWindowDimensions,
+  Platform
 } from "react-native";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import {
@@ -42,9 +44,12 @@ import {
   Settings,
   Lock,
   ShieldCheck,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react-native";
 import DiscussionSection from "../components/DiscussionSection.js";
 import Markdown from "react-native-markdown-display";
+import * as DocumentPicker from 'expo-document-picker';
 
 // Import Components
 import OutlineBar from "../components/OutlineBar.js";
@@ -71,9 +76,13 @@ const EditCourseDetail = () => {
   const auth = useAuth();
   const currentUser = auth?.currentUser;
   const { allCourseList } = useCourses();
+  const { width } = useWindowDimensions();
+  const isCompact = width < 900;
 
   const [selectedPage, setSelectedPage] = useState({ type: "overview" });
+  const [pendingDiscussionId, setPendingDiscussionId] = useState(discussionId);
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isMobileOutlineOpen, setIsMobileOutlineOpen] = useState(false);
   const [activeStyles, setActiveStyles] = useState([]);
   const [editingElementId, setEditingElementId] = useState(null);
 
@@ -99,6 +108,8 @@ const EditCourseDetail = () => {
   });
 
   useEffect(() => {
+    setPendingDiscussionId(discussionId);
+
     if (initialSection === "forum") {
       setSelectedPage({ type: "forum" });
     }
@@ -263,50 +274,87 @@ const EditCourseDetail = () => {
       }
     }
 
-    const payload = {
-      page_id: selectedPage.page.id,
-      type: currentElementType,
-      order: editingElementId ? undefined : elements.length + 1,
-      score:
-        currentElementType === "workshop"
-          ? 1
-          : parseInt(newElementData.score) || 1,
-      content: {},
-    };
-
-    switch (currentElementType) {
-      case "text":
-        payload.content = { text: newElementData.text };
-        break;
-      case "image":
-        payload.content = {
-          url: newElementData.url,
-          caption: newElementData.transcript,
-        };
-        break;
-      case "video":
-        payload.content = {
-          url: newElementData.url,
-          transcript: newElementData.transcript,
-        };
-        break;
-      case "quiz_objective":
-        payload.content = {
-          question: newElementData.question,
-          options: newElementData.options,
-          answer: newElementData.answer,
-        };
-        break;
-      case "workshop":
-        payload.content = { ...newElementData.workshop };
-        break;
-    }
-
     let success;
-    if (editingElementId) {
-      success = await updateExistingElement(editingElementId, payload);
+
+    if (currentElementType === "image") {
+      if (!newElementData.imageFile && !editingElementId) {
+        alert("Please upload an image file before saving.");
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("type", "image");
+      
+      // Calculate order
+      const calculatedOrder = editingElementId ? undefined : elements.length + 1;
+      if (calculatedOrder) {
+        formData.append("order", String(calculatedOrder));
+      }
+      
+      formData.append("score", String(parseInt(newElementData.score) || 1));
+
+      const contentMetadata = {
+        caption: newElementData.transcript || "",
+        url: editingElementId ? (newElementData.url || "") : ""
+      };
+      formData.append("content", JSON.stringify(contentMetadata));
+
+      if (newElementData.imageFile) {
+        if (Platform.OS === 'web') {
+          formData.append("file", newElementData.imageFile);
+        } else {
+          formData.append("file", {
+            uri: newElementData.imageFile.uri.replace("file://", ""),
+            name: newElementData.imageFile.name,
+            type: newElementData.imageFile.mimeType || "image/jpeg"
+          });
+        }
+      }
+      if (editingElementId) {
+        success = await updateExistingElement(editingElementId, formData);
+      } else {
+        success = await createNewElement(formData);
+      }
+
     } else {
-      success = await createNewElement(payload);
+      const payload = {
+        page_id: selectedPage.page.id,
+        type: currentElementType,
+        order: editingElementId ? undefined : elements.length + 1,
+        score:
+          currentElementType === "workshop"
+            ? 1
+            : parseInt(newElementData.score) || 1,
+        content: {},
+      };
+
+      switch (currentElementType) {
+        case "text":
+          payload.content = { text: newElementData.text };
+          break;
+        case "video":
+          payload.content = {
+            url: newElementData.url,
+            transcript: newElementData.transcript,
+          };
+          break;
+        case "quiz_objective":
+          payload.content = {
+            question: newElementData.question,
+            options: newElementData.options,
+            answer: newElementData.answer,
+          };
+          break;
+        case "workshop":
+          payload.content = { ...newElementData.workshop };
+          break;
+      }
+
+      if (editingElementId) {
+        success = await updateExistingElement(editingElementId, payload);
+      } else {
+        success = await createNewElement(payload);
+      }
     }
 
     if (success) {
@@ -322,6 +370,7 @@ const EditCourseDetail = () => {
         options: ["", "", "", ""],
         answer: "",
         score: 1,
+        imageFile: null, 
         workshop: {
           title: "",
           description: "",
@@ -499,12 +548,14 @@ const EditCourseDetail = () => {
           )}
         </View>
         {/* Render the dynamic content */}
-        <View style={styles.markdownContainer}>
-          <Markdown style={markdownStyles}>
-            {course?.description ||
-              "_No content provided yet. Click edit to start._"}
-          </Markdown>
-        </View>
+        {course.description !== "undefined" && (
+          <View style={styles.markdownContainer}>
+            <Markdown style={markdownStyles}>
+              {course?.description ||
+                "_No content provided yet. Click edit to start._"}
+            </Markdown>
+          </View>
+        )}
 
         {/* Badge Achievement Section */}
         <View>
@@ -540,18 +591,57 @@ const EditCourseDetail = () => {
     );
   };
 
+  const selectedPageLabel =
+    selectedPage?.type === "page"
+      ? selectedPage.page?.title
+      : selectedPage?.type === "forum"
+        ? "Discussion Forum"
+        : selectedPage?.type === "workshops"
+          ? "Course Workshops"
+          : "Course Overview";
+
   return (
-    <View style={styles.rowContainer}>
+    <View style={[styles.rowContainer, isCompact && styles.rowContainerCompact]}>
       {/* Outlinebar */}
-      <OutlineBar
-        course={course}
-        onSelectPage={setSelectedPage}
-        editable={true}
-        isCollapsed={isCollapsed}
-        isPublished={course.status === "released" ? true : false}
-      />
+      {!isCompact && (
+        <OutlineBar
+          course={course}
+          onSelectPage={setSelectedPage}
+          editable={true}
+          isCollapsed={isCollapsed}
+          isPublished={course.status === "released" ? true : false}
+          activePage={selectedPage}
+        />
+      )}
       <ScrollView style={{ height: "100vh" }}>
         <View style={styles.container}>
+          {isCompact && (
+            <View style={styles.mobileOutlineBlock}>
+              <Pressable
+                style={styles.mobileOutlineTrigger}
+                onPress={() => setIsMobileOutlineOpen((prev) => !prev)}
+              >
+                <View>
+                  <Text style={styles.mobileOutlineLabel}>Course section</Text>
+                  <Text style={styles.mobileOutlineValue}>{selectedPageLabel}</Text>
+                </View>
+                {isMobileOutlineOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+              </Pressable>
+              {isMobileOutlineOpen && (
+                <OutlineBar
+                  course={course}
+                  onSelectPage={(page) => {
+                    setSelectedPage(page);
+                    setIsMobileOutlineOpen(false);
+                  }}
+                  editable={true}
+                  isPublished={course.status === "released" ? true : false}
+                  activePage={selectedPage}
+                  dropdown
+                />
+              )}
+            </View>
+          )}
           {/* Background Image */}
           <ImageBackground
             source={require("../../assets/forest.png")}
@@ -672,7 +762,8 @@ const EditCourseDetail = () => {
             ) : selectedPage?.type === "forum" ? (
               <DiscussionSection
                 courseId={id}
-                initialDiscussionId={discussionId}
+                initialDiscussionId={pendingDiscussionId}
+                onInitialDiscussionOpened={() => setPendingDiscussionId(null)}
                 navigation={navigation}
                 styles={styles}
               />
@@ -682,7 +773,7 @@ const EditCourseDetail = () => {
                 <View style={styles.headerRow}>
                   <View style={styles.content}>
                     <Text style={styles.courseTitle}>{course.title}</Text>
-                    <View style={styles.statsRow}>
+                    <View style={[styles.statsRow, isCompact && styles.statsRowCompact]}>
                       <View style={styles.statChip}>
                         <Clock size={16} color="#363636" />
                         <Text style={styles.statLabel}>
@@ -718,7 +809,7 @@ const EditCourseDetail = () => {
                   source={
                     normalizedCoverUrl
                       ? { uri: normalizedCoverUrl }
-                      : require("../../assets/first_aid.png")
+                      : ''
                   }
                   style={styles.course_cover}
                 />
@@ -830,6 +921,7 @@ const EditCourseDetail = () => {
           <View
             style={[
               styles.selectionCard,
+              isCompact && styles.selectionCardCompact,
               currentElementType === "text" && { height: "80%", maxWidth: 800 },
             ]}
           >
@@ -974,35 +1066,87 @@ const EditCourseDetail = () => {
                   </View>
                 )}
 
-                {(currentElementType === "image" ||
-                  currentElementType === "video") && (
+                {currentElementType === 'image' && (
                   <View style={{ marginTop: 10 }}>
-                    <Text style={styles.inputLabel}>Source URL</Text>
-                    <TextInput
-                      style={styles.inputField}
-                      value={newElementData.url}
-                      onChangeText={(v) =>
-                        setNewElementData({ ...newElementData, url: v })
-                      }
-                      placeholder="https://..."
-                    />
-                    <Text style={styles.inputLabel}>
-                      {currentElementType === "image"
-                        ? "Caption"
-                        : "Transcript"}
-                    </Text>
-                    <TextInput
-                      style={styles.inputField}
-                      multiline
-                      value={newElementData.transcript}
-                      onChangeText={(v) =>
-                        setNewElementData({ ...newElementData, transcript: v })
-                      }
-                      placeholder="Enter description..."
-                      placeholderTextColor="grey"
-                    />
+                      <Text style={styles.inputLabel}>Upload Image Asset</Text>
+                      
+                      <View style={styles.uploadRow}>
+                          <TouchableOpacity 
+                              style={styles.pickerBtn} 
+                              onPress={async () => {
+                                  try {
+                                      const res = await DocumentPicker.getDocumentAsync({
+                                          type: 'image/*',
+                                          copyToCacheDirectory: true
+                                      });
+                                      
+                                      if (!res.canceled && res.assets && res.assets.length > 0) {
+                                        const pickedFile = res.assets[0];
+                                          if (Platform.OS === 'web') {
+                                          const response = await fetch(pickedFile.uri);
+                                          const fileBlob = await response.blob();
+                                          
+                                          const nativeFile = new File([fileBlob], pickedFile.name, { type: pickedFile.mimeType || 'image/jpeg' });
+                                          
+                                          setNewElementData(prev => ({
+                                              ...prev,
+                                              imageFile: nativeFile,
+                                              url: pickedFile.name
+                                          }));
+                                      } else {
+                                          setNewElementData(prev => ({
+                                              ...prev,
+                                              imageFile: pickedFile,
+                                              url: pickedFile.name
+                                          }));
+                                      }
+                                      }
+                                  } catch (err) {
+                                      console.error("Error picking file:", err);
+                                  }
+                              }}
+                          >
+                              <Text style={styles.pickerBtnText}>Choose File</Text>
+                          </TouchableOpacity>
+                          
+                          <Text style={styles.uploadStatusText} numberOfLines={1}>
+                              {newElementData.imageFile ? newElementData.imageFile.name : "No file chosen"}
+                          </Text>
+                      </View>
+
+                      <Text style={styles.inputLabel}>Caption / Description</Text>
+                      <TextInput 
+                          style={styles.inputField} 
+                          multiline 
+                          value={newElementData.transcript} 
+                          onChangeText={(v) => setNewElementData({...newElementData, transcript: v})} 
+                          placeholder="Enter description..." 
+                          placeholderTextColor="grey"
+                      />
                   </View>
-                )}
+              )}
+
+              {currentElementType === 'video' && (
+                  <View style={{ marginTop: 10 }}>
+                      <Text style={styles.inputLabel}>Source URL</Text>
+                      <TextInput 
+                          style={styles.inputField} 
+                          value={newElementData.url} 
+                          onChangeText={(v) => setNewElementData({...newElementData, url: v})} 
+                          placeholder="https://youtube.com/..." 
+                          placeholderTextColor="grey"
+                      />
+                      <Text style={styles.inputLabel}>Transcript</Text>
+                      <TextInput 
+                          style={styles.inputField} 
+                          multiline 
+                          value={newElementData.transcript} 
+                          onChangeText={(v) => setNewElementData({...newElementData, transcript: v})} 
+                          placeholder="Enter video transcript..." 
+                          placeholderTextColor="grey"
+                      />
+                  </View>
+              )}
 
                 {currentElementType === "quiz_objective" && (
                   <View style={styles.quizEditorContainer}>
@@ -1259,6 +1403,38 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: "row",
   },
+  rowContainerCompact: {
+    flexDirection: "column",
+  },
+  mobileOutlineBlock: {
+    marginTop: 12,
+    marginBottom: 10,
+    gap: 10,
+    zIndex: 20,
+  },
+  mobileOutlineTrigger: {
+    minHeight: 56,
+    borderWidth: 1,
+    borderColor: "#d1d5db",
+    borderRadius: 12,
+    backgroundColor: "white",
+    paddingHorizontal: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  mobileOutlineLabel: {
+    fontSize: 11,
+    color: "#6b7280",
+    textTransform: "uppercase",
+    fontWeight: "700",
+  },
+  mobileOutlineValue: {
+    marginTop: 3,
+    fontSize: 15,
+    color: "#111827",
+    fontWeight: "600",
+  },
   backgroundImage: {
     width: "100%",
     borderRadius: 20,
@@ -1293,8 +1469,12 @@ const styles = StyleSheet.create({
   },
   statsRow: {
     flexDirection: "row",
-    gap: 12,
-    marginBottom: 20,
+    gap: 8,
+    marginVertical: 20,
+  },
+  statsRowCompact: {
+    flexDirection: "column",
+    alignItems: "flex-start",
   },
   courseTitle: {
     fontSize: 20,
@@ -1303,10 +1483,8 @@ const styles = StyleSheet.create({
   statChip: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 20,
+    gap: 4,
+    paddingHorizontal: 10,
   },
   statLabel: {
     color: "#363636",
@@ -1413,8 +1591,10 @@ const styles = StyleSheet.create({
   course_cover: {
     alignSelf: "center",
     borderRadius: 13,
-    width: "800px",
-    height: "400px",
+    width: "100%",
+    maxWidth: 800,
+    aspectRatio: 2,
+    height: undefined,
     marginBottom: 20,
   },
   contentWrapper: {
@@ -1580,6 +1760,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0,0,0,0.5)",
     justifyContent: "center",
     alignItems: "center",
+    padding: 20,
   },
   selectionCard: {
     backgroundColor: "white",
@@ -1588,6 +1769,11 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 25,
     maxHeight: "80%",
+  },
+  selectionCardCompact: {
+    width: "100%",
+    maxHeight: "90%",
+    padding: 16,
   },
   inputField: {
     backgroundColor: "#f5f5f5",
@@ -1735,6 +1921,7 @@ const styles = StyleSheet.create({
   },
   tagGroup: {
     gap: 8,
+    marginTop:12
   },
   tagLabel: {
     fontSize: 12,
@@ -1915,6 +2102,33 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: "#6b7280",
     textAlign: "center",
+  },
+  uploadRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f5f5f5',
+    borderRadius: 8,
+    padding: 6,
+    marginBottom: 15,
+    borderWidth: 1,
+    borderColor: '#eee',
+    gap: 12,
+  },
+  pickerBtn: {
+    backgroundColor: '#0a6340',
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 6,
+  },
+  pickerBtnText: {
+    color: 'white',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  uploadStatusText: {
+    fontSize: 13,
+    color: '#666',
+    flex: 1,
   },
 });
 

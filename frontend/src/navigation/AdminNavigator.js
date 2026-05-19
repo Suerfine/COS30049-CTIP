@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { createStackNavigator } from "@react-navigation/stack";
-import { View } from "react-native";
+import { Pressable, StyleSheet, Text, View, useWindowDimensions } from "react-native";
+import { Menu, X } from "lucide-react-native";
 
 // Import screens
 import AdminCourse from "../screens/AdminCourse";
@@ -13,6 +14,8 @@ import AdminDashboard from "../screens/AdminDashboard";
 import AnomalyDetection from "../screens/AnomalyDetection";
 import AdminArModels from "../screens/AdminArModels";
 import Notification from "../screens/Notification";
+import Security from "../screens/Security";
+import TotpSetup from "../screens/TotpSetup";
 
 // Import components
 import SideBar from "../components/SideBar";
@@ -20,11 +23,45 @@ import SideBar from "../components/SideBar";
 const Stack = createStackNavigator();
 
 export default function AdminNavigator() {
+  const { width } = useWindowDimensions();
+  const isCompact = width < 900;
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+
   return (
-    <View style={{ flex: 1 }}>
-      <View style={{ flexDirection: "row", flex: 1 }}>
-        <SideBar />
-        <View style={{ flex: 1 }}>
+    <View style={styles.shell}>
+      {isCompact && (
+        <View style={styles.mobileHeader}>
+          <Pressable
+            style={styles.mobileMenuButton}
+            onPress={() => setIsMobileSidebarOpen((prev) => !prev)}
+          >
+            {isMobileSidebarOpen ? (
+              <X size={22} color="#0a6340" />
+            ) : (
+              <Menu size={22} color="#0a6340" />
+            )}
+          </Pressable>
+        </View>
+      )}
+
+      <View style={styles.body}>
+        {!isCompact && (
+          <SideBar />
+        )}
+
+        {isCompact && isMobileSidebarOpen && (
+          <>
+            <Pressable
+              style={styles.backdrop}
+              onPress={() => setIsMobileSidebarOpen(false)}
+            />
+            <View style={styles.drawer}>
+              <SideBar mobile onNavigate={() => setIsMobileSidebarOpen(false)} />
+            </View>
+          </>
+        )}
+
+        <View style={styles.mainColumn}>
           <Stack.Navigator
             screenOptions={{
               headerShown: false,
@@ -56,9 +93,53 @@ export default function AdminNavigator() {
               name="Notification Management"
               component={Notification}
             />
+            <Stack.Screen name="Security" component={Security} />
+            <Stack.Screen name="TotpSetup" component={TotpSetup} />
           </Stack.Navigator>
         </View>
       </View>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  shell: { flex: 1, backgroundColor: "#f6f8f7" },
+  body: { flex: 1, flexDirection: "row", minHeight: 0 },
+  mainColumn: { flex: 1, minWidth: 0, minHeight: 0 },
+  mobileHeader: {
+    minHeight: 58,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#e5e7eb",
+    backgroundColor: "#fff",
+  },
+  mobileMenuButton: {
+    padding: 8,
+    borderRadius: 10,
+    backgroundColor: "#f0fdf4",
+  },
+  backdrop: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(15, 23, 42, 0.35)",
+    zIndex: 1000,
+  },
+  drawer: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    bottom: 0,
+    width: 280,
+    maxWidth: "85%",
+    backgroundColor: "#fff",
+    zIndex: 1001,
+    borderRightWidth: 1,
+    borderRightColor: "#e5e7eb",
+  },
+});

@@ -53,7 +53,7 @@ export const useUserDashboard = () => {
     }
 
     const courseTab = useMemo(() => ([
-        { id: "in progress", label: t("status.in progress") },
+        { id: "in progress", label: t("status.in_progress") },
         { id: "completed", label: t("status.completed") },
     ]), [t]);
 
@@ -76,7 +76,6 @@ export const useUserDashboard = () => {
                 setCourses(fetchedCourses);
             }
 
-            // Fetch progress AFTER courses loaded
             if (fetchedCourses.length > 0) {
                 const progressPromises = fetchedCourses.map(course =>
                     progressService.getCourseProgress(course.id)

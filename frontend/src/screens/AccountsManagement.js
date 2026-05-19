@@ -26,6 +26,7 @@ import {
   ArrowDownWideNarrow,
   RotateCcw,
   UserRoundKey,
+  SquarePen,
 } from "lucide-react-native";
 import React, { useState } from "react";
 import {
@@ -37,7 +38,10 @@ import {
   Image,
   TextInput,
   Platform,
+  useWindowDimensions,
+  Alert,
 } from "react-native";
+import { useTranslation } from "react-i18next";
 
 // Import other components and hooks
 import { useAccountManagement } from "../hooks/useAccountManagement";
@@ -64,15 +68,20 @@ const AccountManagement = () => {
     refresh,
     handleUpdateAccount,
     handleDeleteAccount,
+    pickProfilePicture,
     currentRole,
     setCurrentRole,
   } = useAccountManagement();
+  const [pendingImage, setPendingImage] = useState(null);
   const [selectedAcc, setSelectedAcc] = useState(null);
   const [activeMenuId, setActiveMenuId] = useState(null);
   const [isOpen, setIsOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [editForm, setEditForm] = useState(null);
+  const { width } = useWindowDimensions();
+  const isCompact = width < 420;
+  const { t } = useTranslation();
 
   const handleStartEdit = () => {
     setEditForm({ ...selectedAcc });
@@ -90,16 +99,31 @@ const AccountManagement = () => {
   };
 
   const onSaveEdit = async () => {
-    const result = await handleUpdateAccount(selectedAcc.id, editForm);
-    try {
+    const result = await handleUpdateAccount(
+      selectedAcc.id,
+      editForm,
+      pendingImage ?? null,
+    );
+    if (result?.success) {
       setIsEditing(false);
       setActiveMenuId(null);
-      await refresh();
-      setSelectedAcc(editForm);
-    } catch (err) {
-      console.error("Failed to update:", err);
+      setSelectedAcc({
+        ...editForm,
+        profileImage: pendingImage?.uri ?? getProfileImageUri(selectedAcc),
+      });
+      setPendingImage(null);
+    } else {
+      console.error("Failed to update:", result?.serverError);
     }
   };
+
+  const getProfileImageUri = (item) =>
+    item?.profileImage ||
+    item?.pfp_url ||
+    item?.pfp ||
+    item?.user_profile_image ||
+    item?.profile_image ||
+    null;
 
   const onDeletePress = () => {
     if (!selectedAcc) return;
@@ -127,28 +151,27 @@ const AccountManagement = () => {
 
     confirmDelete();
   };
-  // Caluculate the pagination
+
+  // Calculate the pagination
   const itemsPerPage = 10;
   const indexOfFirstItem = (currentPage - 1) * itemsPerPage;
-  const indexOfLastItem = indexOfFirstItem + accounts.length;
+  const indexOfLastItem = indexOfFirstItem + (accounts?.length || 0);
   const estimatedTotal = totalPages * itemsPerPage;
   const pageNumbers = [];
   for (let i = 1; i <= totalPages; i++) {
     pageNumbers.push(i);
   }
-  // Caluculate the pagination
-  const currentAcc = accounts;
 
   const renderHeader = () => (
     <View style={[styles.tableHeader, styles.row]}>
       <Text style={[styles.headerRow, { flex: 1, textAlign: "center" }]}>
-        <Text style={styles.headerText}>ID.</Text>
+        <Text style={styles.headerText}>{t("id")}</Text>
       </Text>
       <Pressable
         onPress={() => requestSort("firstname")}
         style={[styles.headerRow, { flex: 3 }]}
       >
-        <Text style={styles.headerText}>Full Name</Text>
+        <Text style={styles.headerText}>{t("full_name")}</Text>
         {sortConfig.key === "firstname" && sortConfig.direction === "asc" ? (
           <ArrowUpNarrowWide size={14} color="white" />
         ) : (
@@ -159,7 +182,7 @@ const AccountManagement = () => {
         onPress={() => requestSort("username")}
         style={[styles.headerRow, { flex: 2 }]}
       >
-        <Text style={styles.headerText}>Username</Text>
+        <Text style={styles.headerText}>{t("username")}</Text>
         {sortConfig.key === "username" && sortConfig.direction === "asc" ? (
           <ArrowUpNarrowWide size={14} color="white" />
         ) : (
@@ -167,16 +190,16 @@ const AccountManagement = () => {
         )}
       </Pressable>
       <Text style={[styles.headerRow, { flex: 3 }]}>
-        <Text style={styles.headerText}>Work Email</Text>
+        <Text style={styles.headerText}>{t("work_email")}</Text>
       </Text>
       <Text style={[styles.headerRow, { flex: 1 }]}>
-        <Text style={styles.headerText}>Role</Text>
+        <Text style={styles.headerText}>{t("role")}</Text>
       </Text>
       <Pressable
         onPress={() => requestSort("created_at")}
         style={[styles.headerRow, { flex: 2 }]}
       >
-        <Text style={styles.headerText}>Joined On</Text>
+        <Text style={styles.headerText}>{t("joined_on")}</Text>
         {sortConfig.key === "created_at" && sortConfig.direction === "asc" ? (
           <ArrowUpNarrowWide size={14} color="white" />
         ) : (
@@ -187,7 +210,7 @@ const AccountManagement = () => {
         onPress={() => requestSort("last_login_at")}
         style={[styles.headerRow, { flex: 2 }]}
       >
-        <Text style={styles.headerText}>Last Login</Text>
+        <Text style={styles.headerText}>{t("last_login")}</Text>
         {sortConfig.key === "last_login_at" &&
         sortConfig.direction === "asc" ? (
           <ArrowUpNarrowWide size={14} color="white" />
@@ -208,13 +231,11 @@ const AccountManagement = () => {
         selectedAcc?.id === item.id && { backgroundColor: "#fff8e1" },
       ]}
     >
-      {/* ID */}
       <Text style={{ flex: 1, textAlign: "center" }}>{item.id}</Text>
-      {/* Full Name and profile image */}
       <View style={[{ flex: 3 }, styles.userInfo, styles.row]}>
-        {item.profileImage ? (
+        {getProfileImageUri(item) ? (
           <Image
-            source={{ uri: item.profileImage }}
+            source={{ uri: getProfileImageUri(item) }}
             style={styles.avatar}
             accessibilityLabel={`Profile Image of ${item.firstname + " " + item.lastname}`}
           />
@@ -227,31 +248,28 @@ const AccountManagement = () => {
         )}
         <Text>{item.firstname + " " + item.lastname}</Text>
       </View>
-      {/* Username */}
       <Text style={{ flex: 2 }}>{item.username}</Text>
       {/* Work Email */}
-      <Text style={{ flex: 3 }}>{item.username + " @example.com"}</Text>
+      <Text style={{ flex: 3 }}>{item.username + "@sfc.gov.my"}</Text>
       {/* Role */}
       <Text style={{ flex: 1 }}>
-        {item.role === "admin" ? "Admin" : "Park Guide"}
+        {item.role === "admin" ? t("role.admin") : t("role.park_guide")}
       </Text>
-      {/* Joined On */}
       <Text style={{ flex: 2 }}>{formatDate(item.created_at)}</Text>
-      {/* Last Login */}
       <Text style={{ flex: 2 }}>{formatDate(item.last_login_at)}</Text>
     </Pressable>
   );
 
   const renderPagination = () => {
-    const pageNumbers = [];
+    const pages = [];
     for (let i = 1; i <= totalPages; i++) {
-      pageNumbers.push(i);
+      pages.push(i);
     }
     return (
       <View style={[styles.paginationContainer, styles.row]}>
         <Text style={styles.pageInfo}>
-          Showing {accounts.length > 0 ? indexOfFirstItem + 1 : 0} to{" "}
-          {indexOfLastItem} of {totalUsers} users
+          {t("showing")} {accounts?.length > 0 ? indexOfFirstItem + 1 : 0}{" "}
+          {t("to")} {indexOfLastItem} {t("of")} {totalUsers} {t("users")}
         </Text>
         <View style={styles.row}>
           <Pressable
@@ -282,7 +300,7 @@ const AccountManagement = () => {
               <ChevronLeft size={20} />
             </Text>
           </Pressable>
-          {pageNumbers.map((number) => (
+          {pages.map((number) => (
             <Pressable
               key={number}
               onPress={() => setCurrentPage(number)}
@@ -344,12 +362,16 @@ const AccountManagement = () => {
     );
   };
 
-  // Loading
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Account Management</Text>
-      <View style={[styles.toolbar, styles.row]}>
-        <View style={styles.row}>
+    <ScrollView
+      style={styles.pageScroll}
+      contentContainerStyle={styles.container}
+    >
+      <Text style={styles.title}>{t("account_management")}</Text>
+      <View style={[styles.toolbar, isCompact && styles.toolbarCompact]}>
+        <View
+          style={[styles.toolbarRow, isCompact && styles.toolbarGroupCompact]}
+        >
           <Pressable
             onPress={resetSort}
             style={({ hovered }) => [
@@ -363,19 +385,20 @@ const AccountManagement = () => {
             <Search size={18} />
             <TextInput
               style={styles.input}
-              placeholder="Search..."
+              placeholder={t("search")}
               placeholderTextColor="#8f8f8f"
               value={searchQuery}
               onChangeText={handleSearch}
             />
           </View>
-          {/* Role Dropdown */}
           <View style={styles.dropdownWrapper}>
             <Pressable
               style={styles.pillTrigger}
               onPress={() => setIsOpen(!isOpen)}
             >
-              <Text style={styles.pillText}>{currentRole !== 'All' ? currentRole : 'Role'}</Text>
+              <Text style={styles.pillText}>
+                {currentRole !== "all" ? t(`role.${currentRole}`) : t("role")}
+              </Text>
               {isOpen ? (
                 <ChevronUp size={16} color="#4b5563" />
               ) : (
@@ -383,44 +406,54 @@ const AccountManagement = () => {
               )}
             </Pressable>
 
-            {/* Dropdown Menu */}
             {isOpen && (
               <View style={styles.dropdownMenu}>
-                {["All", "Admin", "Park Guide"].map((role) => (
+                {[
+                  { key: "all", label: t("role") },
+                  { key: "admin", label: t("role.admin") },
+                  { key: "park_guide", label: t("role.park_guide") },
+                ].map((role) => (
                   <Pressable
-                    key={role}
+                    key={role.key}
                     style={({ hovered }) => [
                       styles.menuItem,
-                      currentRole === role && styles.menuItemActive,
-                      hovered && currentRole != role && styles.menuItemHover,
+                      currentRole === role.key && styles.menuItemActive,
+                      hovered &&
+                        currentRole !== role.key &&
+                        styles.menuItemHover,
                     ]}
                     onPress={() => {
-                      setCurrentRole(role);
+                      setCurrentRole(role.key);
                       setIsOpen(false);
                     }}
                   >
                     <Text
                       style={[
-                        currentRole === role && styles.menuItemTextActive,
+                        styles.menuItemText,
+                        currentRole === role.key && styles.menuItemTextActive,
                       ]}
                     >
-                      {role}
+                      {role.label}
                     </Text>
                   </Pressable>
                 ))}
               </View>
             )}
           </View>
+          <Pressable
+            onPress={handleAdd}
+            style={({ hovered }) => [
+              styles.btn,
+              styles.addUserBtn,
+              hovered && styles.btnHover,
+            ]}
+          >
+            <Plus size={16} style={styles.btnText} />
+            <Text style={styles.btnText}>{t("add_user")}</Text>
+          </Pressable>
         </View>
-        <Pressable
-          onPress={handleAdd}
-          style={({ hovered }) => [styles.btn, hovered && styles.btnHover]}
-        >
-          <Plus size={16} />
-          <Text style={styles.btnText}>Add User</Text>
-        </Pressable>
       </View>
-      {/* Create Users Modal */}
+
       <ModalLayout
         visible={modalVisible}
         onClose={() => setModalVisible(false)}
@@ -438,26 +471,35 @@ const AccountManagement = () => {
       </ModalLayout>
 
       <View style={styles.tableContainer}>
-        <FlatList
-          style={styles.table}
-          data={currentAcc}
-          ListHeaderComponent={renderHeader}
-          renderItem={renderUserItem}
-          keyExtractor={(item) => item.id.toString()}
-          ListEmptyComponent={
-            <View style={styles.tableRow}>
-              <Text style={{ flex: 1, paddingVertical: 2 }}>
-                No Users Found.
-              </Text>
-            </View>
-          }
-        />
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator
+          contentContainerStyle={styles.tableScrollContent}
+        >
+          <View style={styles.tableInner}>
+            <FlatList
+              style={styles.table}
+              scrollEnabled={false}
+              data={accounts || []}
+              ListHeaderComponent={renderHeader}
+              renderItem={renderUserItem}
+              keyExtractor={(item) => item.id.toString()}
+              ListEmptyComponent={
+                <View style={styles.tableRow}>
+                  <Text style={{ flex: 1, paddingVertical: 2 }}>
+                    {t("no_users_found")}
+                  </Text>
+                </View>
+              }
+            />
+          </View>
+        </ScrollView>
       </View>
       {totalPages > 1 ? renderPagination() : null}
-      {/* Side panel: show user details */}
+
       {selectedAcc && (
-        <View style={styles.sidePanel}>
-          <ScrollView styles={styles.ScrollView}>
+        <View style={[styles.sidePanel, isCompact && styles.sidePanelCompact]}>
+          <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
             <View style={styles.panelHeader}>
               <Text style={styles.panelTitle}>User Information</Text>
               <Pressable
@@ -470,7 +512,6 @@ const AccountManagement = () => {
               </Pressable>
             </View>
             <View style={styles.panelContent}>
-              {/* Action Menu */}
               <View style={styles.actionMenu}>
                 <Pressable
                   onPress={() =>
@@ -510,9 +551,15 @@ const AccountManagement = () => {
                   </View>
                 )}
               </View>
-              {selectedAcc.profileImage ? (
+              {(isEditing && pendingImage?.uri) ||
+              getProfileImageUri(selectedAcc) ? (
                 <Image
-                  source={{ uri: selectedAcc?.profileImage }}
+                  source={{
+                    uri:
+                      isEditing && pendingImage?.uri
+                        ? pendingImage.uri
+                        : getProfileImageUri(selectedAcc),
+                  }}
                   style={styles.largeAvatar}
                 />
               ) : (
@@ -524,14 +571,29 @@ const AccountManagement = () => {
                   </Text>
                 </View>
               )}
+              {isEditing && (
+                <Pressable
+                  style={styles.editProfilePicBtn}
+                  onPress={async () => {
+                    const picked = await pickProfilePicture();
+                    if (picked) {
+                      setPendingImage(picked);
+                    }
+                  }}
+                >
+                  <View style={styles.editBtnWrapper}>
+                    <SquarePen size={16} color="black" />
+                  </View>
+                </Pressable>
+              )}
 
               {isEditing ? (
                 <View style={styles.nameEditRow}>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.panelLabel}>First Name</Text>
+                    <Text style={styles.panelLabel}>{t('first name')}</Text>
                     <TextInput
                       style={[styles.userDetails, styles.inputEditing]}
-                      value={editForm.firstname}
+                      value={editForm?.firstname || ""}
                       onChangeText={(text) =>
                         setEditForm({ ...editForm, firstname: text })
                       }
@@ -541,7 +603,7 @@ const AccountManagement = () => {
                     <Text style={styles.panelLabel}>Last Name</Text>
                     <TextInput
                       style={[styles.userDetails, styles.inputEditing]}
-                      value={editForm.lastname}
+                      value={editForm?.lastname || ""}
                       onChangeText={(text) =>
                         setEditForm({ ...editForm, lastname: text })
                       }
@@ -555,7 +617,6 @@ const AccountManagement = () => {
               )}
 
               <View style={styles.user}>
-                {/* Username */}
                 <View style={styles.details}>
                   <View style={styles.row}>
                     <User2 size={18} color="#4f4f4f" />
@@ -564,9 +625,9 @@ const AccountManagement = () => {
                   {isEditing ? (
                     <TextInput
                       style={[styles.userDetails, styles.inputEditing]}
-                      value={editForm?.username}
+                      value={editForm?.username || ""}
                       onChangeText={(text) =>
-                        setEditForm((prev) => ({ ...prev, username: text }))
+                        setEditForm({ ...editForm, username: text })
                       }
                     />
                   ) : (
@@ -575,7 +636,6 @@ const AccountManagement = () => {
                     </Text>
                   )}
                 </View>
-                {/* IC */}
                 <View style={styles.details}>
                   <View style={styles.row}>
                     <IdCard size={18} color="#4f4f4f" />
@@ -584,12 +644,9 @@ const AccountManagement = () => {
                   {isEditing ? (
                     <TextInput
                       style={[styles.userDetails, styles.inputEditing]}
-                      value={editForm?.identification}
+                      value={editForm?.identification || ""}
                       onChangeText={(text) =>
-                        setEditForm((prev) => ({
-                          ...prev,
-                          identification: text,
-                        }))
+                        setEditForm({ ...editForm, identification: text })
                       }
                     />
                   ) : (
@@ -599,7 +656,6 @@ const AccountManagement = () => {
                   )}
                 </View>
 
-                {/* Telephone */}
                 <View style={styles.details}>
                   <View style={styles.row}>
                     <Phone size={18} color="#4f4f4f" />
@@ -608,9 +664,9 @@ const AccountManagement = () => {
                   {isEditing ? (
                     <TextInput
                       style={[styles.userDetails, styles.inputEditing]}
-                      value={editForm?.tel}
+                      value={editForm?.tel || ""}
                       onChangeText={(text) =>
-                        setEditForm((prev) => ({ ...prev, tel: text }))
+                        setEditForm({ ...editForm, tel: text })
                       }
                     />
                   ) : (
@@ -618,14 +674,13 @@ const AccountManagement = () => {
                   )}
                 </View>
 
-                {/* Email */}
                 <View style={styles.details}>
                   <View style={styles.row}>
                     <Mail size={18} color="#4f4f4f" />
                     <Text style={styles.panelLabel}>Work Email:</Text>
                   </View>
                   <Text style={styles.userDetails}>
-                    {selectedAcc.username + "@example.com"}
+                    {(selectedAcc.username || "") + "@example.com"}
                   </Text>
                   <View style={styles.row}>
                     <Text
@@ -640,12 +695,9 @@ const AccountManagement = () => {
                   {isEditing ? (
                     <TextInput
                       style={[styles.userDetails, styles.inputEditing]}
-                      value={editForm?.personal_email}
+                      value={editForm?.personal_email || ""}
                       onChangeText={(text) =>
-                        setEditForm((prev) => ({
-                          ...prev,
-                          personal_email: text,
-                        }))
+                        setEditForm({ ...editForm, personal_email: text })
                       }
                     />
                   ) : (
@@ -654,7 +706,6 @@ const AccountManagement = () => {
                     </Text>
                   )}
                 </View>
-                {/* Role */}
                 <View style={styles.details}>
                   <View style={styles.row}>
                     <UserRoundKey size={18} color="#4f4f4f" />
@@ -664,7 +715,6 @@ const AccountManagement = () => {
                     {selectedAcc.role == "admin" ? "Admin" : "Park Guide"}
                   </Text>
                 </View>
-                {/* Joined Date */}
                 <View style={styles.details}>
                   <View style={styles.row}>
                     <Calendar size={18} color="#4f4f4f" />
@@ -678,7 +728,10 @@ const AccountManagement = () => {
               {isEditing && (
                 <View style={[styles.row, styles.actionBtn]}>
                   <Pressable
-                    onPress={() => setIsEditing(false)}
+                    onPress={() => {
+                      setIsEditing(false);
+                      setPendingImage(null);
+                    }}
                     style={styles.Btn}
                   >
                     <Text>Cancel</Text>
@@ -692,13 +745,15 @@ const AccountManagement = () => {
           </ScrollView>
         </View>
       )}
-    </View>
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  pageScroll: {
     flex: 1,
+  },
+  container: {
     paddingVertical: 20,
     paddingHorizontal: 40,
   },
@@ -712,17 +767,28 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
   },
   tableContainer: {
-    flex: 1,
+    width: "100%",
+  },
+  tableInner: {
+    minWidth: 980,
+    width: "100%",
+  },
+  tableScrollContent: {
+    minWidth: "100%",
   },
   title: {
     fontSize: 25,
-    fontWeight: 500,
+    fontWeight: "500",
   },
   search: {
-    gap: 7,
     borderWidth: 1,
     borderColor: "#8f8f8f",
-    minWidth: 300,
+    width: "auto",
+    flexBasis: 300,
+    minWidth: 80,
+    maxWidth: 300,
+    flexShrink: 1,
+    flexGrow: 1,
     padding: 5,
     backgroundColor: "white",
     borderRadius: 15,
@@ -733,12 +799,30 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     paddingVertical: 2,
-    outlineStyle: "none",
+    ...Platform.select({
+      web: { outlineStyle: "none" },
+    }),
+    marginLeft: 10,
   },
   toolbar: {
-    justifyContent: "space-between",
     marginVertical: 20,
-    zIndex: 500,
+    alignItems: "center",
+    zIndex: 600,
+  },
+  toolbarCompact: {
+    flexDirection: "column",
+    alignItems: "stretch",
+  },
+  toolbarRow: {
+    width: "100%",
+    flexDirection: "row",
+    alignItems: "center",
+    minWidth: 0,
+    gap: 12,
+    flexWrap: "nowrap",
+  },
+  toolbarGroupCompact: {
+    flexWrap: "wrap",
   },
   btnText: {
     color: "white",
@@ -750,19 +834,21 @@ const styles = StyleSheet.create({
   tableHeader: {
     backgroundColor: "#0a6340",
     paddingVertical: 8,
-    userSelect: "none",
+    ...Platform.select({
+      web: { userSelect: "none" },
+    }),
   },
   headerText: {
     color: "white",
     alignSelf: "center",
-    fontWeight: 500,
+    fontWeight: "500",
   },
   row: {
     flexDirection: "row",
   },
   avatar: {
-    width: 90,
-    height: 90,
+    width: 35,
+    height: 35,
     borderRadius: 60,
     borderWidth: 3,
     borderColor: "white",
@@ -770,7 +856,7 @@ const styles = StyleSheet.create({
   pfpPlaceholder: {
     width: 37,
     height: 37,
-    borderRadius: 60,
+    borderRadius: 20,
     backgroundColor: "#2c5c189d",
     borderWidth: 3,
     borderColor: "white",
@@ -778,9 +864,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   SideBarPlaceholder: {
-    width: 90,
-    height: 90,
-    borderRadius: 60,
+    width: 130,
+    height: 130,
+    borderRadius: 65,
     backgroundColor: "#2c5c189d",
     borderWidth: 3,
     borderColor: "white",
@@ -816,7 +902,7 @@ const styles = StyleSheet.create({
   pageBtn: {
     width: 32,
     height: 32,
-    borderRadius: "50%",
+    borderRadius: 16,
     backgroundColor: "white",
     borderWidth: 1,
     borderColor: "#ccc",
@@ -845,13 +931,13 @@ const styles = StyleSheet.create({
   },
   activePageBtn: {
     backgroundColor: "#ffc758",
-    border: 0,
+    borderColor: "#ffc758",
     color: "white",
   },
   sidePanel: {
     width: 350,
     backgroundColor: "white",
-    height: "100%",
+    height: "100vh",
     position: "absolute",
     right: 0,
     top: 0,
@@ -861,6 +947,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 10,
     zIndex: 600,
+  },
+  sidePanelCompact: {
+    width: "100%",
   },
   panelHeader: {
     flexDirection: "row",
@@ -873,13 +962,29 @@ const styles = StyleSheet.create({
   },
   panelTitle: {
     fontSize: 18,
-    fontWeight: 500,
+    fontWeight: "500",
     marginRight: 15,
   },
   largeAvatar: {
     width: 130,
     height: 130,
+    borderRadius: 65,
     alignSelf: "center",
+  },
+  editProfilePicBtn: {
+    position: "absolute",
+    flexDirection: "row",
+    top: 120,
+    left: 200,
+    width: 60,
+    height: 35,
+  },
+  editBtnWrapper: {
+    backgroundColor: "#ffc95c",
+    padding: 6,
+    borderRadius: 60,
+    borderColor: "white",
+    borderWidth: 3,
   },
   panelContent: {
     padding: 20,
@@ -888,7 +993,7 @@ const styles = StyleSheet.create({
   },
   fullname: {
     fontSize: 16,
-    fontWeight: 500,
+    fontWeight: "500",
     textAlign: "center",
     marginTop: 15,
   },
@@ -900,7 +1005,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   panelLabel: {
-    fontWeight: 500,
+    fontWeight: "500",
     marginLeft: 15,
   },
   userDetails: {
@@ -916,10 +1021,6 @@ const styles = StyleSheet.create({
     position: "absolute",
     zIndex: 400,
   },
-  menuItem: {
-    padding: 14,
-    alignItems: "center",
-  },
   floatingMenu: {
     position: "absolute",
     right: 7,
@@ -931,7 +1032,9 @@ const styles = StyleSheet.create({
     elevation: 5,
     borderWidth: 1,
     borderColor: "#f0f0f0",
-    userSelect: "none",
+    ...Platform.select({
+      web: { userSelect: "none" },
+    }),
   },
   option: {
     gap: 8,
@@ -963,14 +1066,11 @@ const styles = StyleSheet.create({
   iconBtn: {
     alignSelf: "center",
     padding: 8,
-    marginRight: 20,
-    color: "#217837",
     borderRadius: 50,
     backgroundColor: "white",
   },
   iconBtnHover: {
     backgroundColor: "#217837",
-    color: "white",
   },
   headerRow: {
     flexDirection: "row",
@@ -982,28 +1082,17 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 4,
     alignItems: "center",
-    alignSelf: "center",
+    marginLeft: "auto",
+    flexShrink: 0,
     backgroundColor: "#217837",
     borderRadius: 50,
-    color: "white",
     paddingHorizontal: 23,
     paddingVertical: 10,
-  },
-  btnText: {
-    color: "white",
-    fontSize: 14,
-  },
-  btnHover: {
-    backgroundColor: "#5a993ffe",
   },
   nameEditRow: {
     gap: 10,
     paddingHorizontal: 20,
     marginTop: 15,
-  },
-  ScrollView: {
-    flex: 1,
-    height: "100vh",
   },
   dropdownMenu: {
     position: "absolute",
@@ -1016,10 +1105,14 @@ const styles = StyleSheet.create({
     elevation: 5,
     borderWidth: 1,
     borderColor: "#f0f0f0",
-    userSelect: "none",
+    zIndex: 600,
+    ...Platform.select({
+      web: { userSelect: "none" },
+    }),
   },
   dropdownWrapper: {
     position: "relative",
+    flexShrink: 0,
   },
   pillText: {
     fontSize: 14,
@@ -1029,6 +1122,11 @@ const styles = StyleSheet.create({
   menuItem: {
     padding: 14,
     alignItems: "center",
+  },
+  menuItemText: {
+    ...Platform.select({
+      web: { whiteSpace: "nowrap" },
+    }),
   },
   menuItemActive: {
     backgroundColor: "#7d9f7a",
@@ -1040,8 +1138,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#f9f9f9",
   },
   pillTrigger: {
-    border: "1px solid #0a6340",
-    width: 110,
+    borderWidth: 1,
+    borderColor: "#0a6340",
     flexDirection: "row",
     gap: 10,
     height: 35,
@@ -1050,12 +1148,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginLeft: 15,
     borderRadius: 20,
-    userSelect: "none",
     backgroundColor: "white",
-    paddingLeft: 4,
+    paddingHorizontal: 12,
+    minWidth: 110,
+    ...Platform.select({
+      web: { userSelect: "none" },
+    }),
   },
 });
 
 export default AccountManagement;
-
-// validation msg

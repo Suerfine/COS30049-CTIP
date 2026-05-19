@@ -8,6 +8,17 @@ import {
 } from "sequelize";
 import sequelize from "../config/Database";
 import { UserRoles } from "../enum/UserRoles";
+import {
+  decryptDeterministic,
+  encryptDeterministic,
+  transformWhereForEncryptedFields,
+} from "../utils/encryption";
+
+const USER_ENCRYPTED_FIELD_CONTEXT = {
+  identification: "user.identification",
+  personal_email: "user.personal_email",
+  tel: "user.tel",
+} as const;
 
 class User extends Model<InferAttributes<User>, InferCreationAttributes<User>> {
   declare id: CreationOptional<number>;
@@ -20,6 +31,9 @@ class User extends Model<InferAttributes<User>, InferCreationAttributes<User>> {
   declare role: UserRoles;
   declare password_hash: string;
   declare pfp_url: CreationOptional<string | null>;
+  declare totp_secret: CreationOptional<string | null>;
+  declare totp_enabled: CreationOptional<boolean>;
+  declare must_change_password: CreationOptional<boolean>;
   declare last_login_at: CreationOptional<Date | null>;
   declare created_at: CreationOptional<Date>;
   declare updated_at: CreationOptional<Date>;
@@ -50,15 +64,61 @@ User.init(
       type: DataTypes.STRING(30),
       allowNull: false,
       unique: true,
+      set(value: string) {
+        const normalized = typeof value === "string" ? value.trim() : value;
+        this.setDataValue(
+          "identification",
+          encryptDeterministic(
+            normalized,
+            USER_ENCRYPTED_FIELD_CONTEXT.identification,
+          ),
+        );
+      },
+      get() {
+        const raw = this.getDataValue("identification");
+        return decryptDeterministic(
+          raw,
+          USER_ENCRYPTED_FIELD_CONTEXT.identification,
+        );
+      },
     },
     personal_email: {
       type: DataTypes.STRING(255),
       allowNull: false,
       unique: true,
+      set(value: string) {
+        const normalized =
+          typeof value === "string" ? value.trim().toLowerCase() : value;
+        this.setDataValue(
+          "personal_email",
+          encryptDeterministic(
+            normalized,
+            USER_ENCRYPTED_FIELD_CONTEXT.personal_email,
+          ),
+        );
+      },
+      get() {
+        const raw = this.getDataValue("personal_email");
+        return decryptDeterministic(
+          raw,
+          USER_ENCRYPTED_FIELD_CONTEXT.personal_email,
+        );
+      },
     },
     tel: {
       type: DataTypes.STRING(30),
       allowNull: false,
+      set(value: string) {
+        const normalized = typeof value === "string" ? value.trim() : value;
+        this.setDataValue(
+          "tel",
+          encryptDeterministic(normalized, USER_ENCRYPTED_FIELD_CONTEXT.tel),
+        );
+      },
+      get() {
+        const raw = this.getDataValue("tel");
+        return decryptDeterministic(raw, USER_ENCRYPTED_FIELD_CONTEXT.tel);
+      },
     },
     role: {
       type: DataTypes.ENUM(...Object.values(UserRoles)),
@@ -71,6 +131,21 @@ User.init(
     pfp_url: {
       type: DataTypes.STRING(512),
       allowNull: true,
+    },
+    totp_secret: {
+      type: DataTypes.STRING(64),
+      allowNull: true,
+      defaultValue: null,
+    },
+    totp_enabled: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+    },
+    must_change_password: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
     },
     last_login_at: {
       type: DataTypes.DATE,
@@ -120,6 +195,16 @@ User.init(
         if (typeof user.tel === "string") {
           user.tel = user.tel.trim();
         }
+      },
+      beforeFind: (options) => {
+        if (!options?.where) {
+          return;
+        }
+
+        transformWhereForEncryptedFields(
+          options.where as Record<string | symbol, unknown>,
+          USER_ENCRYPTED_FIELD_CONTEXT,
+        );
       },
       beforeSave: async (user) => {
         const uniqueFields = [

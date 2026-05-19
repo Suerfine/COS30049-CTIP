@@ -1,36 +1,46 @@
 import React, { useState, useEffect} from 'react';
 import { View, Text, StyleSheet, Pressable, Image} from 'react-native';
-import {LayoutDashboard, Book, ClipboardList, Flag, QrCode, Bell, LogOut, UserPlus, User2} from 'lucide-react-native'
+import { LayoutDashboard, Book, ClipboardList, Flag, QrCode, Bell, LogOut, UserPlus, User2, Languages } from 'lucide-react-native'
 import { CommonActions } from '@react-navigation/native';
 import { useNavigationState, useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import { useUserDashboard } from '../hooks/useUserDashboard';
+import { useUserProfile } from '../hooks/useUserProfile';
+import { useTranslation } from 'react-i18next';
 
-const SideBar = () => {
+const SideBar = ({ mobile = false, onNavigate }) => {
     const {logout} =useAuth();
     const { user } = useUserDashboard();
+    const { profileImage } = useUserProfile();
+    const { t, i18n } = useTranslation();
+    const currentLang = i18n.language;
+    const changeLanguage = (lang) => {
+        i18n.changeLanguage(lang);
+    };
+
     const navigation=useNavigation();
     const currentRoute = useNavigationState((state) => {
-        if (!state) return null;
-        let route=state.routes[state.index];
-        while(route.state){
-            route=route.state.routes[route.state.index];
+        if (!state?.routes?.length) return null;
+
+        let route=state.routes[state.index ?? 0];
+        while(route?.state?.routes?.length){
+            route=route.state.routes[route.state.index ?? 0];
         }
-        return route.name;
+
+        return route?.name ?? null;
     });
     const displayRoute = (currentRoute === 'AdminStack' || !currentRoute) 
         ? 'Admin Dashboard' 
         : currentRoute;
     // Navigation Link
-    const menuItems= [
-        {name:'Dashboard', icon: LayoutDashboard, route:'Admin Dashboard'},
-        {name: 'Registration', icon: UserPlus, route:'Registration Management'},
-        {name: 'Accounts', icon: User2, route:'Account Management'},
-        {name: 'Courses', icon: Book, route:'Course Management'},
-        {name: 'Enrollment', icon: ClipboardList, route:'Enrollment Management'},
-        // {name:'Payment', icon: CreditCard},
-        {name:'Anomalies', icon: Flag, route:'Anomaly Detection'},
-        {name:'AR Models', icon: QrCode, route:'AR Models'},
+    const menuItems = [
+        { name: t('dashboard'), icon: LayoutDashboard, route: 'Admin Dashboard' },
+        { name: t('registration'), icon: UserPlus, route: 'Registration Management' },
+        { name: t('accounts'), icon: User2, route: 'Account Management' },
+        { name: t('courses'), icon: Book, route: 'Course Management' },
+        { name: t('enrollment'), icon: ClipboardList, route: 'Enrollment Management' },
+        { name: t('anomaly'), icon: Flag, route: 'Anomaly Detection' },
+        { name: t('ar models'), icon: QrCode, route: 'AR Models' },
     ];
     
 
@@ -39,9 +49,11 @@ const SideBar = () => {
 
     return (
         // SideBar
-        <View style={styles.sidebar}>
+        <View style={[styles.sidebar, mobile && styles.sidebarMobile]}>
             <View style={styles.link}>
-                <Image source={require('../../assets/sfc_logo.png')} style={styles.logo} accessibilityLabel='Logo of SFC'/>
+                <View style={styles.brandRow}>
+                    <Image source={require('../../assets/sfc_logo.png')} style={styles.logo} accessibilityLabel='Logo of SFC'/>
+                </View>
                 {menuItems.map((item) => {
                     const IconComponent=item.icon;
                     const isExactMatch= displayRoute===item.route;
@@ -55,11 +67,12 @@ const SideBar = () => {
                                 <Pressable
                                     style={({hovered})=>[styles.menuItem, isActive && styles.activeIcon, !isActive && hovered && styles.hoverStyle]}
                                         onPress={() => {
+                                        if (!item.route) return;
                                         setActivePage(item.name);
                                         navigation.navigate('AdminStack',{
                                             screen:item.route
                                         })
-
+                                        onNavigate?.();
                                     }}
                                 >
                                     <IconComponent style={styles.navIcon} />
@@ -74,19 +87,62 @@ const SideBar = () => {
             <View style={styles.linkbtn}>
                 <Pressable
                     style={styles.menuItem}
-                    onPress={() => navigation.navigate('AdminStack', {
-                        screen: 'Notification Management'
-                    })}
+                    onPress={() => {
+                        navigation.navigate('AdminStack', {
+                            screen: 'Notification Management'
+                        });
+                        onNavigate?.();
+                    }}
                 >
                     <Bell style={styles.navIcon} />
-                    <Text style={styles.navText}>Notification</Text>
+                    <Text style={styles.navText}>{t('notification')}</Text>
                 </Pressable>
+
+                <View style={styles.languageRow}>
+                    <Languages style={styles.navIcon} />
+
+                    <View style={styles.languageToggle}>
+                        <Pressable
+                            onPress={() => changeLanguage('en')}
+                            style={[
+                                styles.langOption,
+                                currentLang === 'en' && styles.langActive
+                            ]}
+                        >
+                            <Text style={[
+                                styles.langText,
+                                currentLang === 'en' && styles.langActiveText
+                            ]}>
+                                EN
+                            </Text>
+                        </Pressable>
+
+                        <Pressable
+                            onPress={() => changeLanguage('bm')}
+                            style={[
+                                styles.langOption,
+                                currentLang === 'bm' && styles.langActive
+                            ]}
+                        >
+                            <Text style={[
+                                styles.langText,
+                                currentLang === 'bm' && styles.langActiveText
+                            ]}>
+                                BM
+                            </Text>
+                        </Pressable>
+                    </View>
+                </View>
             </View>
+
             <View style={styles.admin}>
-                <View style={styles.adminInfo}>
+                <Pressable
+                    style={({ hovered }) => [styles.adminInfo, hovered && styles.hoverStyle]}
+                    onPress={() => navigation.navigate('AdminStack', { screen: 'User Profile' })}
+                >
                     {/* Profile  */}
-                    {user?.pfp_url ? (
-                        <Image source={{ uri: user.pfp_url }} style={styles.profilePic}/>
+                    {profileImage ? (
+                        <Image source={{ uri: profileImage }} style={styles.profilePic}/>
                         ) : (
                             <View style={styles.pfpPlaceholder}>
                                 <Text style={styles.pfpInitials}>
@@ -98,7 +154,7 @@ const SideBar = () => {
                             <Text>{user?.firstname}</Text>
                             <Text style={styles.role}>{user?.role === 'admin' && 'Admin'}</Text>
                         </View>
-                </View>
+                </Pressable>
                 <Pressable
                     style={({ hovered }) => [
                         styles.logout,
@@ -123,21 +179,37 @@ const styles = StyleSheet.create({
         borderRightWidth:1,
         backgroundColor:"white"
     },
+    sidebarMobile:{
+        width:'100%',
+        maxWidth:'none',
+        minHeight:'auto',
+        borderRightWidth:0,
+    },
+    brandRow:{
+        minHeight:72,
+        flexDirection:'row',
+        alignItems:'center',
+        justifyContent:'center',
+    },
     link:{
         gap:15,
         paddingBottom:25,
         borderBottomWidth: 1,
         borderBottomColor: '#ccc',
+        width:'100%',
     },
     linkbtn:{
-        paddingTop:8
+        paddingTop:8,
+        width:'100%',
+        gap: 8,
     },
     menuItem:{
         flexDirection:'row',
         gap:10,
         paddingHorizontal:10,
         paddingVertical:8,
-        minWidth:166,
+        minWidth:0,
+        width:'100%',
         borderRadius:'5px',
         alignItems:'center'
     },
@@ -200,9 +272,50 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
     },
+    profilePic:{
+        width: 40,
+        height: 40,
+        borderRadius: 60,
+        marginRight: 6,
+        borderWidth: 1,
+        borderColor: '#ccc',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
     pfpInitials:{
         fontSize: 14,
         fontWeight: '700',
+        color: 'white',
+    },
+    languageRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+        paddingHorizontal: 10,
+        paddingVertical: 8,
+        width: '100%',
+    },
+
+    languageToggle: {
+        flexDirection: 'row',
+        backgroundColor: '#e8e8e8',
+        borderRadius: 20,
+        padding: 3,
+    },
+    langOption: {
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 15,
+    },
+    langActive: {
+        backgroundColor: '#0a6340',
+    },
+    langText: {
+        fontSize: 12,
+        fontWeight: '600',
+        color: '#555',
+    },
+    langActiveText: {
         color: 'white',
     },
 });

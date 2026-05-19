@@ -1,11 +1,12 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator, Platform } from 'react-native';
 import { X, RotateCcw } from 'lucide-react-native'; 
 import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
 import { useNotification } from '../hooks/useNotification';
 import { useAuth } from '../context/AuthContext';
 import { navigateNotification } from '../utils/navigateNotification';
+import SFCFooter from '../components/Footer';
 
 const Notification = () => {
     const { t } = useTranslation();
@@ -23,9 +24,10 @@ const Notification = () => {
     };
 
     return (
+        <>
         <View style={styles.container}>
             <View style={styles.header}>
-                <Text style={styles.title}>My Notifications</Text>
+                <Text style={styles.title}>{t('my_notifications')}</Text>
                 <Pressable onPress={fetchNotifications} disabled={loading} style={styles.refreshBtn}>
                     <RotateCcw size={20} color="#666" />
                 </Pressable>
@@ -72,7 +74,7 @@ const Notification = () => {
                                     }}
                                     style={({ hovered }) => [
                                         styles.dismissBtn,
-                                        hovered && styles.dismissBtnHover // Only the X button glows now
+                                        hovered && styles.dismissBtnHover
                                     ]}
                                     hitSlop={10}
                                 >
@@ -81,9 +83,13 @@ const Notification = () => {
                             </View>
                         </Pressable>
                     ))}
+                    
                 </ScrollView>
             )}
+            
         </View>
+        {currentUser.role !== 'admin' && Platform.OS === 'web' && (<SFCFooter/>)}
+        </>
     );
 };
 
@@ -98,7 +104,6 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginTop: 40,
         marginBottom: 20,
     },
     title: {

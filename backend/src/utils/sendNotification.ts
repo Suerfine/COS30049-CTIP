@@ -5,7 +5,7 @@ import { NotificationCategory } from "../enum/NotificationCategory";
 import { getUsersWithNotificationEnabled } from "./notificationPreferences";
 
 export async function sendNotification(
-  mode: "all" | "admin" | "single",
+  mode: "all" | "admin" | "park_guides" | "single",
   title: string,
   message: string,
   transaction: Transaction,
@@ -28,6 +28,12 @@ export async function sendNotification(
           where: { role: UserRoles.ADMIN },
           attributes: ["id"],
         }).then((admins) => admins.map((admin) => admin.id));
+        break;
+      case "park_guides":
+        targetUserIds = await User.findAll({
+          where: { role: UserRoles.PARK_GUIDE },
+          attributes: ["id"],
+        }).then((guides) => guides.map((guide) => guide.id));
         break;
       case "single":
         if (!userId) {

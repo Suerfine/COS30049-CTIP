@@ -27,6 +27,8 @@ import { sendNotification } from "../utils/sendNotification";
 import { logger } from "../utils/logger";
 import sequelize from "../config/Database";
 import { NotificationCategory } from "../enum/NotificationCategory";
+import { getMailer } from "../services/mailer";
+import { randomInt } from "crypto";
 
 class HttpError extends Error {
   status: number;
@@ -52,6 +54,7 @@ function toUserResponse(user: User, req: Request<any>): UserResponse {
     personal_email: user.personal_email,
     tel: user.tel,
     pfp_url: full_url_pfp,
+    totp_enabled: user.totp_enabled ?? false,
     last_login_at: user.last_login_at,
     created_at: user.created_at,
     updated_at: user.updated_at,
@@ -87,10 +90,12 @@ export const createRegistration = async (
 ) => {
   const transaction = await sequelize.transaction();
   try {
-    // Check if there's already a pending registration with the same firstname and lastname, identification or personal_email
+    // Check if there's already a pending/approved registration with the same firstname and lastname, identification or personal_email
     const existingRegistration = await Registration.findOne({
       where: {
-        status: RegistrationStatus.PENDING,
+        status: {
+          [Op.in]: [RegistrationStatus.PENDING, RegistrationStatus.APPROVED],
+        },
         [Op.or]: [
           { firstname: req.body.firstname, lastname: req.body.lastname },
           { identification: req.body.identification },
@@ -101,7 +106,7 @@ export const createRegistration = async (
     if (existingRegistration) {
       throw new HttpError(
         400,
-        "A pending registration with the same details already exists",
+        "A pending or approved registration with the same details already exists",
       );
     }
 
@@ -401,12 +406,13 @@ export const approveRegistration = async (
       );
     }
 
-    // Create new ParkGuide with a default username and password
-    const temporary_password = "SFC@" + registration.identification.slice(-4);
-    const username =
-      `${registration.firstname}#${Math.floor(1000 + Math.random() * 9000)}`.toLowerCase();
+    // Create new ParkGuide with an SFC login email and random password.
+    const mailer = getMailer();
+    const temporary_password = mailer.generateRandomPassword();
+
     const user = await User.create({
-      username,
+      username:
+        registration.firstname.toLowerCase() + "#" + randomInt(1000, 9999),
       firstname: registration.firstname,
       lastname: registration.lastname,
       identification: registration.identification,
@@ -414,6 +420,7 @@ export const approveRegistration = async (
       tel: registration.tel,
       role: UserRoles.PARK_GUIDE,
       password_hash: hashPassword(temporary_password),
+      must_change_password: true,
     });
 
     // Update registration with user_id and approved status
@@ -424,10 +431,42 @@ export const approveRegistration = async (
       reviewed_at: new Date(),
     });
 
+    // Send approval email to user with credentials
+    let emailSent = true;
+    let emailErrorMessage: string | undefined;
+    let sfcEmail = mailer.generateSfcEmail(user.id);
+    try {
+      await mailer.sendRegistrationApprovedEmail({
+        to: registration.personal_email,
+        firstname: registration.firstname,
+        lastname: registration.lastname,
+        accountEmail: sfcEmail,
+        password: temporary_password,
+      });
+    } catch (emailError) {
+      emailSent = false;
+      emailErrorMessage =
+        emailError instanceof Error
+          ? emailError.message
+          : "Email delivery failed";
+      console.warn(
+        "Failed to send registration approval email:",
+        emailErrorMessage,
+      );
+    }
+
     // Return the created user and registration details (excluding password hash)
     return res.status(200).json({
       registration: toRegistrationResponse(registration),
       user: toUserResponse(user, req),
+      email_sent: emailSent,
+      email_error: emailErrorMessage,
+      manual_credentials: emailSent
+        ? undefined
+        : {
+            account_email: sfcEmail,
+            temporary_password,
+          },
     });
   } catch (err) {
     if (err instanceof HttpError) {
@@ -445,7 +484,6 @@ export const rejectRegistration = async (
   next: NextFunction,
 ) => {
   try {
-    // TODO: Move this authentication check to an authoritzation middleware in the future.
     // Check if admin
     if (!req.user || req.user.role !== UserRoles.ADMIN) {
       throw new HttpError(403, "Admin access required");
@@ -464,6 +502,21 @@ export const rejectRegistration = async (
       reviewed_by_user_id: req.user.id,
       reviewed_at: new Date(),
     });
+
+    try {
+      const mailer = getMailer();
+      await mailer.sendRegistrationRejectedEmail({
+        to: registration.personal_email,
+        firstname: registration.firstname,
+        lastname: registration.lastname,
+        reason: req.body.message,
+      });
+    } catch (emailError) {
+      console.warn(
+        "Failed to send registration rejection email:",
+        emailError instanceof Error ? emailError.message : emailError,
+      );
+    }
 
     return res.json(toRegistrationResponse(registration));
   } catch (err) {

@@ -38,13 +38,13 @@ const ChangePasswordContent = ({
         }
 
         if (!password.trim()) {
-            tempErrors.password = t('please enter a new password.');
+            tempErrors.password = t('new password prompt');
         } else if (!isValidPassword(password)) {
-            tempErrors.password = t('password must be at least 6 characters and contain letters, numbers and symbols.');
+            tempErrors.password = t('password validation');
         }
 
         if (currentPassword && password && currentPassword === password) {
-            tempErrors.password = t('new password must be different from current password.');
+            tempErrors.password = t('new password validation');
         }
 
         setErrors(tempErrors);
@@ -58,21 +58,16 @@ const ChangePasswordContent = ({
             let serverErrorMsg;
 
             if (status === 400) {
-                serverErrorMsg = t('current password is incorrect.');
+                serverErrorMsg = t('current password is incorrect');
             }
             else {
-                serverErrorMsg = t('failed to change password.');
+                serverErrorMsg = t('failed to change password');
             }
             setErrors(prev => ({
                 ...prev,
                 currentPassword: serverErrorMsg
             }));
         }
-    };
-
-    const handleForgotPassword = () => {
-        onClose();
-        navigation.navigate('ForgotPassword');
     };
 
 
@@ -130,11 +125,6 @@ const ChangePasswordContent = ({
             {errors.password && (
                 <Text style={localStyles.errorText}>{errors.password}</Text>
             )}
-
-            {/* FORGOT PASSWORD LINK */}
-            <Pressable onPress={handleForgotPassword} style={localStyles.forgotRow}>
-                <Text style={localStyles.forgotText}>{t('forgot password?')}</Text>
-            </Pressable>
 
             {/* ACTION BUTTON */}
             <Pressable style={styles.Btn} onPress={handleConfirm}>

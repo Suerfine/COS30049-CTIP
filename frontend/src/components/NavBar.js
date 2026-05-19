@@ -19,6 +19,7 @@ import { useAuth } from "../context/AuthContext";
 import { useUserDashboard } from "../hooks/useUserDashboard";
 import ParkGuideSiteSearch from "./ParkGuideSiteSearch";
 import { useUserProfile } from "../hooks/useUserProfile";
+import { useTranslation } from 'react-i18next';
 
 // Navigation links animation
 const NavItem = ({ name, route, onPress, isActive }) => {
@@ -70,6 +71,7 @@ const NavBar = () => {
   const isMobile = width < 1024;
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { t, i18n }=useTranslation();
 
   const currentRoute = useNavigationState((state) => {
     let route = state.routes[state.index];
@@ -122,11 +124,11 @@ const NavBar = () => {
   };
 
   // Navigation Links
-  const navLinks = [
-    { name: "Courses", route: "Courses" },
-    { name: "Badge", route: "Badge" },
-    { name: "Anomaly", route: "Anomaly" },
-  ];
+const navLinks = [
+    { name: t('courses'), route: "Courses" },
+    { name: t('badges'),   route: "Badge"   },
+    { name: t('anomaly'), route: "Anomaly" },
+];
 
   if (isMobile) {
     return (
@@ -173,7 +175,7 @@ const NavBar = () => {
               {navLinks.map((item) => (
                 <Pressable
                   key={item.name}
-                  style={styles.mobileMenuItem}
+                  style={({hovered})=>[styles.mobileMenuItem, hovered && styles.mobileHoverContainer]}
                   onPress={() => {
                     setMobileMenuOpen(false);
 
@@ -182,19 +184,22 @@ const NavBar = () => {
                     });
                   }}
                 >
-                  <Text
-                    style={[
-                      styles.mobileMenuText,
-                      displayRoute === item.route && styles.activeText,
-                    ]}
-                  >
-                    {item.name}
-                  </Text>
+                  {({ hovered }) => (
+                    <Text
+                      style={[
+                        styles.mobileMenuText,
+                        hovered && styles.mobileHoverText,
+                        displayRoute === item.route && styles.activeText,
+                      ]}
+                    >
+                      {item.name}
+                    </Text>
+                  )}
                 </Pressable>
               ))}
 
               <Pressable
-                style={styles.mobileMenuItem}
+                style={({hovered})=>[styles.mobileMenuItem, hovered && styles.mobileHoverContainer]}
                 onPress={() => {
                   setMobileMenuOpen(false);
 
@@ -203,11 +208,11 @@ const NavBar = () => {
                   });
                 }}
               >
-                <Text style={styles.mobileMenuText}>Notifications</Text>
+                <Text style={styles.mobileMenuText}>{t('notification')}</Text>
               </Pressable>
 
               <Pressable
-                style={styles.mobileMenuItem}
+                style={({hovered})=>[styles.mobileMenuItem, hovered && styles.mobileHoverContainer]}
                 onPress={() => {
                   setMobileMenuOpen(false);
 
@@ -219,11 +224,11 @@ const NavBar = () => {
                   });
                 }}
               >
-                <Text style={styles.mobileMenuText}>Profile</Text>
+                <Text style={styles.mobileMenuText}>{t('profile')}</Text>
               </Pressable>
 
               <Pressable
-                style={styles.mobileMenuItem}
+                style={({hovered})=>[styles.mobileMenuItem, styles.mobileHoverContainer]}
                 onPress={handleLogout}
               >
                 <Text
@@ -232,7 +237,7 @@ const NavBar = () => {
                     { color: "red" },
                   ]}
                 >
-                  Logout
+                  {t('Logout')}
                 </Text>
               </Pressable>
             </View>
@@ -346,7 +351,7 @@ const NavBar = () => {
                   }
                 })}
               >
-                <Text>Preference</Text>
+                <Text>{t('Preferences')}</Text>
               </Pressable>
 
               {/* security */}
@@ -361,7 +366,7 @@ const NavBar = () => {
                   }
                 })}
               >
-                <Text>Security</Text>
+                <Text>{t('Security')}</Text>
               </Pressable>
 
               <Pressable
@@ -372,7 +377,7 @@ const NavBar = () => {
                   <LogOut size={16} />
 
                   <Text style={{ color: "red" }}>
-                    Logout
+                    {t('Logout')}
                   </Text>
                 </View>
               </Pressable>
@@ -539,7 +544,6 @@ const styles = StyleSheet.create({
     borderBottomColor: "#ddd",
     zIndex: 9999,
     paddingVertical: 10,
-
     shadowColor: "#000",
     shadowOpacity: 0.1,
     shadowRadius: 8,
@@ -564,6 +568,12 @@ const styles = StyleSheet.create({
     zIndex: 9998,
     elevation: 5,
   },
+  mobileHoverText:{
+    color:"#efab21"
+  },
+  mobileHoverContainer:{
+    backgroundColor:'#cbcbcb1e'
+  }
 });
 
 export default NavBar;

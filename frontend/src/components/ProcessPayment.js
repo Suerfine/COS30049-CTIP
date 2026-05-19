@@ -17,6 +17,7 @@ import {
     Clock,
     Info 
 } from 'lucide-react-native';
+import { useTranslation } from 'react-i18next';
 
 const Payment = ({ 
     navigation, 
@@ -28,6 +29,7 @@ const Payment = ({
     onRemoveReceipt,
     onConfirmPayment
  }) => {
+    const { t } = useTranslation();
     const courseTitle = course?.title;
     const refNumber = "SFC-7742-XP";
 
@@ -46,19 +48,19 @@ const Payment = ({
                     <View style={[styles.stepCircle, styles.activeStep]}>
                         <CreditCard size={16} color="white" />
                     </View>
-                    <Text style={styles.stepLabel}>Payment</Text>
+                    <Text style={styles.stepLabel}>{t('payment')}</Text>
                 </View>
                 <View style={styles.stepLine} />
                 <View style={styles.step}>
                     <View style={styles.stepCircle}>
                         <Clock size={16} color="#999" />
                     </View>
-                    <Text style={styles.stepLabel}>Review</Text>
+                    <Text style={styles.stepLabel}>{t('review')}</Text>
                 </View>
             </View>
 
             <View style={styles.summaryCard}>
-                <Text style={styles.summaryLabel}>Total Amount Due</Text>
+                <Text style={styles.summaryLabel}>{t('total_amount_due')}</Text>
                 <Text style={styles.amountText}>{amount}</Text>
                 <Text style={styles.courseName}>{courseTitle}</Text>
             </View>
@@ -66,20 +68,20 @@ const Payment = ({
             <View style={styles.section}>
                 <View style={styles.sectionHeader}>
                     <Info size={18} color="#0a6340" />
-                    <Text style={styles.sectionTitle}>Step 1: Transfer Funds</Text>
+                    <Text style={styles.sectionTitle}>{t('step_1_transfer_funds')}</Text>
                 </View>
-                <Text style={styles.instruction}>Please transfer the exact amount to the account below:</Text>
+                <Text style={styles.instruction}>{t('transfer_instruction')}</Text>
                 
                 <View style={styles.bankCard}>
                     <View style={styles.bankRow}>
                         <View>
-                            <Text style={styles.bankLabel}>Bank Name</Text>
+                            <Text style={styles.bankLabel}>{t('bank_name')}</Text>
                             <Text style={styles.bankValue}>SFC Bank Malaysia</Text>
                         </View>
                     </View>
                     <View style={styles.bankRow}>
                         <View>
-                            <Text style={styles.bankLabel}>Account Number</Text>
+                            <Text style={styles.bankLabel}>{t('account_number')}</Text>
                             <Text style={styles.bankValue}>1234-5678-9012</Text>
                         </View>
                         <TouchableOpacity onPress={() => copyToClipboard('123456789012')}>
@@ -88,7 +90,7 @@ const Payment = ({
                     </View>
                     <View style={styles.bankRow}>
                         <View>
-                            <Text style={styles.bankLabel}>Bank Code (SWIFT)</Text>
+                            <Text style={styles.bankLabel}>{t('bank_code')}</Text>
                             <Text style={styles.bankValue}>SFCMYKL</Text>
                         </View>
                         <TouchableOpacity onPress={() => copyToClipboard('SFCMYKL')}>
@@ -97,7 +99,7 @@ const Payment = ({
                     </View>
                     <View style={[styles.bankRow, { borderBottomWidth: 0 }]}>
                         <View>
-                            <Text style={styles.bankLabel}>Payment Reference</Text>
+                            <Text style={styles.bankLabel}>{t('payment_reference')}</Text>
                             <Text style={styles.bankValue}>{refNumber}</Text>
                         </View>
                         <TouchableOpacity onPress={() => copyToClipboard(refNumber)}>
@@ -108,8 +110,8 @@ const Payment = ({
             </View>
 
             <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Step 2: Upload Receipt</Text>
-                <Text style={styles.instruction}>Upload a clear screenshot of your successful transaction.</Text>
+                <Text style={styles.sectionTitle}>{t('step_2_upload_receipt')}</Text>
+                <Text style={styles.instruction}>{t('upload_receipt_instruction')}</Text>
                 
                 <TouchableOpacity 
                     style={styles.uploadBox} 
@@ -121,7 +123,7 @@ const Payment = ({
                         <View style={styles.uploadPlaceholder}>
                             <Upload color="#666" size={32} />
                             <Text style={styles.uploadText}>
-                                Click to select file
+                                {t('click_select_file')}
                             </Text>
                         </View>
                     )}
@@ -129,7 +131,7 @@ const Payment = ({
                 {receipt && (
                     <TouchableOpacity onPress={onRemoveReceipt}>
                         <Text style={styles.reselectText}>
-                            Remove file
+                             {t('remove_file')}
                         </Text>
                     </TouchableOpacity>
                 )}
@@ -141,12 +143,12 @@ const Payment = ({
                 disabled={!receipt || submitting}
             >
                 <Text style={styles.confirmBtnText}>
-                    {submitting ? "Submitting..." : "Confirm Payment"}
+                    {submitting ? t('submitting') : t('confirm_payment')}
                 </Text>
             </TouchableOpacity>
 
             <Text style={styles.footerNotice}>
-                Your data is protected by SFC security protocols. By confirming, you agree to our terms of service.
+                {t('payment_footer_notice')}
             </Text>
             <View style={{ height: 50 }} />
         </ScrollView>

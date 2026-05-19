@@ -1,5 +1,29 @@
 # Frontend Architecture and Routing Guide
 
+## Setup
+
+```
+cd ./frontend/
+npm install
+npm start
+```
+
+### Connecting to the backend
+
+The frontend auto-detects the backend host from Expo's `hostUri`. By default it connects over HTTPS on port 5000.
+
+If the backend is running on a different machine or HTTPS is not set up, create a `frontend/.env` file to override:
+
+```
+# Change protocol (default: https)
+EXPO_PUBLIC_API_PROTOCOL=https
+
+# Change port (default: 5000)
+EXPO_PUBLIC_API_PORT=5000
+```
+
+For HTTPS to work when accessing from another device, see the **Dev setup with HTTPS** section in [backend/README.md](../backend/README.md).
+
 ## Frontend Structure
 
 The frontend is organized by responsibility so UI, state, and navigation are easy to maintain.

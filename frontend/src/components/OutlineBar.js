@@ -4,7 +4,7 @@ import { Plus, ChevronRight, ChevronDown, Search, Trash2, Lock, CheckCircle2, XC
 import { useOutline } from '../hooks/useOutline';
 import * as Progress from 'react-native-progress';
 
-const OutlineBar = ({ course, progressMap = {}, onSelectPage, editable, isCollapsed, isLocked, isFailed, isPublished, activePage }) => {
+const OutlineBar = ({ course, progressMap = {}, onSelectPage, editable, isCollapsed, isLocked, isFailed, isPublished, activePage, dropdown = false }) => {
     const {
         allModules,
         expandedModule,
@@ -63,7 +63,8 @@ const OutlineBar = ({ course, progressMap = {}, onSelectPage, editable, isCollap
 
     const getHighlightedText = (text, query) => {
         if (!query || !text) return <Text>{text}</Text>;
-        const parts = text.split(new RegExp(`(${query})`, 'gi'));
+        const sanitizedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const parts = text.split(new RegExp(`(${sanitizedQuery})`, 'gi'));
         return (
             <Text>
                 {parts.map((part, i) =>
@@ -78,20 +79,21 @@ const OutlineBar = ({ course, progressMap = {}, onSelectPage, editable, isCollap
     };
 
     useEffect(() => {
-        if (localSearch.length > 0) {
-            allModules.forEach(module => {
-                const hasMatch = module.pages?.some(p =>
+        if (localSearch.trim().length > 0) {
+            const matchingModule = allModules.find(module =>
+                module.pages?.some(p =>
                     p.title.toLowerCase().includes(localSearch.toLowerCase())
-                );
-                if (hasMatch && expandedModule !== module.id) {
-                    toggleModule(module.id);
-                }
-            });
+                )
+            );
+
+            if (matchingModule && expandedModule !== matchingModule.id) {
+                toggleModule(matchingModule.id);
+            }
         }
-    }, [localSearch, allModules]);
+    }, [localSearch]);
 
     return (
-        <View style={[styles.outlinebar, isCollapsed && styles.collapsed]}>
+        <View style={[styles.outlinebar, dropdown && styles.dropdownOutline, isCollapsed && styles.collapsed]}>
 
             {/* SEARCH */}
             {!isCollapsed && (
@@ -374,6 +376,15 @@ const styles=StyleSheet.create({
     collapsed:{
         maxWidth:'0px',
     },
+    dropdownOutline:{
+        width:'100%',
+        minHeight:'auto',
+        maxHeight:420,
+        borderWidth:1,
+        borderColor:'#e5e7eb',
+        borderRadius:12,
+        overflow:'hidden',
+    },
     overview:{
         fontSize:16,
         fontWeight:'600',
@@ -409,8 +420,7 @@ const styles=StyleSheet.create({
     },
     input:{
         flex:1,
-        maxWidth:140,
-        outlineStyle:'none'
+        outlineStyle:'none',
     },
     selected:{
         backgroundColor:'#A5D6A7'
@@ -471,10 +481,12 @@ const styles=StyleSheet.create({
         flex: 1,
         backgroundColor: 'rgba(0,0,0,0.4)',
         justifyContent: 'center',
-        alignItems: 'center'
+        alignItems: 'center',
+        padding: 20,
     },
     confirmCard: {
-        width: 350,
+        width: '100%',
+        maxWidth: 350,
         backgroundColor: 'white',
         borderRadius: 15,
         padding: 25,
@@ -497,7 +509,8 @@ const styles=StyleSheet.create({
     confirmActionRow: {
         flexDirection: 'row',
         gap: 10,
-        width: '100%'
+        width: '100%',
+        flexWrap: 'wrap',
     },
     confirmBtn: {
         flex: 1,

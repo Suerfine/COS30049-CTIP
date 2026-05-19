@@ -4,9 +4,27 @@ import { Request } from "express";
 import multer, { FileFilterCallback } from "multer";
 import path from "path";
 
-export const PRIVATE_UPLOAD_STORAGE_PATH =
-  process.env.PRIVATE_UPLOAD_STORAGE_PATH ||
-  path.resolve(__dirname, "../../storage/uploads/private");
+const getStorageBasePath = () => {
+  if (process.env.STORAGE_BASE_PATH) {
+    return process.env.STORAGE_BASE_PATH;
+  }
+
+  if (process.env.NODE_ENV === "test") {
+    return path.resolve(process.cwd(), "storage", "test");
+  }
+
+  return path.resolve(process.cwd(), "storage");
+};
+
+const getPrivateUploadStoragePath = (subfolder = "") => {
+  const basePath =
+    process.env.PRIVATE_UPLOAD_STORAGE_PATH ||
+    path.join(getStorageBasePath(), "uploads", "private");
+
+  return subfolder ? path.join(basePath, subfolder) : basePath;
+};
+
+export const PRIVATE_UPLOAD_STORAGE_PATH = getPrivateUploadStoragePath();
 
 export type UploadPrivateDocumentOptions = {
   subfolder?: string;
@@ -14,9 +32,7 @@ export type UploadPrivateDocumentOptions = {
 };
 
 const createPrivateStorage = (subfolder?: string) => {
-  const uploadPath = subfolder
-    ? path.join(PRIVATE_UPLOAD_STORAGE_PATH, subfolder)
-    : PRIVATE_UPLOAD_STORAGE_PATH;
+  const uploadPath = getPrivateUploadStoragePath(subfolder);
 
   fs.mkdirSync(uploadPath, { recursive: true });
 
@@ -25,7 +41,10 @@ const createPrivateStorage = (subfolder?: string) => {
       cb(null, uploadPath);
     },
     filename: (_req, file, cb) => {
-      cb(null, `${randomUUID()}${path.extname(file.originalname)}`);
+      const safeOriginalName = file.originalname
+        .replace(/[^a-zA-Z0-9._-]/g, "_")
+        .replace(/_+/g, "_");
+      cb(null, `${randomUUID()}-${safeOriginalName}`);
     },
   });
 };
