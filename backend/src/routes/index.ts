@@ -160,18 +160,18 @@ router.use("/ar-models", arModelRouter);
 ===============================*/
 router.use("/ar-models", arModelRouter);
 
+router.use("/payments", paymentRouter);
+
 /*===============================
 =        COURSE ROUTES         =
 ===============================*/
 router.use("/courses", courseRouter);
 router.use("/tags", tagRouter);
 router.use("/enrollments", enrollmentRouter);
-router.use("/", submissionRouter);
+
 router.use("/progress", progressRouter);
 router.use("/courses/:course_id/discussion", discussionRouter);
-router.use("/", messageRouter);
 router.use("/sensors", sensorRouter);
-router.use("/", sensorLogRouter);
 
 /*===============================
 =     NOTIFICATION ROUTES      =
@@ -186,7 +186,6 @@ router.use("/events", eventRouter);
 /*===============================
 =        PAYMENT ROUTES        =
 ===============================*/
-router.use("/payments", paymentRouter);
 router.use("/chatbot", ChatbotRouter);
 router.use("/search", searchRouter);
 
@@ -259,6 +258,10 @@ router.post(
   auth,
   ElementController.joinWorkshop,
 );
+
+router.use("/", submissionRouter);
+router.use("/", messageRouter);
+router.use("/", sensorLogRouter);
 
 /**
  * Debug function to log all route handlers as they are called.
