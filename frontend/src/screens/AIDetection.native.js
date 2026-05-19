@@ -271,7 +271,7 @@ export default function DetectionScreen() {
     AsyncStorage.setItem(
       SERVER_CONFIG_STORAGE_KEY,
       JSON.stringify(serverConfig),
-    ).catch(() => {});
+    ).catch(() => { });
     setTempConfig(serverConfig);
   }, [serverConfig]);
 
@@ -350,7 +350,7 @@ export default function DetectionScreen() {
         try {
           const result = JSON.parse(event.data);
           if (result && !result.error) setLatestResult(result);
-        } catch {}
+        } catch { }
         isCapturing.current = false;
       };
 
@@ -383,54 +383,75 @@ export default function DetectionScreen() {
   // 4. Camera Capture Interval — sends frames over the open WebSocket.
   // Capture a lightweight frame from Expo Camera and send it over the open WebSocket.
   useEffect(() => {
-    const captureInterval = setInterval(async () => {
-      if (!cameraRef.current || isCapturing.current) return;
-      if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
+    let isMounted = true;
+    let frameTimeoutId = null;
 
-      isCapturing.current = true;
-      try {
-        const photo = await cameraRef.current.takePictureAsync({
-          quality: 0.3,
-          base64: true,
-          skipProcessing: true,
-        });
+    const processFrame = async () => {
+      if (!isMounted) return;
 
-        lastPhotoDimensions.current = {
-          width: photo.width || 640,
-          height: photo.height || 480,
-        };
+      // CRITICAL FIX: Ensure camera layout exists and has actual physical size > 0
+      const isLayoutReady = cameraLayout && cameraLayout.width > 0 && cameraLayout.height > 0;
 
-        const base64 =
-          photo.base64 ||
-          (photo.uri
-            ? await FileSystem.readAsStringAsync(photo.uri, {
-                encoding: FileSystem.EncodingType.Base64,
-              })
-            : null);
+      if (
+        cameraRef.current &&
+        cameraReady &&
+        isLayoutReady && // Guard against the 0-width native crash!
+        !isCapturing.current &&
+        wsRef.current &&
+        wsRef.current.readyState === WebSocket.OPEN
+      ) {
+        isCapturing.current = true;
+        try {
+          const photo = await cameraRef.current.takePictureAsync({
+            quality: 0.1,            // Keeps data small for speedy YOLO transmission
+            base64: true,
+            skipProcessing: true,    // Fast pass
+          });
 
-        if (!base64) {
+          if (photo && isMounted) {
+            lastPhotoDimensions.current = {
+              width: photo.width || 640,
+              height: photo.height || 480,
+            };
+
+            const base64Data = photo.base64;
+            if (base64Data) {
+              lastFrameBase64.current = base64Data;
+
+              // Send to YOLO backend
+              wsRef.current.send(
+                JSON.stringify({
+                  image_base64: base64Data,
+                  user_id: currentUser?.id || 1,
+                })
+              );
+            }
+          }
+        } catch (err) {
+          console.log("Frame capture drop: ", err);
+        } finally {
           isCapturing.current = false;
-          return;
         }
-
-        lastFrameBase64.current = base64;
-
-        wsRef.current.send(
-          JSON.stringify({
-            image_base64: base64,
-            user_id: currentUser?.id || 1,
-          }),
-        );
-      } catch {
-        isCapturing.current = false;
-      } finally {
-        // Expo Camera may create a temporary image when base64 fallback is used.
-        // The OS also cleans this up, but this keeps repeated detection sessions lighter.
       }
-    }, 250);
 
-    return () => clearInterval(captureInterval);
-  }, [currentUser]);
+      // Loop execution schedule
+      if (isMounted) {
+        // Give the emulator a steady 1-second cadence to remain stable on local machines
+        const stabilizationDelay = Platform.OS === 'android' && __DEV__ ? 1000 : 330;
+        frameTimeoutId = setTimeout(processFrame, stabilizationDelay);
+      }
+    };
+
+    // Only kick off the loop once user profile, native status, and layout width/height are real
+    if (currentUser && cameraReady && cameraLayout?.width > 0) {
+      processFrame();
+    }
+
+    return () => {
+      isMounted = false;
+      if (frameTimeoutId) clearTimeout(frameTimeoutId);
+    };
+  }, [currentUser, isConnected, cameraReady, cameraLayout]);
 
   // 5. Client-Side Anomaly Logging
   useEffect(() => {
@@ -741,7 +762,7 @@ export default function DetectionScreen() {
                       style={[
                         styles.resolveButton,
                         resolvingEventId === selectedEvent.id &&
-                          styles.resolveButtonDisabled,
+                        styles.resolveButtonDisabled,
                       ]}
                       onPress={() => resolveEvent(selectedEvent.id)}
                       disabled={resolvingEventId === selectedEvent.id}
@@ -850,6 +871,7 @@ export default function DetectionScreen() {
             ref={cameraRef}
             style={styles.camera}
             facing="back"
+            autofocus="on"
             mode="picture"
             active={true}
             animateShutter={false}

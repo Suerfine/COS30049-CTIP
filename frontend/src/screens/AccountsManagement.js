@@ -424,6 +424,7 @@ const AccountManagement = () => {
                     ]}
                     onPress={() => {
                       setCurrentRole(role.key);
+                      setCurrentPage(1);
                       setIsOpen(false);
                     }}
                   >
