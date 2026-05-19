@@ -14,6 +14,7 @@ import {
   Image,
   Platform,
   useWindowDimensions,
+  Vibration,
 } from "react-native";
 import {
   Camera,
@@ -78,6 +79,8 @@ export default function DetectionScreen() {
   const lastPhotoDimensions = useRef({ width: 640, height: 480 });
   const wsRef = useRef(null);
   const reconnectTimerRef = useRef(null);
+  const torchFlashRef = useRef(null);
+  const [torchEnabled, setTorchEnabled] = useState(false);
 
   const [serverConfig, setServerConfig] = useState({
     host: getAutoHost(),
@@ -98,6 +101,21 @@ export default function DetectionScreen() {
   const [eventsLoading, setEventsLoading] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [resolvingEventId, setResolvingEventId] = useState(null);
+
+  const ANOMALY_TYPE_OPTIONS = [
+    "touching_plant",
+    "touching_animal",
+    "plucking_plants",
+    "hitting_animal",
+    "extended_plant_touch",
+    "extended_animal_touch",
+    "forest_fire",
+    "flooding",
+    "loud_noise",
+    "trespassing",
+  ];
+  const [selectedAnomalyType, setSelectedAnomalyType] = useState("touching_plant");
+  const [simulatingAnomaly, setSimulatingAnomaly] = useState(false);
 
   const [cameraLayout, setCameraLayout] = useState(null);
   const [cameraReady, setCameraReady] = useState(false);
@@ -478,6 +496,7 @@ export default function DetectionScreen() {
         const now = Date.now();
         if (now - lastLogTime.current > 3000) {
           lastLogTime.current = now;
+          triggerAnomalyAlert();
 
           const confidenceCandidates = (latestResult?.detections || [])
             .map((d) => Number(d.confidence))
@@ -544,6 +563,69 @@ export default function DetectionScreen() {
     }
   };
 
+  const simulateAnomaly = async () => {
+    if (!currentUser) {
+      Alert.alert("Error", "User not loaded yet.");
+      return;
+    }
+    setSimulatingAnomaly(true);
+    try {
+      const payload = {
+        user_id: currentUser.id,
+        event_type: selectedAnomalyType,
+        latitude: 1.5533,
+        longitude: 110.3592,
+        metadata: JSON.stringify({
+          source: "mobile_ai_detection",
+          timestamp: new Date().toISOString(),
+          detection_confidence: 0.95,
+          detections: 1,
+          poses: 1,
+          inference_ms: 42,
+          simulated: true,
+        }),
+        annotated_frame_base64: null,
+      };
+      await apiClient.post("/anomaly-events", payload);
+      fetchAnomalyEvents();
+      // Close config so CameraView is mounted, then fire the alert
+      setConfigMode(false);
+      setTimeout(() => triggerAnomalyAlert(), 150);
+      Alert.alert("Anomaly Simulated", `'${getEventLabel(selectedAnomalyType)}' was logged successfully.`);
+    } catch (err) {
+      const msg = err.response?.data?.message || err.response?.data?.error || err.message;
+      Alert.alert("Simulation Failed", msg);
+    } finally {
+      setSimulatingAnomaly(false);
+    }
+  };
+
+  const triggerAnomalyAlert = () => {
+    // Flash torch: toggle every 300 ms for 3 s (10 toggles = 5 on/off cycles)
+    if (torchFlashRef.current) clearInterval(torchFlashRef.current);
+    let tick = 0;
+    setTorchEnabled(true);
+    torchFlashRef.current = setInterval(() => {
+      tick++;
+      setTorchEnabled((prev) => !prev);
+      if (tick >= 10) {
+        clearInterval(torchFlashRef.current);
+        torchFlashRef.current = null;
+        setTorchEnabled(false);
+      }
+    }, 300);
+
+    // Buzzing vibration pattern over ~3 s
+    Vibration.vibrate([0, 400, 150, 400, 150, 400, 150, 400, 150, 400, 150, 400], false);
+  };
+
+  // Cleanup torch flash interval on unmount
+  useEffect(() => {
+    return () => {
+      if (torchFlashRef.current) clearInterval(torchFlashRef.current);
+    };
+  }, []);
+
   // --- RENDER HELPERS ---
   const renderSkeletonLine = (kp1, kp2, index) => {
     if (!kp1 || !kp2 || kp1.confidence < 0.3 || kp2.confidence < 0.3)
@@ -604,49 +686,124 @@ export default function DetectionScreen() {
   // --- CONFIG UI ---
   if (configMode) {
     return (
-      <View style={styles.configContainer}>
-        <ScrollView style={styles.configFormScroll}>
-          <Text style={styles.configTitle}>{t("ai_server_configuration")}</Text>
-          <Text style={styles.configLabel}>{t("server_host")}</Text>
-          <TextInput
-            style={styles.input}
-            placeholder={getAutoHost()}
-            value={tempConfig.host}
-            onChangeText={(t) => setTempConfig({ ...tempConfig, host: t })}
-          />
-          <Text style={styles.configLabel}>{t("server_port")}</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="8000"
-            value={tempConfig.port}
-            onChangeText={(t) => setTempConfig({ ...tempConfig, port: t })}
-            keyboardType="numeric"
-          />
-          <View style={styles.buttonContainer}>
-            <Button
-              title={t("save")}
-              onPress={() => {
-                setServerConfig({
-                  host: (tempConfig.host || "").trim() || getAutoHost(),
-                  port: (tempConfig.port || "").trim() || "8000",
-                });
-                setConfigMode(false);
-              }}
-              color="#4CAF50"
-            />
-          </View>
-          <View style={styles.buttonContainer}>
-            <Button
-              title={t("cancel")}
+      <SafeAreaView style={styles.configScreen}>
+        <ScrollView contentContainerStyle={styles.configScroll} showsVerticalScrollIndicator={false}>
+          {/* Header */}
+          <View style={styles.configHeader}>
+            <Text style={styles.configTitle}>{t("ai_server_configuration")}</Text>
+            <TouchableOpacity
+              style={styles.configCloseBtn}
               onPress={() => {
                 setTempConfig(serverConfig);
                 setConfigMode(false);
               }}
-              color="#999"
+            >
+              <Text style={styles.configCloseBtnText}>✕</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Connection status pill */}
+          <View style={[styles.configStatusPill, { backgroundColor: isConnected ? "#ecfdf5" : "#fef2f2", borderColor: isConnected ? "#bbf7d0" : "#fecaca" }]}>
+            <View style={[styles.configStatusDot, { backgroundColor: isConnected ? "#22c55e" : "#ef4444" }]} />
+            <Text style={[styles.configStatusText, { color: isConnected ? "#166534" : "#991b1b" }]}>
+              {isConnected ? t("connected_ai_api") : t("ai_server_disconnected")}
+            </Text>
+          </View>
+
+          {/* Server Connection Section */}
+          <View style={styles.configCard}>
+            <Text style={styles.configSectionTitle}>{t("server_host")}</Text>
+            <TextInput
+              style={styles.configInput}
+              placeholder={getAutoHost()}
+              placeholderTextColor="#9ca3af"
+              value={tempConfig.host}
+              onChangeText={(v) => setTempConfig({ ...tempConfig, host: v })}
+              autoCapitalize="none"
+              autoCorrect={false}
             />
+            <Text style={[styles.configSectionTitle, { marginTop: 16 }]}>{t("server_port")}</Text>
+            <TextInput
+              style={styles.configInput}
+              placeholder="8000"
+              placeholderTextColor="#9ca3af"
+              value={tempConfig.port}
+              onChangeText={(v) => setTempConfig({ ...tempConfig, port: v })}
+              keyboardType="numeric"
+            />
+
+            {/* Save / Cancel */}
+            <View style={styles.configActions}>
+              <TouchableOpacity
+                style={styles.configCancelBtn}
+                onPress={() => {
+                  setTempConfig(serverConfig);
+                  setConfigMode(false);
+                }}
+              >
+                <Text style={styles.configCancelBtnText}>{t("cancel")}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.configSaveBtn}
+                onPress={() => {
+                  setServerConfig({
+                    host: (tempConfig.host || "").trim() || getAutoHost(),
+                    port: (tempConfig.port || "").trim() || "8000",
+                  });
+                  setConfigMode(false);
+                }}
+              >
+                <Text style={styles.configSaveBtnText}>{t("save")}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Simulate Anomaly Section */}
+          <View style={styles.configCard}>
+            <View style={styles.configSimulateHeader}>
+              <View>
+                <Text style={styles.configSectionTitle}>Simulate Anomaly</Text>
+                <Text style={styles.configSectionHint}>Trigger a test event for debugging</Text>
+              </View>
+              <View style={styles.configDevBadge}>
+                <Text style={styles.configDevBadgeText}>DEV</Text>
+              </View>
+            </View>
+
+            <Text style={[styles.configSectionTitle, { marginTop: 14, marginBottom: 8 }]}>Event Type</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.configTypeScroll}>
+              {ANOMALY_TYPE_OPTIONS.map((type) => (
+                <TouchableOpacity
+                  key={type}
+                  style={[
+                    styles.configTypePill,
+                    selectedAnomalyType === type && styles.configTypePillActive,
+                  ]}
+                  onPress={() => setSelectedAnomalyType(type)}
+                >
+                  <Text style={[
+                    styles.configTypePillText,
+                    selectedAnomalyType === type && styles.configTypePillTextActive,
+                  ]}>
+                    {getEventLabel(type)}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+
+            <TouchableOpacity
+              style={[styles.configSimulateBtn, simulatingAnomaly && styles.configSimulateBtnDisabled]}
+              onPress={simulateAnomaly}
+              disabled={simulatingAnomaly}
+            >
+              {simulatingAnomaly
+                ? <ActivityIndicator size="small" color="#ffffff" />
+                : <Text style={styles.configSimulateBtnText}>Trigger Anomaly</Text>
+              }
+            </TouchableOpacity>
           </View>
         </ScrollView>
-      </View>
+      </SafeAreaView>
     );
   }
 
@@ -875,6 +1032,7 @@ export default function DetectionScreen() {
             mode="picture"
             active={true}
             animateShutter={false}
+            enableTorch={torchEnabled}
             onCameraReady={() => {
               setCameraReady(true);
               setCameraError("");
@@ -1420,35 +1578,120 @@ const styles = StyleSheet.create({
   resolveButtonDisabled: { opacity: 0.6 },
   resolveButtonText: { color: "white", fontWeight: "700", fontSize: 14 },
 
-  configContainer: { flex: 1, backgroundColor: "#121212", padding: 40 },
-  configFormScroll: {
-    padding: 20,
-    backgroundColor: "#1e1e1e",
-    borderRadius: 8,
+  configScreen: { flex: 1, backgroundColor: "#f6f8f7" },
+  configScroll: { padding: 20, paddingBottom: 40 },
+  configHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
   },
-  configTitle: {
-    fontSize: 22,
-    fontWeight: "bold",
-    marginBottom: 20,
-    color: "white",
+  configTitle: { fontSize: 22, fontWeight: "700", color: "#111827" },
+  configCloseBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "rgba(168,168,168,0.25)",
+    justifyContent: "center",
+    alignItems: "center",
   },
-  configLabel: {
-    fontSize: 14,
-    fontWeight: "600",
-    marginTop: 15,
-    marginBottom: 5,
-    color: "#ccc",
-  },
-  input: {
+  configCloseBtnText: { fontSize: 16, color: "#374151", fontWeight: "600" },
+  configStatusPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 99,
     borderWidth: 1,
-    borderColor: "#444",
-    padding: 10,
-    borderRadius: 5,
-    backgroundColor: "#333",
-    marginBottom: 10,
-    color: "white",
+    alignSelf: "flex-start",
+    marginBottom: 20,
   },
-  buttonContainer: { marginVertical: 8 },
+  configStatusDot: { width: 8, height: 8, borderRadius: 4 },
+  configStatusText: { fontSize: 13, fontWeight: "600" },
+  configCard: {
+    backgroundColor: "#ffffff",
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 16,
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+  },
+  configSectionTitle: { fontSize: 13, fontWeight: "600", color: "#111827", marginBottom: 6 },
+  configSectionHint: { fontSize: 12, color: "#6b7280", marginTop: 2 },
+  configInput: {
+    borderWidth: 1,
+    borderColor: "#2f6618fe",
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+    fontSize: 14,
+    color: "#111827",
+    backgroundColor: "#ffffff",
+  },
+  configActions: {
+    flexDirection: "row",
+    gap: 12,
+    marginTop: 20,
+  },
+  configCancelBtn: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: "#d1d5db",
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  configCancelBtnText: { fontSize: 14, fontWeight: "600", color: "#6b7280" },
+  configSaveBtn: {
+    flex: 1,
+    backgroundColor: "#0a6340",
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  configSaveBtnText: { fontSize: 14, fontWeight: "700", color: "#ffffff" },
+  configSimulateHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+  },
+  configDevBadge: {
+    backgroundColor: "#fef3c7",
+    borderWidth: 1,
+    borderColor: "#fcd34d",
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  configDevBadgeText: { fontSize: 11, fontWeight: "700", color: "#92400e" },
+  configTypeScroll: { marginBottom: 16 },
+  configTypePill: {
+    borderWidth: 1,
+    borderColor: "#d1d5db",
+    borderRadius: 99,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    marginRight: 8,
+    backgroundColor: "#f9fafb",
+  },
+  configTypePillActive: {
+    backgroundColor: "#ecfdf5",
+    borderColor: "#0a6340",
+  },
+  configTypePillText: { fontSize: 13, color: "#6b7280", fontWeight: "500" },
+  configTypePillTextActive: { color: "#0a6340", fontWeight: "700" },
+  configSimulateBtn: {
+    backgroundColor: "#dc2626",
+    borderRadius: 10,
+    paddingVertical: 13,
+    alignItems: "center",
+  },
+  configSimulateBtnDisabled: { opacity: 0.6 },
+  configSimulateBtnText: { fontSize: 14, fontWeight: "700", color: "#ffffff" },
 
   permissionContainer: {
     flex: 1,
