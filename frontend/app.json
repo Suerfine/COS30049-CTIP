@@ -27,7 +27,13 @@
       "name":"SFC"
     },
     "plugins": [
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow SFC to use your camera for AI anomaly detection."
+        }
+      ]
     ]
   }
 }

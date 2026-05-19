@@ -52,7 +52,7 @@ async def check_and_download_models():
     models_to_check = [
         {
             "name": "nature_detection_model.pt",
-            "url": "https://drive.google.com/file/d/1Xbuw_oaPyK1D4gY7XGynfa4TtkxH1cZb/view?usp=sharing",
+            "url": "https://drive.google.com/file/d/1Xbuw_oaPyK1D4gY7XGynfa4TtkxH1cZb/view?usp=drivesdk",
             "description": "Nature Detection Model (YOLO)"
         },
         {
@@ -93,12 +93,12 @@ async def lifespan(app: FastAPI):
         logger.warning(f"Could not move models to {device}: {exc}")
 
     # Warmup: compiles CUDA kernels so the first real frame isn't slow
-    logger.info("🔥 Warming up models...")
+    logger.info("Warming up models...")
     dummy = np.zeros((640, 640, 3), dtype=np.uint8)
     try:
         models["detector"].predict(dummy, imgsz=640, verbose=False, half=use_half)
         models["pose"].predict(dummy, imgsz=640, verbose=False, half=use_half)
-        logger.info("✅ Warmup complete")
+
     except Exception as exc:
         logger.warning(f"Warmup failed (non-fatal): {exc}")
 

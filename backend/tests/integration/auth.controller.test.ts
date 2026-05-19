@@ -52,6 +52,30 @@ async function createTestUser(email: string) {
 }
 
 describe("Auth Controller Integration Tests", () => {
+  it("logs in with valid credentials and rejects invalid credentials", async () => {
+    const user = await createTestUser("loginuser@example.com");
+
+    const validReq = createMockRequest({
+      username: `${user.id}@sfc.gov.my`,
+      password: "OldPassword123!",
+    });
+    const validRes = createMockResponse();
+    await token(validReq, validRes as any, () => undefined);
+
+    expect(validRes.statusCode).toBe(200);
+    expect(validRes.jsonData.access_token).toBeTruthy();
+
+    const invalidReq = createMockRequest({
+      username: `${user.id}@sfc.gov.my`,
+      password: "WrongPassword123!",
+    });
+    const invalidRes = createMockResponse();
+    await token(invalidReq, invalidRes as any, () => undefined);
+
+    expect(invalidRes.statusCode).toBe(401);
+    expect(invalidRes.jsonData.message).toMatch(/Incorrect email or password/);
+  });
+
   it("creates a password reset token record for an existing user", async () => {
     const user = await createTestUser("testuser@example.com");
     const req = createMockRequest({ email: user.personal_email });

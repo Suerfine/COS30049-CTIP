@@ -179,7 +179,7 @@ router.get(
  *         description: Sensor log not found
  */
 router.get(
-  "/:id",
+  "logs/:id",
   auth,
   [param("id").isInt()],
   validate,
@@ -219,7 +219,7 @@ router.get(
  *         description: Sensor log not found
  */
 router.put(
-  "/:id",
+  "logs/:id",
   auth,
   [
     param("id").isInt(),
@@ -261,7 +261,7 @@ router.put(
  *         description: Sensor log not found
  */
 router.delete(
-  "/:id",
+  "logs/:id",
   auth,
   [param("id").isInt()],
   validate,

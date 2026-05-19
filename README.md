@@ -30,7 +30,7 @@ cd ./frontend/
 npm install
 
 # Run the app
-npm start
+npx expo start --android
 
 # Open http://localhost:8081 for website
 ```

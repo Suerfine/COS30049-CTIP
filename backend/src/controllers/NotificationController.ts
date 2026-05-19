@@ -456,6 +456,15 @@ export const updateNotification = async (
     notification.dismissed_at = req.body.dismissed_at || null;
     await notification.save({ transaction });
     await transaction.commit();
+    return res.status(200).json({
+      id: notification.id,
+      title: notification.title,
+      message: notification.message,
+      url: notification.url,
+      dismissed_at: notification.dismissed_at,
+      created_at: notification.created_at,
+      updated_at: notification.updated_at,
+    });
   } catch (err) {
     await transaction.rollback();
     if (err instanceof HttpError) {

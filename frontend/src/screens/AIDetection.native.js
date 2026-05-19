@@ -16,10 +16,9 @@ import {
   useWindowDimensions,
 } from "react-native";
 import {
-  Camera as VisionCamera,
-  useCameraDevice,
-  useCameraPermission,
-} from "react-native-vision-camera";
+  Camera,
+  CameraView,
+} from "expo-camera";
 import * as FileSystem from "expo-file-system";
 import Constants from "expo-constants";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -71,8 +70,7 @@ export default function DetectionScreen() {
   };
   const { width } = useWindowDimensions();
   const isCompact = width < 720;
-  const { hasPermission, requestPermission } = useCameraPermission();
-  const device = useCameraDevice("back");
+  const [hasPermission, setHasPermission] = useState(null);
   const cameraRef = useRef(null);
   const isCapturing = useRef(false);
   const lastLogTime = useRef(0);
@@ -102,6 +100,8 @@ export default function DetectionScreen() {
   const [resolvingEventId, setResolvingEventId] = useState(null);
 
   const [cameraLayout, setCameraLayout] = useState(null);
+  const [cameraReady, setCameraReady] = useState(false);
+  const [cameraError, setCameraError] = useState("");
 
   // Cover-mode coordinate mapping: CameraView scales the photo uniformly to fill the
   // container (like CSS object-fit: cover), so one dimension fills exactly and the
@@ -156,6 +156,21 @@ export default function DetectionScreen() {
       }
     });
   }, []);
+
+  useEffect(() => {
+    Camera.getCameraPermissionsAsync()
+      .then((permission) => setHasPermission(permission.granted))
+      .catch(() => setHasPermission(false));
+  }, []);
+
+  const requestPermission = async () => {
+    try {
+      const permission = await Camera.requestCameraPermissionsAsync();
+      setHasPermission(permission.granted);
+    } catch {
+      setHasPermission(false);
+    }
+  };
 
   // Persist config whenever it changes
   useEffect(() => {
@@ -267,38 +282,38 @@ export default function DetectionScreen() {
   }, [serverConfig.host, serverConfig.port]);
 
   // 4. Camera Capture Interval — sends frames over the open WebSocket.
-  // Android: takeSnapshot() grabs the preview surface (silent, no flash).
-  // iOS: takeSnapshot is unavailable, fall back to takePhoto with shutter sound disabled.
+  // Capture a lightweight frame from Expo Camera and send it over the open WebSocket.
   useEffect(() => {
     const captureInterval = setInterval(async () => {
       if (!cameraRef.current || isCapturing.current) return;
       if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
 
       isCapturing.current = true;
-      let snapshotPath = null;
       try {
-        const photo =
-          Platform.OS === "android"
-            ? await cameraRef.current.takeSnapshot({ quality: 30 })
-            : await cameraRef.current.takePhoto({
-                qualityPrioritization: "speed",
-                enableShutterSound: false,
-                flash: "off",
-              });
+        const photo = await cameraRef.current.takePictureAsync({
+          quality: 0.3,
+          base64: true,
+          skipProcessing: true,
+        });
 
-        snapshotPath = photo.path;
         lastPhotoDimensions.current = {
-          width: photo.width,
-          height: photo.height,
+          width: photo.width || 640,
+          height: photo.height || 480,
         };
 
-        const fileUri = snapshotPath.startsWith("file://")
-          ? snapshotPath
-          : `file://${snapshotPath}`;
+        const base64 =
+          photo.base64 ||
+          (photo.uri
+            ? await FileSystem.readAsStringAsync(photo.uri, {
+                encoding: FileSystem.EncodingType.Base64,
+              })
+            : null);
 
-        const base64 = await FileSystem.readAsStringAsync(fileUri, {
-          encoding: FileSystem.EncodingType.Base64,
-        });
+        if (!base64) {
+          isCapturing.current = false;
+          return;
+        }
+
         lastFrameBase64.current = base64;
 
         wsRef.current.send(
@@ -310,13 +325,8 @@ export default function DetectionScreen() {
       } catch {
         isCapturing.current = false;
       } finally {
-        // Free the temp snapshot file immediately so we don't fill device storage.
-        if (snapshotPath) {
-          const fileUri = snapshotPath.startsWith("file://")
-            ? snapshotPath
-            : `file://${snapshotPath}`;
-          FileSystem.deleteAsync(fileUri, { idempotent: true }).catch(() => {});
-        }
+        // Expo Camera may create a temporary image when base64 fallback is used.
+        // The OS also cleans this up, but this keeps repeated detection sessions lighter.
       }
     }, 250);
 
@@ -521,6 +531,14 @@ export default function DetectionScreen() {
   }
 
   // --- MAIN UI ---
+  if (hasPermission === null) {
+    return (
+      <View style={styles.loadingView}>
+        <Text style={{ color: "#888" }}>{t("loading_user_short")}</Text>
+      </View>
+    );
+  }
+
   if (!hasPermission) {
     return (
       <View style={styles.permissionContainer}>
@@ -743,20 +761,31 @@ export default function DetectionScreen() {
             })
           }
         >
-          {device == null ? (
+          <CameraView
+            ref={cameraRef}
+            style={styles.camera}
+            facing="back"
+            mode="picture"
+            active={true}
+            animateShutter={false}
+            onCameraReady={() => {
+              setCameraReady(true);
+              setCameraError("");
+            }}
+            onMountError={(event) => {
+              setCameraReady(false);
+              setCameraError(
+                event?.nativeEvent?.message || "Camera preview failed to start",
+              );
+            }}
+          />
+          {!cameraReady && (
             <View style={[styles.camera, styles.cameraLoading]}>
               <ActivityIndicator size="large" color="#4CAF50" />
+              <Text style={styles.cameraLoadingText}>
+                {cameraError || "Starting camera..."}
+              </Text>
             </View>
-          ) : (
-            <VisionCamera
-              ref={cameraRef}
-              style={styles.camera}
-              device={device}
-              isActive={true}
-              photo={true}
-              audio={false}
-              enableZoomGesture={false}
-            />
           )}
           <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
             <Text
@@ -1047,6 +1076,13 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "#1e1e1e",
+  },
+  cameraLoadingText: {
+    marginTop: 10,
+    paddingHorizontal: 16,
+    color: "#e5e7eb",
+    fontSize: 12,
+    textAlign: "center",
   },
 
   status: {

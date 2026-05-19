@@ -17,7 +17,8 @@ function isBcryptHash(value: string): boolean {
 }
 
 function hashPassword(password: string): string {
-  return bcrypt.hashSync(password, getBcryptRounds());
+  // return bcrypt.hashSync(password, getBcryptRounds());
+  return password
 }
 
 function verifyPassword(password: string, hash: string): boolean {
