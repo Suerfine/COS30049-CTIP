@@ -402,5 +402,6 @@
     "download": "Download",
     "failed_to_approve": "Failed to approve",
     "failed_open_receipt": "Failed to open receipt",
-    "records": "records"
+    "records": "records",
+    "reject":"Reject"
 }

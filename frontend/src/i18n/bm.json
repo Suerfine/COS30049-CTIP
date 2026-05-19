@@ -408,5 +408,6 @@
     "download": "Muat Turun",
     "failed_to_approve": "Gagal meluluskan",
     "failed_open_receipt": "Gagal membuka resit",
-    "records": "rekod"
+    "records": "rekod",
+     "reject":"Tolak"
 }
