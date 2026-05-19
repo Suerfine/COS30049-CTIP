@@ -12,7 +12,7 @@ import {
   RotateCcw,
   Search,
 } from "lucide-react-native";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -28,10 +28,8 @@ import {
 import { useTranslation } from "react-i18next";
 
 import { useAnomalyDetection } from "../hooks/useAnomalyDetection";
-import { sensorService } from "../services/SensorService";
 import { formatDate } from "../utils/formatDate";
 
-const PAGE_SIZE = 10;
 const TABS = {
   ANOMALIES: "anomalies",
   SENSORS: "sensors",
@@ -63,42 +61,6 @@ const STATUS_STYLES = {
     borderColor: "#bfdbfe",
     color: "#2563eb",
   },
-};
-
-const emptyPaginatedState = {
-  data: [],
-  page: 1,
-  size: PAGE_SIZE,
-  totalElements: 0,
-  totalPages: 1,
-};
-
-const normalizePaginatedResponse = (response) => {
-  const data = Array.isArray(response?.data) ? response.data : [];
-
-  return {
-    data,
-    page: response?.page ?? 1,
-    size: response?.size ?? PAGE_SIZE,
-    totalElements: response?.totalElements ?? data.length,
-    totalPages: response?.totalPages ?? 1,
-  };
-};
-
-const extractErrorMessage = (error, fallbackMessage) =>
-  error?.response?.data?.message || error?.message || fallbackMessage;
-
-const formatCoordinates = (sensor) => {
-  if (
-    sensor?.latitude === null ||
-    sensor?.latitude === undefined ||
-    sensor?.longitude === null ||
-    sensor?.longitude === undefined
-  ) {
-    return "-";
-  }
-
-  return `${Number(sensor.latitude).toFixed(4)}, ${Number(sensor.longitude).toFixed(4)}`;
 };
 
 const formatStatusLabel = (value) => {
@@ -275,22 +237,25 @@ const StatusBadge = ({ value }) => {
   );
 };
 
+const formatCoordinates = (sensor) => {
+  if (
+    sensor?.latitude === null ||
+    sensor?.latitude === undefined ||
+    sensor?.longitude === null ||
+    sensor?.longitude === undefined
+  ) {
+    return "-";
+  }
+
+  return `${Number(sensor.latitude).toFixed(4)}, ${Number(sensor.longitude).toFixed(4)}`;
+};
+
 const AnomalyDetection = () => {
   const { t } = useTranslation();
   const { width, height } = useWindowDimensions();
   const isCompact = width < 700;
 
   const [activeTab, setActiveTab] = useState(TABS.ANOMALIES);
-  const [sensorsPage, setSensorsPage] = useState(1);
-  const [sensorState, setSensorState] = useState(emptyPaginatedState);
-  const [sensorLoading, setSensorLoading] = useState(true);
-  const [sensorError, setSensorError] = useState(null);
-  const [selectedSensorForLogs, setSelectedSensorForLogs] = useState(null);
-  const [showSensorLogsModal, setShowSensorLogsModal] = useState(false);
-  const [sensorLogsPage, setSensorLogsPage] = useState(1);
-  const [sensorLogsState, setSensorLogsState] = useState(emptyPaginatedState);
-  const [sensorLogsLoading, setSensorLogsLoading] = useState(false);
-  const [sensorLogsError, setSensorLogsError] = useState(null);
 
   const {
     anomalies,
@@ -307,71 +272,43 @@ const AnomalyDetection = () => {
     error,
     refresh,
     resolveAnomaly,
+    sensorsPage,
+    setSensorsPage,
+    sensorState,
+    sensorLoading,
+    sensorError,
+    sensorLogsPage,
+    setSensorLogsPage,
+    sensorLogsState,
+    sensorLogsLoading,
+    sensorLogsError,
+    loadSensors,
+    loadSensorLogs,
+    refreshSensors,
   } = useAnomalyDetection();
 
   const [resolvingId, setResolvingId] = useState(null);
   const [selectedAnomaly, setSelectedAnomaly] = useState(null);
   const [showMapModal, setShowMapModal] = useState(false);
+  const [showSensorLogsModal, setShowSensorLogsModal] = useState(false);
+  const [selectedSensorForLogs, setSelectedSensorForLogs] = useState(null);
 
-  const loadSensors = useCallback(async () => {
-    setSensorLoading(true);
-    setSensorError(null);
-
-    try {
-      const response = await sensorService.getAll({
-        page: sensorsPage,
-        size: PAGE_SIZE,
-        orderBy: "id asc",
-      });
-      setSensorState(normalizePaginatedResponse(response));
-    } catch (loadError) {
-      setSensorError(extractErrorMessage(loadError, "Unable to load sensors"));
-      setSensorState(emptyPaginatedState);
-    } finally {
-      setSensorLoading(false);
-    }
-  }, [sensorsPage]);
-
-  const loadSensorLogs = useCallback(async (sensorId, page) => {
-    if (!sensorId) {
+  useEffect(() => {
+    if (
+      !showSensorLogsModal ||
+      !selectedSensorForLogs?.id
+    ) {
       return;
     }
 
-    setSensorLogsLoading(true);
-    setSensorLogsError(null);
-
-    try {
-      const response = await sensorService.getLogsBySensor(sensorId, {
-        page,
-        size: PAGE_SIZE,
-        orderBy: "created_at desc",
-      });
-      setSensorLogsState(normalizePaginatedResponse(response));
-    } catch (loadError) {
-      setSensorLogsError(
-        extractErrorMessage(loadError, "Unable to load sensor logs"),
-      );
-      setSensorLogsState(emptyPaginatedState);
-    } finally {
-      setSensorLogsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    loadSensors();
-  }, [loadSensors]);
-
-  useEffect(() => {
-    if (!showSensorLogsModal || !selectedSensorForLogs?.id) {
-      return;
-    }
-
-    loadSensorLogs(selectedSensorForLogs.id, sensorLogsPage);
+    loadSensorLogs(
+      selectedSensorForLogs.id,
+      sensorLogsPage
+    );
   }, [
     showSensorLogsModal,
     selectedSensorForLogs,
     sensorLogsPage,
-    loadSensorLogs,
   ]);
 
   const refreshActiveTab = () => {
@@ -381,7 +318,7 @@ const AnomalyDetection = () => {
     }
 
     if (activeTab === TABS.SENSORS) {
-      loadSensors();
+      refreshSensors();
       return;
     }
   };
@@ -389,8 +326,6 @@ const AnomalyDetection = () => {
   const openSensorLogsModal = (sensor) => {
     setSelectedSensorForLogs(sensor);
     setSensorLogsPage(1);
-    setSensorLogsState(emptyPaginatedState);
-    setSensorLogsError(null);
     setShowSensorLogsModal(true);
   };
 
@@ -398,8 +333,6 @@ const AnomalyDetection = () => {
     setShowSensorLogsModal(false);
     setSelectedSensorForLogs(null);
     setSensorLogsPage(1);
-    setSensorLogsState(emptyPaginatedState);
-    setSensorLogsError(null);
   };
 
   const renderTabButton = (tabKey, title, subtitle) => {
@@ -643,7 +576,7 @@ const AnomalyDetection = () => {
               hovered && styles.retryBtnHover,
             ]}
           >
-            <Text style={styles.retryBtnText}>Try Again</Text>
+            <Text style={styles.retryBtnText}>{t("try_again")}</Text>
           </Pressable>
         </View>
       );
@@ -704,7 +637,7 @@ const AnomalyDetection = () => {
           page={currentPage}
           totalPages={totalPages}
           totalElements={totalAnomalies}
-          size={PAGE_SIZE}
+          size={10}
           itemLabel={t("anomalies")}
           onPageChange={setCurrentPage}
         />
@@ -760,7 +693,7 @@ const AnomalyDetection = () => {
                 ListEmptyComponent={
                   <View style={styles.emptyContainer}>
                     <AlertTriangle size={48} color="#d1d5db" />
-                    <Text style={styles.emptyText}>No sensors found</Text>
+                    <Text style={styles.emptyText}>{t("no_sensors_found")}</Text>
                   </View>
                 }
               />

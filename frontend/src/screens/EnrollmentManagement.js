@@ -112,10 +112,10 @@ const EnrollmentManagement = () => {
   const [selectedPayment, setSelectedPayment] = useState(null);
   const [filterVisible, setFilterVisible] = useState(false);
   const [translateX, setTranslateX] = useState(300);
-  const [tempCourseFilter, setTempCourseFilter] = useState("all");
+  const [tempCourseFilter, setTempCourseFilter] = useState("All");
   const [rejectModalVisible, setRejectModalVisible] = useState(false);
   const [adminRemark, setAdminRemark] = useState("");
-  const [selectedCourseFilter, setSelectedCourseFilter] = useState("all");
+  const [selectedCourseFilter, setSelectedCourseFilter] = useState("All");
   const [receiptUri, setReceiptUri] = useState(null);
   const [receiptLoading, setReceiptLoading] = useState(false);
   const [receiptError, setReceiptError] = useState("");
@@ -815,7 +815,7 @@ const EnrollmentManagement = () => {
                   ellipsizeMode="tail"
                   style={styles.pillText}
                 >
-                  {getActiveStatus() === "all"
+                  {getActiveStatus() === "All"
                     ? t("status_label")
                     : formatted(getActiveStatus())}
                 </Text>
@@ -1176,14 +1176,14 @@ const EnrollmentManagement = () => {
             <Pressable
               style={[
                 styles.sidebarItem,
-                tempCourseFilter ===  "all" && styles.sidebarItemActive,
+                tempCourseFilter ===  "All" && styles.sidebarItemActive,
               ]}
-              onPress={() => setTempCourseFilter("all")}
+              onPress={() => setTempCourseFilter("All")}
             >
               <Text
                 style={[
                   styles.sidebarItemText,
-                  tempCourseFilter ===  "all" && styles.sidebarItemTextActive,
+                  tempCourseFilter ===  "All" && styles.sidebarItemTextActive,
                 ]}
               >
                 {t("all_courses")}
@@ -1218,8 +1218,9 @@ const EnrollmentManagement = () => {
           <Pressable
             style={styles.sidebarResetBtn}
             onPress={() => {
-              setTempCourseFilter("all");
-              setSelectedCourseFilter("all");
+              setTempCourseFilter("All");
+              setSelectedCourseFilter("All");
+              setCurrentCourseId('All');
               setFilterVisible(false);
             }}
           >
@@ -1231,7 +1232,7 @@ const EnrollmentManagement = () => {
               const selected = courses.find(
                 (c) => c.title === tempCourseFilter,
               );
-              setCurrentCourseId(selected ? selected.id :  "all");
+              setCurrentCourseId(selected ? selected.id :  "All");
               setFilterVisible(false);
               setActivePage(1);
             }}
@@ -1272,6 +1273,7 @@ const styles = StyleSheet.create({
   },
   table: {
     flexShrink: 1,
+    backgroundColor: "white",
   },
   title: {
     fontSize: 25,
