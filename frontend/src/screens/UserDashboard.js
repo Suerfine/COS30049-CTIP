@@ -155,7 +155,7 @@ const UserDashboard = ({ navigation }) => {
                                 })}
                             </View>
                         </View>
-
+                        
                         <Pressable
                             onPress={() => {
                                 const d = new Date(currentDate);
@@ -194,7 +194,7 @@ const UserDashboard = ({ navigation }) => {
                             </Pressable>
                         </View>
 
-                        <ScrollView showsVerticalScrollIndicator={true} indicatorStyle="white">
+                        <ScrollView showsVerticalScrollIndicator={true} indicatorStyle="white" style={{height:'400px'}}>
                             {filteredEvents.length === 0 ? (
                                 <Text>{t('no todos')}</Text>
                             ) : (
