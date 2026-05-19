@@ -52,8 +52,8 @@ async def check_and_download_models():
     models_to_check = [
         {
             "name": "nature_detection_model.pt",
-            "url": "https://drive.google.com/file/d/1f1mXVV37U7nor5tY9asqtgHrEssak3Ot/view?usp=drive_link",
-            "description": "Object Detection Model (YOLO)"
+            "url": "https://drive.google.com/file/d/1Xbuw_oaPyK1D4gY7XGynfa4TtkxH1cZb/view?usp=sharing",
+            "description": "Nature Detection Model (YOLO)"
         },
         {
             "name": "yolo26n-pose.pt",

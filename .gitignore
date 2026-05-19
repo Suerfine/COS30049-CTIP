@@ -13,6 +13,13 @@ runs/
 #ignore pycache files
 __pycache__/**
 __pycache__/
+
+# TLS certificates and private keys
+backend/certs/
+
+# Test database (generated artifact)
+backend/test/*.sqlite
+
 *.pyc
 *.pyo
 
