@@ -26,19 +26,29 @@ class ComplianceEvaluator:
     HIDE_DOWNWARD_MAX_ABS_X = 0.45
     HIDE_DOWNWARD_MIN_DY = 6.0
 
-    PLUCK_TOUCH_HOLD_SEC = 3.0
-    PLUCK_APPROACH_VELOCITY_PX = 12.0
+    # Plucking = touch a plant, then pull the hand back toward the body/head.
+    # We snapshot hand->body distance at first contact and require the hand to
+    # move at least PLUCK_APPROACH_DISTANCE_PX closer within PLUCK_OBSERVATION_SEC.
+    # PLUCK_POST_RELEASE_SEC keeps watching briefly after the hand leaves the plant,
+    # because the pull-away motion often completes just after contact ends.
+    PLUCK_OBSERVATION_SEC = 3.0
+    PLUCK_POST_RELEASE_SEC = 0.8
+    PLUCK_APPROACH_DISTANCE_PX = 20.0
+    PLUCK_DISPLAY_SEC = 1.5
     ANIMAL_TOUCH_HOLD_SEC = 2.0
     EXTENDED_TOUCH_SEC = 3.5
     EVENT_COOLDOWN_SEC = 1.0
+    SHOULDER_INDICES = (5, 6)
 
     STRIKE_VELOCITY_MIN_PX = 30.0
     STRIKE_DISPLAY_SEC = 1.5
 
     def __init__(self):
         self.plant_touch_start = None
-        self.pluck_window_end = None
-        self.pluck_prev_head_dist = None
+        self.pluck_touch_start_time = None
+        self.pluck_touch_start_body_dist = None
+        self.pluck_last_touch_time = 0.0
+        self.pluck_last_hand_pos = None
         self.pluck_event_count = 0
         self.last_pluck_time = 0.0
         self.pluck_active_until = 0.0
@@ -93,13 +103,9 @@ class ComplianceEvaluator:
             self.animal_touch_start = None
             self.extended_animal_touch_active = False
 
-        head_positions = [
-            (pose[self.HEAD_INDEX]["x"], pose[self.HEAD_INDEX]["y"])
-            for pose in parsed_poses
-            if len(pose) > self.HEAD_INDEX and pose[self.HEAD_INDEX]["confidence"] >= self.CONF_THRESHOLD
-        ]
+        body_positions = self._extract_body_anchors(parsed_poses)
 
-        plucking_active = self._detect_plucking_motion(plant_hand_centers, len(plant_overlaps), head_positions, now)
+        plucking_active = self._detect_plucking_motion(plant_hand_centers, len(plant_overlaps), body_positions, now)
         strike_active = self._detect_striking(self._extract_extremity_points(parsed_poses), animal_boxes, now)
 
         return {
@@ -148,44 +154,66 @@ class ComplianceEvaluator:
 
         return now < self.strike_active_until
 
-    def _detect_plucking_motion(self, hand_centers: list, overlap_count: int, head_positions: list, now: float) -> bool:
-        if overlap_count <= 0 or not hand_centers:
-            self.pluck_window_end = None
-            self.pluck_prev_head_dist = None
+    def _detect_plucking_motion(self, hand_centers: list, overlap_count: int, body_positions: list, now: float) -> bool:
+        in_contact = overlap_count > 0 and bool(hand_centers)
+
+        if in_contact:
+            primary_hand_x, primary_hand_y = min(hand_centers, key=lambda c: c[1])
+            self.pluck_last_touch_time = now
+            self.pluck_last_hand_pos = (primary_hand_x, primary_hand_y)
+
+            # First contact: snapshot the hand-to-body distance as the reference.
+            if self.pluck_touch_start_time is None and body_positions:
+                closest_body = min(body_positions, key=lambda b: math.hypot(primary_hand_x - b[0], primary_hand_y - b[1]))
+                self.pluck_touch_start_body_dist = math.hypot(primary_hand_x - closest_body[0], primary_hand_y - closest_body[1])
+                self.pluck_touch_start_time = now
+        else:
+            # Hand left the plant — keep evaluating briefly so a fast pull-back still registers.
+            if self.pluck_touch_start_time is None:
+                return now < self.pluck_active_until
+            if (now - self.pluck_last_touch_time) > self.PLUCK_POST_RELEASE_SEC:
+                self._reset_pluck_state()
+                return now < self.pluck_active_until
+
+        # Hard cap on how long we wait for the pull motion after the initial touch.
+        if self.pluck_touch_start_time is not None and (now - self.pluck_touch_start_time) > self.PLUCK_OBSERVATION_SEC:
+            self._reset_pluck_state()
             return now < self.pluck_active_until
 
-        primary_hand_x, primary_hand_y = min(hand_centers, key=lambda c: c[1])
-
-        # Open 3-second window on first contact
-        if self.pluck_window_end is None:
-            self.pluck_window_end = now + self.PLUCK_TOUCH_HOLD_SEC
-
-        # Window expired — wait for next touch
-        if now > self.pluck_window_end:
-            self.pluck_prev_head_dist = None
+        if self.pluck_touch_start_body_dist is None or not body_positions or self.pluck_last_hand_pos is None:
             return now < self.pluck_active_until
 
-        if not head_positions:
-            self.pluck_prev_head_dist = None
-            return now < self.pluck_active_until
+        cur_x, cur_y = self.pluck_last_hand_pos
+        closest_body = min(body_positions, key=lambda b: math.hypot(cur_x - b[0], cur_y - b[1]))
+        current_dist = math.hypot(cur_x - closest_body[0], cur_y - closest_body[1])
+        approach = self.pluck_touch_start_body_dist - current_dist  # positive = moved toward body
 
-        # Use the head closest to the touching hand
-        closest_head = min(head_positions, key=lambda h: math.hypot(primary_hand_x - h[0], primary_hand_y - h[1]))
-        dist = math.hypot(primary_hand_x - closest_head[0], primary_hand_y - closest_head[1])
+        can_trigger = (now - self.last_pluck_time) >= self.EVENT_COOLDOWN_SEC
+        if approach >= self.PLUCK_APPROACH_DISTANCE_PX and can_trigger:
+            self.pluck_event_count += 1
+            self.last_pluck_time = now
+            self.pluck_active_until = now + self.PLUCK_DISPLAY_SEC
+            self._reset_pluck_state()
+            return True
 
-        if self.pluck_prev_head_dist is not None:
-            approach_speed = self.pluck_prev_head_dist - dist  # positive = moving toward head
-            can_trigger = (now - self.last_pluck_time) >= self.EVENT_COOLDOWN_SEC
-            if approach_speed >= self.PLUCK_APPROACH_VELOCITY_PX and can_trigger:
-                self.pluck_event_count += 1
-                self.last_pluck_time = now
-                self.pluck_active_until = now + self.EVENT_COOLDOWN_SEC
-                self.pluck_window_end = None
-                self.pluck_prev_head_dist = None
-                return True
-
-        self.pluck_prev_head_dist = dist
         return now < self.pluck_active_until
+
+    def _reset_pluck_state(self):
+        self.pluck_touch_start_time = None
+        self.pluck_touch_start_body_dist = None
+        self.pluck_last_hand_pos = None
+
+    def _extract_body_anchors(self, poses: list) -> list:
+        anchors = []
+        for pose in poses:
+            if len(pose) > self.HEAD_INDEX and pose[self.HEAD_INDEX]["confidence"] >= self.CONF_THRESHOLD:
+                anchors.append((pose[self.HEAD_INDEX]["x"], pose[self.HEAD_INDEX]["y"]))
+            l_idx, r_idx = self.SHOULDER_INDICES
+            if len(pose) > r_idx:
+                l_sh, r_sh = pose[l_idx], pose[r_idx]
+                if l_sh["confidence"] >= self.CONF_THRESHOLD and r_sh["confidence"] >= self.CONF_THRESHOLD:
+                    anchors.append(((l_sh["x"] + r_sh["x"]) * 0.5, (l_sh["y"] + r_sh["y"]) * 0.5))
+        return anchors
 
     def _extract_extremity_points(self, poses: list) -> list:
         points = []
