@@ -75,12 +75,16 @@ AnomalyEventRouter.post(
   [
     body("user_id").isInt({ min: 1 }),
     body("event_type").isIn([
-      "touch_plant",
-      "touch_animal",
-      "plucking_plant",
-      "animal_strike",
-      "extended_touch_animal",
-      "extended_touch_plant"
+      "touching_plant",
+      "touching_animal",
+      "plucking_plants",
+      "hitting_animal",
+      "extended_plant_touch",
+      "extended_animal_touch",
+      "forest_fire",
+      "flooding",
+      "loud_noise",
+      "trespassing",
     ]),
     body("metadata").optional(),
     body("latitude").optional().isFloat(),

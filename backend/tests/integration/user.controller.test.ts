@@ -136,6 +136,79 @@ describe("User Controller Integration Tests", () => {
     expect(createdUser).toBeNull();
   });
 
+  it("GET /api/users - returns the paginated user list", async () => {
+    await createAdminUser();
+    const accessToken = await login({
+      username: ADMIN_LOGIN_USERNAME,
+      password: ADMIN_PASSWORD,
+    });
+
+    const response = await request(app)
+      .get("/api/users")
+      .set("Authorization", `Bearer ${accessToken}`);
+
+    expect(response.status).toBe(200);
+    expect(response.body.data).toHaveLength(1);
+    expect(response.body.totalElements).toBe(1);
+  });
+
+  it("GET /api/users/me - returns the current authenticated user", async () => {
+    const adminUser = await createAdminUser();
+    const accessToken = await login({
+      username: ADMIN_LOGIN_USERNAME,
+      password: ADMIN_PASSWORD,
+    });
+
+    const response = await request(app)
+      .get("/api/users/me")
+      .set("Authorization", `Bearer ${accessToken}`);
+
+    expect(response.status).toBe(200);
+    expect(response.body.id).toBe(adminUser.id);
+    expect(response.body.personal_email).toBe(ADMIN_LOGIN_USERNAME);
+  });
+
+  it("GET /api/users/search/:name/:limit - searches users by username", async () => {
+    await createAdminUser();
+    await User.create({
+      username: "searchable-guide",
+      firstname: "Searchable",
+      lastname: "Guide",
+      identification: "searchable-guide-id",
+      personal_email: "searchable.guide@example.com",
+      tel: "0123456789",
+      role: UserRoles.PARK_GUIDE,
+      password_hash: await hashPassword("pass123"),
+    });
+    const accessToken = await login({
+      username: ADMIN_LOGIN_USERNAME,
+      password: ADMIN_PASSWORD,
+    });
+
+    const response = await request(app)
+      .get("/api/users/search/searchable/5")
+      .set("Authorization", `Bearer ${accessToken}`);
+
+    expect(response.status).toBe(200);
+    expect(response.body).toHaveLength(1);
+    expect(response.body[0].username).toBe("searchable-guide");
+  });
+
+  it("GET /api/users/:id - returns a specific user by id", async () => {
+    const adminUser = await createAdminUser();
+    const accessToken = await login({
+      username: ADMIN_LOGIN_USERNAME,
+      password: ADMIN_PASSWORD,
+    });
+
+    const response = await request(app)
+      .get(`/api/users/${adminUser.id}`)
+      .set("Authorization", `Bearer ${accessToken}`);
+
+    expect(response.status).toBe(200);
+    expect(response.body.id).toBe(adminUser.id);
+  });
+
   it("PUT /api/users/:id - updates an details when authenticated as themselves", async () => {
     const user = await User.create({
       username: faker.internet.username(),
@@ -306,5 +379,51 @@ describe("User Controller Integration Tests", () => {
       password: "newpassword",
     });
     expect(newAccessToken).toBeDefined();
+  });
+
+  it("PUT /api/users/:id/change-password - fails when old password is wrong", async () => {
+    const user = await User.create({
+      username: faker.internet.username(),
+      firstname: "Test",
+      lastname: "User",
+      identification: "wrong-old-password-id",
+      personal_email: faker.internet.email().toLocaleLowerCase(),
+      tel: "0123456789",
+      role: UserRoles.PARK_GUIDE,
+      password_hash: await hashPassword("oldpassword"),
+    });
+    const accessToken = await login({
+      username: user.personal_email,
+      password: "oldpassword",
+    });
+
+    const response = await request(app)
+      .put(`/api/users/${user.id}/change-password`)
+      .set("Authorization", `Bearer ${accessToken}`)
+      .send({
+        old_password: "wrongpassword",
+        new_password: "newpassword",
+      });
+
+    expect(response.status).toBe(400);
+    expect(response.body.message).toBe("Old password is incorrect");
+  });
+
+  it("DELETE /api/users/:id - soft deletes a user", async () => {
+    const user = await User.create({
+      username: faker.internet.username(),
+      firstname: "Delete",
+      lastname: "User",
+      identification: "delete-user-id",
+      personal_email: faker.internet.email().toLocaleLowerCase(),
+      tel: "0123456789",
+      role: UserRoles.PARK_GUIDE,
+      password_hash: await hashPassword("pass123"),
+    });
+
+    const response = await request(app).delete(`/api/users/${user.id}`);
+
+    expect(response.status).toBe(200);
+    expect(await User.findByPk(user.id)).toBeNull();
   });
 });
