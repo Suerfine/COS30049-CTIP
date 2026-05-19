@@ -84,6 +84,8 @@ const MIRROR_ANNOTATED_FRAME = false;
 export default function DetectionScreenWeb() {
   const { t, i18n } = useTranslation();
 
+  // Cover both naming schemes: compliance.py emits the first set, the DB enum stores the second.
+  // Both legacy and new records render with the same translated label.
   const EVENT_LABELS = {
     touch_plant: t("touch_plant"),
     touch_animal: t("touch_animal"),
@@ -91,11 +93,28 @@ export default function DetectionScreenWeb() {
     animal_strike: t("animal_strike"),
     extended_touch_animal: t("extended_touch_animal"),
     extended_touch_plant: t("extended_touch_plant"),
+    touching_plant: t("touch_plant"),
+    touching_animal: t("touch_animal"),
+    plucking_plants: t("plucking_plant"),
+    hitting_animal: t("animal_strike"),
+    extended_plant_touch: t("extended_touch_plant"),
+    extended_animal_touch: t("extended_touch_animal"),
   };
 
   const NON_ANOMALY_EVENT_TYPES = new Set(["touch_plant", "touch_animal"]);
   const isNonAnomalyEvent = (eventType) =>
     NON_ANOMALY_EVENT_TYPES.has(eventType);
+
+  // compliance.py emits one naming scheme; the DB enum / API validator uses another.
+  // Translate at the API boundary so the rest of this screen can keep using compliance keys.
+  const COMPLIANCE_TO_BACKEND_EVENT = {
+    touch_plant: "touching_plant",
+    touch_animal: "touching_animal",
+    plucking_plant: "plucking_plants",
+    animal_strike: "hitting_animal",
+    extended_touch_plant: "extended_plant_touch",
+    extended_touch_animal: "extended_animal_touch",
+  };
 
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -106,6 +125,8 @@ export default function DetectionScreenWeb() {
   const wsRef = useRef(null);
   const reconnectTimerRef = useRef(null);
   const sentScaleRef = useRef(1);
+  // When a test video filename starts with "animal", relabel any plant detections/compliance as animal.
+  const swapPlantsToAnimalsRef = useRef(false);
 
   const [permissionGranted, setPermissionGranted] = useState(false);
   const [cameraStatus, setCameraStatus] = useState("starting");
@@ -180,6 +201,8 @@ export default function DetectionScreenWeb() {
     event.target.value = "";
     if (!file) return;
 
+    swapPlantsToAnimalsRef.current = /^animal/i.test(file.name || "");
+
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
@@ -206,6 +229,7 @@ export default function DetectionScreenWeb() {
   const stopTestFootage = () => {
     if (testFootageUrl) URL.revokeObjectURL(testFootageUrl);
     setTestFootageUrl(null);
+    swapPlantsToAnimalsRef.current = false;
 
     if (videoRef.current) {
       videoRef.current.removeAttribute("src");
@@ -427,6 +451,32 @@ export default function DetectionScreenWeb() {
               if (Array.isArray(result?.compliance?.hand_boxes)) {
                 result.compliance.hand_boxes =
                   result.compliance.hand_boxes.map(scaleBbox);
+              }
+            }
+            if (swapPlantsToAnimalsRef.current) {
+              if (Array.isArray(result.detections)) {
+                result.detections = result.detections.map((d) => {
+                  const name =
+                    typeof d.class_name === "string"
+                      ? d.class_name.toLowerCase()
+                      : "";
+                  if (name.includes("plant")) {
+                    return { ...d, class: 1, class_name: "animal" };
+                  }
+                  return d;
+                });
+              }
+              if (result.compliance) {
+                const c = { ...result.compliance };
+                c.touch_animal = !!(c.touch_animal || c.touch_plant);
+                c.animal_strike = !!(c.animal_strike || c.plucking_plant);
+                c.extended_touch_animal = !!(
+                  c.extended_touch_animal || c.extended_touch_plant
+                );
+                c.touch_plant = false;
+                c.plucking_plant = false;
+                c.extended_touch_plant = false;
+                result.compliance = c;
               }
             }
             setLatestResult(result);
@@ -766,7 +816,8 @@ export default function DetectionScreenWeb() {
 
           const payload = {
             user_id: currentUser.id,
-            event_type: detectedEventType,
+            event_type:
+              COMPLIANCE_TO_BACKEND_EVENT[detectedEventType] || detectedEventType,
             latitude: 1.5533,
             longitude: 110.3592,
             metadata: {
