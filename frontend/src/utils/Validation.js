@@ -4,7 +4,8 @@ export const isOnlyLetters=(str)=>{
     return /^[A-Za-z\s]+$/.test(str.trim());
 }
 
-export const phoneRegex = /^(01[0-9]{1}-?[0-9]{7,8}|0[1-9]{1}-?[0-9]{6,7}|\+61\d{9})$/;
+// 01xxxxxxxxx or 01xxxxxxxxx
+export const phoneRegex = /^01\d{8,9}$/;
 
 // min 6 characters, at least one letter and one number
 export const isValidPassword = (password) =>
@@ -30,19 +31,23 @@ export const isValidBadgeExpiry = (months) => {
     return !isNaN(num) && num > 0 && num <= 60; // Max 60 months (5 years)
 };
 
-// IC & Passport
+// IC (040506101234)
 export const isValidIC = (ic) =>
-    ic.length == 12 && /^\d{6}-\d{2}-\d{4}$/.test(ic);
+  typeof ic === "string" && /^\d{12}$/.test(ic);
 
-export const isValidPassport = (passport) => /^[A-Za-z0-9]{5,20}$/.test(passport);
+// ONE uppercase letter + EXACTLY 8 digits
+// Example: A01234567
+export const isValidPassport = (passport) =>
+  typeof passport === "string" &&
+  /^[A-Z]\d{8}$/.test(passport);
 
-// combined IC/Passport validator - accepts either format
+// combined IC/Passport validator
 export const isValidIdentification = (identification) => {
-    if (!identification || typeof identification !== 'string') return false;
-    const trimmed = identification.trim();
-    // IC format (XXXXXX-XX-XXXX with 12 digits)
-    if (/^\d{6}-\d{2}-\d{4}$/.test(trimmed)) return true;
-    // passport/seeded format (5-20 alphanumeric characters)
-    if (/^[A-Za-z0-9]{5,20}$/.test(trimmed)) return true;
-    return false;
+  if (!identification || typeof identification !== "string") return false;
+  const trimmed = identification.trim();
+  // IC: exactly 12 digits
+  if (/^\d{12}$/.test(trimmed)) return true;
+  // passport: 1 uppercase letter + 8 digits
+  if (/^[A-Z]\d{8}$/.test(trimmed)) return true;
+  return false;
 };
