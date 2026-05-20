@@ -25,6 +25,7 @@ class AnomalyEvent extends Model<
     | "loud_noise"
     | "trespassing";
   declare metadata: CreationOptional<Record<string, any> | null>;
+  declare location: CreationOptional<string | null>;
   declare latitude: CreationOptional<number | null>;
   declare longitude: CreationOptional<number | null>;
   declare is_resolved: CreationOptional<boolean>;
@@ -66,6 +67,11 @@ AnomalyEvent.init(
         "trespassing"
       ),
       allowNull: false,
+    },
+    location: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
+      comment: "Descriptive location name where the anomaly occurred",
     },
     metadata: {
       type: DataTypes.JSON,

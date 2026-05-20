@@ -15,12 +15,23 @@ export type AnomalyEventFactoryAttributes = {
     | "loud_noise"
     | "trespassing";
   metadata?: Record<string, any> | null;
+  location?: string | null;
   latitude?: number | null;
   longitude?: number | null;
   created_at?: Date;
   updated_at?: Date;
   deleted_at?: Date | null;
 };
+
+const SARAWAK_PARK_LOCATIONS = [
+  "Bako National Park - HQ Boardwalk",
+  "Bako National Park - Trail Telok Delima",
+  "Kubah National Park - Frog Pond Route",
+  "Kubah National Park - Waterfall Trail Sector 2",
+  "Matang Wildlife Centre - Orangutan Enclosure Peripheral",
+  "Semenggoh Nature Reserve - Main Feeding Station Alpha",
+  "Santubong National Park - Summit Path Zone 1"
+];
 
 export type AnomalyEventFactoryInput = Partial<AnomalyEventFactoryAttributes>;
 
@@ -76,6 +87,7 @@ export const buildComplianceEvent = (
   const defaultEvent: AnomalyEventFactoryAttributes = {
     user_id: userId,
     event_type: selectedEvent.type,
+    location: faker.helpers.arrayElement(SARAWAK_PARK_LOCATIONS),
     metadata: {
       frame_number: faker.number.int({ min: 1, max: 10000 }),
       detection_confidence: faker.number.float({ min: 0.5, max: 0.99 }),

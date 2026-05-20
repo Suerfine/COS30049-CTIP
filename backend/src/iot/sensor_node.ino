@@ -29,6 +29,8 @@ PubSubClient client(espClient);
 #define PIN_BUZZER 32
 #define PIN_LED 2
 
+#define ACOUSTIC_ACTIVE_LEVEL HIGH
+
 // --- OFFLINE QUEUE ---
 #define MAX_QUEUE 50
 
@@ -63,7 +65,7 @@ void setup() {
   
   dht.begin();
   pinMode(PIN_PIR, INPUT);
-  pinMode(PIN_ACOUSTIC, INPUT_PULLUP);
+  pinMode(PIN_ACOUSTIC, INPUT);
   pinMode(PIN_BUZZER, OUTPUT);
   pinMode(PIN_LED, OUTPUT);
   
@@ -195,13 +197,13 @@ void processSensors() {
 
   // 1. FIRE SENSOR (Temp + MQ2)
   float t = dht.readTemperature();
-  if (isnan(t)) {
-    Serial.println("DHT read failed");
-    return;
+  bool tempAvailable = !isnan(t);
+  if (!tempAvailable) {
+    Serial.println("DHT read failed; continuing with other sensors");
   }
 
   int smoke = analogRead(PIN_MQ2);
-  String currentFireStatus = (t > 50 || smoke > 1500) ? "alerting" : "normal";
+  String currentFireStatus = ((tempAvailable && t > 50) || smoke > 1500) ? "alerting" : "normal";
   unsigned long fireInterval = (currentFireStatus == "alerting") ? INT_ALERT : INT_NORMAL;
 
   if (currentFireStatus == "alerting") {
@@ -212,7 +214,9 @@ void processSensors() {
   
   if (currentFireStatus != lastFireStatus || (now - lastFireLog >= fireInterval)) {
     String fireData = "{";
-    fireData += "\"temperature\":" + String(t) + ",";
+    fireData += "\"temperature\":";
+    fireData += tempAvailable ? String(t) : "null";
+    fireData += ",";
     fireData += "\"smoke\":" + String(smoke);
     fireData += "}";
     
@@ -223,7 +227,7 @@ void processSensors() {
   }
 
   // 2. SMOKING SENSOR
-  String currentSmokingStatus = (smoke > 800 && smoke <= 2500 && t <= 50) ? "alerting" : "normal";
+  String currentSmokingStatus = (smoke > 800 && smoke <= 2500 && (!tempAvailable || t <= 50)) ? "alerting" : "normal";
   unsigned long smokeInterval = (currentSmokingStatus == "alerting") ? INT_ALERT : INT_NORMAL;
 
   if (currentSmokingStatus != lastSmokingStatus || (now - lastSmokingLog >= smokeInterval)) {
@@ -255,13 +259,15 @@ void processSensors() {
   }
 
   // 4. ACOUSTIC SENSOR
-  bool soundDetected = digitalRead(PIN_ACOUSTIC) == LOW; 
+  int soundRaw = digitalRead(PIN_ACOUSTIC);
+  bool soundDetected = soundRaw == ACOUSTIC_ACTIVE_LEVEL; 
   String currentSoundStatus = soundDetected ? "alerting" : "normal";
   unsigned long soundInterval = (currentSoundStatus == "alerting") ? INT_ALERT : INT_NORMAL;
 
   if (currentSoundStatus != lastSoundStatus || (now - lastAcousticLog >= soundInterval)) {
     String soundData = "{";
-    soundData += "\"sound_detected\":" + String(soundDetected ? "true" : "false");
+    soundData += "\"sound_detected\":" + String(soundDetected ? "true" : "false") + ",";
+    soundData += "\"digital_value\":" + String(soundRaw);
     soundData += "}";
     
     sendLog(3, currentSoundStatus, soundData);
@@ -277,9 +283,11 @@ void processSensors() {
   }
 
   Serial.print("DEBUG: ");
-  Serial.print("Temp: " + String(t));
+  Serial.print("Temp: ");
+  Serial.print(tempAvailable ? String(t) : "N/A");
   Serial.print(" | Smoke: " + String(smoke));
   Serial.print(" | Motion: " + String(motion));
+  Serial.print(" | Sound Raw: " + String(soundRaw));
   Serial.println(" | Sound: " + String(soundDetected ? "DETECTED" : "NORMAL"));
 }
 

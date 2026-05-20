@@ -30,8 +30,18 @@ const AnomalyEventRouter = Router();
  *               event_type:
  *                 type: string
  *                 description: Type of anomaly event detected
- *                 enum: [plucking_plant, animal_strike, extended_touch, other]
- *                 example: plucking_plant
+ *                 enum:
+ *                   - touching_plant
+ *                   - touching_animal
+ *                   - plucking_plants
+ *                   - hitting_animal
+ *                   - extended_plant_touch
+ *                   - extended_animal_touch
+ *                   - forest_fire
+ *                   - flooding
+ *                   - loud_noise
+ *                   - trespassing
+ *                 example: plucking_plants
  *               metadata:
  *                 type: object
  *                 description: Optional metadata object
@@ -43,6 +53,10 @@ const AnomalyEventRouter = Router();
  *                 type: number
  *                 description: Longitude coordinate
  *                 example: 110.3592
+ *               location:
+ *                 type: string
+ *                 description: Human-readable location name or address
+ *                 example: Bako National Park, Sarawak
  *     responses:
  *       201:
  *         description: Anomaly event created successfully
@@ -63,6 +77,8 @@ const AnomalyEventRouter = Router();
  *                   type: number
  *                 longitude:
  *                   type: number
+ *                 location:
+ *                   type: string
  *                 created_at:
  *                   type: string
  *                   format: date-time
@@ -71,9 +87,11 @@ const AnomalyEventRouter = Router();
  *                   format: date-time
  */
 AnomalyEventRouter.post(
-  "/", auth,
+  "/",
+  auth,
   [
     body("user_id").isInt({ min: 1 }),
+
     body("event_type").isIn([
       "touching_plant",
       "touching_animal",
@@ -86,9 +104,14 @@ AnomalyEventRouter.post(
       "loud_noise",
       "trespassing",
     ]),
+
     body("metadata").optional(),
+
     body("latitude").optional().isFloat(),
+
     body("longitude").optional().isFloat(),
+
+    body("location").optional().isString(),
   ],
   validate,
   AnomalyEventController.createAnomalyEvent,
@@ -130,6 +153,27 @@ AnomalyEventRouter.post(
  *                   type: array
  *                   items:
  *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: integer
+ *                       user_id:
+ *                         type: integer
+ *                       event_type:
+ *                         type: string
+ *                       metadata:
+ *                         type: object
+ *                       latitude:
+ *                         type: number
+ *                       longitude:
+ *                         type: number
+ *                       location:
+ *                         type: string
+ *                       created_at:
+ *                         type: string
+ *                         format: date-time
+ *                       updated_at:
+ *                         type: string
+ *                         format: date-time
  *                 page:
  *                   type: integer
  *                 size:
@@ -175,8 +219,60 @@ AnomalyEventRouter.get(
   AnomalyEventController.getUserAnomalyStats,
 );
 
-AnomalyEventRouter.get("/map", AnomalyEventController.getAnomalyMapEvents);
+/**
+ * @swagger
+ * /api/anomaly-events/map:
+ *   get:
+ *     summary: Get anomaly map events
+ *     description: Retrieve anomaly events formatted for map visualization.
+ *     tags: [Anomaly Events]
+ *     responses:
+ *       200:
+ *         description: Map anomaly events retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: integer
+ *                   event_type:
+ *                     type: string
+ *                   latitude:
+ *                     type: number
+ *                   longitude:
+ *                     type: number
+ *                   location:
+ *                     type: string
+ *                   created_at:
+ *                     type: string
+ *                     format: date-time
+ */
+AnomalyEventRouter.get(
+  "/map",
+  AnomalyEventController.getAnomalyMapEvents,
+);
 
+/**
+ * @swagger
+ * /api/anomaly-events/{eventId}/resolve:
+ *   patch:
+ *     summary: Resolve an anomaly event
+ *     description: Mark an anomaly event as resolved.
+ *     tags: [Anomaly Events]
+ *     parameters:
+ *       - in: path
+ *         name: eventId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Event ID
+ *     responses:
+ *       200:
+ *         description: Anomaly event resolved successfully
+ */
 AnomalyEventRouter.patch(
   "/:eventId/resolve",
   auth,
@@ -185,6 +281,24 @@ AnomalyEventRouter.patch(
   AnomalyEventController.resolveAnomalyEvent,
 );
 
+/**
+ * @swagger
+ * /api/anomaly-events/{eventId}/resolve:
+ *   post:
+ *     summary: Resolve an anomaly event
+ *     description: Mark an anomaly event as resolved.
+ *     tags: [Anomaly Events]
+ *     parameters:
+ *       - in: path
+ *         name: eventId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Event ID
+ *     responses:
+ *       200:
+ *         description: Anomaly event resolved successfully
+ */
 AnomalyEventRouter.post(
   "/:eventId/resolve",
   auth,
@@ -250,7 +364,12 @@ AnomalyEventRouter.post(
  *                         type: number
  *                       longitude:
  *                         type: number
+ *                       location:
+ *                         type: string
  *                       created_at:
+ *                         type: string
+ *                         format: date-time
+ *                       updated_at:
  *                         type: string
  *                         format: date-time
  *                 page:
