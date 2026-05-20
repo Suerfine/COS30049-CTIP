@@ -151,7 +151,9 @@ const renderEvidenceValue = (value) => {
       <View style={styles.evidenceObjectList}>
         {entries.map(([key, nestedValue]) => (
           <View key={key} style={styles.evidenceObjectRow}>
-            <Text style={styles.evidenceObjectKey}>{formatStatusLabel(key)}</Text>
+            <Text style={styles.evidenceObjectKey}>
+              {formatStatusLabel(key)}
+            </Text>
             <Text style={styles.evidenceObjectValue}>
               {formatEvidenceValue(nestedValue)}
             </Text>
@@ -247,7 +249,8 @@ const PaginatedTableControls = ({
   return (
     <View style={[styles.paginationContainer, styles.row]}>
       <Text style={styles.pageInfo}>
-        {t("showing")} {firstItem} {t("to")} {lastItem} {t("of")} {totalElements} {itemLabel}
+        {t("showing")} {firstItem} {t("to")} {lastItem} {t("of")}{" "}
+        {totalElements} {itemLabel}
       </Text>
       <View style={styles.paginationControls}>
         <Pressable
@@ -380,10 +383,10 @@ const AnomalyDetection = () => {
   const [filterVisible, setFilterVisible] = useState(false);
 
   const [tempAnomalyFilters, setTempAnomalyFilters] = useState({
-    status: 'all',
+    status: "all",
     eventType: [],
-    time: 'anytime',
-  })
+    time: "anytime",
+  });
 
   const {
     anomalies,
@@ -555,7 +558,12 @@ const AnomalyDetection = () => {
         ) : (
           <Circle size={18} color="gray" />
         )}
-        <Text style={[styles.filterItemText, selected && styles.filterItemTextActive]}>
+        <Text
+          style={[
+            styles.filterItemText,
+            selected && styles.filterItemTextActive,
+          ]}
+        >
           {label}
         </Text>
       </Pressable>
@@ -581,7 +589,9 @@ const AnomalyDetection = () => {
 
             <ScrollView showsVerticalScrollIndicator={false}>
               <View style={styles.filterSection}>
-                <Text style={styles.filterSectionTitle}>{t("status_label")}</Text>
+                <Text style={styles.filterSectionTitle}>
+                  {t("status_label")}
+                </Text>
 
                 {statusOptions.map((status) => (
                   <FilterItem
@@ -618,7 +628,10 @@ const AnomalyDetection = () => {
               </View>
 
               <View style={styles.filterSection}>
-                <Text style={styles.filterSectionTitle}> {t("detected_within")}</Text>
+                <Text style={styles.filterSectionTitle}>
+                  {" "}
+                  {t("detected_within")}
+                </Text>
 
                 {timeOptions.map((time) => (
                   <FilterItem
@@ -763,9 +776,13 @@ const AnomalyDetection = () => {
   const renderSensorLogsHeader = () => (
     <View style={[styles.tableHeader, styles.row]}>
       <Text style={[styles.headerCell, styles.logIdCell]}>{t("id")}</Text>
-      <Text style={[styles.headerCell, styles.logStatusCell]}>{t("status_label")}</Text>
+      <Text style={[styles.headerCell, styles.logStatusCell]}>
+        {t("status_label")}
+      </Text>
       <Text style={[styles.headerCell, styles.logDataCell]}>{t("data")}</Text>
-      <Text style={[styles.headerCell, styles.logDateCell]}>{t("created_at")}</Text>
+      <Text style={[styles.headerCell, styles.logDateCell]}>
+        {t("created_at")}
+      </Text>
     </View>
   );
 
@@ -794,9 +811,7 @@ const AnomalyDetection = () => {
         <Text style={styles.headerText}>{t("event_type")}</Text>
       </View>
 
-      <Text style={[styles.headerText, { flex: 3 }]}>
-        {t("coordinates")}
-      </Text>
+      <Text style={[styles.headerText, { flex: 3 }]}>{t("coordinates")}</Text>
 
       <Pressable
         onPress={() => requestSort("created_at")}
@@ -816,10 +831,6 @@ const AnomalyDetection = () => {
 
       <Text style={[styles.headerText, { flex: 2, textAlign: "center" }]}>
         {t("status_label")}
-      </Text>
-
-      <Text style={[styles.headerText, { flex: 2, textAlign: "center" }]}>
-        {t("action")}
       </Text>
     </View>
   );
@@ -882,34 +893,6 @@ const AnomalyDetection = () => {
           </View>
         )}
       </View>
-
-      <View style={[{ flex: 2 }, styles.centeredCell]}>
-        {!item.is_resolved && (
-          <Pressable
-            onPress={async (e) => {
-              e.stopPropagation?.();
-              setResolvingId(item.id);
-              try {
-                await resolveAnomaly(item.id);
-              } finally {
-                setResolvingId(null);
-              }
-            }}
-            disabled={resolvingId === item.id}
-            style={({ hovered }) => [
-              styles.resolveBtn,
-              hovered && styles.resolveBtnHover,
-              resolvingId === item.id && styles.resolveBtnDisabled,
-            ]}
-          >
-            {resolvingId === item.id ? (
-              <ActivityIndicator size="small" color="white" />
-            ) : (
-              <Text style={styles.resolveBtnText}>{t("resolve")}</Text>
-            )}
-          </Pressable>
-        )}
-      </View>
     </Pressable>
   );
 
@@ -945,7 +928,9 @@ const AnomalyDetection = () => {
           />
         ) : (
           <View style={styles.emptyEvidence}>
-            <Text style={styles.emptyEvidenceText}>No anomaly photo available</Text>
+            <Text style={styles.emptyEvidenceText}>
+              No anomaly photo available
+            </Text>
           </View>
         )}
       </View>
@@ -976,8 +961,8 @@ const AnomalyDetection = () => {
                   {getEventTypeLabel(selectedAnomaly.event_type, t)}
                 </Text>
                 <Text style={styles.detailSubtitle}>
-                  {isIotAnomaly(selectedAnomaly) ? "IoT anomaly" : "AI anomaly"} ·{" "}
-                  {formatDate(selectedAnomaly.created_at)}
+                  {isIotAnomaly(selectedAnomaly) ? "IoT anomaly" : "AI anomaly"}{" "}
+                  · {formatDate(selectedAnomaly.created_at)}
                 </Text>
               </View>
               <Pressable onPress={() => setSelectedAnomaly(null)}>
@@ -1029,12 +1014,16 @@ const AnomalyDetection = () => {
                         style={styles.detailMap}
                         src={`https://www.openstreetmap.org/export/embed.html?bbox=${(
                           selectedAnomaly.longitude - 0.01
-                        ).toFixed(4)},${(selectedAnomaly.latitude - 0.01).toFixed(4)},${(
+                        ).toFixed(
+                          4,
+                        )},${(selectedAnomaly.latitude - 0.01).toFixed(4)},${(
                           selectedAnomaly.longitude + 0.01
-                        ).toFixed(4)},${(selectedAnomaly.latitude + 0.01).toFixed(
-                          4
+                        ).toFixed(4)},${(
+                          selectedAnomaly.latitude + 0.01
+                        ).toFixed(
+                          4,
                         )}&layer=mapnik&marker=${selectedAnomaly.latitude.toFixed(
-                          4
+                          4,
                         )},${selectedAnomaly.longitude.toFixed(4)}`}
                         frameBorder="0"
                         marginHeight="0"
@@ -1047,29 +1036,36 @@ const AnomalyDetection = () => {
               </View>
 
               {!selectedAnomaly.is_resolved && (
-                <Pressable
-                  onPress={async () => {
-                    setResolvingId(selectedAnomaly.id);
-                    try {
-                      await resolveAnomaly(selectedAnomaly.id);
-                      setSelectedAnomaly(null);
-                    } finally {
-                      setResolvingId(null);
-                    }
-                  }}
-                  disabled={resolvingId === selectedAnomaly.id}
-                  style={[
-                    styles.resolveDetailBtn,
-                    resolvingId === selectedAnomaly.id &&
-                      styles.resolveBtnDisabled,
-                  ]}
-                >
-                  {resolvingId === selectedAnomaly.id ? (
-                    <ActivityIndicator size="small" color="white" />
-                  ) : (
-                    <Text style={styles.resolveBtnText}>{t("resolved")}</Text>
+                <View style={[{ flex: 2 }, styles.resolveBtnContainer]}>
+                  {!selectedAnomaly.is_resolved && (
+                    <Pressable
+                      onPress={async (e) => {
+                        e.stopPropagation?.();
+                        setResolvingId(selectedAnomaly.id);
+                        try {
+                          await resolveAnomaly(selectedAnomaly.id);
+                        } finally {
+                          setResolvingId(null);
+                        }
+                      }}
+                      disabled={resolvingId === selectedAnomaly.id}
+                      style={({ hovered }) => [
+                        styles.resolveBtn,
+                        hovered && styles.resolveBtnHover,
+                        resolvingId === selectedAnomaly.id &&
+                          styles.resolveBtnDisabled,
+                      ]}
+                    >
+                      {resolvingId === selectedAnomaly.id ? (
+                        <ActivityIndicator size="small" color="white" />
+                      ) : (
+                        <Text style={styles.resolveBtnText}>
+                          {t("resolve")}
+                        </Text>
+                      )}
+                    </Pressable>
                   )}
-                </Pressable>
+                </View>
               )}
             </ScrollView>
           </View>
@@ -1132,7 +1128,7 @@ const AnomalyDetection = () => {
   const displayAnomalies = hasActiveAnomalyFilter
     ? filteredAnomalies.slice(
         (currentPage - 1) * anomalyPageSize,
-        currentPage * anomalyPageSize
+        currentPage * anomalyPageSize,
       )
     : anomalies;
 
@@ -1192,14 +1188,16 @@ const AnomalyDetection = () => {
                 ListEmptyComponent={
                   <View style={styles.emptyContainer}>
                     <AlertTriangle size={48} color="#d1d5db" />
-                    <Text style={styles.emptyText}>{t("no_anomalies_detected")}</Text>
+                    <Text style={styles.emptyText}>
+                      {t("no_anomalies_detected")}
+                    </Text>
                   </View>
                 }
               />
             </View>
           </ScrollView>
         </View>
-        
+
         {displayTotalPages > 1 && (
           <PaginatedTableControls
             page={currentPage}
@@ -1262,7 +1260,9 @@ const AnomalyDetection = () => {
                 ListEmptyComponent={
                   <View style={styles.emptyContainer}>
                     <AlertTriangle size={48} color="#d1d5db" />
-                    <Text style={styles.emptyText}>{t("no_sensors_found")}</Text>
+                    <Text style={styles.emptyText}>
+                      {t("no_sensors_found")}
+                    </Text>
                   </View>
                 }
               />
@@ -1371,12 +1371,10 @@ const AnomalyDetection = () => {
       style={styles.pageScroll}
       contentContainerStyle={styles.container}
     >
-        <View>
-          <Text style={styles.title}>{t('anomaly_detection')}</Text>
-          <Text style={styles.subtitle}>
-            {t("sensor_inventory_tracking")}
-          </Text>
-        </View>
+      <View>
+        <Text style={styles.title}>{t("anomaly_detection")}</Text>
+        <Text style={styles.subtitle}>{t("sensor_inventory_tracking")}</Text>
+      </View>
 
       <View style={[styles.tabStrip, isCompact && styles.tabStripCompact]}>
         {renderTabButton(
@@ -1432,13 +1430,13 @@ const styles = StyleSheet.create({
   pageScroll: {
     flex: 1,
     backgroundColor: "#f8faf7",
-    minHeight: '100vh',
+    minHeight: "100vh",
   },
   container: {
     paddingVertical: 24,
     paddingHorizontal: 28,
     gap: 16,
-    minHeight: '100vh',
+    minHeight: "100vh",
   },
   headerRow: {
     justifyContent: "space-between",
@@ -1558,7 +1556,7 @@ const styles = StyleSheet.create({
   tableRow: {
     paddingVertical: 5,
     borderBottomWidth: 1,
-    borderBottomColor:  "#8f8f8f84",
+    borderBottomColor: "#8f8f8f84",
     alignItems: "center",
   },
   cellText: {
@@ -1572,11 +1570,14 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 8,
   },
+  resolveBtnContainer: {
+    alignSelf: "flex-start",
+  },
   centeredText: {
     textAlign: "center",
   },
   centeredCell: {
-    alignItems: "center",
+    alignSelf: "center",
     justifyContent: "center",
   },
   mutedText: {
@@ -1667,7 +1668,6 @@ const styles = StyleSheet.create({
   },
   statusBadge: {
     flexDirection: "row",
-    alignItems: "center",
     gap: 6,
     paddingHorizontal: 10,
     paddingVertical: 5,
@@ -1686,9 +1686,10 @@ const styles = StyleSheet.create({
   resolvedBadge: {
     flexDirection: "row",
     alignItems: "center",
+    alignSelf: "center",
     gap: 4,
     paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingVertical: 4,
     backgroundColor: "#f0fdf4",
     borderRadius: 12,
     borderWidth: 1,
@@ -1702,8 +1703,9 @@ const styles = StyleSheet.create({
   unresolvedBadge: {
     flexDirection: "row",
     alignItems: "center",
+    alignSelf: "center",
     gap: 4,
-    paddingHorizontal: 8,
+    paddingHorizontal: 14,
     paddingVertical: 3,
     backgroundColor: "#fef2f2",
     borderRadius: 12,
@@ -1716,8 +1718,8 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   resolveBtn: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingHorizontal: 15,
+    paddingVertical: 10,
     backgroundColor: "#0a6340",
     borderRadius: 6,
     minWidth: 64,
@@ -1843,6 +1845,7 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
     zIndex: 9999,
     elevation: 9999,
+    cursor: "default",
   },
   modalContent: {
     backgroundColor: "white",
