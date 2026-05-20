@@ -27,6 +27,7 @@ function toSensorResponse(sensor: Sensor): SensorResponse {
     type: sensor.type,
     longitude: sensor.longitude,
     latitude: sensor.latitude,
+    location: (sensor as any).location,
     current_status: sensor.current_status,
     data: {},
     created_at: sensor.created_at,
@@ -40,11 +41,12 @@ export const createSensor = async (
   next: NextFunction,
 ) => {
   try {
-    const { name, type, longitude, latitude } = req.body;
+    const { name, type, longitude, latitude, location } = req.body;
 
     await Sensor.create({
       name,
       type,
+      location: location || null,
       longitude,
       latitude,
       current_status: SensorStatus.DEACTIVATED,
@@ -150,6 +152,9 @@ export const upsertSensor = async (
     }
     if (typeof req.body.type === "string" && req.body.type.trim() !== "") {
       updates.type = req.body.type;
+    }
+    if (typeof req.body.location === "string") {
+      (updates as any).location = req.body.location.trim() === "" ? null : req.body.location;
     }
     if (typeof req.body.longitude === "number") {
       updates.longitude = req.body.longitude;

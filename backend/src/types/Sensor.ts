@@ -4,6 +4,7 @@ export interface SensorResponse {
   type: string;
   longitude: number;
   latitude: number;
+  location: string | null;
   current_status: string;
   data: Record<string, unknown>;
   created_at: Date;
@@ -15,6 +16,7 @@ export interface CreateSensorRequest {
   type: string;
   longitude: number;
   latitude: number;
+  location?: string;
 }
 
 export interface UpdateSensorRequest {
@@ -22,6 +24,7 @@ export interface UpdateSensorRequest {
   type?: string;
   longitude?: number;
   latitude?: number;
+  location?: string;
 }
 
 export interface SensorStatusUpdateRequest {

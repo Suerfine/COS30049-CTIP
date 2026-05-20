@@ -1651,7 +1651,6 @@ const styles = StyleSheet.create({
   },
   logStatusCell: {
     width: 170,
-    justifyContent: "center",
   },
   logDataCell: {
     flex: 1.8,
