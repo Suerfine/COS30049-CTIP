@@ -440,7 +440,7 @@ const EnrollmentManagement = () => {
         >
           {isHovered && Platform.OS === 'web' && (
             <View style={[styles.rowTooltip, { left: mousePos.x + 15, top: mousePos.y - 35 }]}>
-              <Text style={styles.tooltipText}>Click to view enrollment profile</Text>
+              <Text style={styles.tooltipText}>{t('click_view_enrollment')}</Text>
             </View>
           )}
           <View style={[{ flex: 3 }, styles.userInfo, styles.row]}>
@@ -502,7 +502,7 @@ const EnrollmentManagement = () => {
         >
           {isHovered && Platform.OS === 'web' && (
             <View style={[styles.rowTooltip, { left: mousePos.x + 15, top: mousePos.y - 35 }]}>
-              <Text style={styles.tooltipText}>Click to audit learning progress</Text>
+              <Text style={styles.tooltipText}>{t("click_audit_learning_progress")}</Text>
             </View>
           )}
           <View style={[{ flex: 3 }, styles.userInfo, styles.row]}>
@@ -646,7 +646,7 @@ const renderPaymentItem = ({ item }) => {
         >
           {isHovered && Platform.OS === 'web' && (
             <View style={[styles.rowTooltip, { left: mousePos.x + 15, top: mousePos.y - 35 }]}>
-              <Text style={styles.tooltipText}>Click to review bank receipt</Text>
+              <Text style={styles.tooltipText}>{t("click_review_bank_receipt")}</Text>
             </View>
           )}
           <View style={[{ flex: 4 }, styles.userInfo, styles.row]}>

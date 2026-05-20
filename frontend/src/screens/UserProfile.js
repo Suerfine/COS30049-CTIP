@@ -308,7 +308,7 @@ const UserProfile = ({ navigation }) => {
                   setErrors((prev) => ({ ...prev, personal_email: null }));
                 }}
                 editable={isEditing}
-                placeholder="address@gmail.com"
+                placeholder="johndoe@example.com"
                 placeholderTextColor="grey"
                 keyboardType="email-address"
                 autoCapitalize="none"
@@ -328,7 +328,7 @@ const UserProfile = ({ navigation }) => {
                   setErrors((prev) => ({ ...prev, tel: null }));
                 }}
                 editable={isEditing}
-                placeholder="0123456789"
+                placeholder="012-3456789"
                 placeholderTextColor="grey"
                 keyboardType="phone-pad"
               />
