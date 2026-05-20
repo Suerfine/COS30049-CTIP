@@ -28,6 +28,29 @@ import {
 } from "react-native";
 import { useTranslation } from "react-i18next";
 
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+} from "chart.js";
+
+import { Line } from "react-chartjs-2";
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend
+);
+
 import { useAnomalyDetection } from "../hooks/useAnomalyDetection";
 import { formatDate } from "../utils/formatDate";
 
@@ -372,24 +395,49 @@ const AnomalyDetection = () => {
 
   const [resolvingId, setResolvingId] = useState(null);
   const [selectedAnomaly, setSelectedAnomaly] = useState(null);
-  const [showSensorLogsModal, setShowSensorLogsModal] = useState(false);
-  const [selectedSensorForLogs, setSelectedSensorForLogs] = useState(null);
+  const [selectedSensor, setSelectedSensor] = useState(null);
 
   useEffect(() => {
-    if (
-      !showSensorLogsModal ||
-      !selectedSensorForLogs?.id
-    ) {
+    if (!selectedSensor?.id) {
       return;
     }
 
     loadSensorLogs(
-      selectedSensorForLogs.id,
+      selectedSensor.id,
       sensorLogsPage
     );
+  }, [selectedSensor?.id, sensorLogsPage]);
+
+  useEffect(() => {
+    let interval;
+
+    if (activeTab === TABS.ANOMALIES) {
+      interval = setInterval(() => {
+        refresh();
+      }, 1000);
+    }
+
+    if (activeTab === TABS.SENSORS) {
+      interval = setInterval(async () => {
+        await refreshSensors();
+
+        if (selectedSensor?.id) {
+          await loadSensorLogs(
+            selectedSensor.id,
+            sensorLogsPage
+          );
+        }
+      }, 5000);
+    }
+
+    return () => {
+      if (interval) {
+        clearInterval(interval);
+      }
+    };
   }, [
-    showSensorLogsModal,
-    selectedSensorForLogs,
+    activeTab,
+    selectedSensor?.id,
     sensorLogsPage,
   ]);
 
@@ -405,16 +453,44 @@ const AnomalyDetection = () => {
     }
   };
 
-  const openSensorLogsModal = (sensor) => {
-    setSelectedSensorForLogs(sensor);
+  const handleSelectSensor = (sensor) => {
+    setSelectedSensor(sensor);
     setSensorLogsPage(1);
-    setShowSensorLogsModal(true);
   };
 
-  const closeSensorLogsModal = () => {
-    setShowSensorLogsModal(false);
-    setSelectedSensorForLogs(null);
-    setSensorLogsPage(1);
+  const sortedSensorLogs = selectedSensor
+  ? [...sensorLogsState.data].reverse()
+  : [];
+
+  const sensorChartData = {
+    labels: selectedSensor
+      ? sortedSensorLogs.map((log) =>
+          new Date(log.created_at).toLocaleTimeString()
+        )
+      : [],
+
+    datasets: [
+      {
+        label: t("sensor_readings"),
+        data: selectedSensor
+          ? sortedSensorLogs.map((log) => {
+              if (typeof log.data === "number") return log.data;
+
+              if (typeof log.data === "object" && log.data !== null) {
+                return Number(Object.values(log.data)[0]) || 0;
+              }
+
+              return Number(log.data) || 0;
+            })
+          : [],
+
+        borderColor: "#0a6340",
+        backgroundColor: "rgba(10, 99, 64, 0.15)",
+        borderWidth: 2,
+        tension: 0.3,
+        fill: true,
+      },
+    ],
   };
 
   const AnomalyFilterSidebar = () => {
@@ -605,12 +681,17 @@ const AnomalyDetection = () => {
 
   const renderSensorItem = ({ item }) => (
     <Pressable
-      onPress={() => openSensorLogsModal(item)}
+      onPress={() => handleSelectSensor(item)}
       style={({ hovered }) => [
         styles.row,
         styles.tableRow,
         styles.sensorRowPressable,
+
         hovered && styles.sensorRowHover,
+
+        selectedSensor?.id === item.id && {
+          backgroundColor: "#eefbf3",
+        },
       ]}
     >
       <Text style={[styles.cellText, styles.sensorIdCell]}>{item.id}</Text>
@@ -1147,173 +1228,92 @@ const AnomalyDetection = () => {
           itemLabel={t("sensors")}
           onPageChange={setSensorsPage}
         />
-      </>
-    );
-  };
 
-  const renderSensorLogsModal = () => {
-    if (!showSensorLogsModal || !selectedSensorForLogs) {
-      return null;
-    }
+        <View style={styles.sensorDashboard}>
+          <View style={styles.sensorDashboardHeader}>
+            <Text style={styles.sensorDashboardTitle}>
+              {selectedSensor ? selectedSensor.name : t("sensor_overview")}
+            </Text>
 
-    return (
-      <Modal
-        visible={showSensorLogsModal}
-        transparent
-        animationType="fade"
-        onRequestClose={closeSensorLogsModal}
-      >
-        <Pressable style={styles.modalOverlay} onPress={closeSensorLogsModal}>
-          <View
-            style={styles.sensorLogsModalContent}
-            onStartShouldSetResponder={() => true}
-          >
-            <View style={styles.sensorLogsModalHeader}>
-              <Text style={styles.sensorLogsModalTitle}>
-                {t("sensor_logs")} -{" "}
-                {selectedSensorForLogs.name ||
-                  `Sensor #${selectedSensorForLogs.id}`}
-              </Text>
-              <Pressable onPress={closeSensorLogsModal}>
-                <Text style={styles.mapCloseBtn}>x</Text>
-              </Pressable>
-            </View>
-
-            {sensorLogsLoading ? (
-              <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#0a6340" />
-                <Text style={styles.loadingText}>{t("loading_sensor_logs")}</Text>
-              </View>
-            ) : sensorLogsError ? (
-              <View style={styles.errorContainer}>
-                <AlertTriangle size={48} color="#dc2626" />
-                <Text style={styles.errorText}>{t("failed_load_sensor_logs")}</Text>
-                <Text style={styles.errorDetail}>{sensorLogsError}</Text>
-                <Pressable
-                  onPress={() =>
-                    loadSensorLogs(selectedSensorForLogs.id, sensorLogsPage)
-                  }
-                  style={({ hovered }) => [
-                    styles.retryBtn,
-                    hovered && styles.retryBtnHover,
-                  ]}
-                >
-                  <Text style={styles.retryBtnText}>{t("try_again")}</Text>
-                </Pressable>
-              </View>
+            {selectedSensor ? (
+              <StatusBadge value={selectedSensor.current_status} />
             ) : (
-              <>
-                <View style={styles.tableContainer}>
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator
-                    contentContainerStyle={styles.tableScrollContent}
-                  >
-                    <View style={[styles.tableInner, styles.logTableInner]}>
-                      <FlatList
-                        style={styles.table}
-                        scrollEnabled={false}
-                        data={sensorLogsState.data}
-                        ListHeaderComponent={renderSensorLogsHeader}
-                        renderItem={renderSensorLogItem}
-                        keyExtractor={(item) => item.id.toString()}
-                        ListEmptyComponent={
-                          <View style={styles.emptyContainer}>
-                            <AlertTriangle size={48} color="#d1d5db" />
-                            <Text style={styles.emptyText}>
-                              No sensor logs found
-                            </Text>
-                          </View>
-                        }
-                      />
-                    </View>
-                  </ScrollView>
-                </View>
-                <PaginatedTableControls
-                  page={sensorLogsPage}
-                  totalPages={sensorLogsState.totalPages}
-                  totalElements={sensorLogsState.totalElements}
-                  size={sensorLogsState.size}
-                  itemLabel={t("sensor_logs")}
-                  onPageChange={setSensorLogsPage}
-                />
-              </>
+              <Text style={styles.mutedText}>{t("select_sensor_to_view_details")}</Text>
             )}
           </View>
-        </Pressable>
-      </Modal>
-    );
-  };
 
-  const renderMapModal = () => {
-    if (!selectedAnomaly?.latitude || !selectedAnomaly?.longitude) {
-      return null;
-    }
+          <View style={styles.sensorDashboardContent}>
+            <View style={styles.sensorMapCard}>
+              <Text style={styles.dashboardCardTitle}>{t("location")}</Text>
 
-    const mapUrl = `https://www.openstreetmap.org/export/embed.html?bbox=${(
-      selectedAnomaly.longitude - 0.01
-    ).toFixed(4)},${(selectedAnomaly.latitude - 0.01).toFixed(4)},${(
-      selectedAnomaly.longitude + 0.01
-    ).toFixed(4)},${(selectedAnomaly.latitude + 0.01).toFixed(
-      4,
-    )}&layer=mapnik&marker=${selectedAnomaly.latitude.toFixed(
-      4,
-    )},${selectedAnomaly.longitude.toFixed(4)}`;
-
-    return (
-      <Modal
-        visible={showMapModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowMapModal(false)}
-      >
-        <Pressable
-          style={styles.modalOverlay}
-          onPress={() => setShowMapModal(false)}
-        >
-          <View
-            style={styles.modalContent}
-            onStartShouldSetResponder={() => true}
-          >
-            <View
-              style={[
-                styles.mapContainer,
-                isCompact && { height: Math.min(height * 0.75, 520) },
-              ]}
-            >
-              <View style={styles.mapHeader}>
-                <Text style={styles.mapTitle}>
-                  {getEventTypeLabel(selectedAnomaly.event_type, t)}
-                </Text>
-                <Pressable onPress={() => setShowMapModal(false)}>
-                  <Text style={styles.mapCloseBtn}>x</Text>
-                </Pressable>
-              </View>
               <iframe
-                title="anomaly-map"
-                style={styles.iframe}
-                src={mapUrl}
-                frameBorder="0"
-                marginHeight="0"
-                marginWidth="0"
-                scrolling="no"
+                title="sensor-map"
+                style={styles.sensorMap}
+                src={
+                  selectedSensor?.latitude && selectedSensor?.longitude
+                    ? `https://www.openstreetmap.org/export/embed.html?bbox=${(
+                        selectedSensor.longitude - 0.01
+                      ).toFixed(4)},${(selectedSensor.latitude - 0.01).toFixed(4)},${(
+                        selectedSensor.longitude + 0.01
+                      ).toFixed(4)},${(selectedSensor.latitude + 0.01).toFixed(
+                        4
+                      )}&layer=mapnik&marker=${selectedSensor.latitude.toFixed(
+                        4
+                      )},${selectedSensor.longitude.toFixed(4)}`
+                    : "https://www.openstreetmap.org/export/embed.html?bbox=110.25,1.45,110.45,1.65&layer=mapnik"
+                }
               />
-              <View style={styles.mapFooter}>
-                <View style={styles.coordinateInfo}>
-                  <MapPin size={16} color="#059669" />
-                  <Text style={styles.coordinateLabel}>
-                    {selectedAnomaly.latitude.toFixed(6)},{" "}
-                    {selectedAnomaly.longitude.toFixed(6)}
-                  </Text>
-                </View>
-                <Text style={styles.mapTimestamp}>
-                  {formatDate(selectedAnomaly.created_at)}
-                </Text>
+            </View>
+
+            <View style={styles.sensorChartCard}>
+              <Text style={styles.dashboardCardTitle}>{t("sensor_readings")}</Text>
+
+              <View style={styles.chartWrapper}>
+                <Line
+                  data={sensorChartData}
+                  options={{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                      legend: {
+                        display: !!selectedSensor,
+                        position: "top",
+                      },
+                    },
+                    scales: {
+                      y: {
+                        beginAtZero: true,
+                      },
+                    },
+                  }}
+                />
               </View>
             </View>
           </View>
-        </Pressable>
-      </Modal>
+
+          {selectedSensor && (
+            <View style={styles.sensorLogsSection}>
+              <FlatList
+                style={styles.table}
+                scrollEnabled={false}
+                data={sensorLogsState.data}
+                ListHeaderComponent={renderSensorLogsHeader}
+                renderItem={renderSensorLogItem}
+                keyExtractor={(item) => item.id.toString()}
+              />
+
+              <PaginatedTableControls
+                page={sensorLogsPage}
+                totalPages={sensorLogsState.totalPages}
+                totalElements={sensorLogsState.totalElements}
+                size={sensorLogsState.size}
+                itemLabel={t("sensor_logs")}
+                onPageChange={setSensorLogsPage}
+              />
+            </View>
+          )}
+        </View>
+      </>
     );
   };
 
@@ -1374,7 +1374,6 @@ const AnomalyDetection = () => {
       </View>
 
       {activeTab === TABS.ANOMALIES ? renderAnomalyDetailModal() : null}
-      {renderSensorLogsModal()}
       {activeTab === TABS.ANOMALIES && <AnomalyFilterSidebar />}
     </ScrollView>
   );
@@ -2141,6 +2140,64 @@ const styles = StyleSheet.create({
   filterBtnText: {
     color: "white",
     fontWeight: "600",
+  },
+  sensorDashboard: {
+    marginTop: 20,
+    gap: 16,
+  },
+
+  sensorDashboardHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+
+  sensorDashboardTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#102219",
+  },
+
+  sensorDashboardContent: {
+    flexDirection: "row",
+    gap: 16,
+  },
+
+  sensorMapCard: {
+    flex: 1,
+    backgroundColor: "white",
+    borderRadius: 12,
+    padding: 12,
+  },
+
+  sensorChartCard: {
+    flex: 1.4,
+    backgroundColor: "white",
+    borderRadius: 12,
+    padding: 12,
+  },
+
+  dashboardCardTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+    marginBottom: 12,
+  },
+
+  sensorMap: {
+    width: "100%",
+    height: 320,
+    border: "none",
+    borderRadius: 8,
+  },
+
+  sensorLogsSection: {
+    backgroundColor: "white",
+    borderRadius: 12,
+    overflow: "hidden",
+  },
+  chartWrapper: {
+    width: "100%",
+    height: 300,
   },
 });
 
