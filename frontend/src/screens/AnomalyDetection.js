@@ -1589,6 +1589,7 @@ const styles = StyleSheet.create({
   },
   sensorLocationCell: {
     flex: 2,
+  },
   sensorNameLocationCell: {
     flex: 1.5,
   },
