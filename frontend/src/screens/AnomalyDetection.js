@@ -191,20 +191,35 @@ const getStatusStyle = (status) => {
 
 const getEventTypeLabel = (type, t) => {
   switch (type) {
-    case "forest_fire":
-      return t("forest_fire");
+    case "touching_plant":
+      return "Touching Plant";
+
+    case "touching_animal":
+      return "Touching Animal";
 
     case "plucking_plants":
-      return t("plucking_plants");
+      return "Plucking Plants";
 
     case "hitting_animal":
-      return t("hitting_animal");
+      return "Hitting Animal";
 
     case "extended_plant_touch":
-      return t("extended_plant_touch");
+      return "Extended Plant Touch";
 
     case "extended_animal_touch":
-      return t("extended_animal_touch");
+      return "Extended Animal Touch";
+
+    case "forest_fire":
+      return "Forest Fire";
+
+    case "flooding":
+      return "Flooding";
+
+    case "loud_noise":
+      return "Loud Noise";
+
+    case "trespassing":
+      return "Trespassing";
 
     default:
       return type;
@@ -349,6 +364,15 @@ const formatCoordinates = (sensor) => {
   return `${Number(sensor.latitude).toFixed(4)}, ${Number(sensor.longitude).toFixed(4)}`;
 };
 
+const splitSensorNameLocation = (name = "") => {
+  const [sensorName, ...locationParts] = String(name).split(" - ");
+
+  return {
+    sensorName: sensorName || "-",
+    nameLocation: locationParts.join(" - ") || "-",
+  };
+};
+
 const AnomalyDetection = () => {
   const { t } = useTranslation();
   const { width, height } = useWindowDimensions();
@@ -417,7 +441,7 @@ const AnomalyDetection = () => {
     if (activeTab === TABS.ANOMALIES) {
       interval = setInterval(() => {
         refresh();
-      }, 1000);
+      }, 2000);
     }
 
     if (activeTab === TABS.SENSORS) {
@@ -500,11 +524,16 @@ const AnomalyDetection = () => {
     const statusOptions = ["all", "active", "resolved"];
 
     const eventTypeOptions = [
-      "forest_fire",
+      "touching_plant",
+      "touching_animal",
       "plucking_plants",
       "hitting_animal",
       "extended_plant_touch",
       "extended_animal_touch",
+      "forest_fire",
+      "flooding",
+      "loud_noise",
+      "trespassing",
     ];
 
     const timeOptions = ["anytime", "today", "3_days", "1_week"];
@@ -683,14 +712,12 @@ const AnomalyDetection = () => {
   const renderSensorHeader = () => (
     <View style={[styles.tableHeader, styles.row]}>
       <Text style={[styles.headerCell, styles.sensorIdCell]}>{t("id")}</Text>
-      <Text style={[styles.headerCell, styles.sensorNameCell]}>
-        {t("name")}
-      </Text>
-      <Text style={[styles.headerCell, styles.sensorTypeCell]}>
-        {t("type")}
-      </Text>
-      <Text style={[styles.headerCell, styles.sensorLocationCell]}>
+      <Text style={[styles.headerCell, styles.sensorNameCell]}>{t("name")}</Text>
+      <Text style={[styles.headerCell, styles.sensorNameLocationCell]}>
         {t("location")}
+      </Text>
+      <Text style={[styles.headerCell, styles.sensorCoordinateCell]}>
+        {t("coordinates")}
       </Text>
       <Text style={[styles.headerCell, styles.sensorStatusCell]}>
         {t("status_label")}
@@ -698,37 +725,53 @@ const AnomalyDetection = () => {
     </View>
   );
 
-  const renderSensorItem = ({ item }) => (
-    <Pressable
-      onPress={() => handleSelectSensor(item)}
-      style={({ hovered }) => [
-        styles.row,
-        styles.tableRow,
-        styles.sensorRowPressable,
+  const renderSensorItem = ({ item }) => {
+    const { sensorName, nameLocation } = splitSensorNameLocation(item.name);
 
-        hovered && styles.sensorRowHover,
+    return (
+      <Pressable
+        onPress={() => handleSelectSensor(item)}
+        style={({ hovered }) => [
+          styles.row,
+          styles.tableRow,
+          styles.sensorRowPressable,
+          hovered && styles.sensorRowHover,
+          selectedSensor?.id === item.id && {
+            backgroundColor: "#eefbf3",
+          },
+        ]}
+      >
+        {({ hovered }) => (
+          <>
+            <Text style={[styles.cellText, styles.sensorIdCell]}>{item.id}</Text>
 
-        selectedSensor?.id === item.id && {
-          backgroundColor: "#eefbf3",
-        },
-      ]}
-    >
-      <Text style={[styles.cellText, styles.sensorIdCell]}>{item.id}</Text>
-      <Text style={[styles.cellText, styles.sensorNameCell]}>
-        {item.name || "-"}
-      </Text>
-      <Text style={[styles.cellText, styles.sensorTypeCell]}>
-        {item.type || "-"}
-      </Text>
-      <View style={[styles.cellContent, styles.sensorLocationCell]}>
-        <MapPin size={14} color="#059669" />
-        <Text style={styles.coordinateText}>{formatCoordinates(item)}</Text>
-      </View>
-      <View style={[styles.cellContent, styles.sensorStatusCell]}>
-        <StatusBadge value={item.current_status} />
-      </View>
-    </Pressable>
-  );
+            <Text
+              style={[
+                styles.cellText,
+                styles.sensorNameCell,
+                hovered && styles.sensorNameHover,
+              ]}
+            >
+              {sensorName}
+            </Text>
+
+            <Text style={[styles.cellText, styles.sensorNameLocationCell]}>
+              {nameLocation}
+            </Text>
+
+            <View style={[styles.cellContent, styles.sensorCoordinateCell]}>
+              <MapPin size={14} color="#059669" />
+              <Text style={styles.coordinateText}>{formatCoordinates(item)}</Text>
+            </View>
+
+            <View style={[styles.cellContent, styles.sensorStatusCell]}>
+              <StatusBadge value={item.current_status} />
+            </View>
+          </>
+        )}
+      </Pressable>
+    );
+  };
 
   const renderSensorLogsHeader = () => (
     <View style={[styles.tableHeader, styles.row]}>
@@ -1337,7 +1380,7 @@ const AnomalyDetection = () => {
         {renderTabButton(
           TABS.ANOMALIES,
           t("anomalies"),
-          `${filteredAnomalies.length} ${t("total_anomalies")}`,
+          `${totalAnomalies} ${t("total_anomalies")}`,
         )}
         {renderTabButton(
           TABS.SENSORS,
@@ -1546,9 +1589,18 @@ const styles = StyleSheet.create({
   },
   sensorLocationCell: {
     flex: 2,
+  sensorNameLocationCell: {
+    flex: 1.5,
+  },
+  sensorCoordinateCell: {
+    flex: 1.4,
+  },
+  sensorNameHover: {
+    textDecorationLine: "underline",
   },
   sensorStatusCell: {
     flex:1,
+    width: 170,
   },
   sensorRowPressable: {
     cursor: "pointer",
@@ -1939,16 +1991,8 @@ const styles = StyleSheet.create({
     gap: 14,
     alignItems: "stretch",
   },
-
   detailMediaColumn: {
     flex: 1,
-  },
-
-  detailMap: {
-    width: "100%",
-    height: 320,
-    border: "none",
-    borderRadius: 8,
   },
   evidenceSection: {
     borderWidth: 1,
