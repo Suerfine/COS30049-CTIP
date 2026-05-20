@@ -82,7 +82,6 @@ export const buildCourse = (
   const expectedCompletionWeeks = faker.number.int({ min: 4, max: 16 });
   const hardLimitWeeks =
     expectedCompletionWeeks + faker.number.int({ min: 2, max: 12 });
-
   const defaultCourse: CourseFactoryAttributes = {
     title: buildUniqueCourseTitle(),
     description: description,
@@ -91,7 +90,16 @@ export const buildCourse = (
     badge_expire_in_months: faker.number.int({ min: 6, max: 36 }),
     cost: parseFloat(faker.commerce.price({ min: 50, max: 500 })),
     status: CourseStatus.RELEASED,
-    cover_img_path: "public/dev/course_cover_placeholder.jpg",
+    cover_img_path: (() => {
+      const banners = [
+        "course_banner_placeholder_1.png",
+        "course_banner_placeholder_2.png",
+        "course_banner_placeholder_3.png",
+        "course_banner_placeholder_4.png",
+        "course_banner_placeholder_5.png",
+      ];
+      return `public/dev/${faker.helpers.arrayElement(banners)}`;
+    })(),
     badge_img_path: "public/dev/course_badge_placeholder.png",
   };
 

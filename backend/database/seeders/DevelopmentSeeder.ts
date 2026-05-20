@@ -9,6 +9,8 @@ import Tag from "../../src/models/Tag";
 import CourseTag from "../../src/models/CourseTag";
 import Enrollment from "../../src/models/Enrollment";
 import Registration from "../../src/models/Registration";
+import Prerequisite from "../../src/models/Prerequisite";
+import PrerequisiteGroup from "../../src/models/PrerequisiteGroup";
 import Module from "../../src/models/Module";
 import Page from "../../src/models/Page";
 import Element from "../../src/models/Element";
@@ -162,6 +164,7 @@ export async function runSeeders(
   // Creating courses with modules, pages, and elements
   const tags: TagFactoryAttributes[] = buildTags(15);
   const createdTags = [] as Array<{ id: number }>;
+  const advancedCourseIds = new Set<number>();
 
   for (const tag of tags) {
     const createdTag = await Tag.create(tag);
@@ -179,7 +182,13 @@ export async function runSeeders(
       elementsVariance: 1,
     });
 
-    const isReleased = i < 4 ? true : faker.datatype.boolean();
+    const isAdvancedCourse = i >= Math.max(0, course_count - 3);
+    if (isAdvancedCourse) {
+      courseGraph.course.title = `Advanced ${courseGraph.course.title}`;
+    }
+
+    const isReleased =
+      isAdvancedCourse || i < 4 ? true : faker.datatype.boolean();
 
     const createdCourse = await Course.create({
       ...courseGraph.course,
@@ -224,6 +233,34 @@ export async function runSeeders(
           });
         }
       }
+    }
+  }
+
+  if (courses.length >= 4) {
+    const advancedCourses = courses.slice(-3);
+    const prerequisiteCourses = courses.slice(0, courses.length - 3);
+
+    advancedCourseIds.clear();
+    for (const course of advancedCourses) {
+      advancedCourseIds.add(course.id);
+    }
+
+    for (const [index, advancedCourse] of advancedCourses.entries()) {
+      const prerequisiteCourse =
+        prerequisiteCourses[index] ?? prerequisiteCourses[0];
+
+      if (!prerequisiteCourse) {
+        continue;
+      }
+
+      const prerequisiteGroup = await PrerequisiteGroup.create({
+        course_id: advancedCourse.id,
+      });
+
+      await Prerequisite.create({
+        course_id: prerequisiteCourse.id,
+        prerequisite_group_id: prerequisiteGroup.id,
+      });
     }
   }
 
@@ -272,6 +309,10 @@ export async function runSeeders(
       const releasedCourses: EnrollmentFactoryCourse[] = [];
 
       for (const courseInfo of courses) {
+        if (advancedCourseIds.has(courseInfo.id)) {
+          continue;
+        }
+
         const dbCourse = await Course.findByPk(courseInfo.id);
 
         if (dbCourse?.status === "released") {
