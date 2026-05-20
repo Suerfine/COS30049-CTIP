@@ -30,7 +30,7 @@ interface CreateAnomalyEventRequest {
 
 interface AnomalyEventResponse {
   id: number;
-  user_id: number;
+  user_id: number | null;
   event_type: string;
   metadata?: Record<string, any> | null;
   latitude?: number | null;
