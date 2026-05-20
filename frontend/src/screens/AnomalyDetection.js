@@ -1601,7 +1601,6 @@ const styles = StyleSheet.create({
   },
   sensorStatusCell: {
     flex:1,
-    width: 170,
   },
   sensorRowPressable: {
     cursor: "pointer",
