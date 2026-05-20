@@ -12,7 +12,7 @@ class AnomalyEvent extends Model<
   InferCreationAttributes<AnomalyEvent>
 > {
   declare id: CreationOptional<number>;
-  declare user_id: number;
+  declare user_id: CreationOptional<number | null>;
   declare event_type:
     | "touching_plant"
     | "touching_animal"
@@ -45,7 +45,7 @@ AnomalyEvent.init(
     },
     user_id: {
       type: DataTypes.INTEGER,
-      allowNull: false,
+      allowNull: true,
       references: {
         model: "users",
         key: "id",
