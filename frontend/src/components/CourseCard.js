@@ -35,6 +35,7 @@ const CourseCard = ({
   onDelete,
   onEnroll,
   previousEnrollments = [],
+  missingPrerequisites = [],
   onViewHistory,
   isPublished,
 }) => {
@@ -48,7 +49,35 @@ const CourseCard = ({
     ? coverImgUrl.replace(/\\/g, "/")
     : null;
 
+  const hasMissingPrereqs =
+    Array.isArray(missingPrerequisites) && missingPrerequisites.length > 0;
+
   const handleEnrollPress = () => {
+    if (hasMissingPrereqs) {
+      const courseNames = missingPrerequisites.map((c) =>
+        typeof c === "string" ? c : (c.name ?? c.title ?? String(c)),
+      );
+      const message = `${t(
+        "prereq.missing_intro",
+        "You must complete the following prerequisite courses before enrolling:",
+      )}\n\n${courseNames.map((n) => `• ${n}`).join("\n")}`;
+
+      if (
+        Platform.OS === "web" &&
+        typeof window !== "undefined" &&
+        window.alert
+      ) {
+        window.alert(
+          `${t("prereq.not_met", "Prerequisites not met")}\n\n${message}`,
+        );
+      } else {
+        Alert.alert(t("prereq.not_met", "Prerequisites not met"), message, [
+          { text: t("ok", "OK") },
+        ]);
+      }
+      return;
+    }
+
     onEnroll?.();
   };
 
@@ -87,10 +116,19 @@ const CourseCard = ({
         return (
           <View style={styles.historyActionContainer}>
             <Pressable
-              style={[styles.enrollBtn, { marginTop: 8 }]}
+              style={[
+                styles.enrollBtn,
+                !isEnrollable && styles.enrollBtnDisabled,
+                { marginTop: 8 },
+              ]}
               onPress={handleEnrollPress}
             >
-              <Text style={styles.enrollText}>
+              <Text
+                style={[
+                  styles.enrollText,
+                  !isEnrollable && styles.enrollTextDisabled,
+                ]}
+              >
                 {t("enroll_again", "Enroll Again")}
               </Text>
             </Pressable>
@@ -113,10 +151,19 @@ const CourseCard = ({
             </View>
             <View style={styles.historyActionContainer}>
               <Pressable
-                style={[styles.enrollBtn, { marginTop: 8 }]}
+                style={[
+                  styles.enrollBtn,
+                  !isEnrollable && styles.enrollBtnDisabled,
+                  { marginTop: 8 },
+                ]}
                 onPress={handleEnrollPress}
               >
-                <Text style={styles.enrollText}>
+                <Text
+                  style={[
+                    styles.enrollText,
+                    !isEnrollable && styles.enrollTextDisabled,
+                  ]}
+                >
                   {t("enroll_again", "Enroll Again")}
                 </Text>
               </Pressable>
@@ -133,8 +180,21 @@ const CourseCard = ({
       default:
         return (
           <View style={styles.historyActionContainer}>
-            <Pressable style={styles.enrollBtn} onPress={handleEnrollPress}>
-              <Text style={styles.enrollText}>{t("enroll", "Enroll")}</Text>
+            <Pressable
+              style={[
+                styles.enrollBtn,
+                !isEnrollable && styles.enrollBtnDisabled,
+              ]}
+              onPress={handleEnrollPress}
+            >
+              <Text
+                style={[
+                  styles.enrollText,
+                  !isEnrollable && styles.enrollTextDisabled,
+                ]}
+              >
+                {t("enroll", "Enroll")}
+              </Text>
             </Pressable>
             {/* Show history link even if they aren't currently enrolled but have past attempts */}
             {hasHistory && (
@@ -167,7 +227,7 @@ const CourseCard = ({
         {enrollmentStatus === EnrollmentStatus.COMPLETED && (
           <View style={styles.completedBadgeFloating}>
             <Award size={12} color="#fff" />
-            <Text style={styles.completedBadgeText}>{t('badge_received')}</Text>
+            <Text style={styles.completedBadgeText}>{t("badge_received")}</Text>
           </View>
         )}
       </View>
@@ -184,11 +244,15 @@ const CourseCard = ({
             </View>
             <View style={styles.courseDetails}>
               <Timer size={isWeb ? 20 : 15} />
-              <Text style={styles.DetailsText}>{duration} {t('weeks')}</Text>
+              <Text style={styles.DetailsText}>
+                {duration} {t("weeks")}
+              </Text>
             </View>
             <View style={styles.courseDetails}>
               <ClockAlert size={isWeb ? 20 : 15} />
-              <Text style={styles.DetailsText}>{t('valid_for')} {expiry} {t('weeks')}</Text>
+              <Text style={styles.DetailsText}>
+                {t("valid_for")} {expiry} {t("weeks")}
+              </Text>
             </View>
           </View>
 
@@ -219,7 +283,7 @@ const CourseCard = ({
         {isPublished && isAdmin && (
           <View style={styles.publishedBadge}>
             <CheckCircle2 size={12} color="#065f46" strokeWidth={3} />
-            <Text style={styles.publishedText}>{t('status.published')}</Text>
+            <Text style={styles.publishedText}>{t("status.published")}</Text>
           </View>
         )}
 
@@ -329,6 +393,14 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontWeight: "600",
   },
+  enrollBtnDisabled: {
+    backgroundColor: "#e5e7eb",
+    borderColor: "#d1d5db",
+    borderWidth: 1,
+  },
+  enrollTextDisabled: {
+    color: "#9ca3af",
+  },
   details: {
     padding: Platform.select({
       web: 20,
@@ -361,7 +433,7 @@ const styles = StyleSheet.create({
   },
   webWidgetContainer: {
     minHeight: 44,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   // status
   statusBadge: {
