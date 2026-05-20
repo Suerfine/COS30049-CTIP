@@ -1,5 +1,6 @@
 import request from "supertest";
 import app from "../../src/server";
+import { User } from "../../src/models";
 
 type LoginCredentials = {
   username: string;
@@ -7,10 +8,26 @@ type LoginCredentials = {
 };
 
 export async function login(credentials: LoginCredentials): Promise<string> {
+  let username = credentials.username;
+  const isSfcIdEmail = /^\d+@sfc\.gov\.my$/i.test(username);
+
+  if (!isSfcIdEmail) {
+    const user = await User.findOne({
+      where: { personal_email: username },
+    });
+
+    if (user) {
+      username = `${user.id}@sfc.gov.my`;
+    }
+  }
+
   const response = await request(app)
     .post("/api/token")
     .type("form")
-    .send(credentials);
+    .send({
+      ...credentials,
+      username,
+    });
 
   if (response.status !== 200) {
     throw new Error(

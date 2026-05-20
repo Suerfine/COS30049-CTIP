@@ -18,6 +18,9 @@ process.env.DB_DIALECT = "sqlite";
 process.env.DB_STORAGE = testStoragePath;
 process.env.JWT_SECRET = process.env.JWT_SECRET ?? "test-jwt-secret";
 process.env.SHOULD_INSTRUMENT_ROUTES = "false";
+process.env.HTTPS_ENABLED = "false";
+process.env.FORCE_HTTPS_REDIRECT = "false";
+process.env.ENABLE_MQTT = "false";
 
 fileStoragePath = path.resolve(process.cwd(), "storage", "test");
 fs.rmSync(fileStoragePath, { recursive: true, force: true });

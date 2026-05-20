@@ -13,7 +13,7 @@ import {
   MapPin,
   X,
 } from "lucide-react-native";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -439,14 +439,29 @@ const AnomalyDetection = () => {
   }, [selectedSensor?.id, sensorLogsPage]);
 
   useEffect(() => {
+    if (!selectedSensor?.id) return;
+
+    const latestSelectedSensor = sensorState.data.find(
+      (sensor) => Number(sensor.id) === Number(selectedSensor.id),
+    );
+
+    if (latestSelectedSensor) {
+      setSelectedSensor((previous) => ({
+        ...previous,
+        ...latestSelectedSensor,
+      }));
+    }
+  }, [sensorState.data, selectedSensor?.id]);
+
+  useEffect(() => {
     if (activeTab !== TABS.SENSORS) return;
 
     let isMounted = true;
     
     const fetchInitialData = async () => {
-      await refreshSensors();
+      await refreshSensors({ silent: true });
       if (selectedSensor?.id && isMounted) {
-        await loadSensorLogs(selectedSensor.id, sensorLogsPage);
+        await loadSensorLogs(selectedSensor.id, sensorLogsPage, { silent: true });
       }
     };
 
@@ -455,9 +470,9 @@ const AnomalyDetection = () => {
     const interval = setInterval(async () => {
       if (!isMounted) return;
       
-      await refreshSensors();
+      await refreshSensors({ silent: true });
       if (selectedSensor?.id) {
-        await loadSensorLogs(selectedSensor.id, sensorLogsPage);
+        await loadSensorLogs(selectedSensor.id, sensorLogsPage, { silent: true });
       }
     }, 5000);
 
@@ -466,6 +481,16 @@ const AnomalyDetection = () => {
       clearInterval(interval);
     };
   }, [activeTab, selectedSensor?.id, sensorLogsPage]);
+
+  useEffect(() => {
+    if (activeTab !== TABS.ANOMALIES) return;
+
+    const interval = setInterval(() => {
+      refresh({ silent: true });
+    }, 7000);
+
+    return () => clearInterval(interval);
+  }, [activeTab, refresh]);
 
   const refreshActiveTab = () => {
     if (activeTab === TABS.ANOMALIES) {
@@ -484,11 +509,12 @@ const AnomalyDetection = () => {
     setSensorLogsPage(1);
   };
 
-  const sortedSensorLogs = selectedSensor
-  ? [...sensorLogsState.data].reverse()
-  : [];
+  const sortedSensorLogs = useMemo(
+    () => selectedSensor ? [...sensorLogsState.data].reverse() : [],
+    [selectedSensor, sensorLogsState.data],
+  );
 
-  const sensorChartData = {
+  const sensorChartData = useMemo(() => ({
     labels: selectedSensor
       ? sortedSensorLogs.map((log) =>
           new Date(log.created_at).toLocaleTimeString()
@@ -517,7 +543,24 @@ const AnomalyDetection = () => {
         fill: true,
       },
     ],
-  };
+  }), [selectedSensor, sortedSensorLogs, t]);
+
+  const sensorChartOptions = useMemo(() => ({
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: false,
+    plugins: {
+      legend: {
+        display: !!selectedSensor,
+        position: "top",
+      },
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+      },
+    },
+  }), [selectedSensor]);
 
   const AnomalyFilterSidebar = () => {
     const statusOptions = ["all", "active", "resolved"];
@@ -1327,24 +1370,7 @@ const AnomalyDetection = () => {
                 <Text style={styles.dashboardCardTitle}>{t("sensor_readings")}</Text>
 
                 <View style={styles.chartWrapper}>
-                  <Line
-                    data={sensorChartData}
-                    options={{
-                      responsive: true,
-                      maintainAspectRatio: false,
-                      plugins: {
-                        legend: {
-                          display: !!selectedSensor,
-                          position: "top",
-                        },
-                      },
-                      scales: {
-                        y: {
-                          beginAtZero: true,
-                        },
-                      },
-                    }}
-                  />
+                  <Line data={sensorChartData} options={sensorChartOptions} />
                 </View>
               </View>
             </View>
