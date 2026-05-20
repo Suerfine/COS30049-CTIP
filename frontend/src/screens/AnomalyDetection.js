@@ -1499,10 +1499,8 @@ const styles = StyleSheet.create({
   },
   headerCell: {
     color: "white",
-    fontWeight: "500",
-    fontSize: 13,
-    paddingHorizontal: 10,
     alignSelf: "center",
+    fontWeight: "500",
   },
   headerPressableCell: {
     flexDirection: "row",
@@ -1517,15 +1515,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   cellText: {
-    fontSize: 13,
     color: "#1f2933",
     paddingHorizontal: 10,
   },
   cellContent: {
-    paddingHorizontal: 10,
-    alignItems: "center",
     flexDirection: "row",
-    gap: 8,
   },
   resolveBtnContainer: {
     alignSelf: "flex-start",
@@ -1545,17 +1539,16 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   sensorNameCell: {
-    flex: 1.5,
+    flex: 2,
   },
   sensorTypeCell: {
-    flex: 1.2,
+    flex: 2,
   },
   sensorLocationCell: {
-    flex: 1.4,
+    flex: 2,
   },
   sensorStatusCell: {
-    width: 170,
-    justifyContent: "center",
+    flex:1,
   },
   sensorRowPressable: {
     cursor: "pointer",
@@ -1616,13 +1609,15 @@ const styles = StyleSheet.create({
     borderColor: "#bbf7d0",
   },
   coordinateText: {
-    fontSize: 12,
     color: "#059669",
     fontWeight: "500",
     fontFamily: "monospace",
   },
   statusBadge: {
     flexDirection: "row",
+    alignSelf: "flex-start",
+    alignItems: "center",
+
     gap: 6,
     paddingHorizontal: 10,
     paddingVertical: 5,
