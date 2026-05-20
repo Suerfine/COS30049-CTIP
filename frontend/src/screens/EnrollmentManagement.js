@@ -27,7 +27,7 @@ import {
   ChevronsRight,
   CheckCircle2,
   X,
-  Filter,
+  SlidersHorizontal
 } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
 
@@ -884,7 +884,7 @@ const renderPaymentItem = ({ item }) => {
                 onPress={() => setFilterVisible(true)}
                 style={() => [styles.iconBtn]}
               >
-                <Filter size={20} color={filterVisible ? "#0a6340" : "#666"} />
+                <SlidersHorizontal size={20} color={filterVisible ? "#0a6340" : "#666"} />
               </Pressable>
             )}
           </View>

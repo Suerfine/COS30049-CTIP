@@ -236,20 +236,20 @@ const styles = StyleSheet.create({
         backgroundColor: '#e8efe7',
     },
     scrollView: {
-        height:'100vh'
+        height:'100vh',
     },
     scrollContent: {
         justifyContent: 'center',
         height:'100vh',
     },
     shell: {
-        width: '100%',
         maxWidth: 1000,
         alignSelf: 'center',
         borderRadius: 20,
         backgroundColor: '#ffffff',
         borderWidth: 1,
         borderColor: '#d8e2d6',
+        marginTop:100,
     },
     shellDesktop: {
         flexDirection: 'row',
