@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "start": "concurrently -n expo,proxy \"expo start\" \"npm run https-proxy\"",
+    "start": "concurrently -n expo,proxy \"expo start --web --host lan\" \"npm run https-proxy\"",
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
@@ -25,6 +25,7 @@
     "expo-image-picker": "~55.0.20",
     "expo-linear-gradient": "~55.0.13",
     "expo-linking": "^55.0.15",
+    "expo-location": "~55.1.10",
     "expo-status-bar": "~55.0.6",
     "i18next": "^26.0.8",
     "i18next-browser-languagedetector": "^8.2.1",

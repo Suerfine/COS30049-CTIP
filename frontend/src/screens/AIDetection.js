@@ -125,8 +125,10 @@ export default function DetectionScreenWeb() {
   const wsRef = useRef(null);
   const reconnectTimerRef = useRef(null);
   const sentScaleRef = useRef(1);
-  // When a test video filename starts with "animal", relabel any plant detections/compliance as animal.
   const swapPlantsToAnimalsRef = useRef(false);
+  const locationRef = useRef({ lat: 1.5533, lng: 110.3592 });
+  const flashIntervalRef = useRef(null);
+  const [flashVisible, setFlashVisible] = useState(false);
 
   const [permissionGranted, setPermissionGranted] = useState(false);
   const [cameraStatus, setCameraStatus] = useState("starting");
@@ -310,6 +312,46 @@ export default function DetectionScreenWeb() {
       }
     };
   }, []);
+
+  // Geolocation watch — silently updates locationRef; falls back to default if unavailable
+  useEffect(() => {
+    if (!navigator.geolocation) return;
+    const watchId = navigator.geolocation.watchPosition(
+      (pos) => {
+        locationRef.current = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+      },
+      () => {},
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 },
+    );
+    return () => navigator.geolocation.clearWatch(watchId);
+  }, []);
+
+  // Cleanup flash interval on unmount
+  useEffect(() => {
+    return () => {
+      if (flashIntervalRef.current) clearInterval(flashIntervalRef.current);
+    };
+  }, []);
+
+  const triggerAnomalyAlert = () => {
+    // Flash screen red for ~3 s (10 toggles × 300 ms)
+    if (flashIntervalRef.current) clearInterval(flashIntervalRef.current);
+    let tick = 0;
+    setFlashVisible(true);
+    flashIntervalRef.current = setInterval(() => {
+      tick++;
+      setFlashVisible((v) => !v);
+      if (tick >= 10) {
+        clearInterval(flashIntervalRef.current);
+        flashIntervalRef.current = null;
+        setFlashVisible(false);
+      }
+    }, 300);
+    // Vibrate on mobile browsers (Android Chrome; no-op on iOS/desktop)
+    if (navigator.vibrate) {
+      navigator.vibrate([400, 150, 400, 150, 400, 150, 400, 150, 400, 150, 400]);
+    }
+  };
 
   useEffect(() => {
     saveServerConfig(serverConfig);
@@ -552,6 +594,7 @@ export default function DetectionScreenWeb() {
   };
 
   const isIotAnomaly = (event) => event?.metadata?.source === "iot_sensor";
+  const canResolveEvent = (event) => event && !event.is_resolved && !isIotAnomaly(event);
 
   const formatEvidenceValue = (value) => {
     if (value === null || value === undefined || value === "") return "N/A";
@@ -806,6 +849,7 @@ export default function DetectionScreenWeb() {
         const now = Date.now();
         if (now - lastLogTime.current > 3000) {
           lastLogTime.current = now;
+          triggerAnomalyAlert();
           const confidenceCandidates = (latestResult?.detections || [])
             .map((d) => Number(d.confidence))
             .filter(Number.isFinite);
@@ -818,8 +862,8 @@ export default function DetectionScreenWeb() {
             user_id: currentUser.id,
             event_type:
               COMPLIANCE_TO_BACKEND_EVENT[detectedEventType] || detectedEventType,
-            latitude: 1.5533,
-            longitude: 110.3592,
+            latitude: locationRef.current.lat,
+            longitude: locationRef.current.lng,
             metadata: {
               source: "web_ai_detection",
               timestamp: new Date().toISOString(),
@@ -999,7 +1043,7 @@ export default function DetectionScreenWeb() {
                           </span>
                           <div style={styles.eventActions}>
                             <span style={styles.activePill}>{t("active")}</span>
-                            {!event.is_resolved && (
+                            {canResolveEvent(event) && (
                               <button
                                 type="button"
                                 style={{
@@ -1369,7 +1413,7 @@ export default function DetectionScreenWeb() {
                 </MapContainer>
               </div>
             </div>
-            {!selectedEvent.is_resolved && (
+            {canResolveEvent(selectedEvent) && (
               <button
                 style={{
                   ...styles.resolveButton,
@@ -1520,6 +1564,9 @@ export default function DetectionScreenWeb() {
           </div>
         </div>
       )}
+
+      {/* Anomaly flash overlay — visible on mobile browsers that support Vibration API */}
+      {flashVisible && <div style={styles.anomalyFlashOverlay} />}
     </div>
   );
 }
@@ -2109,6 +2156,14 @@ const styles = {
     fontWeight: "700",
     letterSpacing: "0.04em",
     zIndex: 10,
+  },
+  anomalyFlashOverlay: {
+    position: "fixed",
+    inset: 0,
+    backgroundColor: "rgba(220, 38, 38, 0.28)",
+    boxShadow: "inset 0 0 0 8px rgba(220, 38, 38, 0.75)",
+    zIndex: 9998,
+    pointerEvents: "none",
   },
   mediaRow: {
     display: "flex",

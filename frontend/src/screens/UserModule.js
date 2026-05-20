@@ -621,7 +621,7 @@ const UserModule = ({ navigation }) => {
                       <View style={styles.statChip}>
                         <Calendar size={16} color="#363636" />
                         <Text style={styles.statLabel}>
-                          Course Validity: {course.must_complete_in_weeks} Weeks
+                          Access limited to {course.must_complete_in_weeks} Weeks
                         </Text>
                       </View>
                       <View style={styles.statChip}>

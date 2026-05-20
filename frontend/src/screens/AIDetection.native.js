@@ -25,6 +25,7 @@ import Constants from "expo-constants";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useTranslation } from "react-i18next";
 
+import * as Location from "expo-location";
 import apiClient from "../config/apiConfig";
 import { userDashboardService } from "../services/userDashboardService";
 import { Camera as CameraIcon } from "lucide-react-native";
@@ -81,6 +82,7 @@ export default function DetectionScreen() {
   const reconnectTimerRef = useRef(null);
   const torchFlashRef = useRef(null);
   const [torchEnabled, setTorchEnabled] = useState(false);
+  const locationRef = useRef({ lat: 1.5533, lng: 110.3592 });
 
   const [serverConfig, setServerConfig] = useState({
     host: getAutoHost(),
@@ -158,6 +160,7 @@ export default function DetectionScreen() {
   };
 
   const isIotAnomaly = (event) => event?.metadata?.source === "iot_sensor";
+  const canResolveEvent = (event) => event && !event.is_resolved && !isIotAnomaly(event);
 
   const formatEvidenceValue = (value) => {
     if (value === null || value === undefined || value === "") {
@@ -273,6 +276,29 @@ export default function DetectionScreen() {
     Camera.getCameraPermissionsAsync()
       .then((permission) => setHasPermission(permission.granted))
       .catch(() => setHasPermission(false));
+  }, []);
+
+  // Location permission + continuous watch
+  useEffect(() => {
+    let sub = null;
+    let active = true;
+
+    (async () => {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted" || !active) return;
+
+      sub = await Location.watchPositionAsync(
+        { accuracy: Location.Accuracy.Balanced, timeInterval: 15000, distanceInterval: 20 },
+        (loc) => {
+          locationRef.current = { lat: loc.coords.latitude, lng: loc.coords.longitude };
+        },
+      );
+    })();
+
+    return () => {
+      active = false;
+      sub?.remove();
+    };
   }, []);
 
   const requestPermission = async () => {
@@ -508,8 +534,8 @@ export default function DetectionScreen() {
           const payload = {
             user_id: currentUser.id,
             event_type: detectedEventType,
-            latitude: 1.5533,
-            longitude: 110.3592,
+            latitude: locationRef.current.lat,
+            longitude: locationRef.current.lng,
             metadata: JSON.stringify({
               source: "mobile_ai_detection",
               timestamp: new Date().toISOString(),
@@ -573,8 +599,8 @@ export default function DetectionScreen() {
       const payload = {
         user_id: currentUser.id,
         event_type: selectedAnomalyType,
-        latitude: 1.5533,
-        longitude: 110.3592,
+        latitude: locationRef.current.lat,
+        longitude: locationRef.current.lng,
         metadata: JSON.stringify({
           source: "mobile_ai_detection",
           timestamp: new Date().toISOString(),
@@ -914,7 +940,7 @@ export default function DetectionScreen() {
                       {JSON.stringify(selectedEvent.metadata || {}, null, 2)}
                     </Text>
                   </ScrollView>
-                  {!selectedEvent.is_resolved && (
+                  {canResolveEvent(selectedEvent) && (
                     <TouchableOpacity
                       style={[
                         styles.resolveButton,

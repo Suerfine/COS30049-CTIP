@@ -1,6 +1,15 @@
 import { Platform } from "react-native";
 import apiClient from "../config/apiConfig";
 
+// Builds a "can't reach the server" message that includes the exact URL the
+// request was aimed at, so connection failures are debuggable on devices
+// (especially the native app, where there's no dev console to inspect).
+const connectErrorMessage = (error) => {
+  const base = error?.config?.baseURL || apiClient.defaults.baseURL || "unknown";
+  const path = error?.config?.url || "";
+  return `Unable to connect to server at ${base}${path}. Check the backend is running and reachable from this device.`;
+};
+
 export const decodeJwtPayload = (token) => {
   const tokenParts = String(token || "").split(".");
   if (tokenParts.length !== 3) {
@@ -57,9 +66,7 @@ export const authService = {
         }
         throw new Error(error.response.data?.message || "Login failed");
       }
-      throw new Error(
-        "Unable to connect to server. Please check backend is running.",
-      );
+      throw new Error(connectErrorMessage(error));
     }
   },
 
@@ -74,7 +81,7 @@ export const authService = {
       if (error.response) {
         throw new Error(error.response.data?.message || "Verification failed");
       }
-      throw new Error("Unable to connect to server.");
+      throw new Error(connectErrorMessage(error));
     }
   },
 
@@ -92,9 +99,7 @@ export const authService = {
         );
       }
 
-      throw new Error(
-        "Unable to connect to server. Please check backend is running.",
-      );
+      throw new Error(connectErrorMessage(error));
     }
   },
 
@@ -111,9 +116,7 @@ export const authService = {
           error.response.data?.message || "Failed to change password",
         );
       }
-      throw new Error(
-        "Unable to connect to server. Please check backend is running.",
-      );
+      throw new Error(connectErrorMessage(error));
     }
   },
 
@@ -132,9 +135,7 @@ export const authService = {
         );
       }
 
-      throw new Error(
-        "Unable to connect to server. Please check backend is running.",
-      );
+      throw new Error(connectErrorMessage(error));
     }
   },
 };

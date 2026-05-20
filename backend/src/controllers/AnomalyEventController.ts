@@ -6,6 +6,7 @@ import { paginateModel } from "../utils/paginate";
 import sequelize from "../config/Database";
 import { sendNotification } from "../utils/sendNotification";
 import { NotificationCategory } from "../enum/NotificationCategory";
+import { UserRoles } from "../enum/UserRoles";
 
 interface CreateAnomalyEventRequest {
   user_id: number;
@@ -53,6 +54,9 @@ interface ResolveAnomalyEventResponse {
   message: string;
   data: AnomalyEventResponse;
 }
+
+const isIotAnomalyEvent = (event: AnomalyEvent): boolean =>
+  event.metadata?.source === "iot_sensor";
 
 class HttpError extends Error {
   status: number;
@@ -392,6 +396,12 @@ export const resolveAnomalyEvent = async (
 
     if (!event) {
       return res.status(404).json({ message: "Anomaly event not found" });
+    }
+
+    if (isIotAnomalyEvent(event) && authUser.role !== UserRoles.ADMIN) {
+      return res.status(403).json({
+        message: "Only admins can resolve IoT sensor anomaly events",
+      });
     }
 
     if (!event.is_resolved) {
