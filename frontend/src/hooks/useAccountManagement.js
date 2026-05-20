@@ -134,7 +134,7 @@ export const useAccountManagement = () => {
     if (!editForm?.tel?.trim()) {
       tempErrors.tel = "* Telephone number is required.";
     } else if (!phoneRegex.test(editForm.tel)) {
-      tempErrors.tel = "* Invalid phone number arrangement format.";
+      tempErrors.tel = "* Invalid phone number arrangement format. Must start from 01xxxxxxxx";
     }
 
     if (!editForm?.personal_email?.trim()) {
