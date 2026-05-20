@@ -15,7 +15,8 @@ const OutlineBar = ({ course, progressMap = {}, onSelectPage, editable, isCollap
         deleteModule,
         addPage,
         updatePageTitle,
-        deletePage
+        deletePage,
+        cancelModule
     } = useOutline(course);
 
     const [selectedItem, setSelectedItem] = useState({ type: 'overview' });
@@ -210,8 +211,22 @@ const OutlineBar = ({ course, progressMap = {}, onSelectPage, editable, isCollap
                                                 defaultValue={module.title}
                                                 autoFocus
                                                 onBlur={(e) => {
-                                                    const val = e.nativeEvent.text;
-                                                    isNewModule ? saveModule(mid, val) : updateModuleTitle(mid, val);
+                                                    const val = e.nativeEvent.text?.trim() || "";
+
+                                                    if (isNewModule) {
+
+                                                        if (val === "") {
+                                                            cancelModule(mid);
+                                                            setEditingItem(null);
+                                                            return;
+                                                        }
+
+                                                        saveModule(mid, val);
+                                                        setEditingItem(null);
+                                                        return;
+                                                    }
+
+                                                    updateModuleTitle(mid, val);
                                                     setEditingItem(null);
                                                 }}
                                             />
