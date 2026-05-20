@@ -147,7 +147,7 @@ const UsersFormContent = ({ onSubmit, onCancel, isLoading }) => {
               <TextInput
                 style={styles.input}
                 value={form.email}
-                placeholder="address@email.com"
+                placeholder="johndoe@example.com"
                 placeholderTextColor="#8f8f8f"
                 onChangeText={(text) => setForm({ ...form, email: text })}
               />
@@ -160,7 +160,7 @@ const UsersFormContent = ({ onSubmit, onCancel, isLoading }) => {
               <TextInput
                 style={styles.input}
                 value={form.telefon}
-                placeholder="0123456789"
+                placeholder="012-3456789"
                 placeholderTextColor="#8f8f8f"
                 onChangeText={(text) => setForm({ ...form, telefon: text })}
               />
