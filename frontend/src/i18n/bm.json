@@ -446,5 +446,8 @@
     "no_sensors_found": "Tiada sensor ditemui",
     "no_sensor_logs_found": "Tiada log sensor ditemui",
     "sensor_logs": "Log Sensor",
-    "calendar":"Kalender"
+    "calendar":"Kalender",
+    "sensor_overview": "Gambaran Keseluruhan Sensor",
+    "select_sensor_to_view_details": "Pilih sensor untuk melihat butiran",
+    "sensor_readings": "Bacaan Sensor"
 }
