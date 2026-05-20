@@ -10,9 +10,13 @@ export const useNotification = () => {
     const [error, setError] = useState(null);
     
     const isFirstLoad = useRef(true);
+    const isFetchingRef = useRef(false);
 
-    const fetchNotifications = useCallback(async () => {
-        if (isFirstLoad.current) {
+    const fetchNotifications = useCallback(async ({ silent = false } = {}) => {
+        if (isFetchingRef.current) return;
+        isFetchingRef.current = true;
+
+        if (isFirstLoad.current && !silent) {
             setLoading(true);
         }
         
@@ -25,7 +29,8 @@ export const useNotification = () => {
             setError(err || 'Failed to fetch notifications');
         } finally {
             setLoading(false);
-            isFirstLoad.current = false; 
+            isFirstLoad.current = false;
+            isFetchingRef.current = false;
         }
     }, []);
 
@@ -43,8 +48,8 @@ export const useNotification = () => {
 
         // Start the timer (e.g., every 10 seconds)
         const interval = setInterval(() => {
-            fetchNotifications();
-        }, 10000); 
+            fetchNotifications({ silent: true });
+        }, 5000);
 
         // Stop the timer when the user navigates away or closes the app
         return () => clearInterval(interval);

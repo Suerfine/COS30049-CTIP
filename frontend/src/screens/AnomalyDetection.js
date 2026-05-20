@@ -13,7 +13,7 @@ import {
   MapPin,
   X,
 } from "lucide-react-native";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -98,23 +98,52 @@ const formatStatusLabel = (value) => {
     .replace(/\b\w/g, (character) => character.toUpperCase());
 };
 
-const formatLogData = (value) => {
+const formatSensorDataValue = (value) => {
   if (value === null || value === undefined || value === "") {
     return "-";
   }
 
-  let output;
-  if (typeof value === "string") {
-    output = value;
-  } else {
-    try {
-      output = JSON.stringify(value);
-    } catch {
-      output = String(value);
-    }
+  if (typeof value === "boolean") {
+    return value ? "Yes" : "No";
   }
 
-  return output.length > 110 ? `${output.slice(0, 107)}...` : output;
+  if (Array.isArray(value)) {
+    return value.map((item) => formatSensorDataValue(item)).join(", ");
+  }
+
+  return String(value);
+};
+
+const renderSensorLogData = (value) => {
+  if (value === null || value === undefined || value === "") {
+    return <Text style={styles.sensorLogEmptyValue}>-</Text>;
+  }
+
+  if (typeof value !== "object" || Array.isArray(value)) {
+    return (
+      <Text style={styles.sensorLogSingleValue}>
+        {formatSensorDataValue(value)}
+      </Text>
+    );
+  }
+
+  const entries = Object.entries(value);
+  if (entries.length === 0) {
+    return <Text style={styles.sensorLogEmptyValue}>-</Text>;
+  }
+
+  return (
+    <View style={styles.sensorLogDataWrap}>
+      {entries.map(([key, entryValue]) => (
+        <View key={key} style={styles.sensorLogDataChip}>
+          <Text style={styles.sensorLogDataLabel}>{formatStatusLabel(key)}</Text>
+          <Text style={styles.sensorLogDataValue}>
+            {formatSensorDataValue(entryValue)}
+          </Text>
+        </View>
+      ))}
+    </View>
+  );
 };
 
 const isIotAnomaly = (event) => event?.metadata?.source === "iot_sensor";
@@ -439,14 +468,29 @@ const AnomalyDetection = () => {
   }, [selectedSensor?.id, sensorLogsPage]);
 
   useEffect(() => {
+    if (!selectedSensor?.id) return;
+
+    const latestSelectedSensor = sensorState.data.find(
+      (sensor) => Number(sensor.id) === Number(selectedSensor.id),
+    );
+
+    if (latestSelectedSensor) {
+      setSelectedSensor((previous) => ({
+        ...previous,
+        ...latestSelectedSensor,
+      }));
+    }
+  }, [sensorState.data, selectedSensor?.id]);
+
+  useEffect(() => {
     if (activeTab !== TABS.SENSORS) return;
 
     let isMounted = true;
     
     const fetchInitialData = async () => {
-      await refreshSensors();
+      await refreshSensors({ silent: true });
       if (selectedSensor?.id && isMounted) {
-        await loadSensorLogs(selectedSensor.id, sensorLogsPage);
+        await loadSensorLogs(selectedSensor.id, sensorLogsPage, { silent: true });
       }
     };
 
@@ -455,9 +499,9 @@ const AnomalyDetection = () => {
     const interval = setInterval(async () => {
       if (!isMounted) return;
       
-      await refreshSensors();
+      await refreshSensors({ silent: true });
       if (selectedSensor?.id) {
-        await loadSensorLogs(selectedSensor.id, sensorLogsPage);
+        await loadSensorLogs(selectedSensor.id, sensorLogsPage, { silent: true });
       }
     }, 5000);
 
@@ -466,6 +510,16 @@ const AnomalyDetection = () => {
       clearInterval(interval);
     };
   }, [activeTab, selectedSensor?.id, sensorLogsPage]);
+
+  useEffect(() => {
+    if (activeTab !== TABS.ANOMALIES) return;
+
+    const interval = setInterval(() => {
+      refresh({ silent: true });
+    }, 7000);
+
+    return () => clearInterval(interval);
+  }, [activeTab, refresh]);
 
   const refreshActiveTab = () => {
     if (activeTab === TABS.ANOMALIES) {
@@ -484,11 +538,12 @@ const AnomalyDetection = () => {
     setSensorLogsPage(1);
   };
 
-  const sortedSensorLogs = selectedSensor
-  ? [...sensorLogsState.data].reverse()
-  : [];
+  const sortedSensorLogs = useMemo(
+    () => selectedSensor ? [...sensorLogsState.data].reverse() : [],
+    [selectedSensor, sensorLogsState.data],
+  );
 
-  const sensorChartData = {
+  const sensorChartData = useMemo(() => ({
     labels: selectedSensor
       ? sortedSensorLogs.map((log) =>
           new Date(log.created_at).toLocaleTimeString()
@@ -517,7 +572,24 @@ const AnomalyDetection = () => {
         fill: true,
       },
     ],
-  };
+  }), [selectedSensor, sortedSensorLogs, t]);
+
+  const sensorChartOptions = useMemo(() => ({
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: false,
+    plugins: {
+      legend: {
+        display: !!selectedSensor,
+        position: "top",
+      },
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+      },
+    },
+  }), [selectedSensor]);
 
   const AnomalyFilterSidebar = () => {
     const statusOptions = ["all", "active", "resolved"];
@@ -727,7 +799,7 @@ const AnomalyDetection = () => {
   const renderSensorItem = ({ item }) => {
     const isHovered = hoveredRowId === item.id;
     const { sensorName, nameLocation } = splitSensorNameLocation(item.name);
-
+    console.log(item);
     return (
       <View style={[styles.rowContainerRelative, isHovered && { zIndex: 10 }]}>
         <Pressable
@@ -792,9 +864,9 @@ const AnomalyDetection = () => {
       <View style={[styles.cellContent, styles.logStatusCell]}>
         <StatusBadge value={item.status} />
       </View>
-      <Text style={[styles.cellText, styles.logDataCell]} numberOfLines={2}>
-        {formatLogData(item.data)}
-      </Text>
+      <View style={[styles.cellContent, styles.logDataCell]}>
+        {renderSensorLogData(item.data)}
+      </View>
       <Text style={[styles.cellText, styles.logDateCell]}>
         {formatDate(item.created_at)}
       </Text>
@@ -1327,24 +1399,7 @@ const AnomalyDetection = () => {
                 <Text style={styles.dashboardCardTitle}>{t("sensor_readings")}</Text>
 
                 <View style={styles.chartWrapper}>
-                  <Line
-                    data={sensorChartData}
-                    options={{
-                      responsive: true,
-                      maintainAspectRatio: false,
-                      plugins: {
-                        legend: {
-                          display: !!selectedSensor,
-                          position: "top",
-                        },
-                      },
-                      scales: {
-                        y: {
-                          beginAtZero: true,
-                        },
-                      },
-                    }}
-                  />
+                  <Line data={sensorChartData} options={sensorChartOptions} />
                 </View>
               </View>
             </View>
@@ -1625,13 +1680,49 @@ const styles = StyleSheet.create({
   },
   logStatusCell: {
     width: 170,
-    justifyContent: "center",
   },
   logDataCell: {
     flex: 1.8,
+    alignItems: "flex-start",
+    justifyContent: "center",
   },
   logDateCell: {
     width: 200,
+  },
+  sensorLogDataWrap: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
+  },
+  sensorLogDataChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    backgroundColor: "#f9fafb",
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+    borderRadius: 8,
+  },
+  sensorLogDataLabel: {
+    color: "#6b7280",
+    fontSize: 11,
+    fontWeight: "700",
+  },
+  sensorLogDataValue: {
+    color: "#111827",
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  sensorLogSingleValue: {
+    color: "#111827",
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  sensorLogEmptyValue: {
+    color: "#9ca3af",
+    fontSize: 13,
   },
   anomalyIdCell: {
     width: 70,

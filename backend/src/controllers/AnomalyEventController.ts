@@ -22,6 +22,7 @@ interface CreateAnomalyEventRequest {
     | "loud_noise"
     | "trespassing";
   metadata?: Record<string, any>;
+  location?: string;
   latitude?: number;
   longitude?: number;
   annotated_frame_base64?: string;
@@ -34,6 +35,7 @@ interface AnomalyEventResponse {
   metadata?: Record<string, any> | null;
   latitude?: number | null;
   longitude?: number | null;
+  location?: string | null;
   is_resolved: boolean;
   resolved_at?: Date | null;
   annotated_frame_base64?: string | null;
@@ -77,6 +79,7 @@ function toAnomalyEventResponse(
     metadata: event.metadata,
     latitude: event.latitude,
     longitude: event.longitude,
+    location: (event as any).location,
     is_resolved: event.is_resolved,
     resolved_at: event.resolved_at,
     annotated_frame_base64: event.annotated_frame_base64,
@@ -109,6 +112,7 @@ export const createAnomalyEvent = async (
         metadata: req.body.metadata || null,
         latitude: req.body.latitude || null,
         longitude: req.body.longitude || null,
+        location: req.body.location || null,
         annotated_frame_base64: req.body.annotated_frame_base64 || null,
       },
       { transaction },
@@ -179,6 +183,7 @@ export const getAnomalyEvents = async (
         "metadata",
         "latitude",
         "longitude",
+        "location",
         "is_resolved",
         "resolved_at",
         "annotated_frame_base64",
@@ -250,6 +255,7 @@ export const getAnomalyMapEvents = async (
         metadata: plainEvent.metadata,
         latitude: plainEvent.latitude,
         longitude: plainEvent.longitude,
+        location: plainEvent.location,
         is_resolved: plainEvent.is_resolved,
         resolved_at: plainEvent.resolved_at,
         annotated_frame_base64: plainEvent.annotated_frame_base64,
