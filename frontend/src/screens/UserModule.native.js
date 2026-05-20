@@ -38,6 +38,7 @@ import { useCourseProgress } from "../components/useCourseProgress.js";
 import AIChatBot from "../components/AIChatbot.js";
 import DiscussionSection from "../components/DiscussionSection.js";
 import { enrollmentService } from "../services/EnrollmentService.js";
+import { useTranslation } from "react-i18next";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -61,6 +62,7 @@ const UserModule = ({ navigation }) => {
   const [pendingDiscussionId, setPendingDiscussionId] = useState(discussionId);
   const [outlineOpen, setOutlineOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
+  const { t, i18n } = useTranslation();
 
   useEffect(() => {
     setPendingDiscussionId(discussionId);
@@ -596,7 +598,7 @@ const UserModule = ({ navigation }) => {
                       <View style={styles.statChip}>
                         <Calendar size={16} color="#363636" />
                         <Text style={styles.statLabel}>
-                          Course Validity: {course.must_complete_in_weeks} Weeks
+                          Access limited to {course.must_complete_in_weeks} Weeks
                         </Text>
                       </View>
                       <View style={styles.statChip}>
@@ -607,13 +609,13 @@ const UserModule = ({ navigation }) => {
                       </View>
                     </View>
                   </View>
-
-                  {isEnrollButtonVisible && (
-                    <Pressable style={styles.enrollBtn} onPress={handleEnrollPress}>
-                      <Text style={styles.enrollText}>{t("enroll", "Enroll")}</Text>
-                    </Pressable>
-                  )}
                 </View>
+
+                {isEnrollButtonVisible && (
+                  <Pressable style={styles.enrollBtn} onPress={handleEnrollPress}>
+                    <Text style={styles.enrollText}>{t("enroll", "Enroll")}</Text>
+                  </Pressable>
+                )}
 
                 <Image
                   source={
@@ -706,8 +708,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 12,
+    width: 100,
+    marginBottom: 20,
     alignItems: "center",
-    justifyContent: "center",
+    textAlign: "center",
+    display: "flex",
+    alignSelf:'flex-end'
   },
   enrollText: {
     color: "#fff",
@@ -718,7 +724,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 20,
   },
   tabSection: {
     paddingTop: 10,

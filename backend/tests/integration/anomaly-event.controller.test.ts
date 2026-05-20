@@ -29,7 +29,10 @@ describe("Anomaly Event Controller Integration Tests", () => {
   it("POST /api/anomaly-events - creates an anomaly event and sends notifications", async () => {
     const admin = await createUser(UserRoles.ADMIN, ADMIN_EMAIL, ADMIN_PASSWORD);
     const guide = await createUser(UserRoles.PARK_GUIDE, GUIDE_EMAIL, GUIDE_PASSWORD);
-    const accessToken = await login({ username: GUIDE_EMAIL, password: GUIDE_PASSWORD });
+    const accessToken = await login({
+      username: `${guide.id}@sfc.gov.my`,
+      password: GUIDE_PASSWORD,
+    });
 
     const response = await request(app)
       .post("/api/anomaly-events")
@@ -122,7 +125,10 @@ describe("Anomaly Event Controller Integration Tests", () => {
       latitude: 1.5533,
       longitude: 110.3592,
     });
-    const accessToken = await login({ username: GUIDE_EMAIL, password: GUIDE_PASSWORD });
+    const accessToken = await login({
+      username: `${guide.id}@sfc.gov.my`,
+      password: GUIDE_PASSWORD,
+    });
 
     const response = await request(app)
       .patch(`/api/anomaly-events/${event.id}/resolve`)
@@ -130,5 +136,41 @@ describe("Anomaly Event Controller Integration Tests", () => {
 
     expect(response.status).toBe(200);
     expect(response.body.data.is_resolved).toBe(true);
+  });
+
+  it("PATCH /api/anomaly-events/:eventId/resolve - only admins can resolve IoT anomalies", async () => {
+    const admin = await createUser(UserRoles.ADMIN, ADMIN_EMAIL, ADMIN_PASSWORD);
+    const guide = await createUser(UserRoles.PARK_GUIDE, GUIDE_EMAIL, GUIDE_PASSWORD);
+    const event = await AnomalyEvent.create({
+      user_id: admin.id,
+      event_type: "forest_fire",
+      latitude: 1.5533,
+      longitude: 110.3592,
+      metadata: {
+        source: "iot_sensor",
+        sensor_name: "Forest Fire Sensor",
+      },
+    });
+    const guideToken = await login({
+      username: `${guide.id}@sfc.gov.my`,
+      password: GUIDE_PASSWORD,
+    });
+    const adminToken = await login({
+      username: `${admin.id}@sfc.gov.my`,
+      password: ADMIN_PASSWORD,
+    });
+
+    const guideResponse = await request(app)
+      .patch(`/api/anomaly-events/${event.id}/resolve`)
+      .set("Authorization", `Bearer ${guideToken}`);
+
+    expect(guideResponse.status).toBe(403);
+
+    const adminResponse = await request(app)
+      .patch(`/api/anomaly-events/${event.id}/resolve`)
+      .set("Authorization", `Bearer ${adminToken}`);
+
+    expect(adminResponse.status).toBe(200);
+    expect(adminResponse.body.data.is_resolved).toBe(true);
   });
 });

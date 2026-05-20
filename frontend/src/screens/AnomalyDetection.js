@@ -25,8 +25,32 @@ import {
   TextInput,
   View,
   useWindowDimensions,
+  Platform
 } from "react-native";
 import { useTranslation } from "react-i18next";
+
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+} from "chart.js";
+
+import { Line } from "react-chartjs-2";
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend
+);
 
 import { useAnomalyDetection } from "../hooks/useAnomalyDetection";
 import { formatDate } from "../utils/formatDate";
@@ -128,7 +152,9 @@ const renderEvidenceValue = (value) => {
       <View style={styles.evidenceObjectList}>
         {entries.map(([key, nestedValue]) => (
           <View key={key} style={styles.evidenceObjectRow}>
-            <Text style={styles.evidenceObjectKey}>{formatStatusLabel(key)}</Text>
+            <Text style={styles.evidenceObjectKey}>
+              {formatStatusLabel(key)}
+            </Text>
             <Text style={styles.evidenceObjectValue}>
               {formatEvidenceValue(nestedValue)}
             </Text>
@@ -166,20 +192,35 @@ const getStatusStyle = (status) => {
 
 const getEventTypeLabel = (type, t) => {
   switch (type) {
-    case "forest_fire":
-      return t("forest_fire");
+    case "touching_plant":
+      return "Touching Plant";
+
+    case "touching_animal":
+      return "Touching Animal";
 
     case "plucking_plants":
-      return t("plucking_plants");
+      return "Plucking Plants";
 
     case "hitting_animal":
-      return t("hitting_animal");
+      return "Hitting Animal";
 
     case "extended_plant_touch":
-      return t("extended_plant_touch");
+      return "Extended Plant Touch";
 
     case "extended_animal_touch":
-      return t("extended_animal_touch");
+      return "Extended Animal Touch";
+
+    case "forest_fire":
+      return "Forest Fire";
+
+    case "flooding":
+      return "Flooding";
+
+    case "loud_noise":
+      return "Loud Noise";
+
+    case "trespassing":
+      return "Trespassing";
 
     default:
       return type;
@@ -209,7 +250,8 @@ const PaginatedTableControls = ({
   return (
     <View style={[styles.paginationContainer, styles.row]}>
       <Text style={styles.pageInfo}>
-        {t("showing")} {firstItem} {t("to")} {lastItem} {t("of")} {totalElements} {itemLabel}
+        {t("showing")} {firstItem} {t("to")} {lastItem} {t("of")}{" "}
+        {totalElements} {itemLabel}
       </Text>
       <View style={styles.paginationControls}>
         <Pressable
@@ -323,6 +365,15 @@ const formatCoordinates = (sensor) => {
   return `${Number(sensor.latitude).toFixed(4)}, ${Number(sensor.longitude).toFixed(4)}`;
 };
 
+const splitSensorNameLocation = (name = "") => {
+  const [sensorName, ...locationParts] = String(name).split(" - ");
+
+  return {
+    sensorName: sensorName || "-",
+    nameLocation: locationParts.join(" - ") || "-",
+  };
+};
+
 const AnomalyDetection = () => {
   const { t } = useTranslation();
   const { width, height } = useWindowDimensions();
@@ -333,10 +384,10 @@ const AnomalyDetection = () => {
   const [filterVisible, setFilterVisible] = useState(false);
 
   const [tempAnomalyFilters, setTempAnomalyFilters] = useState({
-    status: 'all',
+    status: "all",
     eventType: [],
-    time: 'anytime',
-  })
+    time: "anytime",
+  });
 
   const {
     anomalies,
@@ -372,26 +423,49 @@ const AnomalyDetection = () => {
 
   const [resolvingId, setResolvingId] = useState(null);
   const [selectedAnomaly, setSelectedAnomaly] = useState(null);
-  const [showSensorLogsModal, setShowSensorLogsModal] = useState(false);
-  const [selectedSensorForLogs, setSelectedSensorForLogs] = useState(null);
+  const [selectedSensor, setSelectedSensor] = useState(null);
+    const [hoveredRowId, setHoveredRowId] = useState(null);
+    const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
   useEffect(() => {
-    if (
-      !showSensorLogsModal ||
-      !selectedSensorForLogs?.id
-    ) {
+    if (!selectedSensor?.id) {
       return;
     }
 
     loadSensorLogs(
-      selectedSensorForLogs.id,
+      selectedSensor.id,
       sensorLogsPage
     );
-  }, [
-    showSensorLogsModal,
-    selectedSensorForLogs,
-    sensorLogsPage,
-  ]);
+  }, [selectedSensor?.id, sensorLogsPage]);
+
+  useEffect(() => {
+    if (activeTab !== TABS.SENSORS) return;
+
+    let isMounted = true;
+    
+    const fetchInitialData = async () => {
+      await refreshSensors();
+      if (selectedSensor?.id && isMounted) {
+        await loadSensorLogs(selectedSensor.id, sensorLogsPage);
+      }
+    };
+
+    fetchInitialData();
+
+    const interval = setInterval(async () => {
+      if (!isMounted) return;
+      
+      await refreshSensors();
+      if (selectedSensor?.id) {
+        await loadSensorLogs(selectedSensor.id, sensorLogsPage);
+      }
+    }, 5000);
+
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, [activeTab, selectedSensor?.id, sensorLogsPage]);
 
   const refreshActiveTab = () => {
     if (activeTab === TABS.ANOMALIES) {
@@ -405,27 +479,60 @@ const AnomalyDetection = () => {
     }
   };
 
-  const openSensorLogsModal = (sensor) => {
-    setSelectedSensorForLogs(sensor);
+  const handleSelectSensor = (sensor) => {
+    setSelectedSensor(sensor);
     setSensorLogsPage(1);
-    setShowSensorLogsModal(true);
   };
 
-  const closeSensorLogsModal = () => {
-    setShowSensorLogsModal(false);
-    setSelectedSensorForLogs(null);
-    setSensorLogsPage(1);
+  const sortedSensorLogs = selectedSensor
+  ? [...sensorLogsState.data].reverse()
+  : [];
+
+  const sensorChartData = {
+    labels: selectedSensor
+      ? sortedSensorLogs.map((log) =>
+          new Date(log.created_at).toLocaleTimeString()
+        )
+      : [],
+
+    datasets: [
+      {
+        label: t("sensor_readings"),
+        data: selectedSensor
+          ? sortedSensorLogs.map((log) => {
+              if (typeof log.data === "number") return log.data;
+
+              if (typeof log.data === "object" && log.data !== null) {
+                return Number(Object.values(log.data)[0]) || 0;
+              }
+
+              return Number(log.data) || 0;
+            })
+          : [],
+
+        borderColor: "#0a6340",
+        backgroundColor: "rgba(10, 99, 64, 0.15)",
+        borderWidth: 2,
+        tension: 0.3,
+        fill: true,
+      },
+    ],
   };
 
   const AnomalyFilterSidebar = () => {
     const statusOptions = ["all", "active", "resolved"];
 
     const eventTypeOptions = [
-      "forest_fire",
+      "touching_plant",
+      "touching_animal",
       "plucking_plants",
       "hitting_animal",
       "extended_plant_touch",
       "extended_animal_touch",
+      "forest_fire",
+      "flooding",
+      "loud_noise",
+      "trespassing",
     ];
 
     const timeOptions = ["anytime", "today", "3_days", "1_week"];
@@ -450,7 +557,12 @@ const AnomalyDetection = () => {
         ) : (
           <Circle size={18} color="gray" />
         )}
-        <Text style={[styles.filterItemText, selected && styles.filterItemTextActive]}>
+        <Text
+          style={[
+            styles.filterItemText,
+            selected && styles.filterItemTextActive,
+          ]}
+        >
           {label}
         </Text>
       </Pressable>
@@ -476,7 +588,9 @@ const AnomalyDetection = () => {
 
             <ScrollView showsVerticalScrollIndicator={false}>
               <View style={styles.filterSection}>
-                <Text style={styles.filterSectionTitle}>{t("status_label")}</Text>
+                <Text style={styles.filterSectionTitle}>
+                  {t("status_label")}
+                </Text>
 
                 {statusOptions.map((status) => (
                   <FilterItem
@@ -513,7 +627,10 @@ const AnomalyDetection = () => {
               </View>
 
               <View style={styles.filterSection}>
-                <Text style={styles.filterSectionTitle}> {t("detected_within")}</Text>
+                <Text style={styles.filterSectionTitle}>
+                  {" "}
+                  {t("detected_within")}
+                </Text>
 
                 {timeOptions.map((time) => (
                   <FilterItem
@@ -595,47 +712,77 @@ const AnomalyDetection = () => {
     <View style={[styles.tableHeader, styles.row]}>
       <Text style={[styles.headerCell, styles.sensorIdCell]}>{t("id")}</Text>
       <Text style={[styles.headerCell, styles.sensorNameCell]}>{t("name")}</Text>
-      <Text style={[styles.headerCell, styles.sensorTypeCell]}>{t("type")}</Text>
-      <Text style={[styles.headerCell, styles.sensorLocationCell]}>
+      <Text style={[styles.headerCell, styles.sensorNameLocationCell]}>
         {t("location")}
       </Text>
-      <Text style={[styles.headerCell, styles.sensorStatusCell]}>{t("status_label")}</Text>
+      <Text style={[styles.headerCell, styles.sensorCoordinateCell]}>
+        {t("coordinates")}
+      </Text>
+      <Text style={[styles.headerCell, styles.sensorStatusCell]}>
+        {t("status_label")}
+      </Text>
     </View>
   );
 
-  const renderSensorItem = ({ item }) => (
-    <Pressable
-      onPress={() => openSensorLogsModal(item)}
-      style={({ hovered }) => [
-        styles.row,
-        styles.tableRow,
-        styles.sensorRowPressable,
-        hovered && styles.sensorRowHover,
-      ]}
-    >
-      <Text style={[styles.cellText, styles.sensorIdCell]}>{item.id}</Text>
-      <Text style={[styles.cellText, styles.sensorNameCell]}>
-        {item.name || "-"}
-      </Text>
-      <Text style={[styles.cellText, styles.sensorTypeCell]}>
-        {item.type || "-"}
-      </Text>
-      <View style={[styles.cellContent, styles.sensorLocationCell]}>
-        <MapPin size={14} color="#059669" />
-        <Text style={styles.coordinateText}>{formatCoordinates(item)}</Text>
+  const renderSensorItem = ({ item }) => {
+    const isHovered = hoveredRowId === item.id;
+    const { sensorName, nameLocation } = splitSensorNameLocation(item.name);
+
+    return (
+      <View style={[styles.rowContainerRelative, isHovered && { zIndex: 10 }]}>
+        <Pressable
+          onPress={() => handleSelectSensor(item)}
+          onHoverIn={() => setHoveredRowId(item.id)}
+          onHoverOut={() => setHoveredRowId(null)}
+          style={({ hovered }) => [
+            styles.row,
+            styles.tableRow,
+            styles.sensorRowPressable,
+            hovered && styles.sensorRowHover,
+            selectedSensor?.id === item.id && { backgroundColor: "#eefbf3" },
+          ]}
+        >
+          {isHovered && Platform.OS === 'web' && (
+            <View style={[styles.rowTooltip, { left: mousePos.x + 15, top: mousePos.y - 35 }]}>
+              <Text style={styles.tooltipText}>Click to load real-time telemetry analytics</Text>
+            </View>
+          )}
+
+          <Text style={[styles.cellText, styles.sensorIdCell, isHovered && styles.cellTextHover]}>
+            {item.id}
+          </Text>
+
+          <Text style={[styles.cellText, styles.cellTextBold, styles.sensorNameCell, isHovered && styles.cellTextHover]}>
+            {sensorName}
+          </Text>
+
+          <Text style={[styles.cellText, styles.sensorNameLocationCell, isHovered && styles.cellTextHover]}>
+            {nameLocation}
+          </Text>
+
+          <View style={[styles.cellContent, styles.sensorCoordinateCell]}>
+            <MapPin size={14} color="#059669" />
+            <Text style={styles.coordinateText}>{formatCoordinates(item)}</Text>
+          </View>
+
+          <View style={[styles.cellContent, styles.sensorStatusCell]}>
+            <StatusBadge value={item.current_status} />
+          </View>
+        </Pressable>
       </View>
-      <View style={[styles.cellContent, styles.sensorStatusCell]}>
-        <StatusBadge value={item.current_status} />
-      </View>
-    </Pressable>
-  );
+    );
+  };
 
   const renderSensorLogsHeader = () => (
     <View style={[styles.tableHeader, styles.row]}>
       <Text style={[styles.headerCell, styles.logIdCell]}>{t("id")}</Text>
-      <Text style={[styles.headerCell, styles.logStatusCell]}>{t("status_label")}</Text>
+      <Text style={[styles.headerCell, styles.logStatusCell]}>
+        {t("status_label")}
+      </Text>
       <Text style={[styles.headerCell, styles.logDataCell]}>{t("data")}</Text>
-      <Text style={[styles.headerCell, styles.logDateCell]}>{t("created_at")}</Text>
+      <Text style={[styles.headerCell, styles.logDateCell]}>
+        {t("created_at")}
+      </Text>
     </View>
   );
 
@@ -664,9 +811,7 @@ const AnomalyDetection = () => {
         <Text style={styles.headerText}>{t("event_type")}</Text>
       </View>
 
-      <Text style={[styles.headerText, { flex: 3 }]}>
-        {t("coordinates")}
-      </Text>
+      <Text style={[styles.headerText, { flex: 3 }]}>{t("coordinates")}</Text>
 
       <Pressable
         onPress={() => requestSort("created_at")}
@@ -687,101 +832,76 @@ const AnomalyDetection = () => {
       <Text style={[styles.headerText, { flex: 2, textAlign: "center" }]}>
         {t("status_label")}
       </Text>
-
-      <Text style={[styles.headerText, { flex: 2, textAlign: "center" }]}>
-        {t("action")}
-      </Text>
     </View>
   );
 
-  const renderAnomalyItem = ({ item }) => (
-    <Pressable
-      onPress={() => setSelectedAnomaly(item)}
-      style={({ hovered }) => [
-        styles.row,
-        styles.tableRow,
-        hovered && { backgroundColor: "#f9f9f9" },
-        selectedAnomaly?.id === item.id && { backgroundColor: "#fff8e1" },
-      ]}
-    >
-      <Text style={[styles.cellText, { flex: 1, textAlign: "center" }]}>
-        {item.id}
-      </Text>
+  const renderAnomalyItem = ({ item }) => {
+    const isHovered = hoveredRowId === item.id;
+    return (
+      <View style={[styles.rowContainerRelative, isHovered && { zIndex: 10 }]}>
+        <Pressable
+          onPress={() => setSelectedAnomaly(item)}
+          onHoverIn={() => setHoveredRowId(item.id)}
+          onHoverOut={() => setHoveredRowId(null)}
+          style={({ hovered }) => [
+            styles.row,
+            styles.tableRow,
+            hovered && { backgroundColor: "#f8fafc" },
+            selectedAnomaly?.id === item.id && { backgroundColor: "#fff8e1" },
+          ]}
+        >
+          {isHovered && Platform.OS === 'web' && (
+            <View style={[styles.rowTooltip, { left: mousePos.x + 15, top: mousePos.y - 35 }]}>
+              <Text style={styles.tooltipText}>Click to view evidence & resolve anomaly</Text>
+            </View>
+          )}
 
-      <Text style={[styles.cellText, { flex: 3 }]}>
-        {getEventTypeLabel(item.event_type, t)}
-      </Text>
+          <Text style={[styles.cellText, { flex: 1, textAlign: "center" }, isHovered && styles.cellTextHover]}>
+            {item.id}
+          </Text>
 
-      <Pressable
-        style={[{ flex: 3 }, styles.coordinatePressable]}
-        onPress={(e) => {
-          e.stopPropagation?.();
-          setSelectedAnomaly(item);
-        }}
-      >
-        {item.latitude && item.longitude ? (
-          <View style={styles.coordinateChip}>
-            <MapPin size={14} color="#217837" />
-            <Text style={styles.coordinateText}>
-              {item.latitude.toFixed(4)}, {item.longitude.toFixed(4)}
-            </Text>
-          </View>
-        ) : (
-          <Text style={styles.mutedText}>-</Text>
-        )}
-      </Pressable>
+          <Text style={[styles.cellText, styles.cellTextBold, { flex: 3 }, isHovered && styles.cellTextHover]}>
+            {getEventTypeLabel(item.event_type, t)}
+          </Text>
 
-      <Text style={[styles.cellText, styles.mutedText, { flex: 2 }]}>
-        {formatDate(item.created_at)}
-      </Text>
-
-      <Text style={[styles.cellText, { flex: 1, textAlign: "center" }]}>
-        {item.user_id || "-"}
-      </Text>
-
-      <View style={[{ flex: 2 }, styles.centeredCell]}>
-        {item.is_resolved ? (
-          <View style={styles.resolvedBadge}>
-            <CheckCircle size={12} color="#059669" />
-            <Text style={styles.resolvedBadgeText}>{t("resolved")}</Text>
-          </View>
-        ) : (
-          <View style={styles.unresolvedBadge}>
-            <Circle size={12} color="#dc2626" />
-            <Text style={styles.unresolvedBadgeText}>{t("active")}</Text>
-          </View>
-        )}
-      </View>
-
-      <View style={[{ flex: 2 }, styles.centeredCell]}>
-        {!item.is_resolved && (
-          <Pressable
-            onPress={async (e) => {
-              e.stopPropagation?.();
-              setResolvingId(item.id);
-              try {
-                await resolveAnomaly(item.id);
-              } finally {
-                setResolvingId(null);
-              }
-            }}
-            disabled={resolvingId === item.id}
-            style={({ hovered }) => [
-              styles.resolveBtn,
-              hovered && styles.resolveBtnHover,
-              resolvingId === item.id && styles.resolveBtnDisabled,
-            ]}
-          >
-            {resolvingId === item.id ? (
-              <ActivityIndicator size="small" color="white" />
+          <View style={[{ flex: 3 }, styles.coordinatePressable]}>
+            {item.latitude && item.longitude ? (
+              <View style={styles.coordinateChip}>
+                <MapPin size={14} color="#217837" />
+                <Text style={styles.coordinateText}>
+                  {item.latitude.toFixed(4)}, {item.longitude.toFixed(4)}
+                </Text>
+              </View>
             ) : (
-              <Text style={styles.resolveBtnText}>{t("resolve")}</Text>
+              <Text style={[styles.cellText, styles.mutedText]}>-</Text>
             )}
-          </Pressable>
-        )}
+          </View>
+
+          <Text style={[styles.cellText, styles.mutedText, { flex: 2 }, isHovered && styles.cellTextHover]}>
+            {formatDate(item.created_at)}
+          </Text>
+
+          <Text style={[styles.cellText, { flex: 1, textAlign: "center" }, isHovered && styles.cellTextHover]}>
+            {item.user_id || "-"}
+          </Text>
+
+          <View style={[{ flex: 2 }, styles.centeredCell]}>
+            {item.is_resolved ? (
+              <View style={styles.resolvedBadge}>
+                <CheckCircle size={12} color="#059669" />
+                <Text style={styles.resolvedBadgeText}>{t("resolved")}</Text>
+              </View>
+            ) : (
+              <View style={styles.unresolvedBadge}>
+                <Circle size={12} color="#dc2626" />
+                <Text style={styles.unresolvedBadgeText}>{t("active")}</Text>
+              </View>
+            )}
+          </View>
+        </Pressable>
       </View>
-    </Pressable>
-  );
+    );
+  };
 
   const renderAnomalyEvidence = (event) => {
     if (!event) return null;
@@ -815,7 +935,9 @@ const AnomalyDetection = () => {
           />
         ) : (
           <View style={styles.emptyEvidence}>
-            <Text style={styles.emptyEvidenceText}>No anomaly photo available</Text>
+            <Text style={styles.emptyEvidenceText}>
+              No anomaly photo available
+            </Text>
           </View>
         )}
       </View>
@@ -846,8 +968,8 @@ const AnomalyDetection = () => {
                   {getEventTypeLabel(selectedAnomaly.event_type, t)}
                 </Text>
                 <Text style={styles.detailSubtitle}>
-                  {isIotAnomaly(selectedAnomaly) ? "IoT anomaly" : "AI anomaly"} ·{" "}
-                  {formatDate(selectedAnomaly.created_at)}
+                  {isIotAnomaly(selectedAnomaly) ? "IoT anomaly" : "AI anomaly"}{" "}
+                  · {formatDate(selectedAnomaly.created_at)}
                 </Text>
               </View>
               <Pressable onPress={() => setSelectedAnomaly(null)}>
@@ -899,12 +1021,16 @@ const AnomalyDetection = () => {
                         style={styles.detailMap}
                         src={`https://www.openstreetmap.org/export/embed.html?bbox=${(
                           selectedAnomaly.longitude - 0.01
-                        ).toFixed(4)},${(selectedAnomaly.latitude - 0.01).toFixed(4)},${(
+                        ).toFixed(
+                          4,
+                        )},${(selectedAnomaly.latitude - 0.01).toFixed(4)},${(
                           selectedAnomaly.longitude + 0.01
-                        ).toFixed(4)},${(selectedAnomaly.latitude + 0.01).toFixed(
-                          4
+                        ).toFixed(4)},${(
+                          selectedAnomaly.latitude + 0.01
+                        ).toFixed(
+                          4,
                         )}&layer=mapnik&marker=${selectedAnomaly.latitude.toFixed(
-                          4
+                          4,
                         )},${selectedAnomaly.longitude.toFixed(4)}`}
                         frameBorder="0"
                         marginHeight="0"
@@ -917,29 +1043,38 @@ const AnomalyDetection = () => {
               </View>
 
               {!selectedAnomaly.is_resolved && (
-                <Pressable
-                  onPress={async () => {
-                    setResolvingId(selectedAnomaly.id);
-                    try {
-                      await resolveAnomaly(selectedAnomaly.id);
-                      setSelectedAnomaly(null);
-                    } finally {
-                      setResolvingId(null);
-                    }
-                  }}
-                  disabled={resolvingId === selectedAnomaly.id}
-                  style={[
-                    styles.resolveDetailBtn,
-                    resolvingId === selectedAnomaly.id &&
-                      styles.resolveBtnDisabled,
-                  ]}
-                >
-                  {resolvingId === selectedAnomaly.id ? (
-                    <ActivityIndicator size="small" color="white" />
-                  ) : (
-                    <Text style={styles.resolveBtnText}>{t("resolved")}</Text>
+                <View style={[{ flex: 2 }, styles.resolveBtnContainer]}>
+                  {!selectedAnomaly.is_resolved && (
+                    <Pressable
+                      onPress={async (e) => {
+                        e.stopPropagation?.();
+                        setResolvingId(selectedAnomaly.id);
+                        try {
+                          await resolveAnomaly(selectedAnomaly.id);
+                        } finally {
+                          setResolvingId(null);
+                          setSelectedAnomaly(null);
+                        }
+                      }}
+                      
+                      disabled={resolvingId === selectedAnomaly.id}
+                      style={({ hovered }) => [
+                        styles.resolveBtn,
+                        hovered && styles.resolveBtnHover,
+                        resolvingId === selectedAnomaly.id &&
+                          styles.resolveBtnDisabled,
+                      ]}
+                    >
+                      {resolvingId === selectedAnomaly.id ? (
+                        <ActivityIndicator size="small" color="white" />
+                      ) : (
+                        <Text style={styles.resolveBtnText}>
+                          {t("resolve")}
+                        </Text>
+                      )}
+                    </Pressable>
                   )}
-                </Pressable>
+                </View>
               )}
             </ScrollView>
           </View>
@@ -1002,7 +1137,7 @@ const AnomalyDetection = () => {
   const displayAnomalies = hasActiveAnomalyFilter
     ? filteredAnomalies.slice(
         (currentPage - 1) * anomalyPageSize,
-        currentPage * anomalyPageSize
+        currentPage * anomalyPageSize,
       )
     : anomalies;
 
@@ -1062,14 +1197,16 @@ const AnomalyDetection = () => {
                 ListEmptyComponent={
                   <View style={styles.emptyContainer}>
                     <AlertTriangle size={48} color="#d1d5db" />
-                    <Text style={styles.emptyText}>{t("no_anomalies_detected")}</Text>
+                    <Text style={styles.emptyText}>
+                      {t("no_anomalies_detected")}
+                    </Text>
                   </View>
                 }
               />
             </View>
           </ScrollView>
         </View>
-        
+
         {displayTotalPages > 1 && (
           <PaginatedTableControls
             page={currentPage}
@@ -1132,7 +1269,9 @@ const AnomalyDetection = () => {
                 ListEmptyComponent={
                   <View style={styles.emptyContainer}>
                     <AlertTriangle size={48} color="#d1d5db" />
-                    <Text style={styles.emptyText}>{t("no_sensors_found")}</Text>
+                    <Text style={styles.emptyText}>
+                      {t("no_sensors_found")}
+                    </Text>
                   </View>
                 }
               />
@@ -1147,88 +1286,80 @@ const AnomalyDetection = () => {
           itemLabel={t("sensors")}
           onPageChange={setSensorsPage}
         />
-      </>
-    );
-  };
-
-  const renderSensorLogsModal = () => {
-    if (!showSensorLogsModal || !selectedSensorForLogs) {
-      return null;
-    }
-
-    return (
-      <Modal
-        visible={showSensorLogsModal}
-        transparent
-        animationType="fade"
-        onRequestClose={closeSensorLogsModal}
-      >
-        <Pressable style={styles.modalOverlay} onPress={closeSensorLogsModal}>
-          <View
-            style={styles.sensorLogsModalContent}
-            onStartShouldSetResponder={() => true}
-          >
-            <View style={styles.sensorLogsModalHeader}>
-              <Text style={styles.sensorLogsModalTitle}>
-                {t("sensor_logs")} -{" "}
-                {selectedSensorForLogs.name ||
-                  `Sensor #${selectedSensorForLogs.id}`}
+        {selectedSensor && (
+          <View style={styles.sensorDashboard}>
+            <View style={styles.sensorDashboardHeader}>
+              <Text style={styles.sensorDashboardTitle}>
+                {selectedSensor ? selectedSensor.name : t("sensor_overview")}
               </Text>
-              <Pressable onPress={closeSensorLogsModal}>
-                <Text style={styles.mapCloseBtn}>x</Text>
-              </Pressable>
+
+              {selectedSensor ? (
+                <StatusBadge value={selectedSensor.current_status} />
+              ) : (
+                <Text style={styles.mutedText}>{t("select_sensor_to_view_details")}</Text>
+              )}
             </View>
 
-            {sensorLogsLoading ? (
-              <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#0a6340" />
-                <Text style={styles.loadingText}>{t("loading_sensor_logs")}</Text>
-              </View>
-            ) : sensorLogsError ? (
-              <View style={styles.errorContainer}>
-                <AlertTriangle size={48} color="#dc2626" />
-                <Text style={styles.errorText}>{t("failed_load_sensor_logs")}</Text>
-                <Text style={styles.errorDetail}>{sensorLogsError}</Text>
-                <Pressable
-                  onPress={() =>
-                    loadSensorLogs(selectedSensorForLogs.id, sensorLogsPage)
+            <View style={styles.sensorDashboardContent}>
+              <View style={styles.sensorMapCard}>
+                <Text style={styles.dashboardCardTitle}>{t("location")}</Text>
+
+                <iframe
+                  title="sensor-map"
+                  style={styles.sensorMap}
+                  src={
+                    selectedSensor?.latitude && selectedSensor?.longitude
+                      ? `https://www.openstreetmap.org/export/embed.html?bbox=${(
+                          selectedSensor.longitude - 0.01
+                        ).toFixed(4)},${(selectedSensor.latitude - 0.01).toFixed(4)},${(
+                          selectedSensor.longitude + 0.01
+                        ).toFixed(4)},${(selectedSensor.latitude + 0.01).toFixed(
+                          4
+                        )}&layer=mapnik&marker=${selectedSensor.latitude.toFixed(
+                          4
+                        )},${selectedSensor.longitude.toFixed(4)}`
+                      : "https://www.openstreetmap.org/export/embed.html?bbox=110.25,1.45,110.45,1.65&layer=mapnik"
                   }
-                  style={({ hovered }) => [
-                    styles.retryBtn,
-                    hovered && styles.retryBtnHover,
-                  ]}
-                >
-                  <Text style={styles.retryBtnText}>{t("try_again")}</Text>
-                </Pressable>
+                />
               </View>
-            ) : (
-              <>
-                <View style={styles.tableContainer}>
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator
-                    contentContainerStyle={styles.tableScrollContent}
-                  >
-                    <View style={[styles.tableInner, styles.logTableInner]}>
-                      <FlatList
-                        style={styles.table}
-                        scrollEnabled={false}
-                        data={sensorLogsState.data}
-                        ListHeaderComponent={renderSensorLogsHeader}
-                        renderItem={renderSensorLogItem}
-                        keyExtractor={(item) => item.id.toString()}
-                        ListEmptyComponent={
-                          <View style={styles.emptyContainer}>
-                            <AlertTriangle size={48} color="#d1d5db" />
-                            <Text style={styles.emptyText}>
-                              No sensor logs found
-                            </Text>
-                          </View>
-                        }
-                      />
-                    </View>
-                  </ScrollView>
+
+              <View style={styles.sensorChartCard}>
+                <Text style={styles.dashboardCardTitle}>{t("sensor_readings")}</Text>
+
+                <View style={styles.chartWrapper}>
+                  <Line
+                    data={sensorChartData}
+                    options={{
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      plugins: {
+                        legend: {
+                          display: !!selectedSensor,
+                          position: "top",
+                        },
+                      },
+                      scales: {
+                        y: {
+                          beginAtZero: true,
+                        },
+                      },
+                    }}
+                  />
                 </View>
+              </View>
+            </View>
+
+            {selectedSensor && (
+              <View style={styles.sensorLogsSection}>
+                <FlatList
+                  style={styles.table}
+                  scrollEnabled={false}
+                  data={sensorLogsState.data}
+                  ListHeaderComponent={renderSensorLogsHeader}
+                  renderItem={renderSensorLogItem}
+                  keyExtractor={(item) => item.id.toString()}
+                />
+
                 <PaginatedTableControls
                   page={sensorLogsPage}
                   totalPages={sensorLogsState.totalPages}
@@ -1237,83 +1368,12 @@ const AnomalyDetection = () => {
                   itemLabel={t("sensor_logs")}
                   onPageChange={setSensorLogsPage}
                 />
-              </>
+              </View>
             )}
           </View>
-        </Pressable>
-      </Modal>
-    );
-  };
-
-  const renderMapModal = () => {
-    if (!selectedAnomaly?.latitude || !selectedAnomaly?.longitude) {
-      return null;
-    }
-
-    const mapUrl = `https://www.openstreetmap.org/export/embed.html?bbox=${(
-      selectedAnomaly.longitude - 0.01
-    ).toFixed(4)},${(selectedAnomaly.latitude - 0.01).toFixed(4)},${(
-      selectedAnomaly.longitude + 0.01
-    ).toFixed(4)},${(selectedAnomaly.latitude + 0.01).toFixed(
-      4,
-    )}&layer=mapnik&marker=${selectedAnomaly.latitude.toFixed(
-      4,
-    )},${selectedAnomaly.longitude.toFixed(4)}`;
-
-    return (
-      <Modal
-        visible={showMapModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowMapModal(false)}
-      >
-        <Pressable
-          style={styles.modalOverlay}
-          onPress={() => setShowMapModal(false)}
-        >
-          <View
-            style={styles.modalContent}
-            onStartShouldSetResponder={() => true}
-          >
-            <View
-              style={[
-                styles.mapContainer,
-                isCompact && { height: Math.min(height * 0.75, 520) },
-              ]}
-            >
-              <View style={styles.mapHeader}>
-                <Text style={styles.mapTitle}>
-                  {getEventTypeLabel(selectedAnomaly.event_type, t)}
-                </Text>
-                <Pressable onPress={() => setShowMapModal(false)}>
-                  <Text style={styles.mapCloseBtn}>x</Text>
-                </Pressable>
-              </View>
-              <iframe
-                title="anomaly-map"
-                style={styles.iframe}
-                src={mapUrl}
-                frameBorder="0"
-                marginHeight="0"
-                marginWidth="0"
-                scrolling="no"
-              />
-              <View style={styles.mapFooter}>
-                <View style={styles.coordinateInfo}>
-                  <MapPin size={16} color="#059669" />
-                  <Text style={styles.coordinateLabel}>
-                    {selectedAnomaly.latitude.toFixed(6)},{" "}
-                    {selectedAnomaly.longitude.toFixed(6)}
-                  </Text>
-                </View>
-                <Text style={styles.mapTimestamp}>
-                  {formatDate(selectedAnomaly.created_at)}
-                </Text>
-              </View>
-            </View>
-          </View>
-        </Pressable>
-      </Modal>
+        )}
+        
+      </>
     );
   };
 
@@ -1322,18 +1382,16 @@ const AnomalyDetection = () => {
       style={styles.pageScroll}
       contentContainerStyle={styles.container}
     >
-        <View>
-          <Text style={styles.title}>{t('anomaly_detection')}</Text>
-          <Text style={styles.subtitle}>
-            {t("sensor_inventory_tracking")}
-          </Text>
-        </View>
+      <View>
+        <Text style={styles.title}>{t("anomaly_detection")}</Text>
+        <Text style={styles.subtitle}>{t("sensor_inventory_tracking")}</Text>
+      </View>
 
       <View style={[styles.tabStrip, isCompact && styles.tabStripCompact]}>
         {renderTabButton(
           TABS.ANOMALIES,
           t("anomalies"),
-          `${filteredAnomalies.length} ${t("total_anomalies")}`,
+          `${totalAnomalies} ${t("total_anomalies")}`,
         )}
         {renderTabButton(
           TABS.SENSORS,
@@ -1374,7 +1432,6 @@ const AnomalyDetection = () => {
       </View>
 
       {activeTab === TABS.ANOMALIES ? renderAnomalyDetailModal() : null}
-      {renderSensorLogsModal()}
       {activeTab === TABS.ANOMALIES && <AnomalyFilterSidebar />}
     </ScrollView>
   );
@@ -1384,13 +1441,13 @@ const styles = StyleSheet.create({
   pageScroll: {
     flex: 1,
     backgroundColor: "#f8faf7",
-    minHeight: '100vh',
+    minHeight: "100vh",
   },
   container: {
     paddingVertical: 24,
     paddingHorizontal: 28,
     gap: 16,
-    minHeight: '100vh',
+    minHeight: "100vh",
   },
   headerRow: {
     justifyContent: "space-between",
@@ -1496,10 +1553,8 @@ const styles = StyleSheet.create({
   },
   headerCell: {
     color: "white",
-    fontWeight: "500",
-    fontSize: 13,
-    paddingHorizontal: 10,
     alignSelf: "center",
+    fontWeight: "500",
   },
   headerPressableCell: {
     flexDirection: "row",
@@ -1510,25 +1565,24 @@ const styles = StyleSheet.create({
   tableRow: {
     paddingVertical: 5,
     borderBottomWidth: 1,
-    borderBottomColor:  "#8f8f8f84",
+    borderBottomColor: "#8f8f8f84",
     alignItems: "center",
   },
   cellText: {
-    fontSize: 13,
     color: "#1f2933",
     paddingHorizontal: 10,
   },
   cellContent: {
-    paddingHorizontal: 10,
-    alignItems: "center",
     flexDirection: "row",
-    gap: 8,
+  },
+  resolveBtnContainer: {
+    alignSelf: "flex-start",
   },
   centeredText: {
     textAlign: "center",
   },
   centeredCell: {
-    alignItems: "center",
+    alignSelf: "center",
     justifyContent: "center",
   },
   mutedText: {
@@ -1539,17 +1593,25 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   sensorNameCell: {
-    flex: 1.5,
+    flex: 2,
   },
   sensorTypeCell: {
-    flex: 1.2,
+    flex: 2,
   },
   sensorLocationCell: {
+    flex: 2,
+  },
+  sensorNameLocationCell: {
+    flex: 1.5,
+  },
+  sensorCoordinateCell: {
     flex: 1.4,
   },
+  sensorNameHover: {
+    textDecorationLine: "underline",
+  },
   sensorStatusCell: {
-    width: 170,
-    justifyContent: "center",
+    flex:1,
   },
   sensorRowPressable: {
     cursor: "pointer",
@@ -1610,14 +1672,15 @@ const styles = StyleSheet.create({
     borderColor: "#bbf7d0",
   },
   coordinateText: {
-    fontSize: 12,
     color: "#059669",
     fontWeight: "500",
     fontFamily: "monospace",
   },
   statusBadge: {
     flexDirection: "row",
+    alignSelf: "flex-start",
     alignItems: "center",
+
     gap: 6,
     paddingHorizontal: 10,
     paddingVertical: 5,
@@ -1636,9 +1699,10 @@ const styles = StyleSheet.create({
   resolvedBadge: {
     flexDirection: "row",
     alignItems: "center",
+    alignSelf: "center",
     gap: 4,
     paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingVertical: 4,
     backgroundColor: "#f0fdf4",
     borderRadius: 12,
     borderWidth: 1,
@@ -1652,8 +1716,9 @@ const styles = StyleSheet.create({
   unresolvedBadge: {
     flexDirection: "row",
     alignItems: "center",
+    alignSelf: "center",
     gap: 4,
-    paddingHorizontal: 8,
+    paddingHorizontal: 14,
     paddingVertical: 3,
     backgroundColor: "#fef2f2",
     borderRadius: 12,
@@ -1666,8 +1731,8 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   resolveBtn: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingHorizontal: 15,
+    paddingVertical: 10,
     backgroundColor: "#0a6340",
     borderRadius: 6,
     minWidth: 64,
@@ -1793,6 +1858,7 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
     zIndex: 9999,
     elevation: 9999,
+    cursor: "default",
   },
   modalContent: {
     backgroundColor: "white",
@@ -1936,16 +2002,8 @@ const styles = StyleSheet.create({
     gap: 14,
     alignItems: "stretch",
   },
-
   detailMediaColumn: {
     flex: 1,
-  },
-
-  detailMap: {
-    width: "100%",
-    height: 320,
-    border: "none",
-    borderRadius: 8,
   },
   evidenceSection: {
     borderWidth: 1,
@@ -2141,6 +2199,103 @@ const styles = StyleSheet.create({
   filterBtnText: {
     color: "white",
     fontWeight: "600",
+  },
+  sensorDashboard: {
+    marginTop: 20,
+    gap: 16,
+  },
+
+  sensorDashboardHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+
+  sensorDashboardTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#102219",
+  },
+
+  sensorDashboardContent: {
+    flexDirection: "row",
+    gap: 16,
+  },
+
+  sensorMapCard: {
+    flex: 1,
+    backgroundColor: "white",
+    borderRadius: 12,
+    padding: 12,
+  },
+
+  sensorChartCard: {
+    flex: 1.4,
+    backgroundColor: "white",
+    borderRadius: 12,
+    padding: 12,
+  },
+
+  dashboardCardTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+    marginBottom: 12,
+  },
+
+  sensorMap: {
+    width: "100%",
+    height: 320,
+    border: "none",
+    borderRadius: 8,
+  },
+
+  sensorLogsSection: {
+    backgroundColor: "white",
+    borderRadius: 12,
+    overflow: "hidden",
+  },
+  chartWrapper: {
+    width: "100%",
+    height: 300,
+  },
+  rowContainerRelative: {
+    position: "relative",
+    width: "100%",
+  },
+  rowTooltip: {
+    position: "absolute",
+    backgroundColor: "#1e293b",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    zIndex: 9999,
+    pointerEvents: "none", 
+    ...Platform.select({
+      web: { whiteSpace: "nowrap" }
+    })
+  },
+  tooltipText: {
+    color: "white",
+    fontSize: 11,
+    fontWeight: "500",
+  },
+  cellText: {
+    color: "#334155",
+    paddingHorizontal: 10,
+    alignSelf: "center",
+    ...Platform.select({
+      web: {
+        transition: "color 0.15s ease",
+      }
+    })
+  },
+  cellTextHover: {
+    color: "#1b5e20",
+    ...Platform.select({
+      web: {
+        textDecorationLine: "underline",
+      }
+    })
   },
 });
 

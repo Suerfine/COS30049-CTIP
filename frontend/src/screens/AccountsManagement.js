@@ -75,21 +75,15 @@ const AccountManagement = () => {
   } = useAccountManagement();
   const [pendingImage, setPendingImage] = useState(null);
   const [selectedAcc, setSelectedAcc] = useState(null);
-  const [activeMenuId, setActiveMenuId] = useState(null);
   const [isOpen, setIsOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
+  const [hoveredRowId, setHoveredRowId] = useState(null);
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   
   const { width } = useWindowDimensions();
   const isCompact = width < 420;
   const { t } = useTranslation();
-
-  const handleStartEdit = () => {
-    setEditForm({ ...selectedAcc });
-    setIsEditing(true);
-    setEditErrors({});
-    setActiveMenuId(null);
-  };
 
   const handleAdd = () => {
     setModalVisible(true);
@@ -224,44 +218,80 @@ const AccountManagement = () => {
     </View>
   );
 
-  const renderUserItem = ({ item }) => (
-    <Pressable
-      onPress={() => setSelectedAcc(item)}
-      style={({ hovered }) => [
-        styles.row,
-        styles.tableRow,
-        hovered && { backgroundColor: "#f9f9f9" },
-        selectedAcc?.id === item.id && { backgroundColor: "#fff8e1" },
-      ]}
-    >
-      <Text style={{ flex: 1, textAlign: "center" }}>{item.id}</Text>
-      <View style={[{ flex: 3 }, styles.userInfo, styles.row]}>
-        {getProfileImageUri(item) ? (
-          <Image
-            source={{ uri: getProfileImageUri(item) }}
-            style={styles.avatar}
-            accessibilityLabel={`Profile Image of ${item.firstname + " " + item.lastname}`}
-          />
-        ) : (
-          <View style={styles.pfpPlaceholder}>
-            <Text style={styles.pfpInitials}>
-              {item.firstname ? item.firstname[0].toUpperCase() : "?"}
+  const renderUserItem = ({ item }) => {
+    const isHovered = hoveredRowId === item.id;
+    return (
+      <View 
+        style={[styles.rowContainerRelative, isHovered && { zIndex: 10 }]}
+        onPointerMove={(e) => {
+          if (Platform.OS === 'web') {
+            const containerBounds = e.currentTarget.getBoundingClientRect();
+            setMousePos({ 
+              x: e.nativeEvent.clientX - containerBounds.left, 
+              y: e.nativeEvent.clientY - containerBounds.top 
+            });
+          }
+        }}
+      >
+        <Pressable
+          onPress={() => {
+            setSelectedAcc(item);
+            setEditForm({ ...item });
+            setIsEditing(true);
+            setEditErrors({});
+          }}
+          onHoverIn={() => setHoveredRowId(item.id)}
+          onHoverOut={() => setHoveredRowId(null)} 
+          style={({ hovered }) => [
+            styles.row,
+            styles.tableRow,
+            hovered && { backgroundColor: "#f8fafc" }, // Slightly deeper gray accent on hover
+            selectedAcc?.id === item.id && { backgroundColor: "#fff8e1" },
+          ]}
+        >
+          {isHovered && Platform.OS === 'web' && (
+            <View style={[styles.rowTooltip, { left: mousePos.x + 15, top: mousePos.y - 35 }]}>
+              <Text style={styles.tooltipText}>Click to edit user information</Text>
+            </View>
+          )}
+
+          {/* 🔥 Applying dynamic cellTextHover styles across row components */}
+          <Text style={[styles.cellText, { flex: 1, textAlign: "center" }, isHovered && styles.cellTextHover]}>
+            {item.id}
+          </Text>
+          
+          <View style={[{ flex: 3 }, styles.userInfo, styles.row]}>
+            {getProfileImageUri(item) ? (
+              <Image source={{ uri: getProfileImageUri(item) }} style={styles.avatar} />
+            ) : (
+              <View style={styles.pfpPlaceholder}>
+                <Text style={styles.pfpInitials}>{item.firstname ? item.firstname[0].toUpperCase() : "?"}</Text>
+              </View>
+            )}
+            <Text style={[styles.cellText, styles.cellTextBold, isHovered && styles.cellTextHover]}>
+              {item.firstname + " " + item.lastname}
             </Text>
           </View>
-        )}
-        <Text>{item.firstname + " " + item.lastname}</Text>
+          
+          <Text style={[styles.cellText, { flex: 2 }, isHovered && styles.cellTextHover]}>
+            {item.username}
+          </Text>
+          <Text style={[styles.cellText, { flex: 3 }, isHovered && styles.cellTextHover]}>
+            {item.username + "@sfc.gov.my"}
+          </Text>
+          <Text style={[styles.cellText, { flex: 1 }, isHovered && styles.cellTextHover]}>
+            {item.role === "admin" ? t("role.admin") : t("role.park_guide")}
+          </Text>
+          <Text style={[styles.cellText, { flex: 2 }, isHovered && styles.cellTextHover]}>
+            {formatDate(item.created_at)}
+          </Text>
+          <Text style={[styles.cellText, { flex: 2 }, isHovered && styles.cellTextHover]}>
+            {formatDate(item.last_login_at)}
+          </Text>
+        </Pressable>
       </View>
-      <Text style={{ flex: 2 }}>{item.username}</Text>
-      {/* Work Email */}
-      <Text style={{ flex: 3 }}>{item.username + "@sfc.gov.my"}</Text>
-      {/* Role */}
-      <Text style={{ flex: 1 }}>
-        {item.role === "admin" ? t("role.admin") : t("role.park_guide")}
-      </Text>
-      <Text style={{ flex: 2 }}>{formatDate(item.created_at)}</Text>
-      <Text style={{ flex: 2 }}>{formatDate(item.last_login_at)}</Text>
-    </Pressable>
-  );
+    );
+  };
 
   const renderPagination = () => {
     const pages = [];
@@ -518,42 +548,19 @@ const AccountManagement = () => {
             <View style={styles.panelContent}>
               <View style={styles.actionMenu}>
                 <Pressable
-                  onPress={() =>
-                    setActiveMenuId(
-                      activeMenuId === selectedAcc.id ? null : selectedAcc.id,
-                    )
-                  }
+                  style={({ hovered }) => [
+                    styles.deleteIconButton,
+                    hovered && styles.deleteIconButtonHover,
+                  ]}
+                  onPress={onDeletePress}
                 >
-                  <EllipsisVertical />
+                  {({ hovered }) => (
+                    <Trash2 
+                      size={22} 
+                      color={hovered ? "#ff9800" : "#000000"} 
+                    />
+                  )}
                 </Pressable>
-                {activeMenuId === selectedAcc.id && (
-                  <View style={styles.floatingMenu}>
-                    <Pressable
-                      style={({ hovered }) => [
-                        styles.menuItem,
-                        hovered && styles.menuItemHover,
-                      ]}
-                      onPress={handleStartEdit}
-                    >
-                      <View style={[styles.row, styles.option]}>
-                        <Pen size={16} color="orange" />
-                        <Text style={styles.menuText}>Edit</Text>
-                      </View>
-                    </Pressable>
-                    <Pressable
-                      style={({ hovered }) => [
-                        styles.menuItem,
-                        hovered && styles.menuItemHover,
-                      ]}
-                      onPress={onDeletePress}
-                    >
-                      <View style={[styles.row, styles.option]}>
-                        <Trash2 size={16} color="orange" />
-                        <Text style={styles.menuText}>Delete</Text>
-                      </View>
-                    </Pressable>
-                  </View>
-                )}
               </View>
               {(isEditing && pendingImage?.uri) ||
               getProfileImageUri(selectedAcc) ? (
@@ -628,36 +635,14 @@ const AccountManagement = () => {
                     <User2 size={18} color="#4f4f4f" />
                     <Text style={styles.panelLabel}>Username:</Text>
                   </View>
-                  {isEditing ? (
-                    <View>
-                      <TextInput
-                        style={[styles.userDetails, styles.inputEditing, editErrors.username && styles.inputErrorStyle]}
-                        value={editForm?.username || ""}
-                        onChangeText={(text) => setEditForm({ ...editForm, username: text })}
-                      />
-                      {editErrors.username && <Text style={styles.errorLabelMicro}>{editErrors.username}</Text>}
-                    </View>
-                  ) : (
-                    <Text style={styles.userDetails}>{selectedAcc.username}</Text>
-                  )}
+                  <Text style={styles.userDetails}>{selectedAcc.username}</Text>
                 </View>
                 <View style={styles.details}>
                   <View style={styles.row}>
                     <IdCard size={18} color="#4f4f4f" />
                     <Text style={styles.panelLabel}>Passport/IC:</Text>
                   </View>
-                  {isEditing ? (
-                    <View>
-                      <TextInput
-                        style={[styles.userDetails, styles.inputEditing, editErrors.identification && styles.inputErrorStyle]}
-                        value={editForm?.identification || ""}
-                        onChangeText={(text) => setEditForm({ ...editForm, identification: text })}
-                      />
-                      {editErrors.identification && <Text style={styles.errorLabelMicro}>{editErrors.identification}</Text>}
-                    </View>
-                  ) : (
-                    <Text style={styles.userDetails}>{selectedAcc.identification}</Text>
-                  )}
+                  <Text style={styles.userDetails}>{selectedAcc.identification}</Text>
                 </View>
 
                 <View style={styles.details}>
@@ -685,25 +670,14 @@ const AccountManagement = () => {
                     <Text style={styles.panelLabel}>Work Email:</Text>
                   </View>
                   <Text style={styles.userDetails}>
-                    {(selectedAcc.username || "") + "@sfc.gov.my"}
+                    {(selectedAcc.id || "") + "@sfc.gov.my"}
                   </Text>
                   <View style={styles.row}>
                     <Text style={[styles.panelLabel, { marginLeft: 35, marginTop: 15 }]}>
                       Personal Email:
                     </Text>
                   </View>
-                  {isEditing ? (
-                    <View>
-                      <TextInput
-                        style={[styles.userDetails, styles.inputEditing, editErrors.personal_email && styles.inputErrorStyle]}
-                        value={editForm?.personal_email || ""}
-                        onChangeText={(text) => setEditForm({ ...editForm, personal_email: text })}
-                      />
-                      {editErrors.personal_email && <Text style={styles.errorLabelMicro}>{editErrors.personal_email}</Text>}
-                    </View>
-                  ) : (
                     <Text style={styles.userDetails}>{selectedAcc.personal_email}</Text>
-                  )}
                 </View>
                 <View style={styles.details}>
                   <View style={styles.row}>
@@ -726,15 +700,6 @@ const AccountManagement = () => {
               </View>
               {isEditing && (
                 <View style={[styles.row, styles.actionBtn]}>
-                  <Pressable
-                    onPress={() => {
-                      setIsEditing(false);
-                      setPendingImage(null);
-                    }}
-                    style={styles.Btn}
-                  >
-                    <Text>Cancel</Text>
-                  </Pressable>
                   <Pressable style={styles.Btn} onPress={onSaveEdit}>
                     <Text>Save</Text>
                   </Pressable>
@@ -1020,25 +985,6 @@ const styles = StyleSheet.create({
     position: "absolute",
     zIndex: 400,
   },
-  floatingMenu: {
-    position: "absolute",
-    right: 7,
-    top: 30,
-    backgroundColor: "white",
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 5,
-    borderWidth: 1,
-    borderColor: "#f0f0f0",
-    ...Platform.select({
-      web: { userSelect: "none" },
-    }),
-  },
-  option: {
-    gap: 8,
-    alignSelf: "flex-start",
-  },
   inputEditing: {
     borderWidth: 1,
     borderColor: "#ddd",
@@ -1164,6 +1110,60 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     marginTop: 3,
     marginLeft: 35,
+  },
+  rowContainerRelative: {
+    position: "relative",
+    width: "100%",
+  },
+  rowTooltip: {
+    position: "absolute",
+    backgroundColor: "#1e293b",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    zIndex: 9999,
+    pointerEvents: "none", 
+    ...Platform.select({
+      web: { whiteSpace: "nowrap" }
+    })
+  },
+  tooltipText: {
+    color: "white",
+    fontSize: 11,
+    fontWeight: "500",
+  },
+  deleteIconButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18, 
+    backgroundColor: "transparent",
+    alignItems: "center",
+    justifyContent: "center",
+    ...Platform.select({
+      web: { 
+        cursor: "pointer",
+        transition: "all 0.2s ease-in-out" 
+      },
+    }),
+  },
+  deleteIconButtonHover: {
+    backgroundColor: "#fff3e0", 
+  },
+  cellText: { 
+    alignSelf: "center",
+    ...Platform.select({
+      web: {
+        transition: "color 0.15s ease", 
+      }
+    })
+  },
+  cellTextHover: {
+    color: "#1b5e20", 
+    ...Platform.select({
+      web: {
+        textDecorationLine: "underline", 
+      }
+    })
   },
 });
 

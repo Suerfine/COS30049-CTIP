@@ -86,6 +86,9 @@ const RegistrationManagement = () => {
   const isCompact = width < 640;
   const { t } = useTranslation();
 
+  const [hoveredRowId, setHoveredRowId] = useState(null);
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+
   const handleNextPage = () => {
     if (currentPage < totalPages) {
       setCurrentPage((prev) => prev + 1);
@@ -163,7 +166,7 @@ const RegistrationManagement = () => {
       >
         <Text style={styles.headerText}>{t("email")}</Text>
         {sortConfig.key === "personal_email" &&
-        sortConfig.direction === "asc" ? (
+          sortConfig.direction === "asc" ? (
           <ArrowUpNarrowWide size={14} color="white" />
         ) : (
           <ArrowDownWideNarrow size={14} color="white" />
@@ -184,56 +187,85 @@ const RegistrationManagement = () => {
     </View>
   );
 
-  const renderUserItem = ({ item }) => (
-    <Pressable
-      onPress={() => setSelectedUser(item)}
-      style={({ hovered }) => [
-        styles.row,
-        styles.tableRow,
-        hovered && { backgroundColor: "#f9f9f9" },
-        selectedUser?.id === item.id && { backgroundColor: "#fff8e1" },
-      ]}
-    >
-      {/* Full Name and profile image */}
-      <View style={[{ flex: 3 }, styles.userInfo, styles.row]}>
-        {item.profileImage ? (
-          <Image
-            source={{ uri: item.profileImage }}
-            style={styles.avatar}
-            accessibilityLabel={`Profile Image of ${item.firstname + " " + item.lastname}`}
-          />
-        ) : (
-          <View style={styles.pfpPlaceholder}>
-            <Text style={styles.pfpInitials}>
-              {item.firstname ? item.firstname[0].toUpperCase() : "?"}
+  const renderUserItem = ({ item }) => {
+    const isHovered = hoveredRowId === item.id;
+    return (
+      <View 
+        style={[styles.rowContainerRelative, isHovered && { zIndex: 10 }]}
+        onPointerMove={(e) => {
+          if (Platform.OS === 'web') {
+            const containerBounds = e.currentTarget.getBoundingClientRect();
+            setMousePos({ 
+              x: e.nativeEvent.clientX - containerBounds.left, 
+              y: e.nativeEvent.clientY - containerBounds.top 
+            });
+          }
+        }}
+      >
+        <Pressable
+          onPress={() => setSelectedUser(item)}
+          onHoverIn={() => setHoveredRowId(item.id)}
+          onHoverOut={() => setHoveredRowId(null)}
+          style={({ hovered }) => [
+            styles.row,
+            styles.tableRow,
+            hovered && { backgroundColor: "#f8fafc" },
+            selectedUser?.id === item.id && { backgroundColor: "#fff8e1" },
+          ]}
+        >
+          {isHovered && Platform.OS === 'web' && (
+            <View style={[styles.rowTooltip, { left: mousePos.x + 15, top: mousePos.y - 40 }]}>
+              <Text style={styles.tooltipText}>Click to view registration details</Text>
+            </View>
+          )}
+          
+          {/* Full Name Cell with Hover Text State */}
+          <View style={[{ flex: 3 }, styles.userInfo, styles.row]}>
+            {item.profileImage ? (
+              <Image source={{ uri: item.profileImage }} style={styles.avatar} />
+            ) : (
+              <View style={styles.pfpPlaceholder}>
+                <Text style={styles.pfpInitials}>
+                  {item.firstname ? item.firstname[0].toUpperCase() : "?"}
+                </Text>
+              </View>
+            )}
+            <Text style={[styles.cellText, styles.cellTextBold, isHovered && styles.cellTextHover]}>
+              {item.firstname + " " + item.lastname}
             </Text>
           </View>
-        )}
-        <Text>{item.firstname + " " + item.lastname}</Text>
+
+          {/* Remaining Data Cells with Hover Text State */}
+          <Text style={[styles.cellText, { flex: 2 }, isHovered && styles.cellTextHover]}>
+            {item.identification}
+          </Text>
+          
+          <View style={[styles.row, styles.badge, { flex: 2 }]}>
+            {item.status === "approved" ? (
+              <Circle size={10} stroke="green" fill="green" />
+            ) : item.status === "pending" ? (
+              <Circle size={10} stroke="orange" fill="orange" />
+            ) : (
+              <Circle size={10} stroke="red" fill="red" />
+            )}
+            <Text style={[styles.cellText, isHovered && styles.cellTextHover]}>
+              {t(`status.${item.status}`)}
+            </Text>
+          </View>
+          
+          <Text style={[styles.cellText, { flex: 3 }, isHovered && styles.cellTextHover]}>
+            {item.personal_email}
+          </Text>
+          <Text style={[styles.cellText, { flex: 2 }, isHovered && styles.cellTextHover]}>
+            {item.tel}
+          </Text>
+          <Text style={[styles.cellText, { flex: 2 }, isHovered && styles.cellTextHover]}>
+            {formatDate(item.created_at)}
+          </Text>
+        </Pressable>
       </View>
-      {/* IC */}
-      <Text style={{ flex: 2 }}>{item.identification}</Text>
-      {/* Status */}
-      <View style={[styles.row, styles.badge, { flex: 2 }]}>
-        {item.status === "approved" ? (
-          <Circle size={10} stroke="green" fill="green" />
-        ) : item.status === "pending" ? (
-          <Circle size={10} stroke="orange" fill="orange" />
-        ) : (
-          <Circle size={10} stroke="red" fill="red" />
-        )}
-        <Text>
-          {t(`status.${item.status}`)}
-        </Text>
-      </View>
-      {/* Email */}
-      <Text style={{ flex: 3 }}>{item.personal_email}</Text>
-      {/* Telefon */}
-      <Text style={{ flex: 2 }}>{item.tel}</Text>
-      {/* Register On */}
-      <Text style={{ flex: 2 }}>{formatDate(item.created_at)}</Text>
-    </Pressable>
-  );
+    )
+  };
 
   const renderPagination = () => {
     const pageNumbers = [];
@@ -382,15 +414,15 @@ const RegistrationManagement = () => {
             {/* Dropdown Menu */}
             {isOpen && (
               <View style={styles.dropdownMenu}>
-                {statusOptions.map((status) => (                  
+                {statusOptions.map((status) => (
                   <Pressable
                     key={status.key}
                     style={({ hovered }) => [
                       styles.menuItem,
                       currentStatus === status.key && styles.menuItemActive,
                       hovered &&
-                        currentStatus != status.key &&
-                        styles.menuItemHover,
+                      currentStatus != status.key &&
+                      styles.menuItemHover,
                     ]}
                     onPress={() => {
                       setCurrentPage(1);
@@ -649,18 +681,36 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
     paddingHorizontal: 40,
   },
-  tableRow: {
-    paddingVertical: 5,
-    borderBottomWidth: 1,
-    borderBottomColor: "#8f8f8f84",
-    alignItems: "center",
-    paddingHorizontal: 12,
-  },
   table: {
     backgroundColor: "white",
   },
   tableContainer: {
     width: "100%",
+    paddingTop: 20,
+  },
+  tableRow: {
+    paddingVertical: 5,
+    borderBottomWidth: 1,
+    borderBottomColor: "#e2e8f0",
+    alignItems: "center",
+    paddingHorizontal: 12,
+  },
+  cellText: {
+    color: "#334155",
+    alignSelf: "center",
+    ...Platform.select({
+      web: {
+        transition: "color 0.15s ease",
+      }
+    })
+  },
+  cellTextHover: {
+    color: "#1b5e20",
+    ...Platform.select({
+      web: {
+        textDecorationLine: "underline",
+      }
+    })
   },
   tableInner: {
     minWidth: 900,
@@ -695,7 +745,7 @@ const styles = StyleSheet.create({
     ...Platform.select({
       web: { outlineStyle: "none" },
     }),
-    marginLeft:10
+    marginLeft: 10
   },
   toolbar: {
     marginVertical: 20,
@@ -1080,6 +1130,31 @@ const styles = StyleSheet.create({
   resumeErrorText: {
     color: "#b91c1c",
     textAlign: "center",
+  },
+  rowTooltip: {
+    position: "absolute",
+    backgroundColor: "#1e293b",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    zIndex: 9999,
+    pointerEvents: "none", 
+    ...Platform.select({
+      web: { whiteSpace: "nowrap" }
+    })
+  },
+  tooltipText: {
+    color: "white",
+    fontSize: 11,
+    fontWeight: "500",
+  },
+  cellDataText: {
+    fontSize: 13,
+    color: "#334155",
+  },
+  rowContainerRelative: {
+    position: "relative", 
+    width: "100%",
   },
 });
 

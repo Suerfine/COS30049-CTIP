@@ -27,22 +27,46 @@ describe("Notification Controller Integration Tests", () => {
   it("GET /api/notifications/me - returns only the current user's active notifications", async () => {
     const guide = await createUser(UserRoles.PARK_GUIDE, GUIDE_EMAIL, GUIDE_PASSWORD);
     const other = await createUser(UserRoles.PARK_GUIDE, "other.guide@sfc.com.my", GUIDE_PASSWORD);
-    await Notification.create({ user_id: guide.id, title: "Mine", message: "Read me", url: "/mine" });
+    await Notification.create({
+      user_id: guide.id,
+      title: "Older Mine",
+      message: "Read me later",
+      url: "/mine-old",
+      created_at: new Date("2026-05-18T08:00:00.000Z"),
+      updated_at: new Date("2026-05-18T08:00:00.000Z"),
+    });
+    await Notification.create({
+      user_id: guide.id,
+      title: "Latest Mine",
+      message: "Read me first",
+      url: "/mine-new",
+      created_at: new Date("2026-05-19T08:00:00.000Z"),
+      updated_at: new Date("2026-05-19T08:00:00.000Z"),
+    });
     await Notification.create({ user_id: other.id, title: "Other", message: "Not mine", url: "/other" });
-    const accessToken = await login({ username: GUIDE_EMAIL, password: GUIDE_PASSWORD });
+    const accessToken = await login({
+      username: `${guide.id}@sfc.gov.my`,
+      password: GUIDE_PASSWORD,
+    });
 
     const response = await request(app)
       .get("/api/notifications/me")
       .set("Authorization", `Bearer ${accessToken}`);
 
     expect(response.status).toBe(200);
-    expect(response.body.data).toHaveLength(1);
-    expect(response.body.data[0].title).toBe("Mine");
+    expect(response.body.data).toHaveLength(2);
+    expect(response.body.data.map((notification: any) => notification.title)).toEqual([
+      "Latest Mine",
+      "Older Mine",
+    ]);
   });
 
   it("GET and PUT /api/notifications/preferences - reads and updates notification preferences", async () => {
-    await createUser(UserRoles.PARK_GUIDE, GUIDE_EMAIL, GUIDE_PASSWORD);
-    const accessToken = await login({ username: GUIDE_EMAIL, password: GUIDE_PASSWORD });
+    const guide = await createUser(UserRoles.PARK_GUIDE, GUIDE_EMAIL, GUIDE_PASSWORD);
+    const accessToken = await login({
+      username: `${guide.id}@sfc.gov.my`,
+      password: GUIDE_PASSWORD,
+    });
 
     const initialResponse = await request(app)
       .get("/api/notifications/preferences")
@@ -68,7 +92,10 @@ describe("Notification Controller Integration Tests", () => {
       message: "This should be dismissed",
       url: "/notifications",
     });
-    const accessToken = await login({ username: GUIDE_EMAIL, password: GUIDE_PASSWORD });
+    const accessToken = await login({
+      username: `${guide.id}@sfc.gov.my`,
+      password: GUIDE_PASSWORD,
+    });
 
     const response = await request(app)
       .put(`/api/notifications/${notification.id}/dismiss`)

@@ -24,6 +24,19 @@ import { EnrollmentStatus } from "../enum/EnrollmentStatus";
 import { EventStatus } from "../enum/EventStatus";
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
+const DEFAULT_NOTIFICATION_ORDER = "created_at desc";
+
+function getNotificationQuery(
+  query: PaginateRequestParams,
+): PaginateRequestParams {
+  return {
+    ...query,
+    orderBy:
+      typeof query.orderBy === "string" && query.orderBy.trim() !== ""
+        ? query.orderBy
+        : DEFAULT_NOTIFICATION_ORDER,
+  };
+}
 
 class HttpError extends Error {
   status: number;
@@ -242,8 +255,10 @@ export const getAllNotifications = async (
       throw new HttpError(403, "Forbidden");
     }
 
-    // Retrieve all notifications with pagination, filtering and sotring
-    const notifications = await paginateModel(Notification, req.query);
+    const query = getNotificationQuery(req.query);
+
+    // Retrieve all notifications with pagination, filtering and sorting
+    const notifications = await paginateModel(Notification, query);
 
     // Formatting the response to match the NotificationResponse interface and include pagination metadata
     const baseUrl = `${req.protocol}://${req.get("host")}${req.originalUrl}`;
@@ -257,7 +272,7 @@ export const getAllNotifications = async (
         created_at: notification.created_at,
         updated_at: notification.updated_at,
       })),
-      req.query,
+      query,
       true,
       {
         page: notifications.page,
@@ -292,7 +307,9 @@ export const getAllMyNotifications = async (
 
     // Retrieve notifications for the authenticated user, filtering by dismissed status if includeDismissed is false
     const includeDismissed = parseBooleanField(req.query.includeDismissed);
-    const notifications = await paginateModel(Notification, req.query, {
+    const query = getNotificationQuery(req.query);
+
+    const notifications = await paginateModel(Notification, query, {
       where: {
         user_id: req.user!.id,
         ...(includeDismissed ? {} : { dismissed_at: null }),
@@ -311,7 +328,7 @@ export const getAllMyNotifications = async (
         created_at: notification.created_at,
         updated_at: notification.updated_at,
       })),
-      req.query,
+      query,
       true,
       {
         page: notifications.page,

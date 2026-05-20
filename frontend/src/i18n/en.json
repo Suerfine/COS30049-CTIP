@@ -439,5 +439,9 @@
     "no_anomalies_detected": "No anomalies detected",
     "no_sensors_found": "No sensors found",
     "no_sensor_logs_found": "No sensor logs found",
-    "sensor_logs": "Sensor Logs"
+    "sensor_logs": "Sensor Logs",
+    "calendar":"Calendar",
+    "sensor_overview": "Sensor Overview",
+    "select_sensor_to_view_details": "Select sensor to view details",
+    "sensor_readings": "Sensor Readings"
 }

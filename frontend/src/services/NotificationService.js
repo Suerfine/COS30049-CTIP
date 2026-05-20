@@ -10,6 +10,7 @@ export const notificationService = {
           page: params.page || 1,
           size: params.size || 20,
           filter: params.filter || '',
+          orderBy: params.orderBy || 'created_at desc',
         },
       });
       return response.data;
@@ -52,6 +53,7 @@ export const notificationService = {
           page: params.page || 1,
           size: params.size || 20,
           filter: params.filter || '',
+          orderBy: params.orderBy || 'created_at desc',
         },
       });
       return response.data;

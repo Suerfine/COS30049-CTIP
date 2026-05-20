@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { AnomalyService } from "../services/AnomalyService";
 import { sensorService } from "../services/SensorService";
 
@@ -67,7 +67,7 @@ export const useAnomalyDetection = () => {
   })
 
   // Fetch all anomalies
-  const fetchAnomalies = async () => {
+  const fetchAnomalies = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -106,7 +106,7 @@ export const useAnomalyDetection = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentPage, searchQuery, sortConfig, anomalyFilters]);
 
   useEffect(() => {
     fetchAnomalies();
@@ -144,7 +144,7 @@ export const useAnomalyDetection = () => {
     await fetchAnomalies();
   };
 
-  const loadSensors = async () => {
+  const loadSensors = useCallback(async () => {
     setSensorLoading(true);
     setSensorError(null);
 
@@ -170,12 +170,9 @@ export const useAnomalyDetection = () => {
     } finally {
       setSensorLoading(false);
     }
-  };
+  }, [sensorsPage]);
 
-  const loadSensorLogs = async (
-    sensorId,
-    page = 1
-  ) => {
+  const loadSensorLogs = useCallback(async (sensorId, page = 1) => {
     if (!sensorId) return;
 
     setSensorLogsLoading(true);
@@ -207,7 +204,7 @@ export const useAnomalyDetection = () => {
     } finally {
       setSensorLogsLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     loadSensors();
