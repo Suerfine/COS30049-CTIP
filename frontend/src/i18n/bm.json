@@ -449,5 +449,16 @@
     "calendar":"Kalender",
     "sensor_overview": "Gambaran Keseluruhan Sensor",
     "select_sensor_to_view_details": "Pilih sensor untuk melihat butiran",
-    "sensor_readings": "Bacaan Sensor"
+    "sensor_readings": "Bacaan Sensor",
+    "badge_rejected": "Lencana ditolak",
+    "confirm_reject_badge": "Adakah anda pasti mahu menolak lencana ini?",
+    "course": "Kursus",
+    "delete_record_permanently": "Padam rekod ini secara kekal?",
+    "error_rejecting_badge": "Ralat semasa menolak lencana",
+    "failed_to_load_receipt": "Gagal memuatkan resit",
+    "final_assessment": "Penilaian Akhir",
+
+    "click_view_enrollment_profile": "Klik untuk melihat profil pendaftaran",
+    "click_audit_learning_progress": "Klik untuk mengaudit kemajuan pembelajaran",
+    "click_review_bank_receipt": "Klik untuk menyemak resit bank"
 }

@@ -23,21 +23,57 @@ const IOT_ANOMALY_TYPES = [
 
 type IotAnomalyType = (typeof IOT_ANOMALY_TYPES)[number];
 
-function resolveSensorAnomalyType(sensor: Sensor, data: Record<string, any>): IotAnomalyType {
-  const explicitType = String(data.event_type || data.anomaly_type || '');
+function resolveSensorAnomalyType(
+  sensor: Sensor,
+  data: Record<string, any>,
+): IotAnomalyType {
+  const explicitType = String(
+    data.event_type || data.anomaly_type || '',
+  );
+
   if (IOT_ANOMALY_TYPES.includes(explicitType as IotAnomalyType)) {
     return explicitType as IotAnomalyType;
   }
 
-  const searchable = `${sensor.type} ${sensor.name}`.toLowerCase();
-  if (searchable.includes('fire') || searchable.includes('smoke') || searchable.includes('temperature')) {
+  const searchable =
+    `${sensor.type} ${sensor.name}`.toLowerCase();
+
+  // Fire detection
+  if (
+    searchable.includes('fire') ||
+    searchable.includes('smoke') ||
+    searchable.includes('temperature') ||
+    searchable.includes('gas')
+  ) {
     return 'forest_fire';
   }
-  if (searchable.includes('flood') || searchable.includes('water') || searchable.includes('level')) {
+
+  // Flood detection
+  if (
+    searchable.includes('flood') ||
+    searchable.includes('water') ||
+    searchable.includes('level') ||
+    searchable.includes('ultrasonic')
+  ) {
     return 'flooding';
   }
-  if (searchable.includes('noise') || searchable.includes('sound')) {
+
+  // Noise detection
+  if (
+    searchable.includes('noise') ||
+    searchable.includes('sound') ||
+    searchable.includes('acoustic')
+  ) {
     return 'loud_noise';
+  }
+
+  // Motion detection
+  if (
+    searchable.includes('motion') ||
+    searchable.includes('radar') ||
+    searchable.includes('movement')
+  ) {
+    return 'trespassing';
   }
 
   return 'trespassing';
@@ -158,31 +194,26 @@ class MqttService {
             transaction,
             order: [['id', 'ASC']],
           });
-          const fallbackUser = admin ?? await User.findOne({
-            transaction,
-            order: [['id', 'ASC']],
-          });
 
-          if (fallbackUser) {
-            await AnomalyEvent.create(
-              {
-                user_id: fallbackUser.id,
-                event_type: resolveSensorAnomalyType(sensor, data),
-                latitude: Number(sensor.latitude),
-                longitude: Number(sensor.longitude),
-                metadata: {
-                  source: 'iot_sensor',
-                  sensor_id: sensor.id,
-                  sensor_name: sensor.name,
-                  sensor_type: sensor.type,
-                  sensor_status: status,
-                  sensor_log_id: logEntry.id,
-                  sensor_data: data,
-                },
+          await AnomalyEvent.create(
+            {
+              user_id: null,
+              event_type: resolveSensorAnomalyType(sensor, data),
+              location: sensor.location,
+              latitude: Number(sensor.latitude),
+              longitude: Number(sensor.longitude),
+              metadata: {
+                source: 'iot_sensor',
+                sensor_id: sensor.id,
+                sensor_name: sensor.name,
+                sensor_type: sensor.type,
+                sensor_status: status,
+                sensor_log_id: logEntry.id,
+                sensor_data: data,
               },
-              { transaction },
-            );
-          }
+            },
+            { transaction },
+          );
 
           const title = `Sensor Alert: ${sensor.name}`;
           const message = `Sensor "${sensor.name}" (${sensor.type}) is in alerting state.`;

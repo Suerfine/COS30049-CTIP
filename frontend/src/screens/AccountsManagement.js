@@ -71,7 +71,11 @@ const AccountManagement = () => {
     pickProfilePicture,
     currentRole,
     setCurrentRole,
-    setEditErrors, editErrors, validateEditForm,editForm, setEditForm
+    setEditErrors,
+    editErrors,
+    validateEditForm,
+    editForm,
+    setEditForm,
   } = useAccountManagement();
   const [pendingImage, setPendingImage] = useState(null);
   const [selectedAcc, setSelectedAcc] = useState(null);
@@ -80,7 +84,7 @@ const AccountManagement = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [hoveredRowId, setHoveredRowId] = useState(null);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
-  
+
   const { width } = useWindowDimensions();
   const isCompact = width < 420;
   const { t } = useTranslation();
@@ -221,14 +225,14 @@ const AccountManagement = () => {
   const renderUserItem = ({ item }) => {
     const isHovered = hoveredRowId === item.id;
     return (
-      <View 
+      <View
         style={[styles.rowContainerRelative, isHovered && { zIndex: 10 }]}
         onPointerMove={(e) => {
-          if (Platform.OS === 'web') {
+          if (Platform.OS === "web") {
             const containerBounds = e.currentTarget.getBoundingClientRect();
-            setMousePos({ 
-              x: e.nativeEvent.clientX - containerBounds.left, 
-              y: e.nativeEvent.clientY - containerBounds.top 
+            setMousePos({
+              x: e.nativeEvent.clientX - containerBounds.left,
+              y: e.nativeEvent.clientY - containerBounds.top,
             });
           }
         }}
@@ -241,7 +245,7 @@ const AccountManagement = () => {
             setEditErrors({});
           }}
           onHoverIn={() => setHoveredRowId(item.id)}
-          onHoverOut={() => setHoveredRowId(null)} 
+          onHoverOut={() => setHoveredRowId(null)}
           style={({ hovered }) => [
             styles.row,
             styles.tableRow,
@@ -249,43 +253,97 @@ const AccountManagement = () => {
             selectedAcc?.id === item.id && { backgroundColor: "#fff8e1" },
           ]}
         >
-          {isHovered && Platform.OS === 'web' && (
-            <View style={[styles.rowTooltip, { left: mousePos.x + 15, top: mousePos.y - 35 }]}>
-              <Text style={styles.tooltipText}>Click to edit user information</Text>
+          {isHovered && Platform.OS === "web" && (
+            <View
+              style={[
+                styles.rowTooltip,
+                { left: mousePos.x + 15, top: mousePos.y - 35 },
+              ]}
+            >
+              <Text style={styles.tooltipText}>
+                Click to edit user information
+              </Text>
             </View>
           )}
 
           {/* 🔥 Applying dynamic cellTextHover styles across row components */}
-          <Text style={[styles.cellText, { flex: 1, textAlign: "center" }, isHovered && styles.cellTextHover]}>
+          <Text
+            style={[
+              styles.cellText,
+              { flex: 1, textAlign: "center" },
+              isHovered && styles.cellTextHover,
+            ]}
+          >
             {item.id}
           </Text>
-          
+
           <View style={[{ flex: 3 }, styles.userInfo, styles.row]}>
             {getProfileImageUri(item) ? (
-              <Image source={{ uri: getProfileImageUri(item) }} style={styles.avatar} />
+              <Image
+                source={{ uri: getProfileImageUri(item) }}
+                style={styles.avatar}
+              />
             ) : (
               <View style={styles.pfpPlaceholder}>
-                <Text style={styles.pfpInitials}>{item.firstname ? item.firstname[0].toUpperCase() : "?"}</Text>
+                <Text style={styles.pfpInitials}>
+                  {item.firstname ? item.firstname[0].toUpperCase() : "?"}
+                </Text>
               </View>
             )}
-            <Text style={[styles.cellText, styles.cellTextBold, isHovered && styles.cellTextHover]}>
+            <Text
+              style={[
+                styles.cellText,
+                styles.cellTextBold,
+                isHovered && styles.cellTextHover,
+              ]}
+            >
               {item.firstname + " " + item.lastname}
             </Text>
           </View>
-          
-          <Text style={[styles.cellText, { flex: 2 }, isHovered && styles.cellTextHover]}>
+
+          <Text
+            style={[
+              styles.cellText,
+              { flex: 2 },
+              isHovered && styles.cellTextHover,
+            ]}
+          >
             {item.username}
           </Text>
-          <Text style={[styles.cellText, { flex: 3 }, isHovered && styles.cellTextHover]}>
+          <Text
+            style={[
+              styles.cellText,
+              { flex: 3 },
+              isHovered && styles.cellTextHover,
+            ]}
+          >
             {item.username + "@sfc.gov.my"}
           </Text>
-          <Text style={[styles.cellText, { flex: 1 }, isHovered && styles.cellTextHover]}>
+          <Text
+            style={[
+              styles.cellText,
+              { flex: 1 },
+              isHovered && styles.cellTextHover,
+            ]}
+          >
             {item.role === "admin" ? t("role.admin") : t("role.park_guide")}
           </Text>
-          <Text style={[styles.cellText, { flex: 2 }, isHovered && styles.cellTextHover]}>
+          <Text
+            style={[
+              styles.cellText,
+              { flex: 2 },
+              isHovered && styles.cellTextHover,
+            ]}
+          >
             {formatDate(item.created_at)}
           </Text>
-          <Text style={[styles.cellText, { flex: 2 }, isHovered && styles.cellTextHover]}>
+          <Text
+            style={[
+              styles.cellText,
+              { flex: 2 },
+              isHovered && styles.cellTextHover,
+            ]}
+          >
             {formatDate(item.last_login_at)}
           </Text>
         </Pressable>
@@ -555,10 +613,7 @@ const AccountManagement = () => {
                   onPress={onDeletePress}
                 >
                   {({ hovered }) => (
-                    <Trash2 
-                      size={22} 
-                      color={hovered ? "#ff9800" : "#000000"} 
-                    />
+                    <Trash2 size={22} color={hovered ? "#ff9800" : "#000000"} />
                   )}
                 </Pressable>
               </View>
@@ -601,7 +656,7 @@ const AccountManagement = () => {
               {isEditing ? (
                 <View style={styles.nameEditRow}>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.panelLabel}>{t('first name')}</Text>
+                    <Text style={styles.panelLabel}>{t("first name")}</Text>
                     <TextInput
                       style={[styles.userDetails, styles.inputEditing]}
                       value={editForm?.firstname || ""}
@@ -609,7 +664,11 @@ const AccountManagement = () => {
                         setEditForm({ ...editForm, firstname: text })
                       }
                     />
-                    {editErrors.firstname && <Text style={styles.errorLabelMicro}>{editErrors.firstname}</Text>}
+                    {editErrors.firstname && (
+                      <Text style={styles.errorLabelMicro}>
+                        {editErrors.firstname}
+                      </Text>
+                    )}
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.panelLabel}>Last Name</Text>
@@ -620,7 +679,11 @@ const AccountManagement = () => {
                         setEditForm({ ...editForm, lastname: text })
                       }
                     />
-                    {editErrors.lastname && <Text style={styles.errorLabelMicro}>{editErrors.lastname}</Text>}
+                    {editErrors.lastname && (
+                      <Text style={styles.errorLabelMicro}>
+                        {editErrors.lastname}
+                      </Text>
+                    )}
                   </View>
                 </View>
               ) : (
@@ -642,7 +705,9 @@ const AccountManagement = () => {
                     <IdCard size={18} color="#4f4f4f" />
                     <Text style={styles.panelLabel}>Passport/IC:</Text>
                   </View>
-                  <Text style={styles.userDetails}>{selectedAcc.identification}</Text>
+                  <Text style={styles.userDetails}>
+                    {selectedAcc.identification}
+                  </Text>
                 </View>
 
                 <View style={styles.details}>
@@ -653,11 +718,21 @@ const AccountManagement = () => {
                   {isEditing ? (
                     <View>
                       <TextInput
-                        style={[styles.userDetails, styles.inputEditing, editErrors.tel && styles.inputErrorStyle]}
+                        style={[
+                          styles.userDetails,
+                          styles.inputEditing,
+                          editErrors.tel && styles.inputErrorStyle,
+                        ]}
                         value={editForm?.tel || ""}
-                        onChangeText={(text) => setEditForm({ ...editForm, tel: text })}
+                        onChangeText={(text) =>
+                          setEditForm({ ...editForm, tel: text })
+                        }
                       />
-                      {editErrors.tel && <Text style={styles.errorLabelMicro}>{editErrors.tel}</Text>}
+                      {editErrors.tel && (
+                        <Text style={styles.errorLabelMicro}>
+                          {editErrors.tel}
+                        </Text>
+                      )}
                     </View>
                   ) : (
                     <Text style={styles.userDetails}>{selectedAcc.tel}</Text>
@@ -673,11 +748,18 @@ const AccountManagement = () => {
                     {(selectedAcc.id || "") + "@sfc.gov.my"}
                   </Text>
                   <View style={styles.row}>
-                    <Text style={[styles.panelLabel, { marginLeft: 35, marginTop: 15 }]}>
+                    <Text
+                      style={[
+                        styles.panelLabel,
+                        { marginLeft: 35, marginTop: 15 },
+                      ]}
+                    >
                       Personal Email:
                     </Text>
                   </View>
-                    <Text style={styles.userDetails}>{selectedAcc.personal_email}</Text>
+                  <Text style={styles.userDetails}>
+                    {selectedAcc.personal_email}
+                  </Text>
                 </View>
                 <View style={styles.details}>
                   <View style={styles.row}>
@@ -1122,10 +1204,10 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 6,
     zIndex: 9999,
-    pointerEvents: "none", 
+    pointerEvents: "none",
     ...Platform.select({
-      web: { whiteSpace: "nowrap" }
-    })
+      web: { whiteSpace: "nowrap" },
+    }),
   },
   tooltipText: {
     color: "white",
@@ -1135,35 +1217,35 @@ const styles = StyleSheet.create({
   deleteIconButton: {
     width: 36,
     height: 36,
-    borderRadius: 18, 
+    borderRadius: 18,
     backgroundColor: "transparent",
     alignItems: "center",
     justifyContent: "center",
     ...Platform.select({
-      web: { 
+      web: {
         cursor: "pointer",
-        transition: "all 0.2s ease-in-out" 
+        transition: "all 0.2s ease-in-out",
       },
     }),
   },
   deleteIconButtonHover: {
-    backgroundColor: "#fff3e0", 
+    backgroundColor: "#fff3e0",
   },
-  cellText: { 
+  cellText: {
     alignSelf: "center",
     ...Platform.select({
       web: {
-        transition: "color 0.15s ease", 
-      }
-    })
+        transition: "color 0.15s ease",
+      },
+    }),
   },
   cellTextHover: {
-    color: "#1b5e20", 
+    color: "#1b5e20",
     ...Platform.select({
       web: {
-        textDecorationLine: "underline", 
-      }
-    })
+        textDecorationLine: "underline",
+      },
+    }),
   },
 });
 

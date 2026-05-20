@@ -55,8 +55,14 @@ export const AccountService = {
   // POST: create new account
   create: async (userData) => {
     try {
-      const randomNum = Math.floor(100 + Math.random() * 900);
-      const generatedUsername = `${userData.fname.replace(/\s+/g, "").toLowerCase()}${randomNum}`;
+      const randomNum = String(Math.floor(Math.random() * 10000)).padStart(
+        4,
+        "0",
+      );
+
+      const generatedUsername = `${userData.fname
+        .replace(/\s+/g, "")
+        .toLowerCase()}${randomNum}`;
 
       const payload = {
         username: generatedUsername,
@@ -77,9 +83,14 @@ export const AccountService = {
       );
       return response.data;
     } catch (error) {
-      console.error("Create Account Error:", error);
-      const errorMessage =
-        error.response?.data?.message || "Internal Server Error";
+      console.error("Create Account Error:", error.response?.data);
+      let errorMessage = error.response?.data?.message || "Failed to create account";
+      errorMessage = errorMessage.split("\n")[0];
+
+      if (errorMessage.toLowerCase().includes("personal email already exists")) {
+        alert("Personal email already exists. Please use a different email.");
+      }
+
       return Promise.reject(errorMessage);
     }
   },
@@ -103,8 +114,9 @@ export const AccountService = {
       return response.data;
     } catch (error) {
       console.error("Update Account Error: ", error);
-      const errorMessage =
+      let errorMessage =
         error.response?.data?.message || "Failed to update user details.";
+      errorMessage = errorMessage.split("\n")[0]; // Get only first line
       return Promise.reject(errorMessage);
     }
   },
@@ -116,8 +128,9 @@ export const AccountService = {
       return response.data;
     } catch (error) {
       console.error("Delete account error: ", error);
-      const errorMessage =
+      let errorMessage =
         error.response?.data?.message || "Failed to delete user account.";
+      errorMessage = errorMessage.split("\n")[0]; // Get only first line
       return Promise.reject(errorMessage);
     }
   },
@@ -161,8 +174,9 @@ export const AccountService = {
       return response.data;
     } catch (error) {
       console.error("Update Profile Picture Error:", error);
-      const errorMessage =
+      let errorMessage =
         error.response?.data?.message || "Failed to update profile picture.";
+      errorMessage = errorMessage.split("\n")[0]; // Get only first line
       return Promise.reject(errorMessage);
     }
   },

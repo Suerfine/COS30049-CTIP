@@ -443,5 +443,16 @@
     "calendar":"Calendar",
     "sensor_overview": "Sensor Overview",
     "select_sensor_to_view_details": "Select sensor to view details",
-    "sensor_readings": "Sensor Readings"
+    "sensor_readings": "Sensor Readings",
+    "badge_rejected": "Badge rejected",
+    "confirm_reject_badge": "Are you sure you want to reject this badge?",
+    "course": "Course",
+    "delete_record_permanently": "Delete this record permanently?",
+    "error_rejecting_badge": "Error rejecting badge",
+    "failed_to_load_receipt": "Failed to load receipt",
+    "final_assessment": "Final Assessment",
+
+    "click_view_enrollment_profile": "Click to view enrollment profile",
+    "click_audit_learning_progress": "Click to audit learning progress",
+    "click_review_bank_receipt": "Click to review bank receipt"
 }

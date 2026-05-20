@@ -73,7 +73,7 @@ const UserProfile = ({ navigation }) => {
       tempErrors.identification = "* IC / Passport is required.";
     } else if (!isValidIdentification(form.identification)) {
       tempErrors.identification =
-        "* Invalid IC/Passport format. Use format XXXXXX-XX-XXXX (IC) or 5-20 alphanumeric characters (Passport).";
+        "* Invalid IC/Passport format. Use 12 digit for IC or 1 uppercase letter followed by 8 digits for Passport.";
     }
 
     if (!form.personal_email?.trim()) {
@@ -86,7 +86,7 @@ const UserProfile = ({ navigation }) => {
       tempErrors.tel = "* Phone number is required.";
     } else if (!phoneRegex.test(form.tel)) {
       tempErrors.tel =
-        "* Invalid phone number. Expected formats: 01X-XXXXXXX, 0X-XXXXXX, or +61XXXXXXXXX";
+        "* Invalid phone number. Expected formats: 01XXXXXXXX or 01XXXXXXXXX.";
     }
 
     setErrors(tempErrors);
