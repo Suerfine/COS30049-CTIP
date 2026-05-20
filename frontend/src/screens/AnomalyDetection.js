@@ -436,37 +436,33 @@ const AnomalyDetection = () => {
   }, [selectedSensor?.id, sensorLogsPage]);
 
   useEffect(() => {
-    let interval;
+    if (activeTab !== TABS.SENSORS) return;
 
-    if (activeTab === TABS.ANOMALIES) {
-      interval = setInterval(() => {
-        refresh();
-      }, 2000);
-    }
-
-    if (activeTab === TABS.SENSORS) {
-      interval = setInterval(async () => {
-        await refreshSensors();
-
-        if (selectedSensor?.id) {
-          await loadSensorLogs(
-            selectedSensor.id,
-            sensorLogsPage
-          );
-        }
-      }, 5000);
-    }
-
-    return () => {
-      if (interval) {
-        clearInterval(interval);
+    let isMounted = true;
+    
+    const fetchInitialData = async () => {
+      await refreshSensors();
+      if (selectedSensor?.id && isMounted) {
+        await loadSensorLogs(selectedSensor.id, sensorLogsPage);
       }
     };
-  }, [
-    activeTab,
-    selectedSensor?.id,
-    sensorLogsPage,
-  ]);
+
+    fetchInitialData();
+
+    const interval = setInterval(async () => {
+      if (!isMounted) return;
+      
+      await refreshSensors();
+      if (selectedSensor?.id) {
+        await loadSensorLogs(selectedSensor.id, sensorLogsPage);
+      }
+    }, 5000);
+
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, [activeTab, selectedSensor?.id, sensorLogsPage]);
 
   const refreshActiveTab = () => {
     if (activeTab === TABS.ANOMALIES) {
@@ -1046,8 +1042,10 @@ const AnomalyDetection = () => {
                           await resolveAnomaly(selectedAnomaly.id);
                         } finally {
                           setResolvingId(null);
+                          setSelectedAnomaly(null);
                         }
                       }}
+                      
                       disabled={resolvingId === selectedAnomaly.id}
                       style={({ hovered }) => [
                         styles.resolveBtn,
