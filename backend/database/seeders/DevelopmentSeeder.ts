@@ -23,6 +23,8 @@ import Event from "../../src/models/Event";
 import Payment from "../../src/models/Payment";
 import { buildPayment } from "../factories/PaymentFactory";
 import { EnrollmentStatus } from "../../src/enum/EnrollmentStatus";
+import { buildSubmission } from "../factories/SubmissionFactory";
+import Submission from "../../src/models/Submissions";
 
 import {
   buildUser,
@@ -410,6 +412,37 @@ export async function runSeeders(
       processed_at: addDays(now, -44),
       admin_remark: "Receipt verified for completed UAT course",
     });
+
+    const targetModules = await Module.findAll({
+      where: { course_id: completedCourse.id }
+    });
+
+    for (const mod of targetModules) {
+      const targetPages = await Page.findAll({
+        where: { module_id: mod.id }
+      });
+
+      for (const pg of targetPages) {
+        const targetElements = await Element.findAll({
+          where: { page_id: pg.id }
+        });
+
+        for (const element of targetElements) {
+          const submissionMockAttributes = buildSubmission({
+            enrollment_id: completedEnrollment.id,
+            element_id: element.id,
+            elementType: element.type as any, 
+            maxScore: element.score || 1, 
+          });
+
+          await Submission.create({
+            ...submissionMockAttributes,
+            created_at: addDays(now, -10),
+            updated_at: addDays(now, -10),
+          });
+        }
+      }
+    }
 
     const todoStartsTomorrow = await Event.create({
       user_id: createdParkGuideUser.id,

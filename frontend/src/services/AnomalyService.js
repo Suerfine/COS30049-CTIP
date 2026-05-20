@@ -2,7 +2,7 @@ import apiClient from "../config/apiConfig";
 
 export const AnomalyService = {
   // GET: fetch all anomalies/compliance events
-  getAll: async (page = 1, size = 10, searchQuery = "", sortConfig) => {
+  getAll: async (page = 1, size = 10, searchQuery = "", sortConfig, anomalyFilters = {}) => {
     try {
       const params = { page, size };
       let filters = [];
@@ -10,6 +10,44 @@ export const AnomalyService = {
       if (searchQuery.trim()) {
         const q = searchQuery.trim();
         filters.push(`event_type like "%${q}%"`);
+      }
+
+      if (anomalyFilters.status === "active") {
+        filters.push(`is_resolved = false`);
+      }
+
+      if (anomalyFilters.status === "resolved") {
+        filters.push(`is_resolved = true`);
+      }
+
+      if (
+        Array.isArray(anomalyFilters.eventType) &&
+        anomalyFilters.eventType.length > 0
+      ) {
+        filters.push(
+          `(${anomalyFilters.eventType
+            .map((type) => `event_type = "${type}"`)
+            .join(" or ")})`
+        );
+      }
+
+      if (anomalyFilters.time && anomalyFilters.time !== "anytime") {
+        const now = new Date();
+        const start = new Date();
+
+        if (anomalyFilters.time === "today") {
+          start.setHours(0, 0, 0, 0);
+        }
+
+        if (anomalyFilters.time === "3_days") {
+          start.setDate(now.getDate() - 3);
+        }
+
+        if (anomalyFilters.time === "1_week") {
+          start.setDate(now.getDate() - 7);
+        }
+
+        filters.push(`created_at >= "${start.toISOString()}"`);
       }
 
       if (filters.length > 0) {
