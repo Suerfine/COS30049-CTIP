@@ -800,7 +800,7 @@ const AnomalyDetection = () => {
           </Text>
 
           <Text style={[styles.cellText, styles.sensorNameLocationCell, isHovered && styles.cellTextHover]}>
-            {nameLocation}
+            {item.location}
           </Text>
 
           <View style={[styles.cellContent, styles.sensorCoordinateCell]}>
@@ -854,6 +854,10 @@ const AnomalyDetection = () => {
         <Text style={styles.headerText}>{t("event_type")}</Text>
       </View>
 
+      <View style={[styles.headerPressRow, { flex: 3 }]}>
+        <Text style={styles.headerText}>{t("location")}</Text>
+      </View>
+
       <Text style={[styles.headerText, { flex: 3 }]}>{t("coordinates")}</Text>
 
       <Pressable
@@ -880,6 +884,7 @@ const AnomalyDetection = () => {
 
   const renderAnomalyItem = ({ item }) => {
     const isHovered = hoveredRowId === item.id;
+    console.log(item)
     return (
       <View style={[styles.rowContainerRelative, isHovered && { zIndex: 10 }]}>
         <Pressable
@@ -905,6 +910,10 @@ const AnomalyDetection = () => {
 
           <Text style={[styles.cellText, styles.cellTextBold, { flex: 3 }, isHovered && styles.cellTextHover]}>
             {getEventTypeLabel(item.event_type, t)}
+          </Text>
+
+          <Text style={[styles.cellText, styles.cellTextBold, { flex: 3 }, isHovered && styles.cellTextHover]}>
+            {item.location}
           </Text>
 
           <View style={[{ flex: 3 }, styles.coordinatePressable]}>
@@ -1619,19 +1628,19 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   sensorNameCell: {
-    flex: 2,
+    flex: 1,
   },
   sensorTypeCell: {
     flex: 2,
   },
   sensorLocationCell: {
-    flex: 2,
+    flex: 3,
   },
   sensorNameLocationCell: {
-    flex: 1.5,
+    flex: 2,
   },
   sensorCoordinateCell: {
-    flex: 1.4,
+    flex: 2,
   },
   sensorNameHover: {
     textDecorationLine: "underline",
