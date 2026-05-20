@@ -33,6 +33,24 @@ const apiClient = axios.create({
   baseURL: BASE_URL(),
 });
 
+const isAuthFailure = (error) => {
+  const status = error.response?.status;
+  const message = String(error.response?.data?.message || "").toLowerCase();
+  const hasAuthHeader = Boolean(error.config?.headers?.Authorization);
+
+  return (
+    status === 401 &&
+    hasAuthHeader &&
+    (
+      message.includes("jwt expired") ||
+      message.includes("invalid token") ||
+      message.includes("invalid token payload") ||
+      message.includes("user not found") ||
+      message.includes("unauthorized")
+    )
+  );
+};
+
 apiClient.interceptors.request.use(
   async (config) => {
     try {
@@ -53,9 +71,12 @@ apiClient.interceptors.request.use(
 apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
-    const errorMessage = error.response?.data?.message;
-    if (error.response && errorMessage === "jwt expired") {
-      await AsyncStorage.multiRemove(["accessToken", "currentUser"]);
+    if (isAuthFailure(error)) {
+      await AsyncStorage.multiRemove([
+        "accessToken",
+        "currentUser",
+        "mustChangePassword",
+      ]);
       await triggerLogout();
     }
     return Promise.reject(error);
