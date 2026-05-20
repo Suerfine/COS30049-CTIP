@@ -42,6 +42,19 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
+  const clearAuthState = useCallback(async () => {
+    clearExpiryTimer();
+    await AsyncStorage.multiRemove([
+      "currentUser",
+      "accessToken",
+      "mustChangePassword",
+    ]);
+    setCurrentUser(null);
+    setAccessToken(null);
+    setProfileImage(null);
+    setMustChangePassword(false);
+  }, [clearExpiryTimer]);
+
   // Initialize auth state on mount
   useEffect(() => {
     const initializeAuth = async () => {
@@ -57,10 +70,7 @@ export const AuthProvider = ({ children }) => {
           const payload = decodeJwtPayload(storedToken);
           if (payload?.exp && Date.now() / 1000 >= payload.exp) {
             // token expired - clear stored auth
-            await AsyncStorage.multiRemove(["currentUser", "accessToken"]);
-            setCurrentUser(null);
-            setAccessToken(null);
-            setProfileImage(null);
+            await clearAuthState();
             return;
           }
 
@@ -84,7 +94,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     initializeAuth();
-  }, []);
+  }, [clearAuthState]);
 
   const login = async (email, password) => {
     try {
@@ -138,18 +148,17 @@ export const AuthProvider = ({ children }) => {
     };
     await AsyncStorage.setItem("currentUser", JSON.stringify(user));
     await AsyncStorage.setItem("accessToken", access_token);
+    await AsyncStorage.setItem("mustChangePassword", "false");
     setAccessToken(access_token);
     setCurrentUser(user);
+    setMustChangePassword(false);
+    scheduleTokenExpiry(access_token);
     return user;
   };
 
   const logout = useCallback(async () => {
-    clearExpiryTimer();
-    await AsyncStorage.multiRemove(["currentUser", "accessToken"]);
-    setCurrentUser(null);
-    setAccessToken(null);
-    setProfileImage(null);
-  }, [clearExpiryTimer]);
+    await clearAuthState();
+  }, [clearAuthState]);
 
   const scheduleTokenExpiry = useCallback(
     (token) => {
