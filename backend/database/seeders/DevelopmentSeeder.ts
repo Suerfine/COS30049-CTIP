@@ -414,25 +414,25 @@ export async function runSeeders(
     });
 
     const targetModules = await Module.findAll({
-      where: { course_id: completedCourse.id }
+      where: { course_id: completedCourse.id },
     });
 
     for (const mod of targetModules) {
       const targetPages = await Page.findAll({
-        where: { module_id: mod.id }
+        where: { module_id: mod.id },
       });
 
       for (const pg of targetPages) {
         const targetElements = await Element.findAll({
-          where: { page_id: pg.id }
+          where: { page_id: pg.id },
         });
 
         for (const element of targetElements) {
           const submissionMockAttributes = buildSubmission({
             enrollment_id: completedEnrollment.id,
             element_id: element.id,
-            elementType: element.type as any, 
-            maxScore: element.score || 1, 
+            elementType: element.type as any,
+            maxScore: element.score || 1,
           });
 
           await Submission.create({
@@ -670,6 +670,7 @@ export async function runSeeders(
       type: "gas_temp",
       longitude: 101.6869,
       latitude: 3.139,
+      location: "Kuala Lumpur City Park, Zone 1",
       current_status: SensorStatus.ALERTING,
     },
     {
@@ -678,6 +679,7 @@ export async function runSeeders(
       type: "motion",
       longitude: 101.6869,
       latitude: 3.139,
+      location: "Kuala Lumpur City Park, Zone 1",
       current_status: SensorStatus.NORMAL,
     },
     {
@@ -686,6 +688,7 @@ export async function runSeeders(
       type: "acoustic",
       longitude: 101.6869,
       latitude: 3.139,
+      location: "Kuala Lumpur City Park, Zone 1",
       current_status: SensorStatus.NORMAL,
     },
     {
@@ -694,6 +697,7 @@ export async function runSeeders(
       type: "ultrasonic",
       longitude: 110.3566,
       latitude: 1.5324,
+      location: "Bako National Park, Zone 2",
       current_status: SensorStatus.NORMAL,
     },
     {
@@ -702,6 +706,7 @@ export async function runSeeders(
       type: "gas_temp",
       longitude: 101.6869,
       latitude: 3.139,
+      location: "Kuala Lumpur City Park, Zone 1",
       current_status: SensorStatus.NORMAL,
     },
   ];
@@ -735,6 +740,7 @@ export async function runSeeders(
     await AnomalyEvent.create({
       user_id: createdParkGuideUser.id,
       event_type: "forest_fire",
+      location: "Bako National Park - Demo Cam Alpha",
       metadata: {
         source: "iot_sensor",
         sensor_id: demoIotSensor.id,

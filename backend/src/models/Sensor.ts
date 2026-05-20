@@ -15,6 +15,7 @@ class Sensor extends Model<
   declare id: CreationOptional<number>;
   declare name: string;
   declare type: string;
+  declare location: CreationOptional<string | null>;
   declare longitude: number;
   declare latitude: number;
   declare current_status: SensorStatus;
@@ -44,6 +45,12 @@ Sensor.init(
     latitude: {
       type: DataTypes.DECIMAL(10, 7),
       allowNull: false,
+    },
+    location: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
+      defaultValue: null,
+      comment: "Descriptive location, zone, or park sector where the physical sensor is deployed",
     },
     current_status: {
       type: DataTypes.ENUM(...Object.values(SensorStatus)),
