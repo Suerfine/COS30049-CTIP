@@ -1286,91 +1286,93 @@ const AnomalyDetection = () => {
           itemLabel={t("sensors")}
           onPageChange={setSensorsPage}
         />
+        {selectedSensor && (
+          <View style={styles.sensorDashboard}>
+            <View style={styles.sensorDashboardHeader}>
+              <Text style={styles.sensorDashboardTitle}>
+                {selectedSensor ? selectedSensor.name : t("sensor_overview")}
+              </Text>
 
-        <View style={styles.sensorDashboard}>
-          <View style={styles.sensorDashboardHeader}>
-            <Text style={styles.sensorDashboardTitle}>
-              {selectedSensor ? selectedSensor.name : t("sensor_overview")}
-            </Text>
-
-            {selectedSensor ? (
-              <StatusBadge value={selectedSensor.current_status} />
-            ) : (
-              <Text style={styles.mutedText}>{t("select_sensor_to_view_details")}</Text>
-            )}
-          </View>
-
-          <View style={styles.sensorDashboardContent}>
-            <View style={styles.sensorMapCard}>
-              <Text style={styles.dashboardCardTitle}>{t("location")}</Text>
-
-              <iframe
-                title="sensor-map"
-                style={styles.sensorMap}
-                src={
-                  selectedSensor?.latitude && selectedSensor?.longitude
-                    ? `https://www.openstreetmap.org/export/embed.html?bbox=${(
-                        selectedSensor.longitude - 0.01
-                      ).toFixed(4)},${(selectedSensor.latitude - 0.01).toFixed(4)},${(
-                        selectedSensor.longitude + 0.01
-                      ).toFixed(4)},${(selectedSensor.latitude + 0.01).toFixed(
-                        4
-                      )}&layer=mapnik&marker=${selectedSensor.latitude.toFixed(
-                        4
-                      )},${selectedSensor.longitude.toFixed(4)}`
-                    : "https://www.openstreetmap.org/export/embed.html?bbox=110.25,1.45,110.45,1.65&layer=mapnik"
-                }
-              />
+              {selectedSensor ? (
+                <StatusBadge value={selectedSensor.current_status} />
+              ) : (
+                <Text style={styles.mutedText}>{t("select_sensor_to_view_details")}</Text>
+              )}
             </View>
 
-            <View style={styles.sensorChartCard}>
-              <Text style={styles.dashboardCardTitle}>{t("sensor_readings")}</Text>
+            <View style={styles.sensorDashboardContent}>
+              <View style={styles.sensorMapCard}>
+                <Text style={styles.dashboardCardTitle}>{t("location")}</Text>
 
-              <View style={styles.chartWrapper}>
-                <Line
-                  data={sensorChartData}
-                  options={{
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                      legend: {
-                        display: !!selectedSensor,
-                        position: "top",
-                      },
-                    },
-                    scales: {
-                      y: {
-                        beginAtZero: true,
-                      },
-                    },
-                  }}
+                <iframe
+                  title="sensor-map"
+                  style={styles.sensorMap}
+                  src={
+                    selectedSensor?.latitude && selectedSensor?.longitude
+                      ? `https://www.openstreetmap.org/export/embed.html?bbox=${(
+                          selectedSensor.longitude - 0.01
+                        ).toFixed(4)},${(selectedSensor.latitude - 0.01).toFixed(4)},${(
+                          selectedSensor.longitude + 0.01
+                        ).toFixed(4)},${(selectedSensor.latitude + 0.01).toFixed(
+                          4
+                        )}&layer=mapnik&marker=${selectedSensor.latitude.toFixed(
+                          4
+                        )},${selectedSensor.longitude.toFixed(4)}`
+                      : "https://www.openstreetmap.org/export/embed.html?bbox=110.25,1.45,110.45,1.65&layer=mapnik"
+                  }
                 />
               </View>
+
+              <View style={styles.sensorChartCard}>
+                <Text style={styles.dashboardCardTitle}>{t("sensor_readings")}</Text>
+
+                <View style={styles.chartWrapper}>
+                  <Line
+                    data={sensorChartData}
+                    options={{
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      plugins: {
+                        legend: {
+                          display: !!selectedSensor,
+                          position: "top",
+                        },
+                      },
+                      scales: {
+                        y: {
+                          beginAtZero: true,
+                        },
+                      },
+                    }}
+                  />
+                </View>
+              </View>
             </View>
+
+            {selectedSensor && (
+              <View style={styles.sensorLogsSection}>
+                <FlatList
+                  style={styles.table}
+                  scrollEnabled={false}
+                  data={sensorLogsState.data}
+                  ListHeaderComponent={renderSensorLogsHeader}
+                  renderItem={renderSensorLogItem}
+                  keyExtractor={(item) => item.id.toString()}
+                />
+
+                <PaginatedTableControls
+                  page={sensorLogsPage}
+                  totalPages={sensorLogsState.totalPages}
+                  totalElements={sensorLogsState.totalElements}
+                  size={sensorLogsState.size}
+                  itemLabel={t("sensor_logs")}
+                  onPageChange={setSensorLogsPage}
+                />
+              </View>
+            )}
           </View>
-
-          {selectedSensor && (
-            <View style={styles.sensorLogsSection}>
-              <FlatList
-                style={styles.table}
-                scrollEnabled={false}
-                data={sensorLogsState.data}
-                ListHeaderComponent={renderSensorLogsHeader}
-                renderItem={renderSensorLogItem}
-                keyExtractor={(item) => item.id.toString()}
-              />
-
-              <PaginatedTableControls
-                page={sensorLogsPage}
-                totalPages={sensorLogsState.totalPages}
-                totalElements={sensorLogsState.totalElements}
-                size={sensorLogsState.size}
-                itemLabel={t("sensor_logs")}
-                onPageChange={setSensorLogsPage}
-              />
-            </View>
-          )}
-        </View>
+        )}
+        
       </>
     );
   };
