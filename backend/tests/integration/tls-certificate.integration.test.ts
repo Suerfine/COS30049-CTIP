@@ -6,9 +6,44 @@ import express from "express";
 import { afterAll, beforeAll, describe, expect, it } from "@jest/globals";
 
 const certsDir = path.resolve(__dirname, "../../certs");
-const keyPath = path.join(certsDir, "server.key");
-const certPath = path.join(certsDir, "server.crt");
-const certFilesAvailable = fs.existsSync(keyPath) && fs.existsSync(certPath);
+const defaultKeyPath = path.join(certsDir, "server.key");
+const defaultCertPath = path.join(certsDir, "server.crt");
+
+function resolveCertificateFiles() {
+  if (fs.existsSync(defaultKeyPath) && fs.existsSync(defaultCertPath)) {
+    return {
+      keyPath: defaultKeyPath,
+      certPath: defaultCertPath,
+    };
+  }
+
+  if (!fs.existsSync(certsDir)) {
+    return null;
+  }
+
+  const keyFile = fs
+    .readdirSync(certsDir)
+    .find((file) => file.endsWith("-key.pem"));
+
+  if (!keyFile) {
+    return null;
+  }
+
+  const certFile = keyFile.replace(/-key\.pem$/, ".pem");
+  const keyPath = path.join(certsDir, keyFile);
+  const certPath = path.join(certsDir, certFile);
+
+  if (!fs.existsSync(certPath)) {
+    return null;
+  }
+
+  return { keyPath, certPath };
+}
+
+const certificateFiles = resolveCertificateFiles();
+const certFilesAvailable = Boolean(certificateFiles);
+const keyPath = certificateFiles?.keyPath ?? defaultKeyPath;
+const certPath = certificateFiles?.certPath ?? defaultCertPath;
 
 function startHttpsServer(app: express.Application, port = 0) {
   const options = {
