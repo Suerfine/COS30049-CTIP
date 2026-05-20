@@ -87,6 +87,12 @@ export const useOutline = (course) => {
         }
     };
 
+    const cancelModule = (tempId) => {
+        setNewSectons(prev =>
+            prev.filter(s => s.id !== tempId)
+        );  
+    };
+
     const updateModuleTitle = async (id, newTitle) => {
         try {
             setModules(prev => prev.map(m => m.id === id ? { ...m, title: newTitle } : m));
@@ -167,6 +173,7 @@ export const useOutline = (course) => {
         deleteModule,
         addPage,
         updatePageTitle,
-        deletePage
+        deletePage,
+        cancelModule
     };
 };
