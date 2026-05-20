@@ -14,8 +14,8 @@ import {
 import { UserRoles } from "../../src/enum/UserRoles";
 import { login } from "../helper/auth";
 import { describe, expect, it } from "@jest/globals";
-import { buildUser } from "../../database/factories/userFactory";
-import { buildCourse } from "../../database/factories/courseFactory";
+import { buildUser } from "../../database/factories/UserFactory";
+import { buildCourse } from "../../database/factories/CourseFactory";
 import { EnrollmentStatus } from "../../src/enum/EnrollmentStatus";
 import { Op } from "sequelize";
 import { ElementTypes } from "../../src/enum/ElementTypes";
