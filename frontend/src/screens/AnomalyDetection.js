@@ -1589,6 +1589,7 @@ const styles = StyleSheet.create({
   },
   sensorLocationCell: {
     flex: 2,
+  },
   sensorNameLocationCell: {
     flex: 1.5,
   },
@@ -1600,7 +1601,6 @@ const styles = StyleSheet.create({
   },
   sensorStatusCell: {
     flex:1,
-    width: 170,
   },
   sensorRowPressable: {
     cursor: "pointer",
