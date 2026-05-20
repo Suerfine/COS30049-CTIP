@@ -273,6 +273,7 @@ const DiscussionSection = ({ courseId, navigation, initialDiscussionId, onInitia
                                 <TextInput
                                     style={styles.detailInput}
                                     placeholder="Write a reply... use @ to mention someone"
+                                    placeholderTextColor="#8f8f8f"
                                     value={instantReplies[selectedDiscussion.id] || ''}
                                     onChangeText={(text) => handleInputChange(text, selectedDiscussion.id, 'detail')}
                                     multiline
@@ -367,6 +368,7 @@ const DiscussionSection = ({ courseId, navigation, initialDiscussionId, onInitia
                 <TextInput
                     style={styles.newDiscussionInput}
                     placeholder={`New ${forumType.toLowerCase()} discussion title`}
+                    placeholderTextColor="#8f8f8f"
                     value={newDiscussionTitle}
                     onChangeText={setNewDiscussionTitle}
                     editable={!isCreatingDiscussion}
@@ -420,6 +422,7 @@ const DiscussionSection = ({ courseId, navigation, initialDiscussionId, onInitia
                                     <TextInput
                                         style={styles.instantInput}
                                         placeholder="Quick reply... use @ to mention someone"
+                                        placeholderTextColor="#8f8f8f"
                                         value={instantReplies[item.id] || ''}
                                         onChangeText={(text) => handleInputChange(text, item.id, 'public')}
                                     />
