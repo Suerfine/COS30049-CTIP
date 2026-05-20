@@ -665,7 +665,8 @@ const EditCourseDetail = () => {
                   </Text>
                 </View>
               </View>
-              {selectedPage?.type === "page" && (
+              {selectedPage?.type === "page" &&
+                course.status === "unreleased" && (
                 <Pressable
                   onPress={() => setAddElementVisible(true)}
                   style={({ hovered }) => [
