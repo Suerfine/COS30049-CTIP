@@ -727,7 +727,7 @@ const AnomalyDetection = () => {
   const renderSensorItem = ({ item }) => {
     const isHovered = hoveredRowId === item.id;
     const { sensorName, nameLocation } = splitSensorNameLocation(item.name);
-
+    console.log(item);
     return (
       <View style={[styles.rowContainerRelative, isHovered && { zIndex: 10 }]}>
         <Pressable

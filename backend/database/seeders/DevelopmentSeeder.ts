@@ -247,6 +247,7 @@ export async function runSeeders(
   await AnomalyEvent.create({
     user_id: createdParkGuideUser.id,
     event_type: "plucking_plants",
+    location: "Bako National Park - Boardwalk Entrance",
     metadata: {
       source: "ai_camera",
       camera_name: "Demo AI Camera - Boardwalk Entrance",
