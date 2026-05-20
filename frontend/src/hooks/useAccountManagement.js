@@ -2,7 +2,12 @@ import { useState, useEffect } from "react";
 import { AccountService } from "../services/AccountService";
 import { Alert } from "react-native";
 import * as ImagePicker from "expo-image-picker";
-import { isOnlyLetters, isValidIdentification, phoneRegex, isValidEmail } from "../utils/Validation";
+import {
+  isOnlyLetters,
+  isValidIdentification,
+  phoneRegex,
+  isValidEmail,
+} from "../utils/Validation";
 
 export const useAccountManagement = () => {
   const [accounts, setAccounts] = useState([]);
@@ -96,11 +101,10 @@ export const useAccountManagement = () => {
       Alert.alert("Success", "Account created successfully.");
       return { success: true };
     } catch (err) {
-      const errorMessage = err.response?.data?.message || "An error occurred";
-      return {
-        success: false,
-        displayMessage: `* ${errorMessage}`,
-      };
+      // err is a string message from the service
+      const errorMessage = typeof err === "string" ? err : "An error occurred";
+      Alert.alert("Error", errorMessage);
+      return { success: false };
     } finally {
       setLoading(false);
     }
@@ -134,7 +138,8 @@ export const useAccountManagement = () => {
     if (!editForm?.tel?.trim()) {
       tempErrors.tel = "* Telephone number is required.";
     } else if (!phoneRegex.test(editForm.tel)) {
-      tempErrors.tel = "* Invalid phone number arrangement format. Must start from 01xxxxxxxx";
+      tempErrors.tel =
+        "* Invalid phone number arrangement format. Must start from 01xxxxxxxx";
     }
 
     if (!editForm?.personal_email?.trim()) {
@@ -147,7 +152,11 @@ export const useAccountManagement = () => {
     return Object.keys(tempErrors).length === 0;
   };
 
-  const handleUpdateAccount = async (IdleDeadline, formData, imageFile = null) => {
+  const handleUpdateAccount = async (
+    IdleDeadline,
+    formData,
+    imageFile = null,
+  ) => {
     setLoading(true);
     try {
       if (imageFile) {
@@ -157,7 +166,16 @@ export const useAccountManagement = () => {
       await fetchAccounts();
       return { success: true, data: result };
     } catch (errString) {
-      return { success: false, serverError: errString };
+      const errorMessage =
+        typeof errString === "string" ? errString : "Failed to update account.";
+
+      if (
+        errorMessage.toLowerCase().includes("personal email already exists")
+      ) {
+        window.alert("Personal email already exists.");
+      }
+
+      return { success: false };
     } finally {
       setLoading(false);
     }
@@ -181,7 +199,10 @@ export const useAccountManagement = () => {
   const pickProfilePicture = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") {
-      Alert.alert("Permission required", "Please allow access to your photo library.");
+      Alert.alert(
+        "Permission required",
+        "Please allow access to your photo library.",
+      );
       return null;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -215,7 +236,10 @@ export const useAccountManagement = () => {
     pickProfilePicture,
     currentRole,
     setCurrentRole,
-    setEditErrors, editErrors,
-    validateEditForm, editForm, setEditForm
+    setEditErrors,
+    editErrors,
+    validateEditForm,
+    editForm,
+    setEditForm,
   };
 };

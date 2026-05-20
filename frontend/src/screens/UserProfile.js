@@ -99,7 +99,7 @@ const UserProfile = ({ navigation }) => {
       tempErrors.identification = "* IC / Passport is required.";
     } else if (!isValidIdentification(form.identification)) {
       tempErrors.identification =
-        "* Invalid IC/Passport format. Use format XXXXXX-XX-XXXX (IC) or 5-20 alphanumeric characters (Passport).";
+        "* Invalid IC/Passport format. Use 12 digit for IC or 1 uppercase letter followed by 8 digits for Passport.";
     }
 
     if (!form.personal_email?.trim()) {
@@ -112,7 +112,7 @@ const UserProfile = ({ navigation }) => {
       tempErrors.tel = "* Phone number is required.";
     } else if (!phoneRegex.test(form.tel)) {
       tempErrors.tel =
-        "* Invalid phone number. Expected formats: 01X-XXXXXXX, 0X-XXXXXX, or +61XXXXXXXXX";
+        "* Invalid phone number. Expected formats: 01XXXXXXXX or 01XXXXXXXXX.";
     }
 
     setErrors(tempErrors);
@@ -286,7 +286,7 @@ const UserProfile = ({ navigation }) => {
                   setErrors((prev) => ({ ...prev, identification: null }));
                 }}
                 editable={isEditing}
-                placeholder="IC or passport number"
+                placeholder="e.g. 040506101234 or A01234567"
                 placeholderTextColor="grey"
               />
               {errors.identification && (
@@ -308,7 +308,7 @@ const UserProfile = ({ navigation }) => {
                   setErrors((prev) => ({ ...prev, personal_email: null }));
                 }}
                 editable={isEditing}
-                placeholder="Email address"
+                placeholder="address@gmail.com"
                 placeholderTextColor="grey"
                 keyboardType="email-address"
                 autoCapitalize="none"
@@ -328,7 +328,7 @@ const UserProfile = ({ navigation }) => {
                   setErrors((prev) => ({ ...prev, tel: null }));
                 }}
                 editable={isEditing}
-                placeholder="Phone number"
+                placeholder="0123456789"
                 placeholderTextColor="grey"
                 keyboardType="phone-pad"
               />
