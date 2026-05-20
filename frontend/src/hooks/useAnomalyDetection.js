@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { AnomalyService } from "../services/AnomalyService";
 import { sensorService } from "../services/SensorService";
 
@@ -59,6 +59,9 @@ export const useAnomalyDetection = () => {
   const [sensorLogsState, setSensorLogsState] = useState(emptyPaginatedState);
   const [sensorLogsLoading, setSensorLogsLoading] = useState(false);
   const [sensorLogsError, setSensorLogsError] = useState(null);
+  const anomalyFetchingRef = useRef(false);
+  const sensorFetchingRef = useRef(false);
+  const sensorLogFetchingRef = useRef(false);
 
   const [anomalyFilters, setAnomalyFilters] = useState({
     status: "all",
@@ -67,9 +70,14 @@ export const useAnomalyDetection = () => {
   })
 
   // Fetch all anomalies
-  const fetchAnomalies = useCallback(async () => {
+  const fetchAnomalies = useCallback(async ({ silent = false } = {}) => {
+    if (anomalyFetchingRef.current) return;
+    anomalyFetchingRef.current = true;
+
     try {
-      setLoading(true);
+      if (!silent) {
+        setLoading(true);
+      }
       setError(null);
 
       const response = await AnomalyService.getAll(
@@ -79,8 +87,6 @@ export const useAnomalyDetection = () => {
         sortConfig,
         anomalyFilters
       );
-
-      console.log("Anomaly Response:", response);
 
       const rawAnomalies = Array.isArray(response)
         ? response
@@ -100,17 +106,22 @@ export const useAnomalyDetection = () => {
     } catch (err) {
       console.error("Failed to fetch anomalies: ", err);
       setError(err.message || "Failed to fetch anomalies");
-      setAnomalies([]);
-      setTotalAnomalies(0);
-      setTotalPages(1);
+      if (!silent) {
+        setAnomalies([]);
+        setTotalAnomalies(0);
+        setTotalPages(1);
+      }
     } finally {
-      setLoading(false);
+      if (!silent) {
+        setLoading(false);
+      }
+      anomalyFetchingRef.current = false;
     }
   }, [currentPage, searchQuery, sortConfig, anomalyFilters]);
 
   useEffect(() => {
     fetchAnomalies();
-  }, [currentPage, searchQuery, sortConfig, anomalyFilters]);
+  }, [fetchAnomalies]);
 
   const handleSearch = (query) => {
     setSearchQuery(query);
@@ -135,17 +146,22 @@ export const useAnomalyDetection = () => {
     setCurrentPage(1);
   };
 
-  const refresh = async () => {
-    await fetchAnomalies();
-  };
+  const refresh = useCallback(async (options) => {
+    await fetchAnomalies(options);
+  }, [fetchAnomalies]);
 
-  const resolveAnomaly = async (eventId) => {
+  const resolveAnomaly = useCallback(async (eventId) => {
     await AnomalyService.resolve(eventId);
     await fetchAnomalies();
-  };
+  }, [fetchAnomalies]);
 
-  const loadSensors = useCallback(async () => {
-    setSensorLoading(true);
+  const loadSensors = useCallback(async ({ silent = false } = {}) => {
+    if (sensorFetchingRef.current) return;
+    sensorFetchingRef.current = true;
+
+    if (!silent) {
+      setSensorLoading(true);
+    }
     setSensorError(null);
 
     try {
@@ -166,16 +182,25 @@ export const useAnomalyDetection = () => {
         )
       );
 
-      setSensorState(emptyPaginatedState);
+      if (!silent) {
+        setSensorState(emptyPaginatedState);
+      }
     } finally {
-      setSensorLoading(false);
+      if (!silent) {
+        setSensorLoading(false);
+      }
+      sensorFetchingRef.current = false;
     }
   }, [sensorsPage]);
 
-  const loadSensorLogs = useCallback(async (sensorId, page = 1) => {
+  const loadSensorLogs = useCallback(async (sensorId, page = 1, { silent = false } = {}) => {
     if (!sensorId) return;
+    if (sensorLogFetchingRef.current) return;
+    sensorLogFetchingRef.current = true;
 
-    setSensorLogsLoading(true);
+    if (!silent) {
+      setSensorLogsLoading(true);
+    }
     setSensorLogsError(null);
 
     try {
@@ -200,19 +225,24 @@ export const useAnomalyDetection = () => {
         )
       );
 
-      setSensorLogsState(emptyPaginatedState);
+      if (!silent) {
+        setSensorLogsState(emptyPaginatedState);
+      }
     } finally {
-      setSensorLogsLoading(false);
+      if (!silent) {
+        setSensorLogsLoading(false);
+      }
+      sensorLogFetchingRef.current = false;
     }
   }, []);
 
   useEffect(() => {
     loadSensors();
-  }, [sensorsPage]);
+  }, [loadSensors]);
 
-  const refreshSensors = async () => {
-    await loadSensors();
-  };
+  const refreshSensors = useCallback(async (options) => {
+    await loadSensors(options);
+  }, [loadSensors]);
 
   return {
     anomalies,
