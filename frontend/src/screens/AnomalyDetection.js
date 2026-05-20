@@ -25,6 +25,7 @@ import {
   TextInput,
   View,
   useWindowDimensions,
+  Platform
 } from "react-native";
 import { useTranslation } from "react-i18next";
 
@@ -423,6 +424,8 @@ const AnomalyDetection = () => {
   const [resolvingId, setResolvingId] = useState(null);
   const [selectedAnomaly, setSelectedAnomaly] = useState(null);
   const [selectedSensor, setSelectedSensor] = useState(null);
+    const [hoveredRowId, setHoveredRowId] = useState(null);
+    const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
   useEffect(() => {
     if (!selectedSensor?.id) {
@@ -722,50 +725,51 @@ const AnomalyDetection = () => {
   );
 
   const renderSensorItem = ({ item }) => {
+    const isHovered = hoveredRowId === item.id;
     const { sensorName, nameLocation } = splitSensorNameLocation(item.name);
 
     return (
-      <Pressable
-        onPress={() => handleSelectSensor(item)}
-        style={({ hovered }) => [
-          styles.row,
-          styles.tableRow,
-          styles.sensorRowPressable,
-          hovered && styles.sensorRowHover,
-          selectedSensor?.id === item.id && {
-            backgroundColor: "#eefbf3",
-          },
-        ]}
-      >
-        {({ hovered }) => (
-          <>
-            <Text style={[styles.cellText, styles.sensorIdCell]}>{item.id}</Text>
-
-            <Text
-              style={[
-                styles.cellText,
-                styles.sensorNameCell,
-                hovered && styles.sensorNameHover,
-              ]}
-            >
-              {sensorName}
-            </Text>
-
-            <Text style={[styles.cellText, styles.sensorNameLocationCell]}>
-              {nameLocation}
-            </Text>
-
-            <View style={[styles.cellContent, styles.sensorCoordinateCell]}>
-              <MapPin size={14} color="#059669" />
-              <Text style={styles.coordinateText}>{formatCoordinates(item)}</Text>
+      <View style={[styles.rowContainerRelative, isHovered && { zIndex: 10 }]}>
+        <Pressable
+          onPress={() => handleSelectSensor(item)}
+          onHoverIn={() => setHoveredRowId(item.id)}
+          onHoverOut={() => setHoveredRowId(null)}
+          style={({ hovered }) => [
+            styles.row,
+            styles.tableRow,
+            styles.sensorRowPressable,
+            hovered && styles.sensorRowHover,
+            selectedSensor?.id === item.id && { backgroundColor: "#eefbf3" },
+          ]}
+        >
+          {isHovered && Platform.OS === 'web' && (
+            <View style={[styles.rowTooltip, { left: mousePos.x + 15, top: mousePos.y - 35 }]}>
+              <Text style={styles.tooltipText}>Click to load real-time telemetry analytics</Text>
             </View>
+          )}
 
-            <View style={[styles.cellContent, styles.sensorStatusCell]}>
-              <StatusBadge value={item.current_status} />
-            </View>
-          </>
-        )}
-      </Pressable>
+          <Text style={[styles.cellText, styles.sensorIdCell, isHovered && styles.cellTextHover]}>
+            {item.id}
+          </Text>
+
+          <Text style={[styles.cellText, styles.cellTextBold, styles.sensorNameCell, isHovered && styles.cellTextHover]}>
+            {sensorName}
+          </Text>
+
+          <Text style={[styles.cellText, styles.sensorNameLocationCell, isHovered && styles.cellTextHover]}>
+            {nameLocation}
+          </Text>
+
+          <View style={[styles.cellContent, styles.sensorCoordinateCell]}>
+            <MapPin size={14} color="#059669" />
+            <Text style={styles.coordinateText}>{formatCoordinates(item)}</Text>
+          </View>
+
+          <View style={[styles.cellContent, styles.sensorStatusCell]}>
+            <StatusBadge value={item.current_status} />
+          </View>
+        </Pressable>
+      </View>
     );
   };
 
@@ -831,66 +835,73 @@ const AnomalyDetection = () => {
     </View>
   );
 
-  const renderAnomalyItem = ({ item }) => (
-    <Pressable
-      onPress={() => setSelectedAnomaly(item)}
-      style={({ hovered }) => [
-        styles.row,
-        styles.tableRow,
-        hovered && { backgroundColor: "#f9f9f9" },
-        selectedAnomaly?.id === item.id && { backgroundColor: "#fff8e1" },
-      ]}
-    >
-      <Text style={[styles.cellText, { flex: 1, textAlign: "center" }]}>
-        {item.id}
-      </Text>
+  const renderAnomalyItem = ({ item }) => {
+    const isHovered = hoveredRowId === item.id;
+    return (
+      <View style={[styles.rowContainerRelative, isHovered && { zIndex: 10 }]}>
+        <Pressable
+          onPress={() => setSelectedAnomaly(item)}
+          onHoverIn={() => setHoveredRowId(item.id)}
+          onHoverOut={() => setHoveredRowId(null)}
+          style={({ hovered }) => [
+            styles.row,
+            styles.tableRow,
+            hovered && { backgroundColor: "#f8fafc" },
+            selectedAnomaly?.id === item.id && { backgroundColor: "#fff8e1" },
+          ]}
+        >
+          {isHovered && Platform.OS === 'web' && (
+            <View style={[styles.rowTooltip, { left: mousePos.x + 15, top: mousePos.y - 35 }]}>
+              <Text style={styles.tooltipText}>Click to view evidence & resolve anomaly</Text>
+            </View>
+          )}
 
-      <Text style={[styles.cellText, { flex: 3 }]}>
-        {getEventTypeLabel(item.event_type, t)}
-      </Text>
+          <Text style={[styles.cellText, { flex: 1, textAlign: "center" }, isHovered && styles.cellTextHover]}>
+            {item.id}
+          </Text>
 
-      <Pressable
-        style={[{ flex: 3 }, styles.coordinatePressable]}
-        onPress={(e) => {
-          e.stopPropagation?.();
-          setSelectedAnomaly(item);
-        }}
-      >
-        {item.latitude && item.longitude ? (
-          <View style={styles.coordinateChip}>
-            <MapPin size={14} color="#217837" />
-            <Text style={styles.coordinateText}>
-              {item.latitude.toFixed(4)}, {item.longitude.toFixed(4)}
-            </Text>
+          <Text style={[styles.cellText, styles.cellTextBold, { flex: 3 }, isHovered && styles.cellTextHover]}>
+            {getEventTypeLabel(item.event_type, t)}
+          </Text>
+
+          <View style={[{ flex: 3 }, styles.coordinatePressable]}>
+            {item.latitude && item.longitude ? (
+              <View style={styles.coordinateChip}>
+                <MapPin size={14} color="#217837" />
+                <Text style={styles.coordinateText}>
+                  {item.latitude.toFixed(4)}, {item.longitude.toFixed(4)}
+                </Text>
+              </View>
+            ) : (
+              <Text style={[styles.cellText, styles.mutedText]}>-</Text>
+            )}
           </View>
-        ) : (
-          <Text style={styles.mutedText}>-</Text>
-        )}
-      </Pressable>
 
-      <Text style={[styles.cellText, styles.mutedText, { flex: 2 }]}>
-        {formatDate(item.created_at)}
-      </Text>
+          <Text style={[styles.cellText, styles.mutedText, { flex: 2 }, isHovered && styles.cellTextHover]}>
+            {formatDate(item.created_at)}
+          </Text>
 
-      <Text style={[styles.cellText, { flex: 1, textAlign: "center" }]}>
-        {item.user_id || "-"}
-      </Text>
+          <Text style={[styles.cellText, { flex: 1, textAlign: "center" }, isHovered && styles.cellTextHover]}>
+            {item.user_id || "-"}
+          </Text>
 
-      <View style={[{ flex: 2 }, styles.centeredCell]}>
-        {item.is_resolved ? (
-          <View style={styles.resolvedBadge}>
-            <CheckCircle size={12} color="#059669" />
-            <Text style={styles.resolvedBadgeText}>{t("resolved")}</Text>
+          <View style={[{ flex: 2 }, styles.centeredCell]}>
+            {item.is_resolved ? (
+              <View style={styles.resolvedBadge}>
+                <CheckCircle size={12} color="#059669" />
+                <Text style={styles.resolvedBadgeText}>{t("resolved")}</Text>
+              </View>
+            ) : (
+              <View style={styles.unresolvedBadge}>
+                <Circle size={12} color="#dc2626" />
+                <Text style={styles.unresolvedBadgeText}>{t("active")}</Text>
+              </View>
+            )}
           </View>
-        ) : (
-          <View style={styles.unresolvedBadge}>
-            <Circle size={12} color="#dc2626" />
-            <Text style={styles.unresolvedBadgeText}>{t("active")}</Text>
-          </View>
-        )}
+        </Pressable>
       </View>
-    </Pressable>
-  );
+    );
+  };
 
   const renderAnomalyEvidence = (event) => {
     if (!event) return null;
@@ -2244,6 +2255,45 @@ const styles = StyleSheet.create({
   chartWrapper: {
     width: "100%",
     height: 300,
+  },
+  rowContainerRelative: {
+    position: "relative",
+    width: "100%",
+  },
+  rowTooltip: {
+    position: "absolute",
+    backgroundColor: "#1e293b",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    zIndex: 9999,
+    pointerEvents: "none", 
+    ...Platform.select({
+      web: { whiteSpace: "nowrap" }
+    })
+  },
+  tooltipText: {
+    color: "white",
+    fontSize: 11,
+    fontWeight: "500",
+  },
+  cellText: {
+    color: "#334155",
+    paddingHorizontal: 10,
+    alignSelf: "center",
+    ...Platform.select({
+      web: {
+        transition: "color 0.15s ease",
+      }
+    })
+  },
+  cellTextHover: {
+    color: "#1b5e20",
+    ...Platform.select({
+      web: {
+        textDecorationLine: "underline",
+      }
+    })
   },
 });
 
