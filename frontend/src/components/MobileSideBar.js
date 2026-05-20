@@ -6,6 +6,7 @@ import { useNavigation, CommonActions } from '@react-navigation/native';
 import UserProfile from '../screens/UserProfile.native';
 import { useAuth } from '../context/AuthContext';
 import { useUserProfile } from '../hooks/useUserProfile';
+import { useTranslation } from 'react-i18next';
 
 const {width}=Dimensions.get('window');
 
@@ -16,6 +17,7 @@ const MobileSideBar=({isOpen, onClose})=>{
     const [shouldRender, setShouldRender]=useState(isOpen);
     const {user}=useUserDashboard();
     const {profileImage} = useUserProfile();
+    const {t, i18n} = useTranslation();
 
     const handleLogout = async () => {
         await logout();
@@ -43,11 +45,11 @@ const MobileSideBar=({isOpen, onClose})=>{
         return null;
     }
 
-    const menuItems=[
-        {id: 'profile', label:'Profile', icon: UserPen, route:'Profile'},
-        {id: 'calendar', label:'Calendar', icon: Calendar, route:'To Do'},
-        {id: 'badges', label:'Badges', icon: Award, route:'Badge'},
-        {id: 'settings', label:'Settings', icon: Settings, route:'Settings'},
+    const menuItems = [
+        { id: 'profile', label: t('profile'), icon: UserPen, route: 'Profile' },
+        { id: 'calendar', label: t('calendar'), icon: Calendar, route: 'To Do' },
+        { id: 'badges', label: t('badges'), icon: Award, route: 'Badge' },
+        { id: 'settings', label: t('settings'), icon: Settings, route: 'Settings' },
     ];
 
     return (
@@ -99,7 +101,7 @@ const MobileSideBar=({isOpen, onClose})=>{
                         {/* Log out */}
                         <Pressable style={styles.menuItem} onPress={handleLogout}>
                             <LogOut size={18} color='red'/>
-                            <Text style={[styles.menuText, { color: 'red' }]}>Log Out</Text>
+                            <Text style={[styles.menuText, { color: 'red' }]}>{t('logout')}</Text>
                         </Pressable>
                     </View>
                 </View>
