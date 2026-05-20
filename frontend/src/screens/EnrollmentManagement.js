@@ -10,6 +10,7 @@ import {
   Image,
   Modal,
   useWindowDimensions,
+  Platform
 } from "react-native";
 import {
   RotateCcw,
@@ -121,6 +122,8 @@ const EnrollmentManagement = () => {
   const [receiptError, setReceiptError] = useState("");
   const [selectedAuditId, setSelectedAuditId] = useState(null);
   const { width } = useWindowDimensions();
+  const [hoveredRowId, setHoveredRowId] = useState(null);
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const isCompact = width < 480;
 
   const enrollmentStatusOptions = [
@@ -406,120 +409,132 @@ const EnrollmentManagement = () => {
     null;
 
   const renderEnrollmentItem = ({ item }) => {
+    const isHovered = hoveredRowId === item.id;
     const statusConfig = Status_Config[item.status?.toLowerCase()] || {
       color: "#8f8f8f",
       label: item.status,
     };
     return (
-      <Pressable
-        onPress={() => handleRowPress(item)}
-        style={({ hovered }) => [
-          styles.row,
-          styles.tableRow,
-          hovered && { backgroundColor: "#f9f9f9" },
-          selectedUserEnrollment?.id === item.id && {
-            backgroundColor: "#fff8e1",
-          },
-        ]}
+      <View 
+        style={[styles.rowContainerRelative, isHovered && { zIndex: 10 }]}
+        onPointerMove={(e) => {
+          if (Platform.OS === 'web') {
+            const containerBounds = e.currentTarget.getBoundingClientRect();
+            setMousePos({ 
+              x: e.nativeEvent.clientX - containerBounds.left, 
+              y: e.nativeEvent.clientY - containerBounds.top 
+            });
+          }
+        }}
       >
-        <View style={[{ flex: 3 }, styles.userInfo, styles.row]}>
-          {getProfileImageUri(item) ? (
-            <Image
-              source={{ uri: getProfileImageUri(item) }}
-              style={styles.avatar}
-            />
-          ) : (
-            <View style={styles.pfpPlaceholder}>
-              <Text style={styles.pfpInitials}>
-                {item.fullName ? item.fullName[0].toUpperCase() : "?"}
-              </Text>
+        <Pressable
+          onPress={() => handleRowPress(item)}
+          onHoverIn={() => setHoveredRowId(item.id)}
+          onHoverOut={() => setHoveredRowId(null)}
+          style={({ hovered }) => [
+            styles.row,
+            styles.tableRow,
+            hovered && { backgroundColor: "#f8fafc" },
+            selectedUserEnrollment?.id === item.id && { backgroundColor: "#fff8e1" },
+          ]}
+        >
+          {isHovered && Platform.OS === 'web' && (
+            <View style={[styles.rowTooltip, { left: mousePos.x + 15, top: mousePos.y - 35 }]}>
+              <Text style={styles.tooltipText}>Click to view enrollment profile</Text>
             </View>
           )}
-          <Text>{item.fullName}</Text>
-        </View>
-        <Text style={{ flex: 2 }}>{item.course_id}</Text>
-        <Text style={{ flex: 4 }}>{item.courseName}</Text>
-        <Text style={{ flex: 2 }}>{formatDate(item.enrolled_at)}</Text>
-        <View style={[styles.row, styles.badge, { flex: 2 }]}>
-          <Circle
-            size={8}
-            stroke={statusConfig.color}
-            fill={statusConfig.color}
-          />
-          <Text style={[styles.badgeText, { color: statusConfig.color }]}>
-              {formatted(item.status)}
-          </Text>
-        </View>
-        <Text style={{ flex: 2 }}>{item.expiry_date || t("not_available")}</Text>
-      </Pressable>
+          <View style={[{ flex: 3 }, styles.userInfo, styles.row]}>
+            {getProfileImageUri(item) ? (
+              <Image source={{ uri: getProfileImageUri(item) }} style={styles.avatar} />
+            ) : (
+              <View style={styles.pfpPlaceholder}>
+                <Text style={styles.pfpInitials}>{item.fullName ? item.fullName[0].toUpperCase() : "?"}</Text>
+              </View>
+            )}
+            <Text style={[styles.cellText, styles.cellTextBold, isHovered && styles.cellTextHover]}>{item.fullName}</Text>
+          </View>
+          <Text style={[styles.cellText, { flex: 2 }, isHovered && styles.cellTextHover]}>{item.course_id}</Text>
+          <Text style={[styles.cellText, { flex: 4 }, isHovered && styles.cellTextHover]}>{item.courseName}</Text>
+          <Text style={[styles.cellText, { flex: 2 }, isHovered && styles.cellTextHover]}>{formatDate(item.enrolled_at)}</Text>
+          <View style={[styles.row, styles.badge, { flex: 2 }]}>
+            <Circle size={8} stroke={statusConfig.color} fill={statusConfig.color} />
+            <Text style={[styles.cellText, { color: statusConfig.color, fontWeight: "600" }]}>{formatted(item.status)}</Text>
+          </View>
+          <Text style={[styles.cellText, { flex: 2 }, isHovered && styles.cellTextHover]}>{item.expiry_date || t("not_available")}</Text>
+        </Pressable>
+      </View>
     );
   };
 
   const renderSubmissionsItem = ({ item }) => {
+    const isHovered = hoveredRowId === item.id;
     const statusConfig = Status_Config[item.status?.toLowerCase()] || {
       color: "#8f8f8f",
       label: item.status,
     };
     return (
-      <Pressable
-        onPress={async () => {
-          setAuditModalVisible(true);
-          setSelectedAuditId(item.id);
-          await fetchEnrollmentAudit(item.id);
+      <View 
+        style={[styles.rowContainerRelative, isHovered && { zIndex: 10 }]}
+        onPointerMove={(e) => {
+          if (Platform.OS === 'web') {
+            const containerBounds = e.currentTarget.getBoundingClientRect();
+            setMousePos({ 
+              x: e.nativeEvent.clientX - containerBounds.left, 
+              y: e.nativeEvent.clientY - containerBounds.top 
+            });
+          }
         }}
-        style={({ hovered }) => [
-          styles.row,
-          styles.tableRow,
-          hovered && { backgroundColor: "#f9f9f9" },
-          selectedUserEnrollment?.id === item.id && {
-            backgroundColor: "#fff8e1",
-          },
-        ]}
       >
-        <View style={[{ flex: 3 }, styles.userInfo, styles.row]}>
-          {getProfileImageUri(item) ? (
-            <Image
-              source={{ uri: getProfileImageUri(item) }}
-              style={styles.avatar}
-            />
-          ) : (
-            <View style={styles.pfpPlaceholder}>
-              <Text style={styles.pfpInitials}>
-                {item.user_fullname ? item.user_fullname[0].toUpperCase() : "?"}
-              </Text>
+        <Pressable
+          onPress={async () => {
+            setAuditModalVisible(true);
+            setSelectedAuditId(item.id);
+            await fetchEnrollmentAudit(item.id);
+          }}
+          onHoverIn={() => setHoveredRowId(item.id)}
+          onHoverOut={() => setHoveredRowId(null)}
+          style={({ hovered }) => [
+            styles.row,
+            styles.tableRow,
+            hovered && { backgroundColor: "#f8fafc" },
+            selectedUserEnrollment?.id === item.id && { backgroundColor: "#fff8e1" },
+          ]}
+        >
+          {isHovered && Platform.OS === 'web' && (
+            <View style={[styles.rowTooltip, { left: mousePos.x + 15, top: mousePos.y - 35 }]}>
+              <Text style={styles.tooltipText}>Click to audit learning progress</Text>
             </View>
           )}
-          <Text>{item.user_fullname}</Text>
-        </View>
-        <Text style={{ flex: 2 }}>{item.course_id}</Text>
-        <Text style={{ flex: 4 }}>{item.course_details?.title}</Text>
-        <View style={[styles.row, styles.badge, { flex: 2 }]}>
-          <Circle
-            size={8}
-            stroke={statusConfig.color}
-            fill={statusConfig.color}
-          />
-          <Text style={[styles.badgeText, { color: statusConfig.color }]}>
-            {formatted(item.status)}
-          </Text>
-        </View>
-        <View style={{ flex: 1, alignItems: "center" }}>
-          <Image
-            source={
-              item.course_details?.badge_img_path
-                ? { uri: `http://localhost:5000/${item.course_details.badge_img_path}`}
-                : require("../../assets/course_badge.png")
-            }
-            style={styles.avatar}
-          />
-        </View>
-        <Text style={{ flex: 2 }}>
-          {formatDate(item.completed_at) || t("not_available")}
-        </Text>
-        <Text style={{ flex: 2 }}>
-          {item.badge_expire_at ? formatDate(item.badge_expire_at) : t("not_available")}
-        </Text>
-      </Pressable>
+          <View style={[{ flex: 3 }, styles.userInfo, styles.row]}>
+            {getProfileImageUri(item) ? (
+              <Image source={{ uri: getProfileImageUri(item) }} style={styles.avatar} />
+            ) : (
+              <View style={styles.pfpPlaceholder}>
+                <Text style={styles.pfpInitials}>{item.user_fullname ? item.user_fullname[0].toUpperCase() : "?"}</Text>
+              </View>
+            )}
+            <Text style={[styles.cellText, styles.cellTextBold, isHovered && styles.cellTextHover]}>{item.user_fullname}</Text>
+          </View>
+          <Text style={[styles.cellText, { flex: 2 }, isHovered && styles.cellTextHover]}>{item.course_id}</Text>
+          <Text style={[styles.cellText, { flex: 4 }, isHovered && styles.cellTextHover]}>{item.course_details?.title}</Text>
+          <View style={[styles.row, styles.badge, { flex: 2 }]}>
+            <Circle size={8} stroke={statusConfig.color} fill={statusConfig.color} />
+            <Text style={[styles.cellText, { color: statusConfig.color, fontWeight: "600" }]}>{formatted(item.status)}</Text>
+          </View>
+          <View style={{ flex: 1, alignItems: "center" }}>
+            <Image
+              source={
+                item.course_details?.badge_img_path
+                  ? { uri: `http://localhost:5000/${item.course_details.badge_img_path}`}
+                  : require("../../assets/course_badge.png")
+              }
+              style={styles.avatar}
+            />
+          </View>
+          <Text style={[styles.cellText, { flex: 2 }, isHovered && styles.cellTextHover]}>{formatDate(item.completed_at) || t("not_available")}</Text>
+          <Text style={[styles.cellText, { flex: 2 }, isHovered && styles.cellTextHover]}>{item.badge_expire_at ? formatDate(item.badge_expire_at) : t("not_available")}</Text>
+        </Pressable>
+      </View>
     );
   };
 
@@ -597,71 +612,73 @@ const EnrollmentManagement = () => {
     }
   };
 
-  const renderPaymentItem = ({ item }) => {
+const renderPaymentItem = ({ item }) => {
+    const isHovered = hoveredRowId === item.id;
     const statusConfig = Status_Config[item.status?.toLowerCase()] || {
       color: "#8f8f8f",
       label: item.status || t("unknown"),
     };
-
     return (
-      <Pressable
-        onPress={() => {
-          setSelectedPayment(item);
-          setPaymentModalVisible(true);
+      <View 
+        style={[styles.rowContainerRelative, isHovered && { zIndex: 10 }]}
+        onPointerMove={(e) => {
+          if (Platform.OS === 'web') {
+            const containerBounds = e.currentTarget.getBoundingClientRect();
+            setMousePos({ 
+              x: e.nativeEvent.clientX - containerBounds.left, 
+              y: e.nativeEvent.clientY - containerBounds.top 
+            });
+          }
         }}
-        style={({ hovered }) => [
-          styles.row,
-          styles.tableRow,
-          hovered && { backgroundColor: "#f9f9f9" },
-        ]}
       >
-        <View style={[{ flex: 4 }, styles.userInfo, styles.row]}>
-          {getProfileImageUri(item) ? (
-            <Image
-              source={{ uri: getProfileImageUri(item) }}
-              style={styles.avatar}
-            />
-          ) : (
-            <View style={styles.pfpPlaceholder}>
-              <Text style={styles.pfpInitials}>
-                {item.user_fullname ? item.user_fullname[0].toUpperCase() : "?"}
-              </Text>
+        <Pressable
+          onPress={() => {
+            setSelectedPayment(item);
+            setPaymentModalVisible(true);
+          }}
+          onHoverIn={() => setHoveredRowId(item.id)}
+          onHoverOut={() => setHoveredRowId(null)}
+          style={({ hovered }) => [
+            styles.row,
+            styles.tableRow,
+            hovered && { backgroundColor: "#f8fafc" },
+          ]}
+        >
+          {isHovered && Platform.OS === 'web' && (
+            <View style={[styles.rowTooltip, { left: mousePos.x + 15, top: mousePos.y - 35 }]}>
+              <Text style={styles.tooltipText}>Click to review bank receipt</Text>
             </View>
           )}
-          <Text>{item.user_fullname}</Text>
-        </View>
-
-        <Text style={{ flex: 3 }}>RM {item.amount ?? 0}</Text>
-        <View style={[styles.row, styles.badge, { flex: 3 }]}>
-          <Circle
-            size={8}
-            stroke={statusConfig.color}
-            fill={statusConfig.color}
-          />
-          <Text style={[styles.badgeText, { color: statusConfig.color }]}>
-            {formatted(item.status)}
-          </Text>
-        </View>
-        <Text style={{ flex: 3 }}>
-          {item.created_at ? formatDate(item.created_at) : t("not_available")}
-        </Text>
-        <Text style={{ flex: 3 }}>
-          {item.processed_at ? formatDate(item.processed_at) : t("not_available")}
-        </Text>
-        <View style={{ flex: 2 }}>
-          <Pressable
-            onPress={() => {
-              if (item.receipt_filepath) {
-                window.open(item.receipt_filepath, "_blank");
-              }
-            }}
-            style={styles.downloadBtn}
-          >
-            <Text style={styles.downloadBtnText}>{
-          t("download")}</Text>
-          </Pressable>
-        </View>
-      </Pressable>
+          <View style={[{ flex: 4 }, styles.userInfo, styles.row]}>
+            {getProfileImageUri(item) ? (
+              <Image source={{ uri: getProfileImageUri(item) }} style={styles.avatar} />
+            ) : (
+              <View style={styles.pfpPlaceholder}>
+                <Text style={styles.pfpInitials}>{item.user_fullname ? item.user_fullname[0].toUpperCase() : "?"}</Text>
+              </View>
+            )}
+            <Text style={[styles.cellText, styles.cellTextBold, isHovered && styles.cellTextHover]}>{item.user_fullname}</Text>
+          </View>
+          <Text style={[styles.cellText, { flex: 3 }, isHovered && styles.cellTextHover]}>RM {item.amount ?? 0}</Text>
+          <View style={[styles.row, styles.badge, { flex: 3 }]}>
+            <Circle size={8} stroke={statusConfig.color} fill={statusConfig.color} />
+            <Text style={[styles.cellText, { color: statusConfig.color, fontWeight: "600" }]}>{formatted(item.status)}</Text>
+          </View>
+          <Text style={[styles.cellText, { flex: 3 }, isHovered && styles.cellTextHover]}>{item.created_at ? formatDate(item.created_at) : t("not_available")}</Text>
+          <Text style={[styles.cellText, { flex: 3 }, isHovered && styles.cellTextHover]}>{item.processed_at ? formatDate(item.processed_at) : t("not_available")}</Text>
+          <View style={{ flex: 2, justifyContent: "center" }}>
+            <Pressable
+              onPress={(e) => {
+                e.stopPropagation(); // 🔥 Prevents preview click from firing main modal window view split
+                if (item.receipt_filepath) window.open(item.receipt_filepath, "_blank");
+              }}
+              style={styles.downloadBtn}
+            >
+              <Text style={styles.downloadBtnText}>{t("download")}</Text>
+            </Pressable>
+          </View>
+        </Pressable>
+      </View>
     );
   };
 
@@ -1475,6 +1492,7 @@ const styles = StyleSheet.create({
   },
   tableContainer: {
     width: "100%",
+    paddingTop: 20,
   },
   tableInner: {
     minWidth: 980,
@@ -1876,6 +1894,44 @@ const styles = StyleSheet.create({
     color: "white",
     fontWeight: "700",
     fontSize: 14,
+  },
+  rowContainerRelative: {
+    position: "relative",
+    width: "100%",
+  },
+  rowTooltip: {
+    position: "absolute",
+    backgroundColor: "#1e293b",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    zIndex: 9999,
+    pointerEvents: "none", 
+    ...Platform.select({
+      web: { whiteSpace: "nowrap" }
+    })
+  },
+  tooltipText: {
+    color: "white",
+    fontSize: 11,
+    fontWeight: "500",
+  },
+  cellText: {
+    color: "#334155",
+    alignSelf: "center",
+    ...Platform.select({
+      web: {
+        transition: "color 0.15s ease",
+      }
+    })
+  },
+  cellTextHover: {
+    color: "#1b5e20",
+    ...Platform.select({
+      web: {
+        textDecorationLine: "underline",
+      }
+    })
   },
 });
 export default EnrollmentManagement;
