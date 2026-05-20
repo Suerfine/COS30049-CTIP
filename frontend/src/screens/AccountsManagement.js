@@ -646,18 +646,7 @@ const AccountManagement = () => {
                     <IdCard size={18} color="#4f4f4f" />
                     <Text style={styles.panelLabel}>Passport/IC:</Text>
                   </View>
-                  {isEditing ? (
-                    <View>
-                      <TextInput
-                        style={[styles.userDetails, styles.inputEditing, editErrors.identification && styles.inputErrorStyle]}
-                        value={editForm?.identification || ""}
-                        onChangeText={(text) => setEditForm({ ...editForm, identification: text })}
-                      />
-                      {editErrors.identification && <Text style={styles.errorLabelMicro}>{editErrors.identification}</Text>}
-                    </View>
-                  ) : (
-                    <Text style={styles.userDetails}>{selectedAcc.identification}</Text>
-                  )}
+                  <Text style={styles.userDetails}>{selectedAcc.identification}</Text>
                 </View>
 
                 <View style={styles.details}>

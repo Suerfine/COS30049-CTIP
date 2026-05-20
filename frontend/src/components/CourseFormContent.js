@@ -90,9 +90,9 @@ const CourseFormContent = ({ onSubmit, onCancel, isLoading, initialData, allCour
         }
 
         if (!form.expiryWeeks || form.expiryWeeks.toString().trim() === "") {
-            tempErrors.expiryWeeks = "* Course validity is required.";
+            tempErrors.expiryWeeks = "* Course access duration is required.";
         } else if (!isValidExpiryWeeks(form.expiryWeeks)) {
-            tempErrors.expiryWeeks = "* Course validity must be between 1-104 weeks.";
+            tempErrors.expiryWeeks = "* Course access duration must be between 1-104 weeks.";
         }
 
         if (!form.badgeExpiry || form.badgeExpiry.toString().trim() === "") {
@@ -273,7 +273,7 @@ const CourseFormContent = ({ onSubmit, onCancel, isLoading, initialData, allCour
                         {/* Validity Settings */}
                         <View style={[styles.row, { gap: 15, marginBottom: 15 }]}>
                             <View style={{ flex: 1 }}>
-                                <Text style={styles.label}>Course Validity (Weeks):</Text>
+                                <Text style={styles.label}>Must Completed within (Weeks):</Text>
                                 <TextInput
                                     style={styles.input}
                                     placeholder='e.g. 4'
