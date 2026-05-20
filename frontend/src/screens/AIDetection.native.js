@@ -160,6 +160,7 @@ export default function DetectionScreen() {
   };
 
   const isIotAnomaly = (event) => event?.metadata?.source === "iot_sensor";
+  const canResolveEvent = (event) => event && !event.is_resolved && !isIotAnomaly(event);
 
   const formatEvidenceValue = (value) => {
     if (value === null || value === undefined || value === "") {
@@ -939,7 +940,7 @@ export default function DetectionScreen() {
                       {JSON.stringify(selectedEvent.metadata || {}, null, 2)}
                     </Text>
                   </ScrollView>
-                  {!selectedEvent.is_resolved && (
+                  {canResolveEvent(selectedEvent) && (
                     <TouchableOpacity
                       style={[
                         styles.resolveButton,

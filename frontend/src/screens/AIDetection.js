@@ -594,6 +594,7 @@ export default function DetectionScreenWeb() {
   };
 
   const isIotAnomaly = (event) => event?.metadata?.source === "iot_sensor";
+  const canResolveEvent = (event) => event && !event.is_resolved && !isIotAnomaly(event);
 
   const formatEvidenceValue = (value) => {
     if (value === null || value === undefined || value === "") return "N/A";
@@ -1042,7 +1043,7 @@ export default function DetectionScreenWeb() {
                           </span>
                           <div style={styles.eventActions}>
                             <span style={styles.activePill}>{t("active")}</span>
-                            {!event.is_resolved && (
+                            {canResolveEvent(event) && (
                               <button
                                 type="button"
                                 style={{
@@ -1412,7 +1413,7 @@ export default function DetectionScreenWeb() {
                 </MapContainer>
               </div>
             </div>
-            {!selectedEvent.is_resolved && (
+            {canResolveEvent(selectedEvent) && (
               <button
                 style={{
                   ...styles.resolveButton,
