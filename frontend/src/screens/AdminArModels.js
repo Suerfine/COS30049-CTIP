@@ -36,7 +36,15 @@ const getViewerUrl = (url) => {
 
   try {
     const parsed = new URL(url);
-    parsed.hostname = "localhost";
+    // Re-point the viewer at the same host:port the admin app uses to reach the
+    // backend, so the QR works on any device on the LAN/hotspot (not just the
+    // host machine). Previously this was forced to "localhost", which only ever
+    // resolved on the machine running the server.
+    if (backendBase) {
+      const base = new URL(backendBase);
+      parsed.protocol = base.protocol;
+      parsed.host = base.host; // host includes the port
+    }
     return parsed.toString();
   } catch {
     return url;
@@ -112,6 +120,10 @@ const AdminArModels = () => {
   const { models, loading, createModel, deleteModel } = useArModels();
   const [modalVisible, setModalVisible] = useState(false);
   const [markerById, setMarkerById] = useState({});
+  // Tracks the viewer URL each marker was built from, so we can detect a stale
+  // QR (e.g. the URL changed from localhost to the LAN IP, or the host switched
+  // networks) and regenerate it.
+  const [markerUrlById, setMarkerUrlById] = useState({});
   const [markerLoading, setMarkerLoading] = useState({});
   const { width } = useWindowDimensions();
   const isCompact = width < 700;
@@ -148,23 +160,25 @@ const AdminArModels = () => {
       console.error("Marker generation failed", error);
       setMarkerError((prev) => ({ ...prev, [model.id]: true }));
     } finally {
+      // Record the URL we just (re)built for, so the effect below won't loop.
+      // If the URL later changes, this becomes stale again and regenerates.
+      setMarkerUrlById((prev) => ({ ...prev, [model.id]: viewerUrl }));
       setMarkerLoading((prev) => ({ ...prev, [model.id]: false }));
     }
   }, []);
 
   useEffect(() => {
     models.forEach((model) => {
-      if (
-        model?.id &&
-        model.ar_viewer_url &&
-        !markerById[model.id] &&
-        !markerLoading[model.id] &&
-        !markerError[model.id]
-      ) {
+      if (!model?.id || !model.ar_viewer_url) {
+        return;
+      }
+      const viewerUrl = getViewerUrl(model.ar_viewer_url);
+      const isStale = markerUrlById[model.id] !== viewerUrl;
+      if (isStale && !markerLoading[model.id]) {
         handleGenerateMarker(model);
       }
     });
-  }, [handleGenerateMarker, markerById, markerError, markerLoading, models]);
+  }, [handleGenerateMarker, markerUrlById, markerLoading, models]);
 
   const downloadMarker = (modelId) => {
     const marker = markerById[modelId];

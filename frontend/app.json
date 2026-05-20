@@ -13,7 +13,10 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Allow SFC to access your location to tag anomaly events with accurate GPS coordinates."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -21,7 +24,12 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "permissions": ["android.permission.VIBRATE", "android.permission.FLASHLIGHT"]
+      "permissions": [
+        "android.permission.VIBRATE",
+        "android.permission.FLASHLIGHT",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png",
@@ -33,6 +41,12 @@
         "expo-camera",
         {
           "cameraPermission": "Allow SFC to use your camera for AI anomaly detection."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow SFC to access your location to tag anomaly events with accurate GPS coordinates."
         }
       ]
     ]

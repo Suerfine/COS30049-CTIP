@@ -231,7 +231,22 @@ const startServer = async (): Promise<void> => {
       );
     });
 
+    // When serving HTTPS with a dev (mkcert) cert, also expose a plain HTTP
+    // listener. Native clients (Expo Go / device builds) can't trust the local
+    // CA and have no "proceed anyway" prompt, so they connect over HTTP instead.
+    let httpFallbackServer: http.Server | undefined;
+    if (httpsEnabled) {
+      const httpFallbackPort = Number(process.env.HTTP_FALLBACK_PORT) || 5001;
+      httpFallbackServer = http.createServer(app);
+      httpFallbackServer.listen(httpFallbackPort, () => {
+        console.log(
+          `HTTP fallback (for native clients) on http://localhost:${httpFallbackPort}`,
+        );
+      });
+    }
+
     const shutdown = () => {
+      httpFallbackServer?.close();
       server.close(() => process.exit(0));
     };
 

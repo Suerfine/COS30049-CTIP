@@ -5,17 +5,15 @@
  * Update these values with your development environment settings.
  */
 
+// Resolved from env so the LAN-setup script can point these at the host laptop's
+// current WiFi IP without editing source. Falls back to the API host (the AI
+// server runs on the same machine as the backend in dev).
 export const AI_SERVER_CONFIG = {
-  // IP address of your development machine running the AI server
-  // Find your IP: Open PowerShell and run `ipconfig`
-  // Look for "IPv4 Address" on your WiFi adapter (e.g., 192.168.1.100)
-  HOST: '192.168.1.100',
-  
-  // Port where the FastAPI server is running (default: 8000)
-  PORT: 8000,
-  
-  // Default user ID for compliance event logging
-  // This can be overridden at runtime or per-session
+  HOST:
+    process.env.EXPO_PUBLIC_AI_HOST ||
+    process.env.EXPO_PUBLIC_API_HOST ||
+    '192.168.1.100',
+  PORT: Number(process.env.EXPO_PUBLIC_AI_PORT) || 8000,
   DEFAULT_USER_ID: 1,
 };
 
