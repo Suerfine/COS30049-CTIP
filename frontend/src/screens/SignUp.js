@@ -56,9 +56,10 @@ const SignUp = ({ navigation }) => {
 
   const onFormSubmit = async () => {
     try {
-      const success = await handleSignUp(navigation);
-      
-      setIsSuccessModalVisible(true);
+      const success = await handleSignUp();
+      if (success) {
+        setIsSuccessModalVisible(true);
+      }
     } catch (err) {
       console.error("Registration error encountered:", err);
     }

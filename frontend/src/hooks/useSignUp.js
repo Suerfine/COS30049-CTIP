@@ -85,8 +85,8 @@ export const useSignUp = () => {
 
   const removeFile = () => setFile(null);
 
-  const handleSignUp = async (navigation) => {
-    if (!validateForm()) return;
+  const handleSignUp = async () => {
+    if (!validateForm()) return false;
 
     setLoading(true);
     setError({}); // Clear previous backend errors
@@ -101,13 +101,12 @@ export const useSignUp = () => {
       };
 
       await RegisterService.registerUser(userData);
-
-      Alert.alert("Success", "Account created successfully! Please log in.");
-      navigation.navigate("Login");
+      return true;
     } catch (error) {
       const errorMessage =
         error.message || "Registration failed. Please try again.";
       setError({ backend: errorMessage });
+      return false;
     } finally {
       setLoading(false);
     }
