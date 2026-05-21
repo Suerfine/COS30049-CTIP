@@ -5,7 +5,7 @@ export const isOnlyLetters=(str)=>{
 }
 
 // 01x-xxxxxxx
-export const phoneRegex = /^01\d-\d{8}$/;
+export const phoneRegex = /^01\d-\d{12}$/;
 
 // min 6 characters, at least one letter and one number
 export const isValidPassword = (password) =>
