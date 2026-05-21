@@ -39,13 +39,20 @@ export const buildUser = (
 ): UserFactoryAttributes => {
   const { password, ...restOverrides } = overrides;
 
+  //Identification, It will either be Mal IC (12 digits) or Passport (2 letters followed by 7 digits)
+  const identificationType = faker.helpers.arrayElement(["IC", "Passport"]);
+  const identification =
+    identificationType === "IC"
+      ? faker.string.numeric(12).toUpperCase()
+      : `${faker.string.alpha({ length: 2, casing: "upper" })}${faker.string.numeric(7)}`;
+
   const defaultUser: UserFactoryAttributes = {
-    username: `${faker.internet.displayName()}_${faker.number.int({ min: 100, max: 999 })}`,
+    username: `${faker.person.firstName().toLowerCase()}#${faker.number.int({ min: 1000, max: 9999 })}`,
     firstname: faker.person.firstName(),
     lastname: faker.person.lastName(),
-    identification: `${faker.string.alphanumeric(10).toUpperCase()}`,
+    identification: identification,
     personal_email: faker.internet.email().toLowerCase(),
-    tel: `+61${faker.string.numeric(9)}`,
+    tel: `+01${faker.string.numeric(9)}`,
     role: faker.helpers.arrayElement(Object.values(UserRoles)),
     password_hash: hashPassword(DEFAULT_PASSWORD),
     last_login_at: faker.helpers.arrayElement([

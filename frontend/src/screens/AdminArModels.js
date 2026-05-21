@@ -27,7 +27,7 @@ import { formatDate } from "../utils/formatDate";
 import apiClient from "../config/apiConfig";
 
 const backendBase = (apiClient.defaults.baseURL || "").replace(/\/api$/, "");
-const SFC_LOGO_URL = `${backendBase}/public/ar/sfclogo/SFC_Logo.png`;
+const SFC_LOGO_URL = `${backendBase}/public/dev/SFC_Logo.png`;
 
 const getViewerUrl = (url) => {
   if (!url) {

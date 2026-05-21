@@ -268,10 +268,22 @@ const PaginatedTableControls = ({
     return null;
   }
   const { t } = useTranslation();
-  const pageNumbers = [];
-  for (let i = 1; i <= totalPages; i += 1) {
-    pageNumbers.push(i);
-  }
+
+  const visiblePages = useMemo(() => {
+    const maxVisible = 6; 
+    let start = Math.max(1, page - Math.floor(maxVisible / 2));
+    let end = Math.min(totalPages, start + maxVisible - 1);
+
+    if (end - start + 1 < maxVisible) {
+      start = Math.max(1, end - maxVisible + 1);
+    }
+
+    const pages = [];
+    for (let i = start; i <= end; i++) {
+      pages.push(i);
+    }
+    return pages;
+  }, [page, totalPages]);
 
   const firstItem = totalElements === 0 ? 0 : (page - 1) * size + 1;
   const lastItem = Math.min(totalElements, page * size);
@@ -288,12 +300,7 @@ const PaginatedTableControls = ({
           onPress={() => onPageChange(1)}
           style={[styles.pageBtn, page === 1 && styles.btnDisabled]}
         >
-          <Text
-            style={[
-              page === 1 ? styles.disabledText : styles.pageBtnText,
-              styles.arrowBtn,
-            ]}
-          >
+          <Text style={[page === 1 ? styles.disabledText : styles.pageBtnText, styles.arrowBtn]}>
             <ChevronsLeft size={20} />
           </Text>
         </Pressable>
@@ -302,42 +309,49 @@ const PaginatedTableControls = ({
           onPress={() => onPageChange(page - 1)}
           style={[styles.pageBtn, page === 1 && styles.btnDisabled]}
         >
-          <Text
-            style={[
-              page === 1 ? styles.disabledText : styles.pageBtnText,
-              styles.arrowBtn,
-            ]}
-          >
+          <Text style={[page === 1 ? styles.disabledText : styles.pageBtnText, styles.arrowBtn]}>
             <ChevronLeft size={20} />
           </Text>
         </Pressable>
-        {pageNumbers.map((number) => (
+
+        {visiblePages[0] > 1 && (
+          <>
+            <Pressable onPress={() => onPageChange(1)} style={styles.pageBtn}>
+              <Text style={styles.pageBtnText}>1</Text>
+            </Pressable>
+            {visiblePages[0] > 2 && <Text style={styles.ellipsisLabel}>...</Text>}
+          </>
+        )}
+
+        {visiblePages.map((number) => (
           <Pressable
             key={number}
             onPress={() => onPageChange(number)}
             style={[styles.pageBtn, page === number && styles.activePageBtn]}
           >
-            <Text
-              style={[
-                styles.pageBtnText,
-                page === number && { color: "white" },
-              ]}
-            >
+            <Text style={[styles.pageBtnText, page === number && { color: "white" }]}>
               {number}
             </Text>
           </Pressable>
         ))}
+
+        {visiblePages[visiblePages.length - 1] < totalPages && (
+          <>
+            {visiblePages[visiblePages.length - 1] < totalPages - 1 && (
+              <Text style={styles.ellipsisLabel}>...</Text>
+            )}
+            <Pressable onPress={() => onPageChange(totalPages)} style={styles.pageBtn}>
+              <Text style={styles.pageBtnText}>{totalPages}</Text>
+            </Pressable>
+          </>
+        )}
+
         <Pressable
           disabled={page === totalPages}
           onPress={() => onPageChange(page + 1)}
           style={[styles.pageBtn, page === totalPages && styles.btnDisabled]}
         >
-          <Text
-            style={[
-              page === totalPages ? styles.disabledText : styles.pageBtnText,
-              styles.arrowBtn,
-            ]}
-          >
+          <Text style={[page === totalPages ? styles.disabledText : styles.pageBtnText, styles.arrowBtn]}>
             <ChevronRight size={20} />
           </Text>
         </Pressable>
@@ -346,12 +360,7 @@ const PaginatedTableControls = ({
           onPress={() => onPageChange(totalPages)}
           style={[styles.pageBtn, page === totalPages && styles.btnDisabled]}
         >
-          <Text
-            style={[
-              page === totalPages ? styles.disabledText : styles.pageBtnText,
-              styles.arrowBtn,
-            ]}
-          >
+          <Text style={[page === totalPages ? styles.disabledText : styles.pageBtnText, styles.arrowBtn]}>
             <ChevronsRight size={20} />
           </Text>
         </Pressable>
@@ -799,9 +808,17 @@ const AnomalyDetection = () => {
   const renderSensorItem = ({ item }) => {
     const isHovered = hoveredRowId === item.id;
     const { sensorName, nameLocation } = splitSensorNameLocation(item.name);
-    console.log(item);
     return (
-      <View style={[styles.rowContainerRelative, isHovered && { zIndex: 10 }]}>
+      <View style={[styles.rowContainerRelative, isHovered && { zIndex: 10 }]}
+      onPointerMove={(e) => {
+          if (Platform.OS === 'web') {
+            const containerBounds = e.currentTarget.getBoundingClientRect();
+            setMousePos({ 
+              x: e.nativeEvent.clientX - containerBounds.left, 
+              y: e.nativeEvent.clientY - containerBounds.top 
+            });
+          }
+        }}>
         <Pressable
           onPress={() => handleSelectSensor(item)}
           onHoverIn={() => setHoveredRowId(item.id)}
@@ -913,9 +930,17 @@ const AnomalyDetection = () => {
 
   const renderAnomalyItem = ({ item }) => {
     const isHovered = hoveredRowId === item.id;
-    console.log(item)
     return (
-      <View style={[styles.rowContainerRelative, isHovered && { zIndex: 10 }]}>
+      <View style={[styles.rowContainerRelative, isHovered && { zIndex: 10 }]}
+      onPointerMove={(e) => {
+          if (Platform.OS === 'web') {
+            const containerBounds = e.currentTarget.getBoundingClientRect();
+            setMousePos({ 
+              x: e.nativeEvent.clientX - containerBounds.left, 
+              y: e.nativeEvent.clientY - containerBounds.top 
+            });
+          }
+        }}>
         <Pressable
           onPress={() => setSelectedAnomaly(item)}
           onHoverIn={() => setHoveredRowId(item.id)}
@@ -928,7 +953,15 @@ const AnomalyDetection = () => {
           ]}
         >
           {isHovered && Platform.OS === 'web' && (
-            <View style={[styles.rowTooltip, { left: mousePos.x + 15, top: mousePos.y - 35 }]}>
+            <View 
+              style={[
+                styles.rowTooltip, 
+                { 
+                  left: mousePos.x + 15, 
+                  top: mousePos.y - 35   
+                }
+              ]}
+            >
               <Text style={styles.tooltipText}>Click to view evidence & resolve anomaly</Text>
             </View>
           )}

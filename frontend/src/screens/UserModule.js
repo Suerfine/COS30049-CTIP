@@ -41,7 +41,7 @@ import AIChatBot from "../components/AIChatbot.js";
 import { useTranslation } from "react-i18next";
 import DiscussionSection from "../components/DiscussionSection.js";
 import { enrollmentService } from "../services/EnrollmentService.js";
-
+import { useUserCourse } from "../hooks/useUserCourse.js";
 
 const UserModule = ({ navigation }) => {
   const route = useRoute();
@@ -53,11 +53,13 @@ const UserModule = ({ navigation }) => {
     initialSection,
     discussionId,
   } = route.params;
-  const [resolvedEnrollmentStatus, setResolvedEnrollmentStatus] = useState(enrollmentStatus);
-  const [resolvedEnrollmentId, setResolvedEnrollmentId] = useState(enrollmentId);
+  const [resolvedEnrollmentStatus, setResolvedEnrollmentStatus] =
+    useState(enrollmentStatus);
+  const [resolvedEnrollmentId, setResolvedEnrollmentId] =
+    useState(enrollmentId);
   const [localStatus, setLocalStatus] = useState(initialStatus);
   const hasfailedRef = useRef(false);
-  const {t, i18n}=useTranslation();
+  const { t, i18n } = useTranslation();
 
   const isLocked =
     resolvedEnrollmentStatus === null ||
@@ -85,6 +87,7 @@ const UserModule = ({ navigation }) => {
     failEnrollment,
   } = useCourseDetails(id, resolvedEnrollmentId);
   const { allCourseList } = useCourses();
+  const { enrollableCourses } = useUserCourse();
   const [chatOpen, setChatOpen] = useState(false);
 
   const { progressMap, isDeadEnd } = useCourseProgress(
@@ -108,10 +111,13 @@ const UserModule = ({ navigation }) => {
   const [activeTab, setActiveTab] = useState("Overview");
   const scrollViewRef = useRef(null);
 
-  const memoizedPageMetadata = React.useMemo(() => ({
-    ...selectedPage,
-    course,
-  }), [selectedPage, course]);
+  const memoizedPageMetadata = React.useMemo(
+    () => ({
+      ...selectedPage,
+      course,
+    }),
+    [selectedPage, course],
+  );
 
   useEffect(() => {
     setResolvedEnrollmentStatus(enrollmentStatus);
@@ -120,7 +126,11 @@ const UserModule = ({ navigation }) => {
   }, [id, enrollmentStatus, enrollmentId, initialStatus]);
 
   useEffect(() => {
-    if (resolvedEnrollmentStatus !== undefined && resolvedEnrollmentId !== undefined) return;
+    if (
+      resolvedEnrollmentStatus !== undefined &&
+      resolvedEnrollmentId !== undefined
+    )
+      return;
 
     let isMounted = true;
 
@@ -173,6 +183,10 @@ const UserModule = ({ navigation }) => {
     resolvedEnrollmentStatus === "failed" ||
     resolvedEnrollmentStatus === "rejected" ||
     resolvedEnrollmentStatus === "expired";
+
+  const canEnroll = enrollableCourses.some(
+    (enrollableCourse) => Number(enrollableCourse.id) === Number(id),
+  );
 
   const {
     elements,
@@ -365,15 +379,14 @@ const UserModule = ({ navigation }) => {
           )}
         </View>
         {/* Render the dynamic content */}
-      {course.description !== "undefined" && (
-        <View style={styles.markdownContainer}>
-          <Markdown style={markdownStyles}>
-            {course?.description ||
-              "_No content provided yet. Click edit to start._"}
-          </Markdown>
-        </View>
-      )}
-        
+        {course.description !== "undefined" && (
+          <View style={styles.markdownContainer}>
+            <Markdown style={markdownStyles}>
+              {course?.description ||
+                "_No content provided yet. Click edit to start._"}
+            </Markdown>
+          </View>
+        )}
 
         {/* Badge Achievement Section */}
         <View>
@@ -621,7 +634,8 @@ const UserModule = ({ navigation }) => {
                       <View style={styles.statChip}>
                         <Calendar size={16} color="#363636" />
                         <Text style={styles.statLabel}>
-                          Access limited to {course.must_complete_in_weeks} Weeks
+                          Access limited to {course.must_complete_in_weeks}{" "}
+                          Weeks
                         </Text>
                       </View>
                       <View style={styles.statChip}>
@@ -633,19 +647,20 @@ const UserModule = ({ navigation }) => {
                     </View>
                   </View>
 
-                  {isEnrollButtonVisible && (
-                    <Pressable style={styles.enrollBtn} onPress={handleEnrollPress}>
-                      <Text style={styles.enrollText}>{t("enroll", "Enroll")}</Text>
+                  {isEnrollButtonVisible && canEnroll && (
+                    <Pressable
+                      style={styles.enrollBtn}
+                      onPress={handleEnrollPress}
+                    >
+                      <Text style={styles.enrollText}>
+                        {t("enroll", "Enroll")}
+                      </Text>
                     </Pressable>
                   )}
                 </View>
 
                 <Image
-                  source={
-                    normalizedCoverUrl
-                      ? { uri: normalizedCoverUrl }
-                      : ''
-                  }
+                  source={normalizedCoverUrl ? { uri: normalizedCoverUrl } : ""}
                   style={styles.course_cover}
                 />
 
