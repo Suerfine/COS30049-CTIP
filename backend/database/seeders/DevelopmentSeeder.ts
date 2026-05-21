@@ -778,6 +778,7 @@ export async function runSeeders(
       data: demoIotSensorData as any,
       created_at: addDays(new Date(), -1),
     });
+  }
   console.log("Sensors seeded successfully");
 }
 
