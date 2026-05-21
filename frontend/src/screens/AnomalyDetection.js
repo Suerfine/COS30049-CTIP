@@ -799,9 +799,17 @@ const AnomalyDetection = () => {
   const renderSensorItem = ({ item }) => {
     const isHovered = hoveredRowId === item.id;
     const { sensorName, nameLocation } = splitSensorNameLocation(item.name);
-    console.log(item);
     return (
-      <View style={[styles.rowContainerRelative, isHovered && { zIndex: 10 }]}>
+      <View style={[styles.rowContainerRelative, isHovered && { zIndex: 10 }]}
+      onPointerMove={(e) => {
+          if (Platform.OS === 'web') {
+            const containerBounds = e.currentTarget.getBoundingClientRect();
+            setMousePos({ 
+              x: e.nativeEvent.clientX - containerBounds.left, 
+              y: e.nativeEvent.clientY - containerBounds.top 
+            });
+          }
+        }}>
         <Pressable
           onPress={() => handleSelectSensor(item)}
           onHoverIn={() => setHoveredRowId(item.id)}
@@ -913,9 +921,17 @@ const AnomalyDetection = () => {
 
   const renderAnomalyItem = ({ item }) => {
     const isHovered = hoveredRowId === item.id;
-    console.log(item)
     return (
-      <View style={[styles.rowContainerRelative, isHovered && { zIndex: 10 }]}>
+      <View style={[styles.rowContainerRelative, isHovered && { zIndex: 10 }]}
+      onPointerMove={(e) => {
+          if (Platform.OS === 'web') {
+            const containerBounds = e.currentTarget.getBoundingClientRect();
+            setMousePos({ 
+              x: e.nativeEvent.clientX - containerBounds.left, 
+              y: e.nativeEvent.clientY - containerBounds.top 
+            });
+          }
+        }}>
         <Pressable
           onPress={() => setSelectedAnomaly(item)}
           onHoverIn={() => setHoveredRowId(item.id)}
@@ -928,7 +944,15 @@ const AnomalyDetection = () => {
           ]}
         >
           {isHovered && Platform.OS === 'web' && (
-            <View style={[styles.rowTooltip, { left: mousePos.x + 15, top: mousePos.y - 35 }]}>
+            <View 
+              style={[
+                styles.rowTooltip, 
+                { 
+                  left: mousePos.x + 15, 
+                  top: mousePos.y - 35   
+                }
+              ]}
+            >
               <Text style={styles.tooltipText}>Click to view evidence & resolve anomaly</Text>
             </View>
           )}
