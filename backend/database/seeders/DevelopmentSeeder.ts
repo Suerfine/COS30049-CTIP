@@ -778,31 +778,6 @@ export async function runSeeders(
       data: demoIotSensorData as any,
       created_at: addDays(new Date(), -1),
     });
-
-    await AnomalyEvent.create({
-      user_id: createdParkGuideUser.id,
-      event_type: "forest_fire",
-      location: "Bako National Park - Demo Cam Alpha",
-      metadata: {
-        source: "iot_sensor",
-        sensor_id: demoIotSensor.id,
-        sensor_name: demoIotSensor.name,
-        sensor_type: demoIotSensor.type,
-        sensor_status: SensorStatus.ALERTING,
-        sensor_log_id: demoIotLog.id,
-        sensor_data: demoIotSensorData,
-        evidence_label: "IoT demo anomaly with sensor readings",
-      },
-      latitude: Number(demoIotSensor.latitude),
-      longitude: Number(demoIotSensor.longitude),
-      is_resolved: false,
-      resolved_at: null,
-      annotated_frame_base64: null,
-      created_at: addDays(new Date(), -1),
-      updated_at: addDays(new Date(), -1),
-    });
-    console.log("Seeded demo IoT anomaly with sensor readings");
-  }
   console.log("Sensors seeded successfully");
 }
 
