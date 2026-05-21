@@ -599,16 +599,18 @@ const EnrollmentManagement = () => {
     }
   };
 
-  const handleDownloadReceipt = () => {
-    if (selectedPayment?.id) {
-      paymentService
-        .getReceiptFile(selectedPayment.id)
-        .then((receipt) => {
-          window.open(receipt.uri, "_blank");
-        })
-        .catch((err) => {
-          console.error(t("failed_open_receipt"), err);
-        });
+  const handleDownloadReceipt = async (payment) => {
+    if (!payment?.id) return;
+
+    try {
+      await paymentService.downloadReceiptFile(payment.id);
+    } catch (err) {
+      console.error(t("failed_open_receipt"), err);
+      alert(
+        err?.response?.data?.message ||
+          err?.message ||
+          t("failed_open_receipt"),
+      );
     }
   };
 
@@ -669,8 +671,8 @@ const renderPaymentItem = ({ item }) => {
           <View style={{ flex: 2, justifyContent: "center" }}>
             <Pressable
               onPress={(e) => {
-                e.stopPropagation(); // 🔥 Prevents preview click from firing main modal window view split
-                if (item.receipt_filepath) window.open(item.receipt_filepath, "_blank");
+                e.stopPropagation();
+                handleDownloadReceipt(item);
               }}
               style={styles.downloadBtn}
             >

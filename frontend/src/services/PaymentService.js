@@ -45,6 +45,28 @@ const arrayBufferToBase64 = (arrayBuffer) => {
   return result;
 };
 
+const getFilenameFromDisposition = (contentDisposition, fallback) => {
+  const filenameMatch = contentDisposition?.match(
+    /filename\*?=(?:UTF-8'')?"?([^";]+)"?/i,
+  );
+
+  if (!filenameMatch?.[1]) {
+    return fallback;
+  }
+
+  try {
+    return decodeURIComponent(filenameMatch[1]);
+  } catch {
+    return filenameMatch[1];
+  }
+};
+
+const getReceiptExtension = (contentType) => {
+  if (contentType?.includes("png")) return "png";
+  if (contentType?.includes("webp")) return "webp";
+  return "jpg";
+};
+
 export const paymentService = {
   /**
    * GET: All payments (raw or enriched)
@@ -158,6 +180,47 @@ export const paymentService = {
       };
     } catch (error) {
       console.error("Get Receipt File Error:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * GET: Authenticated receipt file and trigger a browser download
+   */
+  downloadReceiptFile: async (paymentId) => {
+    try {
+      const res = await apiClient.get(
+        API_ENDPOINTS.PAYMENT.RECEIPT(paymentId),
+        {
+          responseType: "arraybuffer",
+        },
+      );
+
+      const contentType = res.headers?.["content-type"] || "image/jpeg";
+      const fallbackFilename = `receipt-${paymentId}.${getReceiptExtension(contentType)}`;
+      const filename = getFilenameFromDisposition(
+        res.headers?.["content-disposition"],
+        fallbackFilename,
+      );
+
+      if (typeof window === "undefined" || typeof document === "undefined") {
+        return { filename, contentType };
+      }
+
+      const blob = new Blob([res.data], { type: contentType });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      return { filename, contentType };
+    } catch (error) {
+      console.error("Download Receipt File Error:", error);
       throw error;
     }
   },
