@@ -33,6 +33,8 @@ export const enrollmentService = {
 
       if (sortConfig?.key) {
         params.orderBy = `${sortConfig.key} ${sortConfig.direction}`;
+      }else {
+        params.orderBy = "created_at desc";
       }
 
       const [enrollRes, userRes, courseRes] = await Promise.all([

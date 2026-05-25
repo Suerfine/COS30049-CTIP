@@ -20,7 +20,7 @@ export const useEnrollmentManagement = () => {
 
   // Sorting
   const [sortConfig, setSortConfig] = useState({
-    key: "enrolled_at",
+    key: "created_at",
     direction: "desc",
   });
 
@@ -107,8 +107,8 @@ export const useEnrollmentManagement = () => {
 
   const resetSort = () => {
     setSortConfig({
-      key: null,
-      direction: "asc",
+      key: "created_at",
+      direction: "desc",
     });
   };
 

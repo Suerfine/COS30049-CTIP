@@ -40,7 +40,7 @@ export const RegisterService = {
       const params = { page, size };
       let filters = [];
       if (q) {
-       filters.push(`(
+        filters.push(`(
             firstname like "%${q}%"
             or lastname like "%${q}%"
             or identification like "%${q}%"
@@ -59,6 +59,8 @@ export const RegisterService = {
 
       if (sortConfig?.key) {
         params.orderBy = `${sortConfig.key} ${sortConfig.direction}`;
+      } else {
+        params.orderBy = "created_at desc";
       }
 
       const response = await apiClient.get(API_ENDPOINTS.USER.SIGNUP, {

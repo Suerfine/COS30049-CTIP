@@ -408,12 +408,13 @@ const EnrollmentManagement = () => {
     item?.profile_image ||
     null;
 
-  const renderEnrollmentItem = ({ item }) => {
+  const renderEnrollmentItem = ({ item, index }) => {
     const isHovered = hoveredRowId === item.id;
     const statusConfig = Status_Config[item.status?.toLowerCase()] || {
       color: "#8f8f8f",
       label: item.status,
     };
+    
     return (
       <View 
         style={[styles.rowContainerRelative, isHovered && { zIndex: 10 }]}

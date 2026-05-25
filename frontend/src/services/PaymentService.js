@@ -89,6 +89,8 @@ export const paymentService = {
       // sorting
       if (sortConfig?.key) {
         params.orderBy = `${sortConfig.key} ${sortConfig.direction}`;
+      }else {
+        params.orderBy = "created_at desc";
       }
 
       const [paymentRes, userRes] = await Promise.all([

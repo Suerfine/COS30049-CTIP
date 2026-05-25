@@ -6,7 +6,7 @@ export interface EnrollmentResponse {
   user_id: number;
   course_id: number;
   status: EnrollmentStatus;
-  enrolled_at: Date;
+  enrolled_at: Date | null;
   completed_at: Date | null;
   reviewed_by_user_id: number | null;
   reviewed_at: Date | null;
@@ -19,7 +19,7 @@ export interface EnrollmentResponse {
 export interface CreateEnrollmentRequest {
   course_id: number;
   status?: EnrollmentStatus;
-  enrolled_at?: Date;
+  enrolled_at?: Date | null;
   completed_at?: Date | null;
   reviewed_by_user_id?: number | null;
   reviewed_at?: Date | null;

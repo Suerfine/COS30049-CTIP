@@ -42,6 +42,8 @@ export const AccountService = {
 
       if (sortConfig?.key) {
         params.orderBy = `${sortConfig.key} ${sortConfig.direction}`;
+      } else {
+        params.orderBy = "created_at desc";
       }
       const response = await apiClient.get(API_ENDPOINTS.USER.ACCOUNT, {
         params,

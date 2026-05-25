@@ -188,10 +188,6 @@ export const verifyPayment = async (
     await enrollment.update(
       {
         status: newEnrollmentStatus,
-        enrolled_at:
-          statusFromUrl === PaymentStatus.PAID
-            ? new Date()
-            : enrollment.enrolled_at,
       },
       { transaction },
     );

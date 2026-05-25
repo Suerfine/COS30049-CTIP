@@ -90,7 +90,7 @@ export const enrollCourse = async (
         course_id: courseId,
         // status: EnrollmentStatus.IN_REVIEW,
         status: EnrollmentStatus.PENDING_PAYMENT,
-        enrolled_at: new Date(),
+        enrolled_at: null,
       },
       { transaction },
     );
@@ -148,6 +148,13 @@ export const getAllEnrollments = async (
       (typeof isDeletedRaw === "string" &&
         isDeletedRaw.toLowerCase() === "true") ||
       (typeof isDeletedRaw === "boolean" && isDeletedRaw === true);
+
+    const queryOptions = {
+      ...req.query,
+      orderBy: req.query.orderBy
+        ? String(req.query.orderBy)
+        : "created_at DESC, id DESC",
+    };
 
     //Retrieving enrollments with pagination and optional inclusion of soft-deleted records
     const enrollments = await paginateModel(Enrollment, req.query, {
@@ -326,6 +333,10 @@ export const updateEnrollmentStatus = async (
           throw new HttpError(400, "Invalid enrollment status transition");
         }
         enrollment.status = newStatus;
+        // Set enrolled_at when enrollment is officially approved to start.
+        if (!enrollment.enrolled_at) {
+          enrollment.enrolled_at = new Date();
+        }
         await sendNotification(
           "single",
           "Enrollment Approved",

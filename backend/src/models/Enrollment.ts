@@ -21,7 +21,7 @@ class Enrollment extends Model<
   declare course_id: ForeignKey<Course["id"]>;
   declare status: EnrollmentStatus;
   declare course?: NonAttribute<Course>;
-  declare enrolled_at: CreationOptional<Date>;
+  declare enrolled_at: CreationOptional<Date | null>;
   declare completed_at: CreationOptional<Date | null>;
   declare reviewed_by_user_id: CreationOptional<ForeignKey<User["id"]> | null>;
   declare reviewed_at: CreationOptional<Date | null>;
@@ -66,8 +66,8 @@ Enrollment.init(
     },
     enrolled_at: {
       type: DataTypes.DATE,
-      allowNull: false,
-      defaultValue: DataTypes.NOW,
+      allowNull: true,
+      defaultValue: null,
     },
     completed_at: {
       type: DataTypes.DATE,
