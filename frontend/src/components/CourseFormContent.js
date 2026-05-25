@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, Pressable, Image, ActivityIndicator, ScrollView } from 'react-native';
+import { View, Text, TextInput, StyleSheet, Pressable, Image, ActivityIndicator, ScrollView, Platform } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { X, Plus, Award, Tag } from 'lucide-react-native';
+import { X, Plus, Award, Tag, Pen } from 'lucide-react-native';
 
 // Import other hook and components
 import { ModalStyle as styles } from './ModalStyle';
@@ -60,6 +60,12 @@ const CourseFormContent = ({ onSubmit, onCancel, isLoading, initialData, allCour
     const [showLocDropdown, setShowLocDropdown] = useState(false);
     const [showCatDropdown, setShowCatDropdown] = useState(false);
     const [showPrereqDropdown, setShowPrereqDropdown] = useState(false);
+
+    const closeAllDropdowns = () => {
+        setShowLocDropdown(false);
+        setShowCatDropdown(false);
+        setShowPrereqDropdown(false);
+    };
 
     const clearError = (field) => {
         setErrors(prev => {
@@ -181,7 +187,7 @@ const CourseFormContent = ({ onSubmit, onCancel, isLoading, initialData, allCour
             prerequisite_course_ids: form.prerequisites.map(p => p.id),
             tags: [...form.locationTags, ...form.categoryTags].map(t => t.id),
         };
-        
+
     };
 
     const handleSubmit = () => {
@@ -199,256 +205,304 @@ const CourseFormContent = ({ onSubmit, onCancel, isLoading, initialData, allCour
     };
 
     return (
-        <View style={{ flex: 1 }}>
-            {/* Header - Fixed at Top */}
-            <View style={[styles.header, styles.row, { paddingHorizontal: 20, paddingTop: 20 }]}>
-                <Text style={styles.title}>{initialData ? 'Edit Course' : 'Create New Course'}</Text>
-                <Pressable onPress={onCancel}>
-                    <X color="#333" />
-                </Pressable>
-            </View>
-
-            {/* Scrollable Body */}
-            <ScrollView 
-                contentContainerStyle={{ 
-                    padding: 20, 
-                    flexGrow: 1, 
-                    justifyContent: 'flex-start' 
-                }}
-                keyboardShouldPersistTaps="handled"
-            >
-                <View style={styles.row}>
-                    <View style={styles.content, {flex: 2}}>
-                        {/* Course Title */}
-                        <View style={localStyles.inputGroup}>
-                            <Text style={styles.label}>Title:</Text>
-                            <TextInput 
-                                style={styles.input} 
-                                placeholder='Course Title' 
-                                placeholderTextColor="#8f8f8f" 
-                                value={form.courseTitle} 
-                                onChangeText={(text) => {
-                                    setForm({ ...form, courseTitle: text });
-                                    clearError('courseTitle');
-                                }} 
-                            />
-                            {errors.courseTitle && <Text style={localStyles.errorText}>{errors.courseTitle}</Text>}
-                        </View>
-
-                        {/* Completion Weeks & Cost */}
-                        <View style={[styles.row, { gap: 15, marginBottom: 15 }]}>
-                            <View style={{ flex: 1 }}>
-                                <Text style={styles.label}>Course Completion (Weeks):</Text>
-                                <TextInput
-                                    style={styles.input}
-                                    placeholder='e.g. 4'
-                                    placeholderTextColor="#8f8f8f"
-                                    keyboardType="numeric"
-                                    value={form.duration}
-                                    onChangeText={(text) => {
-                                        handleNumericInput('duration', text);
-                                        clearError('duration');
-                                    }}
-                                />
-                                {errors.duration && <Text style={localStyles.errorText}>{errors.duration}</Text>}
-                            </View>
-                            <View style={{ flex: 1 }}>
-                                <Text style={styles.label}>Cost (RM):</Text>
-                                <TextInput
-                                    style={styles.input}
-                                    placeholder='0.00'
-                                    placeholderTextColor="#8f8f8f"
-                                    keyboardType="decimal-pad"
-                                    value={form.cost}
-                                    onChangeText={(text) => {
-                                        const cleaned = text.replace(/[^0-9.]/g, '');
-                                        setForm(prev => ({ ...prev, cost: cleaned }));
-                                        clearError('cost');
-                                    }}
-                                />
-                                {errors.cost && <Text style={localStyles.errorText}>{errors.cost}</Text>}
-                            </View>
-                        </View>
-
-                        {/* Validity Settings */}
-                        <View style={[styles.row, { gap: 15, marginBottom: 15 }]}>
-                            <View style={{ flex: 1 }}>
-                                <Text style={styles.label}>Must Completed within (Weeks):</Text>
-                                <TextInput
-                                    style={styles.input}
-                                    placeholder='e.g. 4'
-                                    placeholderTextColor="#8f8f8f"
-                                    keyboardType="numeric"
-                                    value={form.expiryWeeks}
-                                    onChangeText={(text) => {
-                                        handleNumericInput('expiryWeeks', text);
-                                        clearError('expiryWeeks');
-                                    }}
-                                />
-                                {errors.expiryWeeks && <Text style={localStyles.errorText}>{errors.expiryWeeks}</Text>}
-                            </View>
-                            <View style={{ flex: 1 }}>
-                                <Text style={styles.label}>Badge Validity (Months):</Text>
-                                <TextInput
-                                    style={styles.input}
-                                    placeholder='e.g. 12'
-                                    placeholderTextColor="#8f8f8f"
-                                    keyboardType="numeric"
-                                    value={form.badgeExpiry}
-                                    onChangeText={(text) => {
-                                        handleNumericInput('badgeExpiry', text);
-                                        clearError('badgeExpiry');
-                                    }}
-                                />
-                                {errors.badgeExpiry && <Text style={localStyles.errorText}>{errors.badgeExpiry}</Text>}
-                            </View>
-                        </View>
-
-                        {/* Tags & Prerequisites */}
-                        {/* Location Tags */}
-                        <View style={localStyles.inputGroup}>
-                            <Text style={styles.label}>Location Tags:</Text>
-                            <View style={localStyles.multiSelectContainer}>
-                                {form.locationTags.map(tag => (
-                                    <View key={tag.id} style={localStyles.pill}>
-                                        <Text style={localStyles.pillText}>{tag.title}</Text>
-                                        <Pressable onPress={() => removeTypedTag(tag.id, 'locationTags')}>
-                                            <X size={12} color="white" />
-                                        </Pressable>
-                                    </View>
-                                ))}
-                                <Pressable style={localStyles.addTagBtn} onPress={() => setShowLocDropdown(!showLocDropdown)}>
-                                    <Plus size={16} color="#217837" />
-                                    <Text style={localStyles.addTagText}>Add Location</Text>
-                                </Pressable>
-                            </View>
-                            {showLocDropdown && (
-                                <View style={localStyles.Tagdropdown}>
-                                    <ScrollView nestedScrollEnabled={true} style={{ maxHeight: 150 }}>
-                                        {allTagList.filter(t => t.type === 'location').map(tag => (
-                                            <Pressable key={tag.id} style={localStyles.TagdropdownItem} onPress={() => addTypedTag(tag, 'locationTags')}>
-                                                <Tag size={14} color="#666" style={{ marginRight: 8 }} />
-                                                <Text>{tag.title}</Text>
-                                            </Pressable>
-                                        ))}
-                                    </ScrollView>
-                                </View>
-                            )}
-                        </View>
-
-                        {/* Category Tags */}
-                        <View style={localStyles.inputGroup}>
-                            <Text style={styles.label}>Category Tags:</Text>
-                            <View style={localStyles.multiSelectContainer}>
-                                {form.categoryTags.map(tag => (
-                                    <View key={tag.id} style={localStyles.pill}>
-                                        <Text style={localStyles.pillText}>{tag.title}</Text>
-                                        <Pressable onPress={() => removeTypedTag(tag.id, 'categoryTags')}>
-                                            <X size={12} color="white" />
-                                        </Pressable>
-                                    </View>
-                                ))}
-                                <Pressable style={localStyles.addTagBtn} onPress={() => setShowCatDropdown(!showCatDropdown)}>
-                                    <Plus size={16} color="#217837" />
-                                    <Text style={localStyles.addTagText}>Add Category</Text>
-                                </Pressable>
-                            </View>
-                            {showCatDropdown && (
-                                <View style={localStyles.Tagdropdown}>
-                                    <ScrollView nestedScrollEnabled={true} style={{ maxHeight: 150 }}>
-                                        {allTagList.filter(t => t.type === 'category').map(tag => (
-                                            <Pressable key={tag.id} style={localStyles.TagdropdownItem} onPress={() => addTypedTag(tag, 'categoryTags')}>
-                                                <Tag size={14} color="#666" style={{ marginRight: 8 }} />
-                                                <Text>{tag.title}</Text>
-                                            </Pressable>
-                                        ))}
-                                    </ScrollView>
-                                </View>
-                            )}
-                        </View>
-
-                        {/* Pre-requisites */}
-                        <View style={localStyles.inputGroup}>
-                            <Text style={styles.label}>Pre-requisites:</Text>
-                            <View style={localStyles.multiSelectContainer}>
-                                {form.prerequisites.map((course) => (
-                                    <View key={course.id} style={localStyles.prereqPill}>
-                                        <Text style={localStyles.prereqText}>{course.title}</Text>
-                                        <Pressable onPress={() => setForm({ ...form, prerequisites: form.prerequisites.filter(p => p.id !== course.id) })}>
-                                            <X size={14} color="#666" />
-                                        </Pressable>
-                                    </View>
-                                ))}
-                                
-                                <Pressable style={localStyles.addPrereqBtn} onPress={() => setShowPrereqDropdown(!showPrereqDropdown)}>
-                                    <Plus size={16} color="#217837" />
-                                    <Text style={localStyles.addPrereqText}>Add Course</Text>
-                                </Pressable>
-                            </View>
-                            {showPrereqDropdown && (
-                                <View style={localStyles.Tagdropdown}>
-                                    <ScrollView nestedScrollEnabled={true} style={{ maxHeight: 150 }}>
-                                        {allCourseList.filter(c => c.id !== initialData?.id).map(course => (
-                                            <Pressable key={course.id} style={localStyles.TagdropdownItem} onPress={() => addPrerequisite(course)}>
-                                                <Text>{course.title}</Text>
-                                            </Pressable>
-                                        ))}
-                                    </ScrollView>
-                                </View>
-                            )}
-                            {errors.prerequisites && <Text style={localStyles.errorText}>{errors.prerequisites}</Text>}
-                        </View>
-                    </View>
-
-                    {/* Upload Section */}
-                    <View style={styles.upload}>
-                        <Text style={styles.label}>Course Cover</Text>
-                        <Pressable style={styles.imagePicker} onPress={() => pickImage('cover')}>
-                            {getImageUri(form.image) ? (
-                                <Image source={{ uri: getImageUri(form.image) }} style={styles.previewImage} />
-                            ) : (
-                                <View style={localStyles.uploadPlaceholder}>
-                                    <Image source={require('../../assets/upload_placeholder.png')} style={localStyles.placeholder} />
-                                    <Text style={localStyles.muted}>Select image</Text>
-                                </View>
-                            )}
-                        </Pressable>
-
-                        <Text style={[styles.label, { marginTop: 25 }]}>Completion Badge (1:1)</Text>
-                        <Pressable style={localStyles.badgePicker} onPress={() => pickImage('badge')}>
-                            {getImageUri(form.badgeImage) ? (
-                                <Image source={{ uri: getImageUri(form.badgeImage) }} style={localStyles.badgePreview} />
-                            ) : (
-                                <View style={localStyles.uploadPlaceholder}>
-                                    <Award size={32} color="#ccc" />
-                                    <Text style={[localStyles.muted, { fontSize: 10 }]}>Upload Badge</Text>
-                                </View>
-                            )}
-                        </Pressable>
-                        {errors.badgeImage && <Text style={[localStyles.errorText, { textAlign: 'center' }]}>{errors.badgeImage}</Text>}
-                    </View>
-                </View>
-            </ScrollView>
-
-            {/* Footer Buttons - Fixed at Bottom */}
-            <View style={[styles.row, { padding: 20, paddingTop: 0, borderTopWidth: 1, borderTopColor: '#eee', gap: 10 }]}>
-                <Pressable style={[styles.Btn, { flex: 1 }]} onPress={handleSubmit} disabled={isLoading}>
-                    {isLoading ? <ActivityIndicator color="white" /> : <Text style={{ color: 'white', textAlign: 'center' }}>{initialData ? 'Update' : 'Add'}</Text>}
-                </Pressable>
-                
-                {initialData && (
-                    <Pressable 
-                        style={[styles.Btn, localStyles.Publishbtn, { flex: 1 }]} 
-                        onPress={form.status === "unreleased" ? handlePublish : handleUnpublish}
-                        disabled={isLoading}
-                    >
-                        <Text style={localStyles.publishText}>
-                            {form.status === "unreleased" ? 'Publish' : 'Unpublish'}
-                        </Text>
+        <Pressable style={localStyles.rootDismissContainer} onPress={closeAllDropdowns}>
+            <View style={{ flex: 1 }} onStartShouldSetResponder={() => true}>
+                {/* Header - Fixed at Top */}
+                <View style={[styles.header, styles.row, { paddingHorizontal: 20, paddingTop: 20 }]}>
+                    <Text style={styles.title}>{initialData ? 'Edit Course' : 'Create New Course'}</Text>
+                    <Pressable onPress={onCancel}>
+                        <X color="#333" />
                     </Pressable>
-                )}
+                </View>
+
+                {/* Scrollable Body */}
+                <ScrollView
+                    contentContainerStyle={{
+                        padding: 20,
+                        flexGrow: 1,
+                        justifyContent: 'flex-start'
+                    }}
+                    keyboardShouldPersistTaps="handled"
+                >
+                    <View style={styles.row}>
+                        <View style={styles.content, { flex: 2 }}>
+                            {/* Course Title */}
+                            <View style={localStyles.inputGroup}>
+                                <Text style={styles.label}>Title:</Text>
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder='Course Title'
+                                    placeholderTextColor="#8f8f8f"
+                                    value={form.courseTitle}
+                                    onChangeText={(text) => {
+                                        setForm({ ...form, courseTitle: text });
+                                        clearError('courseTitle');
+                                    }}
+                                />
+                                {errors.courseTitle && <Text style={localStyles.errorText}>{errors.courseTitle}</Text>}
+                            </View>
+
+                            {/* Completion Weeks & Cost */}
+                            <View style={[styles.row, { gap: 15, marginBottom: 15 }]}>
+                                <View style={{ flex: 1 }}>
+                                    <Text style={styles.label}>Course Completion (Weeks):</Text>
+                                    <TextInput
+                                        style={styles.input}
+                                        placeholder='e.g. 4'
+                                        placeholderTextColor="#8f8f8f"
+                                        keyboardType="numeric"
+                                        value={form.duration}
+                                        onChangeText={(text) => {
+                                            handleNumericInput('duration', text);
+                                            clearError('duration');
+                                        }}
+                                    />
+                                    {errors.duration && <Text style={localStyles.errorText}>{errors.duration}</Text>}
+                                </View>
+                                <View style={{ flex: 1 }}>
+                                    <Text style={styles.label}>Cost (RM):</Text>
+                                    <TextInput
+                                        style={styles.input}
+                                        placeholder='0.00'
+                                        placeholderTextColor="#8f8f8f"
+                                        keyboardType="decimal-pad"
+                                        value={form.cost}
+                                        onChangeText={(text) => {
+                                            const cleaned = text.replace(/[^0-9.]/g, '');
+                                            setForm(prev => ({ ...prev, cost: cleaned }));
+                                            clearError('cost');
+                                        }}
+                                    />
+                                    {errors.cost && <Text style={localStyles.errorText}>{errors.cost}</Text>}
+                                </View>
+                            </View>
+
+                            {/* Validity Settings */}
+                            <View style={[styles.row, { gap: 15, marginBottom: 15 }]}>
+                                <View style={{ flex: 1 }}>
+                                    <Text style={styles.label}>Must Completed within (Weeks):</Text>
+                                    <TextInput
+                                        style={styles.input}
+                                        placeholder='e.g. 4'
+                                        placeholderTextColor="#8f8f8f"
+                                        keyboardType="numeric"
+                                        value={form.expiryWeeks}
+                                        onChangeText={(text) => {
+                                            handleNumericInput('expiryWeeks', text);
+                                            clearError('expiryWeeks');
+                                        }}
+                                    />
+                                    {errors.expiryWeeks && <Text style={localStyles.errorText}>{errors.expiryWeeks}</Text>}
+                                </View>
+                                <View style={{ flex: 1 }}>
+                                    <Text style={styles.label}>Badge Validity (Months):</Text>
+                                    <TextInput
+                                        style={styles.input}
+                                        placeholder='e.g. 12'
+                                        placeholderTextColor="#8f8f8f"
+                                        keyboardType="numeric"
+                                        value={form.badgeExpiry}
+                                        onChangeText={(text) => {
+                                            handleNumericInput('badgeExpiry', text);
+                                            clearError('badgeExpiry');
+                                        }}
+                                    />
+                                    {errors.badgeExpiry && <Text style={localStyles.errorText}>{errors.badgeExpiry}</Text>}
+                                </View>
+                            </View>
+
+                            {/* Tags & Prerequisites */}
+                            {/* Location Tags */}
+                            <View style={localStyles.inputGroup}>
+                                <Text style={styles.label}>Location Tags:</Text>
+                                <View style={localStyles.multiSelectContainer}>
+                                    {form.locationTags.map(tag => (
+                                        <View key={tag.id} style={localStyles.pill}>
+                                            <Text style={localStyles.pillText}>{tag.title}</Text>
+                                            <Pressable onPress={() => removeTypedTag(tag.id, 'locationTags')}>
+                                                <X size={12} color="white" />
+                                            </Pressable>
+                                        </View>
+                                    ))}
+                                    <Pressable style={localStyles.addTagBtn} onPress={(e) => {
+                                        e.stopPropagation();
+                                        setShowLocDropdown(!showLocDropdown);
+                                        setShowCatDropdown(false);
+                                        setShowPrereqDropdown(false);
+                                    }}>
+                                        <Plus size={16} color="#217837" />
+                                        <Text style={localStyles.addTagText}>Add Location</Text>
+                                    </Pressable>
+                                </View>
+                                {showLocDropdown && (
+                                    <View style={localStyles.Tagdropdown}>
+                                        <ScrollView nestedScrollEnabled={true} style={{ maxHeight: 150 }}>
+                                            {allTagList.filter(t => t.type === 'location').map(tag => (
+                                                <Pressable key={tag.id} style={localStyles.TagdropdownItem} onPress={() => addTypedTag(tag, 'locationTags')}>
+                                                    <Tag size={14} color="#666" style={{ marginRight: 8 }} />
+                                                    <Text>{tag.title}</Text>
+                                                </Pressable>
+                                            ))}
+                                        </ScrollView>
+                                    </View>
+                                )}
+                            </View>
+
+                            {/* Category Tags */}
+                            <View style={localStyles.inputGroup}>
+                                <Text style={styles.label}>Category Tags:</Text>
+                                <View style={localStyles.multiSelectContainer}>
+                                    {form.categoryTags.map(tag => (
+                                        <View key={tag.id} style={localStyles.pill}>
+                                            <Text style={localStyles.pillText}>{tag.title}</Text>
+                                            <Pressable onPress={() => removeTypedTag(tag.id, 'categoryTags')}>
+                                                <X size={12} color="white" />
+                                            </Pressable>
+                                        </View>
+                                    ))}
+                                    <Pressable style={localStyles.addTagBtn} onPress={(e) => {
+                                        e.stopPropagation();
+                                        setShowCatDropdown(!showCatDropdown);
+                                        setShowLocDropdown(false);
+                                        setShowPrereqDropdown(false);
+                                    }}>
+                                        <Plus size={16} color="#217837" />
+                                        <Text style={localStyles.addTagText}>Add Category</Text>
+                                    </Pressable>
+                                </View>
+                                {showCatDropdown && (
+                                    <View style={localStyles.Tagdropdown}>
+                                        <ScrollView nestedScrollEnabled={true} style={{ maxHeight: 150 }}>
+                                            {allTagList.filter(t => t.type === 'category').map(tag => (
+                                                <Pressable key={tag.id} style={localStyles.TagdropdownItem} onPress={() => addTypedTag(tag, 'categoryTags')}>
+                                                    <Tag size={14} color="#666" style={{ marginRight: 8 }} />
+                                                    <Text>{tag.title}</Text>
+                                                </Pressable>
+                                            ))}
+                                        </ScrollView>
+                                    </View>
+                                )}
+                            </View>
+
+                            {/* Pre-requisites */}
+                            <View style={localStyles.inputGroup}>
+                                <Text style={styles.label}>Pre-requisites:</Text>
+                                <View style={localStyles.multiSelectContainer}>
+                                    {form.prerequisites.map((course) => (
+                                        <View key={course.id} style={localStyles.prereqPill}>
+                                            <Text style={localStyles.prereqText}>{course.title}</Text>
+                                            <Pressable onPress={() => setForm({ ...form, prerequisites: form.prerequisites.filter(p => p.id !== course.id) })}>
+                                                <X size={14} color="#666" />
+                                            </Pressable>
+                                        </View>
+                                    ))}
+
+                                    <Pressable style={localStyles.addPrereqBtn} onPress={(e) => {
+                                        e.stopPropagation();
+                                        setShowPrereqDropdown(!showPrereqDropdown);
+                                        setShowLocDropdown(false);
+                                        setShowCatDropdown(false);
+                                    }}>
+                                        <Plus size={16} color="#217837" />
+                                        <Text style={localStyles.addPrereqText}>Add Course</Text>
+                                    </Pressable>
+                                </View>
+                                {showPrereqDropdown && (
+                                    <View style={localStyles.Tagdropdown}>
+                                        <ScrollView nestedScrollEnabled={true} style={{ maxHeight: 150 }}>
+                                            {allCourseList.filter(c => c.id !== initialData?.id).map(course => (
+                                                <Pressable key={course.id} style={localStyles.TagdropdownItem} onPress={() => addPrerequisite(course)}>
+                                                    <Text>{course.title}</Text>
+                                                </Pressable>
+                                            ))}
+                                        </ScrollView>
+                                    </View>
+                                )}
+                                {errors.prerequisites && <Text style={localStyles.errorText}>{errors.prerequisites}</Text>}
+                            </View>
+                        </View>
+
+                        {/* Upload Section */}
+                        {/* Upload Section */}
+                        <View style={styles.upload}>
+                            <Text style={styles.label}>Course Cover</Text>
+                            <Pressable
+                                style={styles.imagePicker}
+                                onPress={() => pickImage('cover')}
+                            >
+                                {({ hovered }) => (
+                                    <View style={localStyles.imageWrapperRelative}>
+                                        {getImageUri(form.image) ? (
+                                            <>
+                                                <Image source={{ uri: getImageUri(form.image) }} style={styles.previewImage} />
+                                                {hovered && Platform.OS === 'web' && (
+                                                    <View style={localStyles.imageHoverOverlay}>
+                                                        <Pen size={18} color="white" />
+                                                        <Text style={localStyles.overlayText}>Update Cover</Text>
+                                                    </View>
+                                                )}
+                                            </>
+                                        ) : (
+                                            <View style={localStyles.uploadPlaceholder}>
+                                                <Image source={require('../../assets/upload_placeholder.png')} style={localStyles.placeholder} />
+                                                <Text style={localStyles.muted}>Select image</Text>
+                                            </View>
+                                        )}
+                                    </View>
+                                )}
+                            </Pressable>
+
+                            <Text style={[styles.label, { marginTop: 25 }]}>Completion Badge (1:1)</Text>
+                            <Pressable
+                                style={localStyles.badgePicker}
+                                onPress={() => pickImage('badge')}
+                            >
+                                {({ hovered }) => (
+                                    <View style={localStyles.imageWrapperRelative}>
+                                        {getImageUri(form.badgeImage) ? (
+                                            <>
+                                                <Image source={{ uri: getImageUri(form.badgeImage) }} style={localStyles.badgePreview} />
+                                                {hovered && Platform.OS === 'web' && (
+                                                    <View style={[localStyles.imageHoverOverlay, { borderRadius: 12 }]}>
+                                                        <Pen size={16} color="white" />
+                                                        <Text style={[localStyles.overlayText, { fontSize: 11 }]}>Update Badge</Text>
+                                                    </View>
+                                                )}
+                                            </>
+                                        ) : (
+                                            <View style={localStyles.uploadPlaceholder}>
+                                                <Award size={32} color="#ccc" />
+                                                <Text style={[localStyles.muted, { fontSize: 10 }]}>Upload Badge</Text>
+                                            </View>
+                                        )}
+                                    </View>
+                                )}
+                            </Pressable>
+                            {errors.badgeImage && <Text style={[localStyles.errorText, { textAlign: 'center' }]}>{errors.badgeImage}</Text>}
+                        </View>
+                    </View>
+                </ScrollView>
+
+                {/* Footer Buttons - Fixed at Bottom */}
+                <View style={[styles.row, { padding: 20, paddingTop: 0, borderTopWidth: 1, borderTopColor: '#eee', gap: 10 }]}>
+                    <Pressable style={[styles.Btn, { flex: 1 }]} onPress={handleSubmit} disabled={isLoading}>
+                        {isLoading ? <ActivityIndicator color="white" /> : <Text style={{ color: 'white', textAlign: 'center' }}>{initialData ? 'Update' : 'Add'}</Text>}
+                    </Pressable>
+
+                    {initialData && (
+                        <Pressable
+                            style={[styles.Btn, localStyles.Publishbtn, { flex: 1 }]}
+                            onPress={form.status === "unreleased" ? handlePublish : handleUnpublish}
+                            disabled={isLoading}
+                        >
+                            <Text style={localStyles.publishText}>
+                                {form.status === "unreleased" ? 'Publish' : 'Unpublish'}
+                            </Text>
+                        </Pressable>
+                    )}
+                </View>
             </View>
-        </View>
+        </Pressable>
     );
 };
 
@@ -525,6 +579,45 @@ const localStyles = StyleSheet.create({
         borderBottomColor: '#f0f0f0',
         flexDirection: 'row',
         alignItems: 'center'
+    },
+    imageWrapperRelative: {
+        position: 'relative',
+        width: '100%',
+        height: '100%',
+        justifyContent: 'center',
+        alignItems: 'center',
+        overflow: 'hidden',
+    },
+    imageHoverOverlay: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0.55)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        gap: 6,
+        ...Platform.select({
+            web: {
+                cursor: 'pointer',
+                transition: 'opacity 0.2s ease-in-out',
+            },
+        }),
+    },
+    overlayText: {
+        color: '#ffffff',
+        fontSize: 12,
+        fontWeight: '600',
+        textAlign: 'center',
+    },
+    rootDismissContainer: {
+        flex: 1,
+        width: '100%',
+        backgroundColor: 'transparent',
+        ...Platform.select({
+            web: { cursor: 'default' }
+        })
     },
 });
 
