@@ -270,14 +270,15 @@ const UserCourse = ({ navigation }) => {
                               "onEnroll fired, is_enrollable:",
                               course.is_enrollable,
                             );
-                            console.log(
-                              "getUnfulfilledPrerequisites:",
-                              getUnfulfilledPrerequisites,
-                            ); // should be a function, not undefined
                             if (!course.is_enrollable) {
                               const unfulfilled =
                                 getUnfulfilledPrerequisites(course);
-                              console.log("unfulfilled result:", unfulfilled);
+                              console.log(
+                                "unfulfilled prerequisites for course",
+                                course.id,
+                                ":",
+                                unfulfilled,
+                              );
                               const prereqList =
                                 unfulfilled.length > 0
                                   ? unfulfilled.join(", ")

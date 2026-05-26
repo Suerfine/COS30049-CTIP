@@ -87,8 +87,11 @@ const UserModule = ({ navigation }) => {
     failEnrollment,
   } = useCourseDetails(id, resolvedEnrollmentId);
   const { allCourseList } = useCourses();
-  const { enrollableCourses } = useUserCourse();
+  const { enrollableCourses, getUnfulfilledPrerequisites } = useUserCourse();
   const [chatOpen, setChatOpen] = useState(false);
+
+  const missingPrereqs = course ? getUnfulfilledPrerequisites(course) : [];
+  const hasUnfulfilledPrereqs = Array.isArray(missingPrereqs) && missingPrereqs.length > 0;
 
   const { progressMap, isDeadEnd } = useCourseProgress(
     course,
@@ -174,6 +177,25 @@ const UserModule = ({ navigation }) => {
   };
 
   const handleEnrollPress = () => {
+    if (hasUnfulfilledPrereqs) {
+      const courseNames = missingPrereqs.map((c) =>
+        typeof c === "string" ? c : c.title || c.name || String(c),
+      );
+      const message = `${t(
+        "prereq.missing_intro",
+        "You must complete the following prerequisite courses before enrolling:",
+      )}\n\n${courseNames.map((n) => `• ${n}`).join("\n")}`;
+
+      if (Platform.OS === "web" && typeof window !== "undefined" && window.alert) {
+        window.alert(
+          `${t("prereq.not_met", "Prerequisites not met")}\n\n${message}`,
+        );
+      } else {
+        Alert.alert(t("prereq.not_met", "Prerequisites not met"), message);
+      }
+      return;
+    }
+
     const screenName = Platform.OS === "web" ? "Payment" : "PaymentScreen";
     navigation.navigate(screenName, { course });
   };
@@ -647,7 +669,7 @@ const UserModule = ({ navigation }) => {
                     </View>
                   </View>
 
-                  {isEnrollButtonVisible && canEnroll && (
+                  {isEnrollButtonVisible && (canEnroll || hasUnfulfilledPrereqs) && (
                     <Pressable
                       style={styles.enrollBtn}
                       onPress={handleEnrollPress}
