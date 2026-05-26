@@ -2405,7 +2405,8 @@ const styles = StyleSheet.create({
     pointerEvents: "none", 
     ...Platform.select({
       web: { whiteSpace: "nowrap" }
-    })
+    }),
+    zIndex:1000,
   },
   tooltipText: {
     color: "white",
