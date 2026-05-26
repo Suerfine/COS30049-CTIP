@@ -51,11 +51,16 @@ const CourseCard = ({
 
   const hasMissingPrereqs =
     Array.isArray(missingPrerequisites) && missingPrerequisites.length > 0;
+  const hasButtonDisabledStyle = !isEnrollable && !hasMissingPrereqs;
 
   const handleEnrollPress = () => {
     if (hasMissingPrereqs) {
       const courseNames = missingPrerequisites.map((c) =>
         typeof c === "string" ? c : (c.name ?? c.title ?? String(c)),
+      );
+      console.log(
+        "Prerequisite enrollment blocked. Missing prerequisites:",
+        courseNames,
       );
       const message = `${t(
         "prereq.missing_intro",
@@ -78,6 +83,7 @@ const CourseCard = ({
       return;
     }
 
+    console.log("Prerequisites met, invoking onEnroll.");
     onEnroll?.();
   };
 
@@ -118,7 +124,7 @@ const CourseCard = ({
             <Pressable
               style={[
                 styles.enrollBtn,
-                !isEnrollable && styles.enrollBtnDisabled,
+                hasButtonDisabledStyle && styles.enrollBtnDisabled,
                 { marginTop: 8 },
               ]}
               onPress={handleEnrollPress}
@@ -126,7 +132,7 @@ const CourseCard = ({
               <Text
                 style={[
                   styles.enrollText,
-                  !isEnrollable && styles.enrollTextDisabled,
+                  hasButtonDisabledStyle && styles.enrollTextDisabled,
                 ]}
               >
                 {t("enroll_again", "Enroll Again")}
@@ -153,7 +159,7 @@ const CourseCard = ({
               <Pressable
                 style={[
                   styles.enrollBtn,
-                  !isEnrollable && styles.enrollBtnDisabled,
+                  hasButtonDisabledStyle && styles.enrollBtnDisabled,
                   { marginTop: 8 },
                 ]}
                 onPress={handleEnrollPress}
@@ -161,7 +167,7 @@ const CourseCard = ({
                 <Text
                   style={[
                     styles.enrollText,
-                    !isEnrollable && styles.enrollTextDisabled,
+                    hasButtonDisabledStyle && styles.enrollTextDisabled,
                   ]}
                 >
                   {t("enroll_again", "Enroll Again")}
@@ -183,14 +189,14 @@ const CourseCard = ({
             <Pressable
               style={[
                 styles.enrollBtn,
-                !isEnrollable && styles.enrollBtnDisabled,
+                hasButtonDisabledStyle && styles.enrollBtnDisabled,
               ]}
               onPress={handleEnrollPress}
             >
               <Text
                 style={[
                   styles.enrollText,
-                  !isEnrollable && styles.enrollTextDisabled,
+                  hasButtonDisabledStyle && styles.enrollTextDisabled,
                 ]}
               >
                 {t("enroll", "Enroll")}

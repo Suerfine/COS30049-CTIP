@@ -13,6 +13,7 @@ import {
   FlatList,
   Alert,
   Dimensions,
+  Platform,
 } from "react-native";
 import { useRoute } from "@react-navigation/native";
 import {
@@ -39,6 +40,7 @@ import AIChatBot from "../components/AIChatbot.js";
 import DiscussionSection from "../components/DiscussionSection.js";
 import { enrollmentService } from "../services/EnrollmentService.js";
 import { useTranslation } from "react-i18next";
+import { useUserCourse } from "../hooks/useUserCourse.js";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -135,6 +137,10 @@ const UserModule = ({ navigation }) => {
   }, [id, resolvedEnrollmentStatus, resolvedEnrollmentId]);
 
   const { allCourseList } = useCourses();
+  const { enrollableCourses, getUnfulfilledPrerequisites } = useUserCourse();
+
+  const missingPrereqs = course ? getUnfulfilledPrerequisites(course) : [];
+  const hasUnfulfilledPrereqs = Array.isArray(missingPrereqs) && missingPrereqs.length > 0;
 
   const { progressMap, isDeadEnd } = useCourseProgress(
     course,
@@ -152,6 +158,19 @@ const UserModule = ({ navigation }) => {
     : null;
 
   const handleEnrollPress = () => {
+    if (hasUnfulfilledPrereqs) {
+      const courseNames = missingPrereqs.map((c) =>
+        typeof c === "string" ? c : c.title || c.name || String(c),
+      );
+      const message = `${t(
+        "prereq.missing_intro",
+        "You must complete the following prerequisite courses before enrolling:",
+      )}\n\n${courseNames.map((n) => `• ${n}`).join("\n")}`;
+
+      Alert.alert(t("prereq.not_met", "Prerequisites not met"), message);
+      return;
+    }
+
     const screenName = Platform.OS === "web" ? "Payment" : "PaymentScreen";
     navigation.navigate(screenName, { course });
   };
@@ -611,7 +630,7 @@ const UserModule = ({ navigation }) => {
                   </View>
                 </View>
 
-                {isEnrollButtonVisible && (
+                {isEnrollButtonVisible && (canEnroll || hasUnfulfilledPrereqs) && (
                   <Pressable style={styles.enrollBtn} onPress={handleEnrollPress}>
                     <Text style={styles.enrollText}>{t("enroll", "Enroll")}</Text>
                   </Pressable>
