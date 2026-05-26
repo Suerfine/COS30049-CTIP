@@ -58,9 +58,9 @@ export const RegisterService = {
       }
 
       if (sortConfig?.key) {
-        params.orderBy = `${sortConfig.key} ${sortConfig.direction}`;
+        params.orderBy = `${sortConfig.key} ${sortConfig.direction.toUpperCase()}`;
       } else {
-        params.orderBy = "created_at desc";
+        params.orderBy = "created_at DESC";
       }
 
       const response = await apiClient.get(API_ENDPOINTS.USER.SIGNUP, {
