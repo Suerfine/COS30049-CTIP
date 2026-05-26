@@ -1159,6 +1159,7 @@ const renderPaymentItem = ({ item }) => {
                 value={adminRemark}
                 onChangeText={setAdminRemark}
                 placeholder={t("enter_rejection_remarks")}
+                placeholderTextColor={'grey'}
                 style={styles.rejectInput}
               />
 
@@ -1918,6 +1919,10 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 11,
     fontWeight: "500",
+  },
+  actionBtnText:{
+    color: "white",
+    fontWeight: "700",
   },
   cellText: {
     color: "#334155",

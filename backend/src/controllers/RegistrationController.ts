@@ -185,6 +185,12 @@ export const getAllRegistrations = async (
         isDeletedRaw.toLowerCase() === "true") ||
       (typeof isDeletedRaw === "boolean" && isDeletedRaw === true);
 
+    // Ensure default sorting by latest first if not specified
+    const orderBy = req.query.orderBy;
+    if (!orderBy || (typeof orderBy === "string" && orderBy.trim() === "")) {
+      req.query.orderBy = "created_at DESC";
+    }
+
     const registrations = await paginateModel(Registration, req.query, {
       paranoid: !includeDeleted,
     });
