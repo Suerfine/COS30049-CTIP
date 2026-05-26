@@ -5,6 +5,7 @@ export enum NotificationCategory {
   REGISTRATION_REVIEW = "registration_review",
   PAYMENT_APPROVAL = "payment_approval",
   ENROLLMENT_SUCCESS = "enrollment_success",
+  ENROLLMENT_FAIL = "enrollment_fail",
   BADGE_AWARDED = "badge_awarded",
   COURSE_EXPIRY = "course_expiry",
   PAYMENT_REJECTED = "payment_rejected",

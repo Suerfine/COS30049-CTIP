@@ -362,6 +362,31 @@ export const updateEnrollmentStatus = async (
         }
         enrollment.status = newStatus;
         break;
+
+      case EnrollmentStatus.REJECTED:
+        if (
+          enrollment.status !== EnrollmentStatus.APPLIED &&
+          enrollment.status !== EnrollmentStatus.PENDING_PAYMENT
+        ) {
+          throw new HttpError(400, "Invalid enrollment status transition");
+        }
+        
+        enrollment.status = newStatus;
+        enrollment.reviewed_at = new Date();
+        enrollment.reviewed_by_user_id = req.user?.id || null;
+        enrollment.reviewed_comment = req.body.reviewed_comment || null;
+
+        await sendNotification(
+          "single",
+          "Enrollment Rejected",
+          `Your enrollment request has been rejected. Reason: ${req.body.reviewed_comment || "No reason provided."}`,
+          transaction,
+          enrollment.user_id,
+          false,
+          NotificationCategory.ENROLLMENT_FAIL,
+          "/enrollments",
+        );
+        break;
       default:
         throw new HttpError(400, "Unsupported enrollment status transition");
     }
