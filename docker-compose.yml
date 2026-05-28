@@ -1,3 +1,4 @@
+
 services:
   frontend:
     build:
@@ -31,10 +32,19 @@ services:
     env_file:
       - ./backend/.env
     environment:
+      DB_DIALECT: "mysql"
+      DB_HOST: "db"
+      DB_PORT: "3306"
+      DB_USER: "ctip_user"
+      DB_PASSWORD: "password"
+      DB_NAME: "ctip"
       HTTPS_ENABLED: "false"
       FORCE_HTTPS_REDIRECT: "false"
     volumes:
       - ./backend/storage:/app/storage
+    depends_on:
+      db:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "node", "-e", "require('http').get('http://localhost:5000', () => process.exit(0)).on('error', () => process.exit(1))"]
       interval: 10s
@@ -48,6 +58,34 @@ services:
   #   container_name: ai-service
   #   restart: unless-stopped
 
+  db:
+    image: mysql:latest
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: ctip
+      MYSQL_USER: ctip_user
+      MYSQL_PASSWORD: password
+    volumes:
+      - ./mysql_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:latest
+    restart: unless-stopped
+    depends_on:
+      - db
+    environment:
+      PMA_HOST: db
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "8080:80"
   nginx:
     image: nginx:latest
     container_name: nginx

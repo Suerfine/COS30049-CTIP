@@ -43,3 +43,5 @@ ai/models/
 
 # Dataset archives
 *.zip
+
+mysql_data/**

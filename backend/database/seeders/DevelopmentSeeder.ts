@@ -783,6 +783,7 @@ export async function runSeeders(
 }
 
 export async function runDevelopmentSeeder(): Promise<void> {
+  console.log("Starting development seeder...");
   await runSeeders();
 }
 
@@ -791,7 +792,7 @@ export default runSeeders;
 // Running the seeder directly in cli
 const isDirectExecution =
   typeof process.argv[1] === "string" &&
-  process.argv[1].includes("DevelopmentSeeder.ts");
+  /DevelopmentSeeder\.(ts|js)$/.test(process.argv[1]);
 if (isDirectExecution) {
   runDevelopmentSeeder().catch((error: unknown) => {
     console.error("Development seeder failed:", error);

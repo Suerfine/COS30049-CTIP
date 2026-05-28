@@ -1,5 +1,13 @@
 // jobs/run.ts
+import cron from "node-cron";
 import { jobs } from "./registry";
+
+function formatNextRun(schedule: string): string {
+  const task = cron.createTask(schedule, () => undefined);
+  const nextRun = task.getNextRun();
+
+  return nextRun ? nextRun.toLocaleString() : "n/a";
+}
 
 async function main() {
   const jobName = process.argv[2];
@@ -16,6 +24,7 @@ async function main() {
         name: j.name,
         category: j.category,
         schedule: j.schedule,
+        nextTrigger: formatNextRun(j.schedule),
       })),
     );
 

@@ -61,7 +61,7 @@ User.init(
       allowNull: false,
     },
     identification: {
-      type: DataTypes.STRING(30),
+      type: DataTypes.STRING,
       allowNull: false,
       unique: true,
       set(value: string) {
@@ -83,7 +83,7 @@ User.init(
       },
     },
     personal_email: {
-      type: DataTypes.STRING(255),
+      type: DataTypes.STRING,
       allowNull: false,
       unique: true,
       set(value: string) {
@@ -106,7 +106,7 @@ User.init(
       },
     },
     tel: {
-      type: DataTypes.STRING(30),
+      type: DataTypes.STRING,
       allowNull: false,
       set(value: string) {
         const normalized = typeof value === "string" ? value.trim() : value;
