@@ -1,5 +1,5 @@
-import { Model, DataTypes } from 'sequelize';
-import sequelize from '../config/Database';
+import { Model, DataTypes } from "sequelize";
+import sequelize from "../config/Database";
 
 class PasswordResetToken extends Model {
   public id!: number;
@@ -14,13 +14,19 @@ class PasswordResetToken extends Model {
 PasswordResetToken.init(
   {
     id: {
-      type: DataTypes.BIGINT,
+      type: DataTypes.INTEGER,
       autoIncrement: true,
       primaryKey: true,
     },
     user_id: {
-      type: DataTypes.BIGINT,
+      type: DataTypes.INTEGER,
       allowNull: false,
+      references: {
+        model: "users",
+        key: "id",
+      },
+      onUpdate: "CASCADE",
+      onDelete: "CASCADE",
     },
     token_hash: {
       type: DataTypes.STRING(128),
@@ -37,7 +43,7 @@ PasswordResetToken.init(
     },
   },
   {
-    tableName: 'password_reset_tokens',
+    tableName: "password_reset_tokens",
     sequelize,
     underscored: true,
     timestamps: true,

@@ -25,7 +25,9 @@ export const createChatSession = (
             - Never provide dangerous wildlife advice
             - Keep answers concise and educational
 
-            This is contenxt information. Use it to answer the user's question. If the question is not related to the context, answer based on your general knowledge.:
+            This is contenxt information. Use it to answer the user's question. If the
+            question is not related to the context, answer based on your general 
+            knowledge.:
             ${context}
             `,
           },

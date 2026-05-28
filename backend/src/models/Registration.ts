@@ -77,40 +77,32 @@ Registration.init(
       defaultValue: RegistrationStatus.PENDING,
     },
     firstname: {
-      type: DataTypes.STRING(100),
+      type: DataTypes.STRING,
       allowNull: false,
-      set(value: string) {
-        const normalized = typeof value === "string" ? value.trim() : value;
-        this.setDataValue(
-          "firstname",
-          encryptDeterministic(normalized, REGISTRATION_ENCRYPTED_FIELD_CONTEXT.firstname),
-        );
-      },
-      get() {
-        const raw = this.getDataValue("firstname");
-        return decryptDeterministic(
-          raw,
-          REGISTRATION_ENCRYPTED_FIELD_CONTEXT.firstname,
-        );
-      },
     },
     lastname: {
-      type: DataTypes.STRING(100),
+      type: DataTypes.STRING,
       allowNull: false,
       set(value: string) {
         const normalized = typeof value === "string" ? value.trim() : value;
         this.setDataValue(
           "lastname",
-          encryptDeterministic(normalized, REGISTRATION_ENCRYPTED_FIELD_CONTEXT.lastname),
+          encryptDeterministic(
+            normalized,
+            REGISTRATION_ENCRYPTED_FIELD_CONTEXT.lastname,
+          ),
         );
       },
       get() {
         const raw = this.getDataValue("lastname");
-        return decryptDeterministic(raw, REGISTRATION_ENCRYPTED_FIELD_CONTEXT.lastname);
+        return decryptDeterministic(
+          raw,
+          REGISTRATION_ENCRYPTED_FIELD_CONTEXT.lastname,
+        );
       },
     },
     identification: {
-      type: DataTypes.STRING(30),
+      type: DataTypes.STRING,
       allowNull: false,
       set(value: string) {
         const normalized = typeof value === "string" ? value.trim() : value;
@@ -131,7 +123,7 @@ Registration.init(
       },
     },
     personal_email: {
-      type: DataTypes.STRING(255),
+      type: DataTypes.STRING,
       allowNull: false,
       set(value: string) {
         const normalized =
@@ -153,18 +145,24 @@ Registration.init(
       },
     },
     tel: {
-      type: DataTypes.STRING(30),
+      type: DataTypes.STRING,
       allowNull: false,
       set(value: string) {
         const normalized = typeof value === "string" ? value.trim() : value;
         this.setDataValue(
           "tel",
-          encryptDeterministic(normalized, REGISTRATION_ENCRYPTED_FIELD_CONTEXT.tel),
+          encryptDeterministic(
+            normalized,
+            REGISTRATION_ENCRYPTED_FIELD_CONTEXT.tel,
+          ),
         );
       },
       get() {
         const raw = this.getDataValue("tel");
-        return decryptDeterministic(raw, REGISTRATION_ENCRYPTED_FIELD_CONTEXT.tel);
+        return decryptDeterministic(
+          raw,
+          REGISTRATION_ENCRYPTED_FIELD_CONTEXT.tel,
+        );
       },
     },
     document_filepath: {
