@@ -1,0 +1,229 @@
+import {
+  createContext,
+  useContext,
+  useMemo,
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+} from "react";
+import { authService, decodeJwtPayload } from "../services/authService";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
+const AuthContext = createContext(null);
+let logoutHandler = null;
+
+export const registerLogoutHandler = (handler) => {
+  logoutHandler = handler;
+};
+
+export const clearLogoutHandler = () => {
+  logoutHandler = null;
+};
+
+export const triggerLogout = async () => {
+  if (typeof logoutHandler === "function") {
+    await logoutHandler();
+  }
+};
+
+export const AuthProvider = ({ children }) => {
+  const [currentUser, setCurrentUser] = useState(null);
+  const [accessToken, setAccessToken] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [profileImage, setProfileImage] = useState(null);
+  const [mustChangePassword, setMustChangePassword] = useState(false);
+  const expiryTimeoutRef = useRef(null);
+
+  const clearExpiryTimer = useCallback(() => {
+    if (expiryTimeoutRef.current) {
+      clearTimeout(expiryTimeoutRef.current);
+      expiryTimeoutRef.current = null;
+    }
+  }, []);
+
+  const clearAuthState = useCallback(async () => {
+    clearExpiryTimer();
+    await AsyncStorage.multiRemove([
+      "currentUser",
+      "accessToken",
+      "mustChangePassword",
+    ]);
+    setCurrentUser(null);
+    setAccessToken(null);
+    setProfileImage(null);
+    setMustChangePassword(false);
+  }, [clearExpiryTimer]);
+
+  // Initialize auth state on mount
+  useEffect(() => {
+    const initializeAuth = async () => {
+      try {
+        const storedUser = await AsyncStorage.getItem("currentUser");
+        const storedToken = await AsyncStorage.getItem("accessToken");
+        const storedMustChange =
+          await AsyncStorage.getItem("mustChangePassword");
+        if (storedUser && storedToken) {
+          const parsedUser = JSON.parse(storedUser);
+
+          // Validate token expiry
+          const payload = decodeJwtPayload(storedToken);
+          if (payload?.exp && Date.now() / 1000 >= payload.exp) {
+            // token expired - clear stored auth
+            await clearAuthState();
+            return;
+          }
+
+          setCurrentUser(parsedUser);
+          setProfileImage(parsedUser?.pfp || null);
+          setAccessToken(storedToken);
+          setMustChangePassword(storedMustChange === "true");
+
+          // Schedule automatic logout when token expires
+          scheduleTokenExpiry(storedToken);
+
+          if (typeof document !== "undefined") {
+            document.title = "SFC";
+          }
+        }
+      } catch (error) {
+        console.error("Auth initialization error:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    initializeAuth();
+  }, [clearAuthState]);
+
+  const login = async (email, password) => {
+    try {
+      await AsyncStorage.clear();
+      const payload = await authService.login(email, password);
+      if (payload?.requires_totp) {
+        return payload;
+      }
+      const user = payload?.user || null;
+      const token = payload?.access_token || null;
+      const mustChange = payload?.must_change_password ?? false;
+      if (!user || !token) {
+        throw new Error("Login failed: Missing user data or token");
+      }
+      await AsyncStorage.setItem("currentUser", JSON.stringify(user));
+      await AsyncStorage.setItem("accessToken", token);
+      await AsyncStorage.setItem(
+        "mustChangePassword",
+        mustChange ? "true" : "false",
+      );
+      setAccessToken(token);
+      setCurrentUser(user);
+      setProfileImage(user?.pfp || null);
+      // Schedule automatic logout when token expires
+      scheduleTokenExpiry(token);
+      setMustChangePassword(mustChange);
+      return user;
+    } catch (err) {
+      console.error("Auth Login Error: ", err);
+      throw err;
+    }
+  };
+
+  const completeLogin = async (access_token, email) => {
+    const tokenParts = String(access_token || "").split(".");
+    let payload = {};
+    if (tokenParts.length === 3) {
+      try {
+        const normalized = tokenParts[1].replace(/-/g, "+").replace(/_/g, "/");
+        const padded = normalized.padEnd(
+          Math.ceil(normalized.length / 4) * 4,
+          "=",
+        );
+        payload = JSON.parse(globalThis.atob(padded));
+      } catch {}
+    }
+    const user = {
+      id: payload?.id,
+      role: payload?.role || "park_guide",
+      personal_email: email,
+    };
+    await AsyncStorage.setItem("currentUser", JSON.stringify(user));
+    await AsyncStorage.setItem("accessToken", access_token);
+    await AsyncStorage.setItem("mustChangePassword", "false");
+    setAccessToken(access_token);
+    setCurrentUser(user);
+    setMustChangePassword(false);
+    scheduleTokenExpiry(access_token);
+    return user;
+  };
+
+  const logout = useCallback(async () => {
+    await clearAuthState();
+  }, [clearAuthState]);
+
+  const scheduleTokenExpiry = useCallback(
+    (token) => {
+      try {
+        const payload = decodeJwtPayload(token);
+        const exp = payload?.exp;
+        if (!exp) return;
+
+        const msUntilExpiry = exp * 1000 - Date.now();
+        if (msUntilExpiry <= 0) {
+          // Token already expired
+          logout();
+          return;
+        }
+
+        clearExpiryTimer();
+        expiryTimeoutRef.current = setTimeout(() => {
+          logout();
+        }, msUntilExpiry);
+
+        setMustChangePassword(false);
+      } catch (err) {
+        console.error("Error scheduling token expiry:", err);
+      }
+    },
+    [logout, clearExpiryTimer],
+  );
+
+  useEffect(() => {
+    registerLogoutHandler(logout);
+    return () => {
+      clearLogoutHandler();
+    };
+  }, [logout]);
+
+  const clearMustChangePassword = async () => {
+    await AsyncStorage.setItem("mustChangePassword", "false");
+    setMustChangePassword(false);
+  };
+
+  const value = useMemo(
+    () => ({
+      currentUser,
+      accessToken,
+      isLoading,
+      profileImage,
+      setProfileImage,
+      login,
+      logout,
+      completeLogin,
+      mustChangePassword,
+      clearMustChangePassword,
+    }),
+    [currentUser, accessToken, isLoading, profileImage, mustChangePassword],
+  );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+};
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+
+  if (!context) {
+    throw new Error("useAuth must be used within AuthProvider");
+  }
+
+  return context;
+};

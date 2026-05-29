@@ -1,0 +1,5 @@
+dataset/
+runs/
+models/
+__pycache__/
+ai-env

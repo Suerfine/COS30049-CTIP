@@ -1,0 +1,1161 @@
+import {
+  Pen,
+  Trash2,
+  Search,
+  Plus,
+  Circle,
+  ChevronLeft,
+  ChevronsLeft,
+  ChevronRight,
+  ChevronsRight,
+  X,
+  User2,
+  IdCard,
+  Mail,
+  ShieldUser,
+  Calendar,
+  FileUser,
+  EllipsisVertical,
+  ChevronDown,
+  ChevronUp,
+  CirclePlus,
+  CircleMinus,
+  MessageSquare,
+  Phone,
+  ArrowUpNarrowWide,
+  ArrowDownWideNarrow,
+  RotateCcw,
+  FileText,
+  ExternalLink,
+} from "lucide-react-native";
+import React, { useState } from "react";
+import {
+  Platform,
+  Pressable,
+  StyleSheet,
+  FlatList,
+  View,
+  Text,
+  Image,
+  TextInput,
+  ActivityIndicator,
+  Modal,
+  ScrollView,
+  useWindowDimensions,
+} from "react-native";
+import WebView from "react-native-webview";
+
+// Import other components and hooks
+import { useRegisterManagement } from "../hooks/useRegisterManagement";
+import { formatDate } from "../utils/formatDate";
+import RejectModal from "../components/RejectModal";
+import { RegisterService } from "../services/RegisterService";
+import { useTranslation } from "react-i18next";
+
+const RegistrationManagement = () => {
+  const {
+    users,
+    loading,
+    currentPage,
+    setCurrentPage,
+    totalPages,
+    totalUsers,
+    selectedUser,
+    setSelectedUser,
+    handleSearch,
+    searchQuery,
+    sortConfig,
+    requestSort,
+    resetSort,
+    currentStatus,
+    setCurrentStatus,
+    isCreating,
+    setIsCreating,
+    handleCreateUser,
+    isRejecting,
+    handleRejectUser,
+  } = useRegisterManagement();
+  const [isOpen, setIsOpen] = useState(false);
+  const [isRejectModalVisible, setIsRejectModalVisible] = useState(false);
+  const [rejectReason, setRejectReason] = useState("");
+  const [resumeModalVisible, setResumeModalVisible] = useState(false);
+  const [resumeLoading, setResumeLoading] = useState(false);
+  const [resumeUri, setResumeUri] = useState("");
+  const [resumeError, setResumeError] = useState("");
+  const { width } = useWindowDimensions();
+  const isCompact = width < 640;
+  const { t } = useTranslation();
+
+  const [hoveredRowId, setHoveredRowId] = useState(null);
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage((prev) => prev + 1);
+    }
+  };
+
+  const handlePrevPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage((prev) => prev - 1);
+    }
+  };
+
+  const handleOpenRejectModal = () => {
+    setRejectReason("");
+    setIsRejectModalVisible(true);
+  };
+
+  const handleOpenResume = async (user) => {
+    try {
+      if (!user?.id) {
+        return;
+      }
+
+      setResumeModalVisible(true);
+      setResumeLoading(true);
+      setResumeError("");
+      setResumeUri("");
+
+      const file = await RegisterService.getResumeFile(user.id);
+      setResumeUri(file.uri);
+    } catch (err) {
+      console.error(t("failed_load_resume"), err);
+      setResumeError(err?.message || t("failed_load_resume"));
+    } finally {
+      setResumeLoading(false);
+    }
+  };
+
+  const itemsPerPage = 10;
+  const indexOfFirstItem = (currentPage - 1) * itemsPerPage;
+  const indexOfLastItem = indexOfFirstItem + users.length;
+  const pageNumbers = [];
+  for (let i = 1; i <= totalPages; i++) {
+    pageNumbers.push(i);
+  }
+  // Caluculate the pagination
+  const currentUsers = users;
+
+  const statusOptions = [
+    { key: "all", label: t("status.all") },
+    { key: "approved", label: t("status.approved") },
+    { key: "pending", label: t("status.pending") },
+    { key: "rejected", label: t("status.rejected") },
+  ];
+
+  const renderHeader = () => (
+    <View style={[styles.tableHeader, styles.row]}>
+      <Pressable
+        onPress={() => requestSort("firstname")}
+        style={[styles.headerRow, { flex: 3 }]}
+      >
+        <Text style={styles.headerText}>{t("full_name")}</Text>
+        {sortConfig.key === "firstname" && sortConfig.direction === "asc" ? (
+          <ArrowUpNarrowWide size={14} color="white" />
+        ) : (
+          <ArrowDownWideNarrow size={14} color="white" />
+        )}
+      </Pressable>
+
+      <Text style={[styles.headerText, { flex: 2 }]}>{t("passport_ic")}</Text>
+      <Text style={[styles.headerText, { flex: 2 }]}>{t("status_label")}</Text>
+      <Pressable
+        onPress={() => requestSort("personal_email")}
+        style={[styles.headerRow, { flex: 3 }]}
+      >
+        <Text style={styles.headerText}>{t("email")}</Text>
+        {sortConfig.key === "personal_email" &&
+          sortConfig.direction === "asc" ? (
+          <ArrowUpNarrowWide size={14} color="white" />
+        ) : (
+          <ArrowDownWideNarrow size={14} color="white" />
+        )}
+      </Pressable>
+      <Text style={[styles.headerText, { flex: 2 }]}>{t("telephone")}</Text>
+      <Pressable
+        onPress={() => requestSort("created_at")}
+        style={[styles.headerRow, { flex: 2 }]}
+      >
+        <Text style={styles.headerText}>{t("register_on")}</Text>
+        {sortConfig.key === "created_at" && sortConfig.direction === "asc" ? (
+          <ArrowUpNarrowWide size={14} color="white" />
+        ) : (
+          <ArrowDownWideNarrow size={14} color="white" />
+        )}
+      </Pressable>
+    </View>
+  );
+
+  const renderUserItem = ({ item }) => {
+    const isHovered = hoveredRowId === item.id;
+    return (
+      <View 
+        style={[styles.rowContainerRelative, isHovered && { zIndex: 10 }]}
+        onPointerMove={(e) => {
+          if (Platform.OS === 'web') {
+            const containerBounds = e.currentTarget.getBoundingClientRect();
+            setMousePos({ 
+              x: e.nativeEvent.clientX - containerBounds.left, 
+              y: e.nativeEvent.clientY - containerBounds.top 
+            });
+          }
+        }}
+      >
+        <Pressable
+          onPress={() => setSelectedUser(item)}
+          onHoverIn={() => setHoveredRowId(item.id)}
+          onHoverOut={() => setHoveredRowId(null)}
+          style={({ hovered }) => [
+            styles.row,
+            styles.tableRow,
+            hovered && { backgroundColor: "#f8fafc" },
+            selectedUser?.id === item.id && { backgroundColor: "#fff8e1" },
+          ]}
+        >
+          {isHovered && Platform.OS === 'web' && (
+            <View style={[styles.rowTooltip, { left: mousePos.x + 15, top: mousePos.y - 40 }]}>
+              <Text style={styles.tooltipText}>Click to view registration details</Text>
+            </View>
+          )}
+          
+          {/* Full Name Cell with Hover Text State */}
+          <View style={[{ flex: 3 }, styles.userInfo, styles.row]}>
+            {item.profileImage ? (
+              <Image source={{ uri: item.profileImage }} style={styles.avatar} />
+            ) : (
+              <View style={styles.pfpPlaceholder}>
+                <Text style={styles.pfpInitials}>
+                  {item.firstname ? item.firstname[0].toUpperCase() : "?"}
+                </Text>
+              </View>
+            )}
+            <Text style={[styles.cellText, styles.cellTextBold, isHovered && styles.cellTextHover]}>
+              {item.firstname + " " + item.lastname}
+            </Text>
+          </View>
+
+          {/* Remaining Data Cells with Hover Text State */}
+          <Text style={[styles.cellText, { flex: 2 }, isHovered && styles.cellTextHover]}>
+            {item.identification}
+          </Text>
+          
+          <View style={[styles.row, styles.badge, { flex: 2 }]}>
+            {item.status === "approved" ? (
+              <Circle size={10} stroke="green" fill="green" />
+            ) : item.status === "pending" ? (
+              <Circle size={10} stroke="orange" fill="orange" />
+            ) : (
+              <Circle size={10} stroke="red" fill="red" />
+            )}
+            <Text style={[styles.cellText, isHovered && styles.cellTextHover]}>
+              {t(`status.${item.status}`)}
+            </Text>
+          </View>
+          
+          <Text style={[styles.cellText, { flex: 3 }, isHovered && styles.cellTextHover]}>
+            {item.personal_email}
+          </Text>
+          <Text style={[styles.cellText, { flex: 2 }, isHovered && styles.cellTextHover]}>
+            {item.tel}
+          </Text>
+          <Text style={[styles.cellText, { flex: 2 }, isHovered && styles.cellTextHover]}>
+            {formatDate(item.created_at)}
+          </Text>
+        </Pressable>
+      </View>
+    )
+  };
+
+  const renderPagination = () => {
+    const pageNumbers = [];
+    for (let i = 1; i <= totalPages; i++) {
+      pageNumbers.push(i);
+    }
+    return (
+      <View style={[styles.paginationContainer, styles.row]}>
+        <Text style={styles.pageInfo}>
+          {t("showing")} {users.length > 0 ? indexOfFirstItem + 1 : 0}  {t("to")} {" "}
+          {indexOfLastItem} {t("of")} {totalUsers} {t("users")}
+        </Text>
+        <View style={styles.row}>
+          <Pressable
+            disabled={currentPage == 1}
+            onPress={() => setCurrentPage(1)}
+            style={[styles.pageBtn, currentPage == 1 && styles.btnDisabled]}
+          >
+            <Text
+              style={[
+                currentPage == 1 ? styles.disabledText : styles.pageBtnText,
+                styles.arrowBtn,
+              ]}
+            >
+              <ChevronsLeft size={20} />
+            </Text>
+          </Pressable>
+          <Pressable
+            disabled={currentPage == 1}
+            onPress={() => handlePrevPage()}
+            style={[styles.pageBtn, currentPage == 1 && styles.btnDisabled]}
+          >
+            <Text
+              style={[
+                currentPage == 1 ? styles.disabledText : styles.pageBtnText,
+                styles.arrowBtn,
+              ]}
+            >
+              <ChevronLeft size={20} />
+            </Text>
+          </Pressable>
+          {pageNumbers.map((number) => (
+            <Pressable
+              key={number}
+              onPress={() => setCurrentPage(number)}
+              style={[
+                styles.pageBtn,
+                currentPage === number && styles.activePageBtn,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.pageBtnText,
+                  currentPage === number && styles.activePageBtn,
+                ]}
+              >
+                {number}
+              </Text>
+            </Pressable>
+          ))}
+          <Pressable
+            disabled={currentPage == totalPages}
+            onPress={() => handleNextPage()}
+            style={[
+              styles.pageBtn,
+              currentPage == totalPages && styles.btnDisabled,
+            ]}
+          >
+            <Text
+              style={[
+                currentPage == totalPages
+                  ? styles.disabledText
+                  : styles.pageBtnText,
+                styles.arrowBtn,
+              ]}
+            >
+              <ChevronRight size={20} />
+            </Text>
+          </Pressable>
+          <Pressable
+            disabled={currentPage == totalPages}
+            onPress={() => setCurrentPage(totalPages)}
+            style={[
+              styles.pageBtn,
+              currentPage == totalPages && styles.btnDisabled,
+            ]}
+          >
+            <Text
+              style={[
+                currentPage == totalPages
+                  ? styles.disabledText
+                  : styles.pageBtnText,
+                styles.arrowBtn,
+              ]}
+            >
+              <ChevronsRight size={20} />
+            </Text>
+          </Pressable>
+        </View>
+      </View>
+    );
+  };
+
+  return (
+    <ScrollView style={styles.pageScroll} contentContainerStyle={styles.container}>
+      <Text style={styles.title}>{t("registration_management")}</Text>
+      <View style={[styles.toolbar, isCompact && styles.toolbarCompact]}>
+        <View style={[styles.toolbarRow, isCompact && styles.toolbarGroupCompact]}>
+          <Pressable
+            onPress={resetSort}
+            style={({ hovered }) => [
+              styles.iconBtn,
+              hovered && styles.iconBtnHover,
+            ]}
+          >
+            <RotateCcw size={20} />
+          </Pressable>
+          <View style={[styles.search, styles.row]}>
+            <Search size={18} />
+            <TextInput
+              style={styles.input}
+              placeholder={t("search")}
+              placeholderTextColor="#8f8f8f"
+              value={searchQuery}
+              onChangeText={handleSearch}
+            />
+          </View>
+          {/* Status Dropdown */}
+          <View style={styles.dropdownWrapper}>
+            <Pressable
+              style={styles.pillTrigger}
+              onPress={() => setIsOpen(!isOpen)}
+            >
+              <Text style={styles.pillText}>
+                {currentStatus !== "all"
+                  ? t(`status.${currentStatus}`)
+                  : t("status_label")}
+              </Text>
+              {isOpen ? (
+                <ChevronUp size={16} color="#4b5563" />
+              ) : (
+                <ChevronDown size={16} color="#4b5563" />
+              )}
+            </Pressable>
+
+            {/* Dropdown Menu */}
+            {isOpen && (
+              <View style={styles.dropdownMenu}>
+                {statusOptions.map((status) => (
+                  <Pressable
+                    key={status.key}
+                    style={({ hovered }) => [
+                      styles.menuItem,
+                      currentStatus === status.key && styles.menuItemActive,
+                      hovered &&
+                      currentStatus != status.key &&
+                      styles.menuItemHover,
+                    ]}
+                    onPress={() => {
+                      setCurrentPage(1);
+                      setCurrentStatus(status.key);
+                      setIsOpen(false);
+                    }}
+                  >
+                    <Text
+                      style={[
+                        styles.menuItemText,
+                        currentStatus === status.key && styles.menuItemTextActive,
+                      ]}
+                    >
+                      {status.label}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            )}
+          </View>
+        </View>
+      </View>
+
+      <View style={styles.tableContainer}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator
+          contentContainerStyle={styles.tableScrollContent}
+        >
+          <View style={styles.tableInner}>
+            <FlatList
+              style={styles.table}
+              scrollEnabled={false}
+              data={currentUsers}
+              ListHeaderComponent={renderHeader}
+              renderItem={renderUserItem}
+              keyExtractor={(item) => item.id.toString()}
+              ListEmptyComponent={
+                <View style={styles.tableRow}>
+                  <Text style={{ flex: 1, paddingVertical: 2 }}>
+                    {t("no_users_found")}
+                  </Text>
+                </View>
+              }
+            />
+          </View>
+        </ScrollView>
+      </View>
+      {totalPages > 1 ? renderPagination() : null}
+      {/* Side panel: show user details */}
+      {selectedUser && (
+        <View style={[styles.sidePanel, isCompact && styles.sidePanelCompact]}>
+          <View style={styles.panelHeader}>
+            <Text style={styles.panelTitle}>{t("user_information")}</Text>
+            <Pressable onPress={() => setSelectedUser(null)}>
+              <X size={18} />
+            </Pressable>
+          </View>
+          <View style={styles.panelContent}>
+            {selectedUser.profileImage ? (
+              <Image
+                source={{ uri: selectedUser?.profileImage }}
+                style={styles.largeAvatar}
+              />
+            ) : (
+              <View style={styles.SideBarPlaceholder}>
+                <Text style={styles.sideBarInitials}>
+                  {selectedUser?.firstname
+                    ? selectedUser.firstname[0].toUpperCase()
+                    : "?"}
+                </Text>
+              </View>
+            )}
+
+            <Text style={styles.fullname}>
+              {selectedUser.firstname + " " + selectedUser.lastname}
+            </Text>
+
+            <View style={styles.user}>
+              <View style={[styles.row, { justifyContent: "space-between" }]}>
+                {/* IC */}
+                <View style={styles.details}>
+                  <View style={styles.row}>
+                    <IdCard size={18} color="#4f4f4f" />
+                    <Text style={styles.panelLabel}>{t("passport_ic")}:</Text>
+                  </View>
+                  <Text style={styles.userDetails}>
+                    {selectedUser.identification}
+                  </Text>
+                </View>
+              </View>
+              <View style={[styles.row, { justifyContent: "space-between" }]}>
+                {/* Email */}
+                <View style={styles.details}>
+                  <View style={styles.row}>
+                    <Mail size={18} color="#4f4f4f" />
+                    <Text style={styles.panelLabel}>{t("email")}:</Text>
+                  </View>
+                  <Text style={styles.userDetails}>
+                    {selectedUser.personal_email}
+                  </Text>
+                </View>
+                {/* Register Date */}
+                <View style={styles.details}>
+                  <View style={styles.row}>
+                    <Calendar size={18} color="#4f4f4f" />
+                    <Text style={styles.panelLabel}>{t("register_on")}:</Text>
+                  </View>
+                  <Text style={styles.userDetails}>
+                    {formatDate(selectedUser.created_at)}
+                  </Text>
+                </View>
+              </View>
+              {/* Telefon Section */}
+              <View style={styles.details}>
+                <View style={styles.row}>
+                  <Phone size={18} color="#4f4f4f" />
+                  <Text style={styles.panelLabel}>{t("telephone")}:</Text>
+                </View>
+                <Text style={styles.userDetails}>{selectedUser.tel}</Text>
+              </View>
+              {/* Remark Section */}
+              {selectedUser.admin_remark !== null && (
+                <View style={styles.remark}>
+                  <View style={styles.row}>
+                    <MessageSquare size={18} color="#4f4f4f" />
+                    <Text style={styles.panelLabel}>{t("remark")}:</Text>
+                  </View>
+                  <Text style={styles.userDetails}>
+                    {selectedUser.admin_remark}
+                  </Text>
+                </View>
+              )}
+
+              {/* CV Section (dummy)*/}
+              <View style={styles.details}>
+                <View style={styles.row}>
+                  <FileUser size={18} color="#4f4f4f" />
+                  <Text style={styles.panelLabel}>{t("resume")}:</Text>
+                </View>
+                <Pressable
+                  style={styles.pdfBadge}
+                  onPress={() => handleOpenResume(selectedUser)}
+                >
+                  <FileText size={14} color="#0a6340" />
+                  <Text style={styles.pdfText}>{t("view_resume")}</Text>
+                  <ExternalLink size={14} color="#666" />
+                </Pressable>
+              </View>
+              {console.log(users)}
+            </View>
+            {selectedUser.status == "pending" && (
+              <View style={styles.actionContainer}>
+                {/* Reject Button */}
+                <Pressable
+                  style={({ hovered }) => [
+                    styles.rejectbtn,
+                    hovered && styles.rejectBtnHover,
+                  ]}
+                  onPress={() => setIsRejectModalVisible(true)}
+                  disabled={isRejecting || isCreating}
+                >
+                  {isRejecting ? (
+                    <ActivityIndicator color="#dc2626" size="small" />
+                  ) : (
+                    <Text>{t("reject")}</Text>
+                  )}
+                </Pressable>
+                <Pressable
+                  style={({ hovered }) => [
+                    styles.Btn,
+                    hovered && styles.btnHover,
+                  ]}
+                  onPress={() => handleCreateUser(selectedUser)}
+                >
+                  {isCreating ? (
+                    <ActivityIndicator color="white" size="small" />
+                  ) : (
+                    <Text style={styles.btnText}>{t("approve")}</Text>
+                  )}
+                </Pressable>
+              </View>
+            )}
+          </View>
+        </View>
+      )}
+      <RejectModal
+        visible={isRejectModalVisible}
+        onClose={() => setIsRejectModalVisible(false)}
+        reason={rejectReason}
+        setReason={setRejectReason}
+        loading={isRejecting}
+        onConfirm={async () => {
+          const result = await handleRejectUser(selectedUser, rejectReason);
+          if (result?.success) {
+            setIsRejectModalVisible(false);
+          }
+        }}
+      />
+
+      <Modal
+        animationType="fade"
+        transparent
+        visible={resumeModalVisible}
+        onRequestClose={() => setResumeModalVisible(false)}
+      >
+        <View style={styles.resumeModalOverlay}>
+          <View style={styles.resumeModalContent}>
+            <View style={styles.resumeModalHeader}>
+              <Text style={styles.resumeModalTitle}>{t("resume_preview")}</Text>
+              <Pressable onPress={() => setResumeModalVisible(false)}>
+                <X size={18} />
+              </Pressable>
+            </View>
+
+            {resumeLoading ? (
+              <View style={styles.resumeLoadingBox}>
+                <ActivityIndicator size="large" color="#0a6340" />
+                <Text style={styles.resumeLoadingText}>{t("loading_resume")}</Text>
+              </View>
+            ) : resumeError ? (
+              <View style={styles.resumeErrorBox}>
+                <Text style={styles.resumeErrorText}>{resumeError}</Text>
+              </View>
+            ) : resumeUri ? (
+              Platform.OS === "web" ? (
+                <iframe
+                  title="Resume preview"
+                  src={resumeUri}
+                  style={{ width: "100%", height: "100%", border: "none" }}
+                />
+              ) : (
+                <WebView
+                  source={{ uri: resumeUri }}
+                  style={styles.resumeWebView}
+                  originWhitelist={["*"]}
+                />
+              )
+            ) : (
+              <View style={styles.resumeErrorBox}>
+                <Text style={styles.resumeErrorText}>{t("no_resume_available")}</Text>
+              </View>
+            )}
+          </View>
+        </View>
+      </Modal>
+    </ScrollView>
+  );
+};
+
+const styles = StyleSheet.create({
+  pageScroll: {
+    flex: 1,
+  },
+  container: {
+    paddingVertical: 20,
+    paddingHorizontal: 40,
+  },
+  table: {
+    backgroundColor: "white",
+  },
+  tableContainer: {
+    width: "100%",
+    paddingTop: 20,
+  },
+  tableRow: {
+    paddingVertical: 5,
+    borderBottomWidth: 1,
+    borderBottomColor: "#e2e8f0",
+    alignItems: "center",
+    paddingHorizontal: 12,
+  },
+  cellText: {
+    color: "#334155",
+    alignSelf: "center",
+    ...Platform.select({
+      web: {
+        transition: "color 0.15s ease",
+      }
+    })
+  },
+  cellTextHover: {
+    color: "#1b5e20",
+    ...Platform.select({
+      web: {
+        textDecorationLine: "underline",
+      }
+    })
+  },
+  tableInner: {
+    minWidth: 900,
+    width: "100%",
+  },
+  tableScrollContent: {
+    minWidth: "100%",
+  },
+  title: {
+    fontSize: 25,
+    fontWeight: 500,
+  },
+  search: {
+    borderWidth: 1,
+    borderColor: "#8f8f8f",
+    width: "auto",
+    flexBasis: 300,
+    minWidth: 80,
+    maxWidth: 300,
+    flexShrink: 1,
+    flexGrow: 1,
+    padding: 5,
+    backgroundColor: "white",
+    borderRadius: 15,
+    alignItems: "center",
+    maxHeight: 35,
+    alignSelf: "center",
+  },
+  input: {
+    flex: 1,
+    paddingVertical: 2,
+    ...Platform.select({
+      web: { outlineStyle: "none" },
+    }),
+    marginLeft: 10
+  },
+  toolbar: {
+    marginVertical: 20,
+    zIndex: 500,
+    alignItems: "center",
+  },
+  toolbarCompact: {
+    flexDirection: "column",
+    alignItems: "stretch",
+    gap: 12,
+  },
+  toolbarRow: {
+    width: "100%",
+    flexDirection: "row",
+    alignItems: "center",
+    minWidth: 0,
+    gap: 12,
+  },
+  toolbarGroupCompact: {
+    flexWrap: "wrap",
+  },
+  btn: {
+    flexDirection: "row",
+    gap: 4,
+    alignItems: "center",
+    alignSelf: "center",
+    backgroundColor: "#217837",
+    borderRadius: 50,
+    color: "white",
+    paddingHorizontal: 23,
+    paddingVertical: 10,
+  },
+  btnText: {
+    color: "white",
+    fontSize: 14,
+  },
+  btnHover: {
+    backgroundColor: "#5a993ffe",
+  },
+  tableHeader: {
+    backgroundColor: "#0a6340",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    userSelect: "none",
+  },
+  headerText: {
+    color: "white",
+    alignSelf: "center",
+    fontWeight: 500,
+  },
+  row: {
+    flexDirection: "row",
+  },
+  avatar: {
+    width: 35,
+    height: 35,
+    borderRadius: 50,
+  },
+  userInfo: {
+    gap: 10,
+    alignItems: "center",
+  },
+  badge: {
+    alignItems: "center",
+    gap: 5,
+  },
+  paginationContainer: {
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+    backgroundColor: "white",
+  },
+  pageInfo: {
+    color: "#666",
+    fontSize: 14,
+  },
+  pageBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: "50%",
+    backgroundColor: "white",
+    borderWidth: 1,
+    borderColor: "#ccc",
+    alignItems: "center",
+    justifyContent: "center",
+    marginLeft: 10,
+  },
+  pageBtnText: {
+    color: "#ecaa25",
+    fontWeight: "600",
+  },
+  btnDisabled: {
+    backgroundColor: "#f0f0f0",
+    borderColor: "#eee",
+  },
+  disabledText: {
+    color: "#bbb",
+  },
+  currentPageText: {
+    alignSelf: "center",
+    fontWeight: "bold",
+    color: "#333",
+  },
+  arrowBtn: {
+    paddingTop: 2,
+  },
+  activePageBtn: {
+    backgroundColor: "#ffc758",
+    border: 0,
+    color: "white",
+  },
+  sidePanel: {
+    width: 350,
+    backgroundColor: "white",
+    height: "100vh",
+    position: "absolute",
+    right: 0,
+    top: 0,
+    bottom: 0,
+    shadowColor: "#000",
+    shadowOffset: { width: -2, height: 0 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    zIndex: 600,
+  },
+  sidePanelCompact: {
+    width: "100%",
+  },
+  panelHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    borderBottomWidth: 1,
+    borderBottomColor: "#4f4f4f49",
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+    alignItems: "center",
+  },
+  panelTitle: {
+    fontSize: 18,
+    fontWeight: 500,
+    marginRight: 15,
+  },
+  avatar: {
+    width: 90,
+    height: 90,
+    borderRadius: 60,
+    borderWidth: 3,
+    borderColor: "white",
+  },
+  pfpPlaceholder: {
+    width: 37,
+    height: 37,
+    borderRadius: 60,
+    backgroundColor: "#2c5c189d",
+    borderWidth: 3,
+    borderColor: "white",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  SideBarPlaceholder: {
+    width: 90,
+    height: 90,
+    borderRadius: 60,
+    backgroundColor: "#2c5c189d",
+    borderWidth: 3,
+    borderColor: "white",
+    alignItems: "center",
+    justifyContent: "center",
+    alignSelf: "center",
+  },
+  pfpInitials: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "white",
+  },
+  sideBarInitials: {
+    fontSize: 32,
+    fontWeight: "700",
+    color: "white",
+  },
+  largeAvatar: {
+    width: 130,
+    height: 130,
+    alignSelf: "center",
+  },
+  panelContent: {
+    padding: 20,
+    position: "relative",
+    flex: 1,
+  },
+  fullname: {
+    fontSize: 16,
+    fontWeight: 500,
+    textAlign: "center",
+    marginTop: 15,
+  },
+  details: {
+    marginTop: 20,
+    gap: 10,
+    width: 150,
+  },
+  remark: {
+    marginTop: 20,
+    gap: 10,
+  },
+  panelLabel: {
+    fontWeight: 500,
+    marginLeft: 15,
+  },
+  userDetails: {
+    marginLeft: 35,
+  },
+  user: {
+    paddingHorizontal: 10,
+    marginTop: 15,
+    paddingRight: 30,
+  },
+  pillTrigger: {
+    border: "1px solid #0a6340",
+    width: 100,
+    flexDirection: "row",
+    gap: 10,
+    height: 35,
+    marginTop: 2,
+    justifyContent: "center",
+    alignItems: "center",
+    marginLeft: 15,
+    borderRadius: 20,
+    userSelect: "none",
+    backgroundColor: "white",
+    paddingLeft: 4,
+  },
+  dropdownMenu: {
+    position: "absolute",
+    top: 37,
+    left: 20,
+    backgroundColor: "white",
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 5,
+    borderWidth: 1,
+    borderColor: "#f0f0f0",
+    userSelect: "none",
+  },
+  dropdownWrapper: {
+    position: "relative",
+  },
+  pillText: {
+    fontSize: 14,
+    color: "#374151",
+    fontWeight: "500",
+  },
+  menuItem: {
+    padding: 14,
+    alignItems: "center",
+  },
+  menuItemText: {
+    whiteSpace: "nowrap",
+  },
+  menuItemActive: {
+    backgroundColor: "#7d9f7a",
+  },
+  menuItemTextActive: {
+    color: "white",
+  },
+  menuItemHover: {
+    backgroundColor: "#f9f9f9",
+  },
+  Btn: {
+    width: 120,
+    alignItems: "center",
+    backgroundColor: "#2e9333",
+    borderRadius: 10,
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    marginTop: 15,
+  },
+  headerRow: {
+    flexDirection: "row",
+    gap: 10,
+    paddingHorizontal: 10,
+    alignItems: "center",
+  },
+  iconBtn: {
+    alignSelf: "center",
+    padding: 8,
+    color: "#217837",
+    borderRadius: 50,
+    backgroundColor: "white",
+  },
+  iconBtnHover: {
+    backgroundColor: "#217837",
+    color: "white",
+  },
+  pdfBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#f0f7f4",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: "#0a634033",
+    gap: 8,
+    marginTop: 4,
+  },
+  pdfText: {
+    color: "#0a6340",
+    fontSize: 13,
+    fontWeight: "500",
+  },
+  actionContainer: {
+    flexDirection: "row",
+    gap: 12,
+    position: "absolute",
+    bottom: 15,
+    right: 15,
+  },
+  rejectbtn: {
+    width: 120,
+    alignItems: "center",
+    borderColor: "#dc2626",
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    marginTop: 15,
+  },
+  rejectBtnHover: {
+    backgroundColor: "#dc2626",
+  },
+  resumeModalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  resumeModalContent: {
+    width: "100%",
+    maxWidth: 900,
+    height: "90%",
+    backgroundColor: "white",
+    borderRadius: 16,
+    overflow: "hidden",
+  },
+  resumeModalHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#e5e7eb",
+  },
+  resumeModalTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#111827",
+  },
+  resumeWebView: {
+    flex: 1,
+    backgroundColor: "white",
+  },
+  resumeLoadingBox: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 12,
+  },
+  resumeLoadingText: {
+    color: "#4b5563",
+  },
+  resumeErrorBox: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 24,
+  },
+  resumeErrorText: {
+    color: "#b91c1c",
+    textAlign: "center",
+  },
+  rowTooltip: {
+    position: "absolute",
+    backgroundColor: "#1e293b",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    zIndex: 9999,
+    pointerEvents: "none", 
+    ...Platform.select({
+      web: { whiteSpace: "nowrap" }
+    })
+  },
+  tooltipText: {
+    color: "white",
+    fontSize: 11,
+    fontWeight: "500",
+  },
+  cellDataText: {
+    fontSize: 13,
+    color: "#334155",
+  },
+  rowContainerRelative: {
+    position: "relative", 
+    width: "100%",
+  },
+});
+
+export default RegistrationManagement;
